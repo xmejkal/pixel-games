@@ -26,7 +26,7 @@ FULL_FRAME_FREE = 400_000
 GC_FLOOR = 1_000_000  # with PSRAM gc is off in the loop; below this much free heap it runs at once
 # The bench decides the SPI clock. 80 MHz showed a dark screen on 2026-11-01 (the panel's write cycle limit is 16 ns,
 # 62.5 MHz) and 40 MHz worked; 60 MHz is under the limit. If the picture breaks, go back to 40_000_000.
-SPI_HZ = 60_000_000
+SPI_HZ = 80_000_000
 # "auto" picks the whole-screen path when the heap is big (PSRAM), "bands" forces the small-buffer path, "full" the other.
 # On a PSRAM build the whole heap is PSRAM, so try "bands" if the send time stays high.
 FRAME_MODE = "auto"
