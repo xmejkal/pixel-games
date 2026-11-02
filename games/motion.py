@@ -69,7 +69,8 @@ class Bodies:
         self.live, self.asleep, self.hit = [0] * n, [0] * n, [0] * n
 
     def spawn(self, i, x, y, vx, vy, rest_y):
-        self.x[i], self.y[i], self.vx[i], self.vy[i], self.rest_y[i] = float(x), float(y), float(vx), float(vy), float(rest_y)
+        self.x[i], self.y[i], self.vx[i], self.vy[i] = float(x), float(y), float(vx), float(vy)
+        self.rest_y[i] = float(rest_y)
         self.live[i], self.asleep[i], self.hit[i] = 1, 0, 0
 
     def free(self, i):

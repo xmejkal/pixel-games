@@ -1,5 +1,6 @@
 """games/motion.py on the Mac: how a body falls, bounces and sleeps, and how a spring settles. Behaviour only: what a
-step allocates is measured on the board (probe582.py). Run from the repository root: python3 -m unittest discover tests."""
+step allocates is measured on the board (probe582.py). Run from the repository root:
+python3 -m unittest discover tests."""
 
 import os
 import sys
