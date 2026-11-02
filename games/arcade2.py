@@ -5,6 +5,7 @@ import random
 import pictures
 
 from gfx import ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
+from motion import Spring
 
 W, H = WIDTH, HEIGHT
 
@@ -44,7 +45,7 @@ class Stack(Game):
         self.covers = pictures.load()  # the painted noon covers the screen, so no fill goes under it
         self.floors = [(90, 140)]  # (x, width) of each placed floor, x without the sway
         self.x, self.w, self.dir, self.speed = 0.0, 140, 1, 120.0
-        self.sway, self.sway_v = 0.0, 0.0  # the tower top's offset and speed
+        self.sway = Spring(self.SPRING, self.DAMP)  # the tower top's offset
         self.hold, self.lean, self.dusted = 0, 1, False  # hitstop frames left; the side the tower falls to
         self.slabs = []  # the cut-offs that fell: [x, y, width, speed, colour]
 
@@ -55,7 +56,7 @@ class Stack(Game):
         """Floor i's drawn x: its own, plus the sway, more of it the higher it sits in the visible window, so the
         floor at the street stays put. The hit test reads this too; paint works it out the same way."""
         first = max(0, len(self.floors) - self.SHOWN)
-        return int(self.floors[i][0] + self.sway / (len(self.floors) - first) * (i - first))
+        return int(self.floors[i][0] + self.sway.value / (len(self.floors) - first) * (i - first))
 
     def hanging_x(self):
         """The hanging floor's drawn x: the straight slide, as before RENT."""
@@ -72,8 +73,7 @@ class Stack(Game):
             if c[1] >= self.BASE:  # the cot on it breaks on the street
                 self.fx.burst(c[0] + c[2] // 2, self.BASE + 8, GREY, 8, 70.0, 0.5, 200.0)
         self.slabs = [c for c in self.slabs if c[1] < self.BASE]
-        self.sway_v -= (self.SPRING * self.sway + self.DAMP * self.sway_v) * dt
-        self.sway += self.sway_v * dt
+        self.sway.step(dt)
         self.x += self.dir * self.speed * dt
         if self.x < 0:
             self.x, self.dir = 0.0, 1
@@ -99,8 +99,8 @@ class Stack(Game):
         elif x + self.w > right:
             self.slabs.append([right, y, x + self.w - right, 0.0, i])
         first = max(0, n + 1 - self.SHOWN)  # the window once this floor is in it
-        self.floors.append((left - self.sway / (n + 1 - first) * (n - first), right - left))  # stored without the sway
-        self.sway_v += max(-24, min(24, x - tx)) * self.KICK  # the tower leans the way the floor landed
+        self.floors.append((left - self.sway.value / (n + 1 - first) * (n - first), right - left))  # stored without the sway
+        self.sway.kick(max(-24, min(24, x - tx)) * self.KICK)  # the tower leans the way the floor landed
         self.w = right - left
         self.score += 1
         self.pop(left + self.w // 2, y, self.INK)
@@ -168,7 +168,7 @@ class Stack(Game):
                 self.fx.burst(self.floor_x(0) + self.floors[0][1] // 2, self.BASE + 10, GREY, 20, 90.0, 0.8, -40.0)
         first = max(0, n - self.SHOWN)
         span, top = n - first, n - 1
-        step = self.sway / span  # the sway per floor up the visible window, as floor_x works it out
+        step = self.sway.value / span  # the sway per floor up the visible window, as floor_x works it out
         for i in range(first, n):
             x, w = self.floors[i]
             x, y = int(x + step * (i - first)), self.level_y(i)
