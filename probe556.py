@@ -32,7 +32,7 @@ def check():
     n = tft.show()
     queued = time.ticks_diff(time.ticks_us(), t)
     t = time.ticks_us()
-    tft.show()  # nothing drawn since the last: it first waits for the full frame, then sends the marked "before" tiles
+    tft.show()  # nothing drawn since: it waits for the full frame, then sends the "before" tiles (open_tft sets partial)
     waited = time.ticks_diff(time.ticks_us(), t)
     print("full show windows %d returned after %d us, next show %d us" % (n, queued, waited))
     time.sleep_ms(100)
