@@ -4,6 +4,7 @@ keep the hard mask. Run from the repository root: python3 -m unittest discover t
 import contextlib
 import io
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -14,8 +15,9 @@ sys.path.insert(0, os.path.join(REPO, "art"))  # the art modules import each oth
 import PIL  # noqa: E402
 from PIL import Image  # noqa: E402
 
-from brush import rnd  # noqa: E402
+from brush import ACCENT, rnd  # noqa: E402
 from export import from_bin, q565, to_bin  # noqa: E402
+from letters import GLYPHS, write  # noqa: E402
 from looks import NightInk, Watercolour  # noqa: E402
 from paint import main  # noqa: E402
 from sets import runner as runner_set, stack as stack_set  # noqa: E402
@@ -117,6 +119,58 @@ class LooksTest(unittest.TestCase):
         self.assertEqual(look.ink(sky), look.BONE + (255,))
         self.assertEqual(NightInk(RED, light=255).ink(sky), look.INK + (255,))  # light sets bone against ink
         self.assertEqual(NightInk(sky[:3], bright=1.01, vivid=0.0).ink(sky), sky[:3] + (255,))  # the rule, opened
+
+
+def read(*parts):
+    with open(os.path.join(REPO, *parts)) as f:
+        return f.read()
+
+
+class RentTest(unittest.TestCase):
+    """Stack as RENT (P568): its pictures as the game asks for them, the one accent, and the stroke letters. The new
+    files themselves are the expected output, judged on the preview; these say the game and the art agree."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.painting = stack_set.ART_SET.paint()
+        index = {}
+        exec(read("games", "art_index.py"), index)
+        cls.art = index["ART"]
+
+    def test_sizes_and_key(self):
+        sizes = {"stack_noon": (320, 240, False), "stack_hook": (16, 16, True)}
+        sizes.update({"stack_%s%d" % (kind, i): (320, 14, False) for kind in ("lit", "dark") for i in range(8)})
+        sizes.update({"stack_digit%d" % d: (8, 12, True) for d in range(10)})
+        sizes.update({"stack_cot%d" % k: (16, 16, True) for k in range(4)})
+        sizes.update({"stack_sold": (58, 18, False), "stack_title": (320, 240, False), "stack_over": (200, 100, False)})
+        shown = {name: img.size + (keyed,) for name, (img, keyed) in self.painting.pictures.items()}
+        self.assertEqual(shown, sizes)  # and the night's stack_bg, stack_block and stack_mover are gone
+
+    def test_every_name_the_game_asks_for_is_drawn(self):
+        names = re.findall(r'"(stack_[a-z]+)(%d)?"', read("games", "arcade2.py"))
+        self.assertIn(("stack_digit", "%d"), names)  # the game asks by the patterns, so the test reads them
+        count = {"stack_digit": 10, "stack_cot": 4}  # every other pattern runs over the eight floors
+        for stem, pattern in names:
+            for name in [stem + str(i) for i in range(count.get(stem, 8))] if pattern else [stem]:
+                with self.subTest(name=name):
+                    self.assertIn(name, self.art)
+
+    def test_one_accent(self):
+        self.assertIn("ACCENT = c565(%d, %d, %d)" % ACCENT, read("games", "gfx.py"))  # the board's copy of it
+        for name in ("stack_hook", "stack_sold", "stack_cot0", "stack_over"):  # its band, the plate, the blanket, SOLD OUT
+            with self.subTest(name=name):
+                shown = {p[:3] for p in q565(self.painting.pictures[name][0]).get_flattened_data() if p[3]}
+                self.assertIn(board_colour(ACCENT), shown)
+
+    def test_letters_fit_their_cells_and_differ(self):
+        masks = set()
+        for ch, lines in GLYPHS.items():
+            for x, y in (p for line in lines for p in line):
+                self.assertTrue(0 <= x <= 4 and 0 <= y <= 6, ch)
+            m = Image.new("L", (24, 32), 0)
+            write(m, ch, 2, 2, 4, 2)
+            masks.add(m.tobytes())
+        self.assertEqual(len(masks), len(GLYPHS))  # no two letters look the same, the space included
 
 
 if __name__ == "__main__":
