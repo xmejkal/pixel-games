@@ -11,31 +11,45 @@ try:
 except ImportError:  # no art made yet
     art_index = None
 
-PICS = {}  # name: (w, h, bytearray)
+PICS = {}  # name: (w, h, memoryview into the pool)
 LAYERS = []  # [name, top, w, h, speed, keyed, memoryview], back to front
 ready = False
 
 
 def load():
-    """Read every picture once. Answers whether art is there."""
+    """Read every picture once, into one block the collector does not scan (s3lcd.pool, P562): 733 KB in the heap
+    made each collection cost about 90 ms. Answers whether art is there."""
     global ready
     if ready or art_index is None:
         return ready
-    try:
-        for name, (w, h, path) in art_index.ART.items():
-            buf = bytearray(w * h * 2)
-            with open("/" + path, "rb") as f:
-                f.readinto(buf)
-            PICS[name] = (w, h, buf)
-        for name, top, w, h, speed, keyed, path in getattr(art_index, "LAYERS", ()):
-            buf = bytearray(w * h * 2)
-            with open("/" + path, "rb") as f:
-                f.readinto(buf)
-            LAYERS.append([name, top, w, h, speed, keyed, memoryview(buf)])
-    except OSError:  # a file missing on the board: no art at all, rather than half of it
-        PICS.clear()
-        LAYERS.clear()
+    pics = list(art_index.ART.items())
+    layers = list(getattr(art_index, "LAYERS", ()))
+    sizes = {}  # path: bytes, each file once: a layer's file is also a picture
+    for _, (w, h, path) in pics:
+        sizes[path] = w * h * 2
+    for row in layers:
+        sizes[row[6]] = row[2] * row[3] * 2
+    total = sum(sizes.values())
+    if not total:
         return False
+    try:
+        import s3lcd
+        block = memoryview(s3lcd.pool(total))
+    except (ImportError, AttributeError, ValueError):  # no pool (the Mac, an older image, or a pool kept smaller)
+        block = memoryview(bytearray(total))
+    files, at = {}, 0  # path: its slice of the block
+    try:
+        for path, n in sizes.items():
+            files[path] = buf = block[at:at + n]
+            at += n
+            with open("/" + path, "rb") as f:
+                f.readinto(buf)
+    except OSError:  # a file missing on the board: no art at all, rather than half of it
+        return False
+    for name, (w, h, path) in pics:
+        PICS[name] = (w, h, files[path])
+    for name, top, w, h, speed, keyed, path in layers:
+        LAYERS.append([name, top, w, h, speed, keyed, files[path]])
     ready = True
     return True
 

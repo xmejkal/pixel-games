@@ -3,7 +3,7 @@
 import random
 from math import exp, sqrt
 
-import art
+import pictures
 import track
 from gfx import (BLACK, GREEN, GREY, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565)
 
@@ -98,7 +98,7 @@ class Runner(Game):
         self.h, self.vy, self.buffer = 0.0, 0.0, 0.0
         self.odo, self.far, self.points = 0.0, 0.0, 0.0  # px the world moved, px at the base speed, and the exact score
         self.track, self.effects = track.Track(), track.Effects()
-        self.covers = art.load()  # painted art on the board: its sky covers the screen, so no fill goes under it
+        self.covers = pictures.load()  # painted art on the board: its sky covers the screen, so no fill goes under it
 
     def base_speed(self):
         """px/s from the distance run, not the score, so a score bonus does not speed the game up. The same start as
@@ -158,7 +158,7 @@ class Runner(Game):
         self.score = score
 
     def paint_static(self, cv):
-        if art.draw_layers(cv, 0, False) or art.draw(cv, "bg", 0, 0):  # painted (P562): the still sky, or all of it
+        if pictures.draw_layers(cv, 0, False) or pictures.draw(cv, "bg", 0, 0):  # painted (P562): the still sky, or all of it
             return
         g = self.GROUND
         cv.gradient(16, g, (255, 150, 90), (255, 225, 150), 12)
@@ -170,7 +170,7 @@ class Runner(Game):
 
     def paint(self, cv):
         g = self.GROUND
-        if not art.draw_layers(cv, self.odo, True):  # painted layers, each at its own speed (parallax), or the old marks
+        if not pictures.draw_layers(cv, self.odo, True):  # painted layers, each at its own speed (parallax), or the old marks
             for i in range(9):
                 cv.fill((i * 44 - int(self.odo)) % (W + 44) - 20, g + 16, 12 + i % 4 * 3, 3, c565(90, 55, 25))
         base = self.base_speed()
@@ -194,7 +194,7 @@ class Runner(Game):
             x2 //= 2
             i += 1
         run = int(self.t * 10) % 2  # by time, so the legs do not flicker at speed
-        if art.draw(cv, ("runner_run0", "runner_run1")[run] if self.h <= 0 else "runner_jump", 52, top):
+        if pictures.draw(cv, ("runner_run0", "runner_run1")[run] if self.h <= 0 else "runner_jump", 52, top):
             return
         leg = RUN_LEGS[run] if self.h <= 0 else RUN_LEGS[1]
         cv.sprite(RUN_TOP + leg, RUN_COLOURS, 52, top, 2)

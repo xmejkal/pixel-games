@@ -8,7 +8,7 @@ and asks Track which things the runner touched in this frame. Every number is a 
 
 import random
 
-import art
+import pictures
 from gfx import BLACK, GREEN, WIDTH, WHITE, c565
 
 W = WIDTH
@@ -53,7 +53,7 @@ class Cactus:
         return 20, 16 + 8 * random.randrange(0, 4 if low else 7), 0  # one of the painted heights
 
     def paint(self, cv, x, w, h, lift, ground, t):  # painted, or a cactus with two arms
-        if art.draw(cv, self.PICS[h], x, ground - h):
+        if pictures.draw(cv, self.PICS[h], x, ground - h):
             return
         green, dark = GREEN, c565(20, 120, 40)
         cv.fill(x + w // 3, ground - h, w // 3 + 2, h, green)
@@ -80,7 +80,7 @@ class Bird:
 
     def paint(self, cv, x, w, h, lift, ground, t):
         up = int(t * 8) % 2
-        if not art.draw(cv, "bird0" if up else "bird1", x, ground - lift - h):
+        if not pictures.draw(cv, "bird0" if up else "bird1", x, ground - lift - h):
             cv.sprite(BIRD_UP if up else BIRD_DOWN, BIRD_COLOURS, x, ground - lift - h, 2)
 
 
@@ -103,7 +103,7 @@ class Bonus:
 
     def paint(self, cv, x, w, h, lift, ground, t):
         pics = self.pics
-        if art.draw(cv, pics[int(t * 10 + x / 40) % len(pics)], x, ground - lift - h):
+        if pictures.draw(cv, pics[int(t * 10 + x / 40) % len(pics)], x, ground - lift - h):
             return
         cx, cy, c = x + w // 2, ground - lift - h // 2, self.colour
         if self.shape == DISC:  # a round coin that spins: a stepped circle, narrower as it turns
