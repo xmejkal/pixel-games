@@ -1,7 +1,6 @@
 """Three more for one button: stack (tap drops the block), cave (hold to rise), gravity pong (tap turns the paddle)."""
 
 import random
-from math import sin
 
 import pictures
 
@@ -12,8 +11,9 @@ W, H = WIDTH, HEIGHT
 
 class Stack(Game):
     """RENT (P568): you build a tower of flats nobody will live in. The next floor hangs from a hook on a cable and
-    swings wider as the tower climbs; each drop kicks the tower into a sway; a perfect drop holds the world still for a
-    beat; a miss shakes the tower, and it leans and falls. Watercolour noir at noon: ink, bone and one accent."""
+    slides straight across (a swing was tried; the PO found it unpredictable, 2026-11-02). Each drop kicks the tower
+    into a sway; a perfect drop holds the world still for a beat; a miss shakes the tower, and it leans and falls.
+    Watercolour noir at noon: ink, bone and one accent."""
 
     INK, BONE = c565(24, 20, 30), c565(236, 230, 214)  # art/sets/stack.py's pair
     name = "stack"
@@ -23,8 +23,6 @@ class Stack(Game):
     HUD_SCORE = BONE
     LEVEL_H, BASE = 14, 220
     SHOWN = 14  # floors drawn at most: the 12 the view keeps, and two sinking under the street
-    SWING_HZ = 1.2  # the hanging floor's pendulum
-    SWING_PX, SWING_PER_FLOOR, SWING_MAX = 6.0, 0.5, 14.0  # the market gets shakier as the tower climbs (D9)
     SPRING, DAMP, KICK = 250.0, 11.0, 7.0  # the tower's sway: about 2.5 Hz, settled in about 0.6 s
     SHAKE = (3, -2, 2, -1)  # the death shake, one offset per 40 ms frame
     SHAKE_MS, FALL_MS, CARD_MS = 160, 250, 500  # the lean starts after the shake, the floors fall, then the card
@@ -46,7 +44,7 @@ class Stack(Game):
         self.covers = pictures.load()  # the painted noon covers the screen, so no fill goes under it
         self.floors = [(90, 140)]  # (x, width) of each placed floor, x without the sway
         self.x, self.w, self.dir, self.speed = 0.0, 140, 1, 120.0
-        self.swing, self.sway, self.sway_v = 0.0, 0.0, 0.0  # the pendulum's phase; the tower top's offset and speed
+        self.sway, self.sway_v = 0.0, 0.0  # the tower top's offset and speed
         self.hold, self.lean, self.dusted = 0, 1, False  # hitstop frames left; the side the tower falls to
         self.slabs = []  # the cut-offs that fell: [x, y, width, speed, colour]
 
@@ -60,9 +58,8 @@ class Stack(Game):
         return int(self.floors[i][0] + self.sway / (len(self.floors) - first) * (i - first))
 
     def hanging_x(self):
-        """The hanging floor's drawn x: the slide plus the pendulum, kept on the screen."""
-        reach = min(self.SWING_MAX, self.SWING_PX + self.SWING_PER_FLOOR * self.score)
-        return max(0, min(W - self.w, int(self.x + reach * sin(self.swing))))
+        """The hanging floor's drawn x: the straight slide, as before RENT."""
+        return int(self.x)
 
     def play(self, pressed, held):
         if self.hold:  # the hitstop after a perfect drop: the tower and the hanging floor stand still for two frames
@@ -77,7 +74,6 @@ class Stack(Game):
         self.slabs = [c for c in self.slabs if c[1] < self.BASE]
         self.sway_v -= (self.SPRING * self.sway + self.DAMP * self.sway_v) * dt
         self.sway += self.sway_v * dt
-        self.swing = (self.swing + 6.283 * self.SWING_HZ * dt) % 6.283  # bounded, so sin stays exact
         self.x += self.dir * self.speed * dt
         if self.x < 0:
             self.x, self.dir = 0.0, 1
@@ -122,7 +118,7 @@ class Stack(Game):
 
     def hook(self, cv, x, y, top):
         """The cable from (top, 16) to the hook over the hanging floor's middle (x, y: its top middle). In play the
-        cable's top rides the slide, so it leans as the floor swings under it."""
+        cable's top rides the slide with the floor, so it hangs straight."""
         cv.line(top, 16, x, y - 12, self.INK)
         if not pictures.draw(cv, "stack_hook", x - 8, y - 16):
             cv.fill(x - 4, y - 14, 8, 4, GREY)
