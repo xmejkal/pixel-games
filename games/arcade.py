@@ -142,7 +142,9 @@ class Runner(Game):
                 self.points += kind.points
                 if kind.effect:
                     effects.add(kind.effect, kind.seconds, kind.mult, kind.colour)
-                self.fx.burst(60, self.GROUND - self.h - 12, kind.colour, 10, 120.0, 0.5, 100.0)
+                y = self.GROUND - self.h - 12
+                self.fx.burst(60, y, kind.colour, 10, 120.0, 0.5, 100.0)
+                self.fx.burst(60, y, WHITE, 6, 60.0, 0.6, -120.0)  # sparkles that rise
                 t[0] = -1000.0  # taken: move() drops it
         self.count()
 
@@ -166,10 +168,23 @@ class Runner(Game):
         g = self.GROUND
         for i in range(9):
             cv.fill((i * 44 - int(self.odo)) % (W + 44) - 20, g + 16, 12 + i % 4 * 3, 3, c565(90, 55, 25))
-        self.track.paint(cv, g)
-        for i, e in enumerate(self.effects.on):  # one bar per effect, shrinking with its time left
+        base = self.base_speed()
+        if base > 450:  # speed lines in the sky, more of them the faster it runs
+            for i in range(3 if base > 600 else 2):
+                cv.fill(W - (int(self.odo * (1.5 + i * 0.4)) + i * 97) % (W + 60), 40 + i * 37, 24 + i * 8, 1, WHITE)
+        self.track.paint(cv, g, self.t)
+        effects = self.effects.on
+        for i, e in enumerate(effects):  # one bar per effect, shrinking with its time left
             cv.fill(6, 19 + i * 5, 4 + int(56 * e[1] / e[3]), 3, e[4])
         top = g - self.h - 24
+        if effects:  # a trail behind the runner in the colour of the newest effect
+            c = effects[-1][4]
+            cv.fill(36, top + 6, 14, 3, c)
+            cv.fill(28, top + 13, 20, 3, c)
+            cv.fill(40, top + 20, 10, 2, c)
+        x2 = self.effects.factor(track.X2, 8)
+        if x2 > 1:  # the multiplier, next to the bars
+            cv.text("x%d" % x2, 70, 19, track.BONUSES[2].colour)
         leg = RUN_LEGS[int(self.t * 10) % 2] if self.h <= 0 else RUN_LEGS[1]  # by time, so the legs do not flicker at speed
         cv.sprite(RUN_TOP + leg, RUN_COLOURS, 52, top, 2)
 

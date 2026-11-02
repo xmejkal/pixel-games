@@ -49,7 +49,7 @@ class Cactus:
     def size(self, low):
         return random.randrange(14, 26), random.randrange(16, 41 if low else 65), 0
 
-    def paint(self, cv, x, w, h, lift, ground):  # a cactus with two arms
+    def paint(self, cv, x, w, h, lift, ground, t):  # a cactus with two arms
         green, dark = GREEN, c565(20, 120, 40)
         cv.fill(x + w // 3, ground - h, w // 3 + 2, h, green)
         cv.fill(x, ground - h * 2 // 3, w // 3 + 1, 5, green)
@@ -59,19 +59,22 @@ class Cactus:
         cv.fill(x + w // 3 + 3, ground - h, 2, h, dark)
 
 
+BIRD_UP = ("...ww.....", "..www.....", "ybkbbbb...", ".bbbbbbbt.", "..........", "..........")
+BIRD_DOWN = ("..........", "..........", "ybkbbbb...", ".bbbbbbbt.", "..www.....", "...ww.....")
+BIRD_COLOURS = {"y": c565(250, 160, 40), "b": c565(90, 60, 130), "w": c565(150, 120, 190), "k": BLACK,
+                "t": c565(50, 30, 80)}
+
+
 class Bird:
     """A low flyer. A runner on the ground passes under it, a high jump hits it."""
 
     deadly = True
 
     def size(self, low):
-        return 18, 10, random.randrange(34, 51)
+        return 20, 12, random.randrange(34, 51)
 
-    def paint(self, cv, x, w, h, lift, ground):
-        top = ground - lift - h
-        cv.fill(x, top + 3, w, 4, c565(70, 50, 90))
-        cv.fill(x + 4, top + (0 if (x // 12) % 2 else 6), 8, 4, c565(110, 80, 140))  # the wing, up or down as it flies
-        cv.fill(x - 3, top + 4, 3, 2, c565(250, 160, 40))  # the beak
+    def paint(self, cv, x, w, h, lift, ground, t):
+        cv.sprite(BIRD_UP if int(t * 8) % 2 else BIRD_DOWN, BIRD_COLOURS, x, ground - lift - h, 2)
 
 
 DISC, CLOCK, CROSS = 0, 1, 2  # bonus shapes
@@ -88,17 +91,23 @@ class Bonus:
         self.effect, self.seconds, self.mult = effect, seconds, mult
         self.first, self.weight = first, weight  # the level it first comes at, and how often against the others
 
-    def paint(self, cv, x, w, h, lift, ground):
+    def paint(self, cv, x, w, h, lift, ground, t):
         cx, cy, c = x + w // 2, ground - lift - h // 2, self.colour
-        if self.shape == CROSS:
+        if self.shape == DISC:  # a coin that spins: its width runs 14, 10, 4, 10 and round again
+            half = (7, 5, 2, 5)[int(t * 10 + x / 40) % 4]
+            cv.fill(cx - half - 1, cy - 8, 2 * half + 2, 16, BLACK)
+            cv.fill(cx - half, cy - 7, 2 * half, 14, c)
+            cv.fill(cx - half + 1, cy - 5, 2, 7, c565(255, 240, 160))  # the shine
+        elif self.shape == CROSS:  # a star, twinkling
             cv.fill(cx - 8, cy - 3, 16, 6, BLACK)
             cv.fill(cx - 3, cy - 8, 6, 16, BLACK)
             cv.fill(cx - 7, cy - 2, 14, 4, c)
             cv.fill(cx - 2, cy - 7, 4, 14, c)
-            return
-        cv.disc(cx, cy, 8, BLACK)
-        cv.disc(cx, cy, 6, c)
-        if self.shape == CLOCK:  # two hands
+            if int(t * 6 + x / 30) % 3 == 0:
+                cv.fill(cx - 1, cy - 1, 2, 2, WHITE)
+        else:  # a clock: a blue face with two hands
+            cv.disc(cx, cy, 8, BLACK)
+            cv.disc(cx, cy, 6, c)
             cv.fill(cx - 1, cy - 5, 2, 6, WHITE)
             cv.fill(cx, cy - 1, 4, 2, WHITE)
 
@@ -195,7 +204,7 @@ class Track:
             return lo < lift + th - 2 and lo + RUN_TALL > lift + 2
         return min(was, h) < lift + th and max(was, h) + RUN_TALL > lift
 
-    def paint(self, cv, ground):
+    def paint(self, cv, ground, t):
         for x, kind, w, h, lift in self.things:
             if x < W + 10:
-                kind.paint(cv, int(x), w, h, lift, ground)
+                kind.paint(cv, int(x), w, h, lift, ground, t)
