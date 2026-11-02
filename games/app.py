@@ -128,7 +128,7 @@ def open_st7789():
     return display, FRAME_MODE == "full" or (FRAME_MODE == "auto" and free > FULL_FRAME_FREE)
 
 
-def run():
+def run(games=GAMES):
     """The loop main.py starts."""
     import select
     import sys
@@ -150,7 +150,7 @@ def run():
     # D14 also drives the power chip's PWRON (boards/firebeetle2-esp32s3.json, hardware_revisions, V1.1 and earlier):
     # held about 5 s, it powered the board off on 2026-11-02. So BOOT is the game button and D14 only a short press.
     fire, boot = Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP), Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP)
-    app = App(display, fire.value, boot.value, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out)
+    app = App(display, fire.value, boot.value, games=games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out)
     app.fire.watch(fire)
     app.boot.watch(boot)
     if full:
