@@ -132,3 +132,16 @@
 
 - 11:55 probe8 at the REPL, every line as expected. Before `init()`: `config(swap=True, framebuffer="strips")`, then `init()` keeps both, and `show()` sends 16 strips of 21 rows. After `init()` in "strips", `swap=False` applies. With "dma": `bogus=1` raises `TypeError: config() has no setting 'bogus'`; `tile=12`, `tile="16"`, `timeout="x"`, `timeout=0`, `windows=65`, `partial=1`, `framebuffer=3` and `defaults=1` each raise ValueError naming the key and what it allows; `swap=True` and `framebuffer="strips"` after `init()` raise ValueError saying to set them before `init()`. `config(timeout=50, tile=12)` raises and changes nothing. A call with every key, `config(**config())`, `defaults=True` and `defaults=True, partial=True` all return the expected dict.
 - Slices 6 (TE sync) and 7 (scroll) stay out: this module has no TE line (plan E5), and scroll does not fit the games (E7).
+
+## P533 review
+
+A reviewer (Sonnet) and a refuter (Opus) read the driver diff since slice 3 (9ff1d42 to e99de50). Both found strip reuse, the window count, the timeout drain, the tile marks and the windows right. Fixed after the review:
+
+- MUST (both): `deinit()` after a timed-out `show()` deleted the semaphore and freed the memory while the frame was still on the wire; the bus interrupt then gave a NULL handle and FreeRTOS aborted. Now `deinit()` deletes the panel and the bus first (that waits for the windows on the wire), then frees the frame. The interrupt skips a NULL handle, and `frame_free` clears it before the delete.
+- `config(defaults=True)` could bring a swap back onto an internal framebuffer, which sends whole rows raw and other windows swapped. The swap check now runs on the result.
+- A second `init()` leaked the frame's memory. It now raises `OSError: init() again: call deinit() first`.
+- A 1 ms timeout could end before any time passed (the start is read part way through a tick). The wait has one tick of slack now.
+- The range messages repeated the limits as bare numbers. They are built from the `#define`s and name the key (`timeout must be 1 to 60000`).
+- `png()` draws through `_fill_rect`, so with tracking off it marked nothing, unlike the `track()` docstring. It marks the whole frame now. `png_write` only reads, so its mark is gone.
+- Docs: the timeout is checked at each wait, to within one tick, and esp_lcd's own waits have no limit, so a dead bus still hangs. After a fallback, `framebuffer="dma"` is still accepted. esp_lcd waits for the last window before it starts the next, so the strip wait is a guard. A game switch sends two whole frames (the "before" marks), not one.
+- 12:20 probe9 on the board: the refuter's crash steps (`timeout=1`, `show()` raises, `deinit()`) pass; a timed-out frame left for a soft reset, then `soft-reset`, passes; a second `init()` raises; `defaults=True` on a swapping bus with "dma" raises and changes nothing; the messages name the key. probe6 after the soft reset: flappy 11.2 ms in play, runner 7.7 ms, as before.
