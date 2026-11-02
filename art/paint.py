@@ -1,11 +1,11 @@
-"""Paint the runner's art in a pencil and watercolour style, and write it for the board.
+"""Paint every game's art in a pencil and watercolour style, and write it for the board.
 
-Run from the repository root: python3 art/paint.py. Standard library and PIL only, deterministic (fixed seed).
-Writes games/art/<name>.bin (RGB565 big-endian, panel layout), games/art_index.py and art/preview.png.
+Run from the repository root: python3 art/paint.py. Standard library and PIL only, deterministic: each art set paints
+on its own seed. Writes games/art/<name>.bin (RGB565 big-endian, panel layout), games/art_index.py, art/preview.png,
+and art/preview-ink.png (the night-ink look, on a sheet only).
 
-The background is painted at 4x and shrunk, so washes and pencil grain stay soft. A sprite is painted at 8x as
-watercolour parts, shrunk, cut to a hard mask (every pixel fully on or off: the board skips one key colour), and
-given a pencil outline outside its shape, tinted by the colour it borders.
+Each game's art is one module in art/sets/ and one row in ART_SETS; a new game adds both and no line here. The
+brushes are in brush.py, the looks in looks.py, the board's format, the index and the preview sheets in export.py.
 """
 
 import os

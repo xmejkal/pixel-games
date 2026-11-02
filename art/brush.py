@@ -1,5 +1,10 @@
-"""The shared brushes: watercolour washes, pencil and paper grain for a background strip, and a sprite painted
-big and cut to a hard mask. Every game's art set paints with these, on the one shared random stream."""
+"""The shared brushes, and the art set that paints with them. Every set draws from the one random stream, rnd, which
+its ArtSet seeds before it paints, so the sets do not move each other's art.
+
+A background strip is painted at 4x and shrunk, so washes and pencil grain stay soft. A sprite is painted at 8x as
+watercolour parts, shrunk, cut to a hard mask (every pixel fully on or off: the board skips one key colour), and
+given a pencil outline outside its shape, tinted by the colour it borders.
+"""
 
 import random
 from dataclasses import dataclass, field
