@@ -61,6 +61,7 @@ class App:
         self.out.reset()
         self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
+        self.alloc = [0, 0, 0]  # bytes the draw allocated: sum, most in one frame, frames where the heap shrank (a collection inside the draw)
         print("game", self.game.name)
 
     def collect(self):
@@ -85,7 +86,14 @@ class App:
             if self.gc_floor and self.state != 1:
                 self.collect()
         us[0] += time.ticks_diff(time.ticks_us(), t0)
+        a0 = gc.mem_alloc()
         self.out.draw(game, us)
+        grew, alloc = gc.mem_alloc() - a0, self.alloc
+        if grew < 0:
+            alloc[2] += 1
+        else:
+            alloc[0] += grew
+            alloc[1] = max(alloc[1], grew)
         self.frames += 1
         took = time.ticks_diff(time.ticks_us(), t0)
         if took > self.slow[0]:  # the slowest frame of the interval, and where its time went
@@ -100,7 +108,10 @@ class App:
             print("time %s step %.1f paint %.1f send %.1f gc %.1f fps %d worst %d slowest %d = step %d paint %d send %d gc %d" % ((
                 game.name, us[0] / n, us[1] / n, us[2] / n, us[3] / n, fps, self.worst // 1000)
                 + tuple(x // 1000 for x in self.slow)))
+            print("alloc %s %d per frame, most %d, collections in the draw %d, free %d" % (
+                game.name, self.alloc[0] // self.frames, self.alloc[1], self.alloc[2], gc.mem_free()))
             self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
+            self.alloc = [0, 0, 0]
 
 
 def open_st7789():
