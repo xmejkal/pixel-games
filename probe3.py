@@ -5,6 +5,12 @@ from machine import Pin
 
 MODE = globals().get("MODE", "dma")
 
+
+def panel(c):
+    """The colour in panel byte order: the games hold colours pre-swapped (gfx.py), and the bus does not swap."""
+    return ((c & 0xFF) << 8) | (c >> 8)
+
+
 Pin(gdi.SD_CS, Pin.OUT, value=1)
 Pin(gdi.BL, Pin.OUT, value=1)
 bus = s3lcd.SPI_BUS(1, mosi=gdi.MOSI, sck=gdi.SCLK, dc=gdi.DC, cs=gdi.CS, pclk=60_000_000, swap_color_bytes=False)
@@ -17,7 +23,7 @@ print("after init", tft.config())
 def timed(n):
     best, total = 10**9, 0
     for i in range(n):
-        tft.fill(s3lcd.RED if i % 2 else s3lcd.BLUE)
+        tft.fill(panel(s3lcd.RED if i % 2 else s3lcd.BLUE))
         t = time.ticks_us()
         tft.show()
         d = time.ticks_diff(time.ticks_us(), t)
@@ -34,7 +40,7 @@ try:
 except OSError as e:
     print("timeout=1: OSError", e.errno)
 tft.config(timeout=100)
-tft.fill(s3lcd.GREEN)
+tft.fill(panel(s3lcd.GREEN))
 tft.fill_rect(0, 0, 40, 40, s3lcd.WHITE)
 tft.show()
 print("after the timeout: show() ran; the screen is green with a white square at panel (0, 0)")
