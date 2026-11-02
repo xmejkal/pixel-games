@@ -262,11 +262,14 @@ TITLE, PLAY, OVER = 0, 1, 2
 
 
 PHASES = [0] * 6  # bench: the slowest of each draw phase in microseconds: static, paint, fx, hud, over, title
+PHASE_SUM = [0] * 6  # bench: the same phases summed since the last report, for the average per frame (P550)
 
 
 def slowest(i, t):
     now = time.ticks_us()
-    PHASES[i] = max(PHASES[i], time.ticks_diff(now, t))
+    took = time.ticks_diff(now, t)
+    PHASES[i] = max(PHASES[i], took)
+    PHASE_SUM[i] += took
     return now
 
 

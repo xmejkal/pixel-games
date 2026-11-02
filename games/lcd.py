@@ -22,6 +22,7 @@ import time
 import framebuf
 
 import gdi
+import gfx
 from gfx import FULL, Canvas, clamp
 
 ORIENTATION = 0  # 0: upright in the PO's playing hold, the panel's row 0 along the right edge (bench.md); 180: turned
@@ -111,6 +112,7 @@ class TftOut:
         self.fresh = False
         tft.fill(game.bg)
         game.paint_static(cv)
+        gfx.slowest(0, t1)  # the background fill and the still picture: no phase in Game.draw times them here (bg_ok)
         tft.track(True)
         cv.start()
         game.draw(cv)

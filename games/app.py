@@ -105,6 +105,8 @@ class App:
                 + tuple(x // 1000 for x in self.slow)))
             print("phases %s static %d paint %d fx %d hud %d over %d title %d" % ((game.name,) + tuple(x // 1000 for x in gfx.PHASES)))
             gfx.PHASES[:] = [0] * 6
+            print("avg %s static %.1f paint %.1f fx %.1f hud %.1f over %.1f title %.1f" % ((game.name,) + tuple(x / n for x in gfx.PHASE_SUM)))
+            gfx.PHASE_SUM[:] = [0] * 6
             # Once per interval: does the heap fill during play? (P533 run 16; gc.mem_alloc costs about 20 ms per MB)
             print("heap %s alloc %d glyphs %d" % (game.name, gc.mem_alloc(), len(gfx.GLYPHS)))
             self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
