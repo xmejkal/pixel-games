@@ -26,7 +26,7 @@ FULL_FRAME_FREE = 400_000
 GC_FLOOR = 1_000_000  # with PSRAM gc is off in the loop; below this much free heap it runs at once
 # The bench decides the SPI clock. 80 MHz showed a dark screen on 2026-11-01 (the panel's write cycle limit is 16 ns,
 # 62.5 MHz) and 40 MHz worked; 60 MHz is under the limit. If the picture breaks, go back to 40_000_000.
-SPI_HZ = 80_000_000
+SPI_HZ = 60_000_000
 # "auto" picks the whole-screen path when the heap is big (PSRAM), "bands" forces the small-buffer path, "full" the other.
 # On a PSRAM build the whole heap is PSRAM, so try "bands" if the send time stays high.
 FRAME_MODE = "auto"
@@ -60,7 +60,7 @@ class App:
         self.game = self.games[self.index]()
         self.out.reset()
         self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
-        self.last, self.worst = time.ticks_us(), 0  # the longest gap between two frame starts: a freeze shows here
+        self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
         print("game", self.game.name)
 
     def collect(self):
@@ -72,6 +72,7 @@ class App:
     def frame(self):
         us, t0 = self.us, time.ticks_us()
         self.worst, self.last = max(self.worst, time.ticks_diff(t0, self.last)), t0
+        before = us[:]
         now = time.ticks_ms()
         pressed, switched = self.fire.update(now), self.boot.update(now)
         if switched:
@@ -86,6 +87,9 @@ class App:
         us[0] += time.ticks_diff(time.ticks_us(), t0)
         self.out.draw(game, us)
         self.frames += 1
+        took = time.ticks_diff(time.ticks_us(), t0)
+        if took > self.slow[0]:  # the slowest frame of the interval, and where its time went
+            self.slow = [took] + [a - b for a, b in zip(us, before)]
         if self.gc_floor and self.frames % 30 == 0 and gc.mem_free() < self.gc_floor:
             self.collect()
         elapsed = time.ticks_diff(now, self.mark)
@@ -93,9 +97,10 @@ class App:
             fps = self.frames * 1000 // elapsed
             print("fps", game.name, fps)
             n = 1000 * self.frames  # microseconds to milliseconds per frame
-            print("time %s step %.1f paint %.1f send %.1f gc %.1f fps %d worst %d" % (
-                game.name, us[0] / n, us[1] / n, us[2] / n, us[3] / n, fps, self.worst // 1000))
-            self.frames, self.mark, self.us, self.worst = 0, now, [0, 0, 0, 0], 0
+            print("time %s step %.1f paint %.1f send %.1f gc %.1f fps %d worst %d slowest %d = step %d paint %d send %d gc %d" % (
+                game.name, us[0] / n, us[1] / n, us[2] / n, us[3] / n, fps, self.worst // 1000,
+                *[x // 1000 for x in self.slow]))
+            self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
 
 
 def open_st7789():
