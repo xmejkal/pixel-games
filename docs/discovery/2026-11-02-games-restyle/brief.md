@@ -60,13 +60,14 @@ and caveat cells. e.g. `- Q2 what first · fix delivery · two weeks · whether 
 opinion (whose) · kind: decision | account (a past-tense question about the decider's own use; the answer is E,
 account, n = 1) · status: queued | asked <date> | answered D<n>.
 If the decider cannot be asked, the queue stays here, and whatever rests on it stays H. -->
-- Q0 · Is this frame right: the decision, the start and reach, the extensions and the depth? · decides: the frame · status: ⟨fill⟩ <!-- REQUIRED:q0 -->
+- Q0 · Is this frame right: the decision, the start and reach, the extensions and the depth? · decides: the frame · status: answered D1 <!-- REQUIRED:q0 -->
 - Q1 · How important is each assumption, and what pass line must the riskiest test meet? · decides: importance and pass lines · status: ⟨fill⟩ <!-- REQUIRED:q1 -->
 
 ## Decisions
 <!-- D<n> · what · who · when · where recorded · options considered.
 A yes covers only the actions and choices it names. A standing yes names its kind of action and its source.
 Name what a D confirms in its words: the frame, the jobs, a direction, the remaining risk, a test, items.md. -->
+- D1 · confirms the frame as written (scope all ten games, TRIO plus an art-direction researcher, 12 searches, no paid image tool without his yes) and yes to moving #769 to Discovery and running the council · the PO · 2026-11-02 · AskUserQuestion in the session · options: as written, TRIO only, narrow the scope
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
