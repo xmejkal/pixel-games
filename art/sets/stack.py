@@ -4,7 +4,8 @@ from math import sin
 
 from PIL import Image, ImageChops, ImageDraw
 
-from brush import H, W, ArtSet, Painting, Strip, autocontrast, blur, glaze, jitter, lay, rnd, scale
+from artset import ArtSet, Painting
+from brush import H, W, Strip, autocontrast, blur, glaze, jitter, lay, rnd, scale
 
 
 STACK_FLOOR, BLOCK_H = 234, 14
@@ -172,4 +173,20 @@ def paint_stack():
     return Painting({n: (img, False) for n, img in pics.items()})
 
 
-ART_SET = ArtSet("stack", 563, paint_stack)
+
+def stack_frame(painting):
+    return stack_scene(painting.images())
+
+
+def stack_sheet(painting, sheet, y):
+    """The tower as the game draws it, and each block alone."""
+    stack = painting.images()
+    sheet.put("stack: stack_bg with ten blocks and the mover, at 2x",
+              stack_scene(stack).resize((W * 2, H * 2), Image.NEAREST), 10, y)
+    for i, name in enumerate(["stack_block%d" % k for k in range(8)] + ["stack_mover"]):
+        sheet.put("%s 320x14, at 2x" % name, stack[name].convert("RGB").resize((W * 2, BLOCK_H * 2), Image.NEAREST),
+                  W * 2 + 30, y + i * 52)
+    return y + H * 2 + 32
+
+
+ART_SET = ArtSet("stack", 563, paint_stack, sheet_fn=stack_sheet, scene_fn=stack_frame, ink_accent=PALETTE[4])

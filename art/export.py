@@ -4,11 +4,8 @@ import os
 
 from PIL import Image, ImageDraw, ImageFont
 
-from brush import GROUND, H, KEY, NUDGE, W
+from brush import H, KEY, NUDGE, W
 from looks import NightInk
-from sets.flappy import flappy_scene, morning_at
-from sets.runner import JUMP, SCENE
-from sets.stack import BLOCK_H, stack_scene
 
 
 # --- the board's format ------------------------------------------------------------------------------------------
@@ -58,20 +55,22 @@ def q565(img):
     return out
 
 
-# --- the preview sheet -------------------------------------------------------------------------------------------
+# --- the preview sheets ------------------------------------------------------------------------------------------
 
-def frame(layers, sprites, shift, scene=SCENE):
-    """One composed game frame: each layer moved by its speed, the sprites on top, as the board would."""
-    out = Image.new("RGBA", (W, H))
-    for name, img, top, speed, _ in layers:
-        x = int(shift * speed) % img.width
-        strip = Image.new("RGBA", (img.width * 2, img.height))
-        strip.paste(img, (0, 0))
-        strip.paste(img, (img.width, 0))
-        out.alpha_composite(strip.crop((x, 0, x + W, img.height)), (0, top))
-    for name, x, y in scene:
-        out.alpha_composite(sprites[name], (x, y))
-    return out.convert("RGB")
+class Sheet:
+    """A paper page that each set draws its rows on: a label in pencil, the picture 18 px below it."""
+
+    PAPER, INK = (245, 240, 230), (40, 40, 40)
+
+    def __init__(self, w, h):
+        self.font = ImageFont.load_default(size=14)
+        self.image = Image.new("RGB", (w, h), self.PAPER)
+        self.draw = ImageDraw.Draw(self.image)
+
+    def put(self, label, img, x, y):
+        self.draw.text((x, y), label, fill=self.INK, font=self.font)
+        self.image.paste(img, (x, y + 18))
+        return y + 18 + img.height
 
 
 def checker(w, h, c=8):
@@ -84,127 +83,33 @@ def checker(w, h, c=8):
     return img
 
 
-def runner_sprites(runner):
-    """The runner's sprites by name: its pictures less the fallback bg and the layers."""
-    strips = {name for name, *_ in runner.layers}
-    return {n: img for n, img in runner.images().items() if n != "bg" and n not in strips}
-
-
-def preview(paintings, path):
-    """The sheet to look at: the runner's background, layers and sprites, stack, flappy, then every other runner
-    sprite. One function knows the whole sheet; a new game adds its rows here."""
-    runner, stack, flappy = paintings["runner"], paintings["stack"].images(), paintings["flappy"]
-    bg, layers, sprites = runner.images()["bg"], runner.layers, runner_sprites(runner)
-    font = ImageFont.load_default(size=14)
-    ink = (40, 40, 40)
-    width = 1320
-    sheet = Image.new("RGB", (width, 3000), (245, 240, 230))
-    d = ImageDraw.Draw(sheet)
-
-    def put(label, img, x, y):
-        d.text((x, y), label, fill=ink, font=font)
-        sheet.paste(img, (x, y + 18))
-        return y + 18 + img.height
-
+def preview(sets, paintings, path):
+    """preview.png: each set's rows in the table's order, then the tails (the runner's sprite grid), cropped."""
+    sheet = Sheet(1320, 3000)
     y = 8
-    put("bg 320x240 (the fallback) at 2x", bg.convert("RGB").resize((W * 2, H * 2), Image.NEAREST), 10, y)
-    f = frame(layers, sprites, 900)
-    y = put("parallax layers composed, a frame at 2x, with sprites", f.resize((W * 2, H * 2), Image.NEAREST),
-            W * 2 + 30, y) + 14
-    for name, img, top, speed, _ in layers:  # each strip alone at 2x, on a checkerboard, twice so the seam shows
-        if img.width == W:
-            continue
-        two = Image.new("RGBA", (img.width * 2, img.height))
-        two.paste(img, (0, 0))
-        two.paste(img, (img.width, 0))
-        two = two.crop((img.width - 330, 0, img.width + 330, img.height)).resize((660 * 2, img.height * 2),
-                                                                                Image.NEAREST)
-        ch = checker(*two.size)
-        ch.paste(two, (0, 0), two)
-        y = put("%s %dx%d, rows %d to %d, speed %.2f: the seam in the middle, at 2x" %
-                (name, img.width, img.height, top, top + img.height, speed), ch, 0, y) + 10
-        d.line([(660, y - 10 - ch.height), (660, y - 14)], fill=(255, 0, 0), width=1)
-    def frames(names, k=4, gap=6):
-        """Sprites side by side at k times, each on the background where it would stand."""
-        w, h = sprites[names[0]].size
-        out = Image.new("RGB", (len(names) * (w * k + gap), h * k), (245, 240, 230))
-        for i, name in enumerate(names):
-            under = bg.convert("RGBA").crop((60, GROUND - h, 60 + w, GROUND))
-            under.alpha_composite(sprites[name])
-            out.paste(under.convert("RGB").resize((w * k, h * k), Image.NEAREST), (i * (w * k + gap), 0))
-        return out
-
-    run = ["runner_run%d" % i for i in range(6)]
-    jump = ["runner_" + n for n in JUMP]
-    put("the run cycle, runner_run0 to runner_run5, at 4x", frames(run), 10, y)
-    y = put("the jump: " + ", ".join(jump) + ", at 4x", frames(jump), 10 + 6 * 70 + 30, y) + 14
-    cacti = [n for n in sprites if n.startswith("cactus")]
-    scene = [(n, 14 + i * 44, GROUND - sprites[n].height) for i, n in enumerate(cacti)] + [(run[0], 300, GROUND - 24)]
-    over = frame(layers, sprites, 0, scene).crop((0, 110, W, H)).resize((W * 3, (H - 110) * 3), Image.NEAREST)
-    y = put("every cactus over the hills band, a composed frame at 3x", over, 10, y) + 14
-    put("stack: stack_bg with ten blocks and the mover, at 2x", stack_scene(stack).resize((W * 2, H * 2), Image.NEAREST),
-        10, y)
-    for i, name in enumerate(["stack_block%d" % k for k in range(8)] + ["stack_mover"]):
-        put("%s 320x14, at 2x" % name, stack[name].convert("RGB").resize((W * 2, BLOCK_H * 2), Image.NEAREST),
-            W * 2 + 30, y + i * 52)
-    y += H * 2 + 32
-    pics, flappy_layers = flappy.images(), flappy.layers
-    put("flappy: a frame with two pipe pairs and the bird, at 2x", flappy_scene(pics, flappy_layers).resize(
-        (W * 2, H * 2), Image.NEAREST), 10, y)
-    for i, name in enumerate("flappy_bird%d%d" % (a, b) for a in range(3) for b in range(2)):
-        under = Image.new("RGBA", (18, 14), morning_at(100) + (255,))
-        under.alpha_composite(pics[name])
-        put(name, under.convert("RGB").resize((72, 56), Image.NEAREST), W * 2 + 30 + (i % 2) * 110, y + (i // 2) * 84)
-    for i, name in enumerate(("flappy_pipe_top", "flappy_pipe_bottom")):
-        pipe = pics[name]
-        under = checker(32, 240)
-        under.paste(pipe, (0, 0), pipe)
-        put(name, under.resize((64, 480), Image.NEAREST), W * 2 + 270 + i * 120, y)
-    y += H * 2 + 32
-    x = 10
-    tallest = 0
-    for name, img in sprites.items():
-        if name.startswith("runner"):
-            continue  # shown in the strips above
-        w, h = img.size
-        big = img.resize((w * 4, h * 4), Image.NEAREST)
-        cell = 2 * w * 4 + 6
-        if x + cell > width - 10:
-            x, y, tallest = 10, y + tallest + 30, 0
-        ch = checker(w * 4, h * 4)
-        ch.paste(big, (0, 0), big)
-        gy = GROUND - h if name.startswith(("runner", "cactus")) else 100
-        under = bg.convert("RGB").crop((60, gy, 60 + w, gy + h)).resize((w * 4, h * 4), Image.NEAREST)
-        under.paste(big, (0, 0), big)
-        d.text((x, y), "%s %dx%d" % (name, w, h), fill=ink, font=font)
-        sheet.paste(ch, (x, y + 18))
-        sheet.paste(under, (x + w * 4 + 6, y + 18))
-        x += max(cell, 120) + 14
-        tallest = max(tallest, h * 4)
-    sheet.crop((0, 0, width, y + tallest + 40)).save(path)
+    for art_set in sets:
+        if art_set.sheet_fn:
+            y = art_set.sheet_fn(paintings[art_set.name], sheet, y)
+    for art_set in sets:
+        if art_set.tail_fn:
+            y = art_set.tail_fn(paintings[art_set.name], sheet, y)
+    sheet.image.crop((0, 0, sheet.image.width, y + 40)).save(path)
 
 
-
-INK_ACCENTS = {"runner": (222, 60, 50), "stack": (40, 220, 230)}  # the runner's red shirt, the stack's cyan block
-
-
-def preview_ink(paintings, path):
-    """The second look on a sheet to judge it: the runner's frame and the stack's tower, as painted and through
-    NightInk. Only this sheet uses night ink; no board file changes."""
-    font = ImageFont.load_default(size=14)
-    ink = (40, 40, 40)
-    sheet = Image.new("RGB", (W * 4 + 40, 2 * (H * 2 + 28) + 8), (245, 240, 230))
-    d = ImageDraw.Draw(sheet)
-    scenes = {"runner": lambda p: frame(p.layers, runner_sprites(p), 900), "stack": lambda p: stack_scene(p.images())}
+def preview_ink(sets, paintings, path):
+    """preview-ink.png: the second look, to judge it. Each set with an ink accent, as painted and through NightInk.
+    Only this sheet uses night ink; no board file changes."""
+    shown = [art_set for art_set in sets if art_set.ink_accent]
+    sheet = Sheet(W * 4 + 40, len(shown) * (H * 2 + 28) + 8)
     y = 8
-    for name, accent in INK_ACCENTS.items():
-        painted = paintings[name]
-        inked = painted.through(NightInk(accent))
+    for art_set in shown:
+        painted = paintings[art_set.name]
+        inked = painted.through(NightInk(art_set.ink_accent))
         for x, label, painting in ((10, "as painted", painted), (W * 2 + 30, "in night ink", inked)):
-            d.text((x, y), "%s, %s, at 2x" % (name, label), fill=ink, font=font)
-            sheet.paste(scenes[name](painting).resize((W * 2, H * 2), Image.NEAREST), (x, y + 18))
+            sheet.put("%s, %s, at 2x" % (art_set.name, label),
+                      art_set.scene_fn(painting).resize((W * 2, H * 2), Image.NEAREST), x, y)
         y += H * 2 + 28
-    sheet.save(path)
+    sheet.image.save(path)
 
 
 # --- checks ------------------------------------------------------------------------------------------------------
@@ -252,12 +157,13 @@ def write_bins(paintings, out_dir):
 def layer_rows(layers, indent):
     """One index row per layer: (name, top, width, height, speed, keyed, path)."""
     row = '%s("%s", %d, %d, %d, %s, %s, "art/%s.bin"),'
-    return [row % (indent, name, top, img.width, img.height, speed, keyed, name) for name, img, top, speed, keyed in layers]
+    return [row % (indent, name, top, img.width, img.height, speed, keyed, name)
+            for name, img, top, speed, keyed in layers]
 
 
 def write_index(sets, paintings, path):
-    """games/art_index.py: ART (each set's pictures in its own order, then every set's aliases), LAYERS (the first
-    set with layers, the runner's), LAYER_SETS (every set with layers). Returns the number of names in ART."""
+    """games/art_index.py: ART (each set's pictures in its own order, then every set's aliases), LAYERS (the layers
+    of the one set with index_layers, the runner's), LAYER_SETS (every set with layers). Returns the names in ART."""
     index = {}
     for painting in paintings.values():
         for name, (img, _) in painting.pictures.items():
@@ -275,18 +181,22 @@ def write_index(sets, paintings, path):
              "# so a strip's game x runs along the file's rows, and a 320 px window of a strip is one contiguous slice.",
              "ART = {"]
     lines += ['    "%s": (%d, %d, "%s"),' % (n, w, h, p) for n, (w, h, p) in index.items()]
-    layered = [(art_set.name, paintings[art_set.name].layers) for art_set in sets if paintings[art_set.name].layers]
+    owners = [art_set for art_set in sets if art_set.index_layers]
+    assert len(owners) == 1, "exactly one set's layers are LAYERS"
+    owner = owners[0]
     lines += ["}", "",
               "# The parallax layers, back to front: (name, top game row, width, height, speed as a fraction of the",
               "# runner's, keyed, path). A strip wider than 320 tiles: its left and right edges join. bg is the fallback.",
               "LAYERS = ["]
-    lines += layer_rows(layered[0][1], "    ")
+    lines += layer_rows(paintings[owner.name].layers, "    ")
     lines += ["]", "",
               "# Every game's layers, the same shape as LAYERS, back to front.",
               "LAYER_SETS = {",
-              '    "%s": LAYERS,' % layered[0][0]]
-    for name, layers in layered[1:]:
-        lines += ['    "%s": [' % name] + layer_rows(layers, "        ") + ["    ],"]
+              '    "%s": LAYERS,' % owner.name]
+    for art_set in sets:
+        layers = paintings[art_set.name].layers
+        if layers and art_set is not owner:
+            lines += ['    "%s": [' % art_set.name] + layer_rows(layers, "        ") + ["    ],"]
     lines += ["}", ""]
     with open(path, "w") as f:
         f.write("\n".join(lines))

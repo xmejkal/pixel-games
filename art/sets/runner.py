@@ -5,8 +5,10 @@ from math import cos, pi, sin
 
 from PIL import Image, ImageChops, ImageDraw
 
-from brush import (GROUND, H, STRIP, W, ArtSet, Painting, Sprite, Strip, autocontrast, blur, glaze, jitter, lay, peaks,
-                   ridge, rnd, scale)
+from artset import ArtSet, Painting
+from brush import (GROUND, H, STRIP, W, Sprite, Strip, autocontrast, blur, cloud, glaze, jitter, lay, peaks, ridge, rnd,
+                   scale)
+from export import checker
 
 
 # --- the background, as parallax layers --------------------------------------------------------------------------
@@ -34,46 +36,6 @@ def paint_sky():
     s.wash(disc, (255, 247, 205), alpha=0.97, rim=0.3, rim_px=10, grain=0.06, rough=(3, 0.4, 14), dark=0.96, soft=2)
     s.paper(0.03)
     return s
-
-
-def cloud(s, cx, cy, cw, lines, body=(255, 247, 236), belly_colour=(206, 178, 214), warm_colour=(255, 214, 178)):
-    """One cumulus on strip s, its flat base at cy: a low row of small puffs and a high row of big ones, a tinted
-    belly, warm light on the tops, and pencil arcs added to lines."""
-    bumps = []  # (x, y, r): a low row of small puffs and a high row of big ones, on a flat base at cy
-    n = max(3, round(cw / 16))
-    for i in range(n):
-        t = (i + 0.5) / n - 0.5
-        r = cw / n * 0.66 * (1 - 0.4 * (2 * t) ** 2) * rnd.uniform(0.9, 1.1)
-        bumps.append((cx + t * cw * 0.8, cy - r * 0.6, r))
-    m_hi = max(1, n // 2)
-    for i in range(m_hi):
-        t = (i + 0.5) / m_hi - 0.5
-        r = cw * 0.24 * rnd.uniform(0.85, 1.1) * (1.0 if m_hi == 1 else 0.85)
-        bumps.append((cx + t * cw * 0.45 + rnd.uniform(-2, 2), cy - r * 0.95 - cw * 0.06, r))
-    puff = s.mask()
-    for x, y, r in bumps:
-        s.ellipse(puff, x, y, r, r * 0.92)
-    flat = s.mask()
-    s.polygon(flat, [(cx - cw, cy), (cx + cw, cy), (cx + cw, cy + 40), (cx - cw, cy + 40)])
-    puff = ImageChops.subtract(puff, flat)
-    m = s.wash(puff, body, alpha=0.98, rim=0.25, rim_px=3, grain=0.08, cell=20, rough=(3, 0.45, 10),
-               dark=0.93, soft=2)
-    belly = s.mask()
-    s.polygon(belly, [(cx - cw, cy - cw * 0.16), (cx + cw, cy - cw * 0.13), (cx + cw, cy + 4), (cx - cw, cy + 4)])
-    belly = ImageChops.multiply(s.roughen(blur(belly, 4), 6, 0.7, 12), m)
-    s.wash(belly, belly_colour, alpha=0.7, rim=0.7, rim_px=3, grain=0.3, cell=10, rough=None, dark=0.85,
-           soft=2.5, cover=False)
-    warm = s.mask()
-    for x, y, r in bumps:
-        s.ellipse(warm, x + r * 0.3, y - r * 0.3, r * 0.6, r * 0.5)
-    glaze(s.rgb, ImageChops.multiply(blur(warm, 6), m), warm_colour, 0.55)
-    for x, y, r in bumps:  # the pencil: a broken arc over each bump's top
-        if rnd.random() < 0.7:
-            a0, a1 = rnd.uniform(3.5, 4.0), rnd.uniform(5.1, 5.7)
-            arc = [(x + r * 0.97 * cos(a0 + (a1 - a0) * i / 8), y + r * 0.9 * sin(a0 + (a1 - a0) * i / 8))
-                   for i in range(9)]
-            lines.append((arc, 2))
-    lines.append((jitter([(cx - cw * 0.4, cy - 0.6), (cx + cw * 0.35, cy - 0.6)], 0.2), 2))
 
 
 def paint_clouds():
@@ -454,4 +416,100 @@ def paint_runner():
     return Painting(pictures, layers)
 
 
-ART_SET = ArtSet("runner", 562, paint_runner, aliases={"runner_jump": "runner_apex"})
+
+# --- on the preview sheets ---------------------------------------------------------------------------------------
+
+def runner_sprites(painting):
+    """The runner's sprites by name: its pictures less the fallback bg and the layers."""
+    strips = {name for name, *_ in painting.layers}
+    return {n: img for n, img in painting.images().items() if n != "bg" and n not in strips}
+
+
+def frame(layers, sprites, shift, scene=SCENE):
+    """One composed game frame: each layer moved by its speed, the sprites on top, as the board would."""
+    out = Image.new("RGBA", (W, H))
+    for name, img, top, speed, _ in layers:
+        x = int(shift * speed) % img.width
+        strip = Image.new("RGBA", (img.width * 2, img.height))
+        strip.paste(img, (0, 0))
+        strip.paste(img, (img.width, 0))
+        out.alpha_composite(strip.crop((x, 0, x + W, img.height)), (0, top))
+    for name, x, y in scene:
+        out.alpha_composite(sprites[name], (x, y))
+    return out.convert("RGB")
+
+
+def runner_scene(painting):
+    return frame(painting.layers, runner_sprites(painting), 900)
+
+
+def side_by_side(sprites, bg, names, k=4, gap=6):
+    """Sprites side by side at k times, each on the background where it would stand."""
+    w, h = sprites[names[0]].size
+    out = Image.new("RGB", (len(names) * (w * k + gap), h * k), (245, 240, 230))
+    for i, name in enumerate(names):
+        under = bg.convert("RGBA").crop((60, GROUND - h, 60 + w, GROUND))
+        under.alpha_composite(sprites[name])
+        out.paste(under.convert("RGB").resize((w * k, h * k), Image.NEAREST), (i * (w * k + gap), 0))
+    return out
+
+
+def runner_sheet(painting, sheet, y):
+    """The fallback and a composed frame, each strip alone with its seam, the run and the jump, the cacti."""
+    bg, layers, sprites = painting.images()["bg"], painting.layers, runner_sprites(painting)
+    put = sheet.put
+    put("bg 320x240 (the fallback) at 2x", bg.convert("RGB").resize((W * 2, H * 2), Image.NEAREST), 10, y)
+    f = frame(layers, sprites, 900)
+    y = put("parallax layers composed, a frame at 2x, with sprites", f.resize((W * 2, H * 2), Image.NEAREST),
+            W * 2 + 30, y) + 14
+    for name, img, top, speed, _ in layers:  # each strip alone at 2x, on a checkerboard, twice so the seam shows
+        if img.width == W:
+            continue
+        two = Image.new("RGBA", (img.width * 2, img.height))
+        two.paste(img, (0, 0))
+        two.paste(img, (img.width, 0))
+        two = two.crop((img.width - 330, 0, img.width + 330, img.height)).resize((660 * 2, img.height * 2),
+                                                                                Image.NEAREST)
+        ch = checker(*two.size)
+        ch.paste(two, (0, 0), two)
+        y = put("%s %dx%d, rows %d to %d, speed %.2f: the seam in the middle, at 2x" %
+                (name, img.width, img.height, top, top + img.height, speed), ch, 0, y) + 10
+        sheet.draw.line([(660, y - 10 - ch.height), (660, y - 14)], fill=(255, 0, 0), width=1)
+    run = ["runner_run%d" % i for i in range(6)]
+    jump = ["runner_" + n for n in JUMP]
+    put("the run cycle, runner_run0 to runner_run5, at 4x", side_by_side(sprites, bg, run), 10, y)
+    y = put("the jump: " + ", ".join(jump) + ", at 4x", side_by_side(sprites, bg, jump), 10 + 6 * 70 + 30, y) + 14
+    cacti = [n for n in sprites if n.startswith("cactus")]
+    scene = [(n, 14 + i * 44, GROUND - sprites[n].height) for i, n in enumerate(cacti)] + [(run[0], 300, GROUND - 24)]
+    over = frame(layers, sprites, 0, scene).crop((0, 110, W, H)).resize((W * 3, (H - 110) * 3), Image.NEAREST)
+    return put("every cactus over the hills band, a composed frame at 3x", over, 10, y) + 14
+
+
+def sprite_grid(painting, sheet, y):
+    """Every sprite but the runner's own, at 4x on a checkerboard and on the background, drawn after all sets."""
+    bg, sprites = painting.images()["bg"], runner_sprites(painting)
+    x = 10
+    tallest = 0
+    for name, img in sprites.items():
+        if name.startswith("runner"):
+            continue  # shown in the strips above
+        w, h = img.size
+        big = img.resize((w * 4, h * 4), Image.NEAREST)
+        cell = 2 * w * 4 + 6
+        if x + cell > sheet.image.width - 10:
+            x, y, tallest = 10, y + tallest + 30, 0
+        ch = checker(w * 4, h * 4)
+        ch.paste(big, (0, 0), big)
+        gy = GROUND - h if name.startswith(("runner", "cactus")) else 100
+        under = bg.convert("RGB").crop((60, gy, 60 + w, gy + h)).resize((w * 4, h * 4), Image.NEAREST)
+        under.paste(big, (0, 0), big)
+        sheet.draw.text((x, y), "%s %dx%d" % (name, w, h), fill=sheet.INK, font=sheet.font)
+        sheet.image.paste(ch, (x, y + 18))
+        sheet.image.paste(under, (x + w * 4 + 6, y + 18))
+        x += max(cell, 120) + 14
+        tallest = max(tallest, h * 4)
+    return y + tallest
+
+
+ART_SET = ArtSet("runner", 562, paint_runner, aliases={"runner_jump": "runner_apex"}, index_layers=True,
+                 sheet_fn=runner_sheet, tail_fn=sprite_grid, scene_fn=runner_scene, ink_accent=RED)

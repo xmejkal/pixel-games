@@ -4,9 +4,9 @@ from math import cos, pi, sin
 
 from PIL import Image, ImageChops, ImageDraw
 
-from brush import H, STRIP, W, ArtSet, Painting, Sprite, Strip, autocontrast, blur, glaze, jitter, lay, rnd, scale
-from sets.runner import cloud
-
+from artset import ArtSet, Painting
+from brush import H, STRIP, W, Sprite, Strip, autocontrast, blur, cloud, glaze, jitter, lay, rnd, scale
+from export import checker
 
 MORNING = ((76, 172, 188), (186, 226, 216), (255, 212, 168))  # teal at the top, pale aqua, apricot low
 FLAPPY_FLOOR = 222
@@ -311,4 +311,23 @@ def paint_flappy():
     return Painting(pictures, layers)
 
 
-ART_SET = ArtSet("flappy", 564, paint_flappy)
+
+def flappy_sheet(painting, sheet, y):
+    """A frame with the pipes and the bird, the bird's six frames on the sky, both pillars on a checkerboard."""
+    pics, layers = painting.images(), painting.layers
+    put = sheet.put
+    put("flappy: a frame with two pipe pairs and the bird, at 2x", flappy_scene(pics, layers).resize(
+        (W * 2, H * 2), Image.NEAREST), 10, y)
+    for i, name in enumerate("flappy_bird%d%d" % (a, b) for a in range(3) for b in range(2)):
+        under = Image.new("RGBA", (18, 14), morning_at(100) + (255,))
+        under.alpha_composite(pics[name])
+        put(name, under.convert("RGB").resize((72, 56), Image.NEAREST), W * 2 + 30 + (i % 2) * 110, y + (i // 2) * 84)
+    for i, name in enumerate(("flappy_pipe_top", "flappy_pipe_bottom")):
+        pipe = pics[name]
+        under = checker(32, 240)
+        under.paste(pipe, (0, 0), pipe)
+        put(name, under.resize((64, 480), Image.NEAREST), W * 2 + 270 + i * 120, y)
+    return y + H * 2 + 32
+
+
+ART_SET = ArtSet("flappy", 564, paint_flappy, sheet_fn=flappy_sheet)

@@ -4,8 +4,9 @@ Run from the repository root: python3 art/paint.py. Standard library and PIL onl
 on its own seed. Writes games/art/<name>.bin (RGB565 big-endian, panel layout), games/art_index.py, art/preview.png,
 and art/preview-ink.png (the night-ink look, on a sheet only).
 
-Each game's art is one module in art/sets/ and one row in ART_SETS; a new game adds both and no line here. The
-brushes are in brush.py, the looks in looks.py, the board's format, the index and the preview sheets in export.py.
+A new game touches two places: its module in art/sets/ (its painters, its ArtSet with a seed, and the functions that
+draw it on the preview sheets) and one row in ART_SETS in art/sets/__init__.py. Shared brushes it needs go to
+brush.py. The art set is in artset.py, the looks in looks.py, the board's format, the index and the sheets in export.py.
 """
 
 import os
@@ -25,8 +26,8 @@ def main(root=ROOT):
     check_seams(paintings)
     count = write_index(ART_SETS, paintings, os.path.join(root, "games", "art_index.py"))
     os.makedirs(os.path.join(root, "art"), exist_ok=True)
-    preview(paintings, os.path.join(root, "art", "preview.png"))
-    preview_ink(paintings, os.path.join(root, "art", "preview-ink.png"))
+    preview(ART_SETS, paintings, os.path.join(root, "art", "preview.png"))
+    preview_ink(ART_SETS, paintings, os.path.join(root, "art", "preview-ink.png"))
     print("%d pictures, %d bytes" % (count, total))
 
 

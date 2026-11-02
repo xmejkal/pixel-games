@@ -22,12 +22,16 @@ class Watercolour(Look):
 
 class NightInk(Look):
     """Ink black and bone white, with the pixels near one accent hue kept in that accent: the second look, for the
-    space games (P565 D5)."""
+    space games (P565 D5). Only a vivid, not light pixel keeps the accent, so a pale wash of a near hue (the runner's
+    orange sky) goes to bone or ink, and the accent stays a spot."""
 
     INK, BONE = (18, 16, 26), (232, 224, 204)
 
-    def __init__(self, accent, reach=0.07, light=120):
-        self.accent, self.reach, self.light = tuple(accent), reach, light  # reach: hue distance, light: bone from luma
+    def __init__(self, accent, reach=0.03, vivid=0.65, bright=0.92, light=120):
+        self.accent = tuple(accent)
+        self.reach = reach  # the largest hue distance (0 to 0.5) that still counts as the accent
+        self.vivid, self.bright = vivid, bright  # the accent needs saturation above vivid and value below bright
+        self.light = light  # the luma from which a pixel is bone, below it ink
         self.hue = colorsys.rgb_to_hsv(*(c / 255 for c in accent))[0]
 
     def ink(self, p):
@@ -35,7 +39,7 @@ class NightInk(Look):
         if a == 0:
             return p
         h, s, v = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-        if s > 0.4 and v > 0.3 and min(abs(h - self.hue), 1 - abs(h - self.hue)) < self.reach:
+        if s > self.vivid and v < self.bright and min(abs(h - self.hue), 1 - abs(h - self.hue)) < self.reach:
             return self.accent + (a,)
         luma = (299 * r + 587 * g + 114 * b) // 1000
         return (self.BONE if luma >= self.light else self.INK) + (a,)

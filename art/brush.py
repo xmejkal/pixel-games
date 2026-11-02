@@ -1,5 +1,5 @@
-"""The shared brushes, and the art set that paints with them. Every set draws from the one random stream, rnd, which
-its ArtSet seeds before it paints, so the sets do not move each other's art.
+"""The shared brushes. Every set draws from the one random stream, rnd; each ArtSet seeds it before painting, so the
+sets do not move each other's art.
 
 A background strip is painted at 4x and shrunk, so washes and pencil grain stay soft. A sprite is painted at 8x as
 watercolour parts, shrunk, cut to a hard mask (every pixel fully on or off: the board skips one key colour), and
@@ -7,18 +7,16 @@ given a pencil outline outside its shape, tinted by the colour it borders.
 """
 
 import random
-from dataclasses import dataclass, field
+from math import cos, sin
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
-
-from looks import Watercolour
 
 W, H, GROUND = 320, 240, 192
 STRIP = 640  # a parallax strip's width in game px
 KEY = 0xF81F  # the transparent pixel, RGB565 as written (big-endian bytes F8 1F)
 NUDGE = 0xF81E  # an opaque pixel that would be the key
 GRAPHITE = (58, 50, 62)
-rnd = random.Random(562)
+rnd = random.Random()  # the one random stream: each ArtSet seeds it before painting
 
 
 # --- paint helpers -----------------------------------------------------------------------------------------------
@@ -202,6 +200,46 @@ def peaks(pts, gap):
     return tops
 
 
+def cloud(s, cx, cy, cw, lines, body=(255, 247, 236), belly_colour=(206, 178, 214), warm_colour=(255, 214, 178)):
+    """One cumulus on strip s, its flat base at cy: a low row of small puffs and a high row of big ones, a tinted
+    belly, warm light on the tops, and pencil arcs added to lines."""
+    bumps = []  # (x, y, r): a low row of small puffs and a high row of big ones, on a flat base at cy
+    n = max(3, round(cw / 16))
+    for i in range(n):
+        t = (i + 0.5) / n - 0.5
+        r = cw / n * 0.66 * (1 - 0.4 * (2 * t) ** 2) * rnd.uniform(0.9, 1.1)
+        bumps.append((cx + t * cw * 0.8, cy - r * 0.6, r))
+    m_hi = max(1, n // 2)
+    for i in range(m_hi):
+        t = (i + 0.5) / m_hi - 0.5
+        r = cw * 0.24 * rnd.uniform(0.85, 1.1) * (1.0 if m_hi == 1 else 0.85)
+        bumps.append((cx + t * cw * 0.45 + rnd.uniform(-2, 2), cy - r * 0.95 - cw * 0.06, r))
+    puff = s.mask()
+    for x, y, r in bumps:
+        s.ellipse(puff, x, y, r, r * 0.92)
+    flat = s.mask()
+    s.polygon(flat, [(cx - cw, cy), (cx + cw, cy), (cx + cw, cy + 40), (cx - cw, cy + 40)])
+    puff = ImageChops.subtract(puff, flat)
+    m = s.wash(puff, body, alpha=0.98, rim=0.25, rim_px=3, grain=0.08, cell=20, rough=(3, 0.45, 10),
+               dark=0.93, soft=2)
+    belly = s.mask()
+    s.polygon(belly, [(cx - cw, cy - cw * 0.16), (cx + cw, cy - cw * 0.13), (cx + cw, cy + 4), (cx - cw, cy + 4)])
+    belly = ImageChops.multiply(s.roughen(blur(belly, 4), 6, 0.7, 12), m)
+    s.wash(belly, belly_colour, alpha=0.7, rim=0.7, rim_px=3, grain=0.3, cell=10, rough=None, dark=0.85,
+           soft=2.5, cover=False)
+    warm = s.mask()
+    for x, y, r in bumps:
+        s.ellipse(warm, x + r * 0.3, y - r * 0.3, r * 0.6, r * 0.5)
+    glaze(s.rgb, ImageChops.multiply(blur(warm, 6), m), warm_colour, 0.55)
+    for x, y, r in bumps:  # the pencil: a broken arc over each bump's top
+        if rnd.random() < 0.7:
+            a0, a1 = rnd.uniform(3.5, 4.0), rnd.uniform(5.1, 5.7)
+            arc = [(x + r * 0.97 * cos(a0 + (a1 - a0) * i / 8), y + r * 0.9 * sin(a0 + (a1 - a0) * i / 8))
+                   for i in range(9)]
+            lines.append((arc, 2))
+    lines.append((jitter([(cx - cw * 0.4, cy - 0.6), (cx + cw * 0.35, cy - 0.6)], 0.2), 2))
+
+
 # --- sprites -----------------------------------------------------------------------------------------------------
 
 class Sprite:
@@ -295,38 +333,3 @@ class Sprite:
             if 0 <= x < w and 0 <= y < h:
                 out.putpixel((x, y), tuple(c) + (255,))
         return out
-
-
-# --- an art set: one game's pictures, on its own seed ------------------------------------------------------------
-
-@dataclass
-class Painting:
-    """What one art set paints. pictures: name to (image, keyed), in the order their files are written; layers: the
-    parallax layers back to front, as (name, image, top, speed, keyed), each one also among the pictures."""
-
-    pictures: dict
-    layers: list = field(default_factory=list)
-
-    def images(self):
-        return {name: img for name, (img, _) in self.pictures.items()}
-
-    def through(self, look):
-        """The same painting seen through a look: every picture, and the layers among them, in the same order."""
-        pictures = {name: (look.apply(img), keyed) for name, (img, keyed) in self.pictures.items()}
-        layers = [(name, pictures[name][0], top, speed, keyed) for name, _, top, speed, keyed in self.layers]
-        return Painting(pictures, layers)
-
-
-@dataclass
-class ArtSet:
-    """One game's art. Its painter starts on the set's own seed, so a change to one game moves no other game's art."""
-
-    name: str
-    seed: int
-    painter: object  # a function that returns a Painting
-    aliases: dict = field(default_factory=dict)  # an old name the game may still ask for: the picture it now shows
-    look: object = field(default_factory=Watercolour)  # how the pictures are seen; Watercolour leaves them as painted
-
-    def paint(self):
-        rnd.seed(self.seed)
-        return self.painter().through(self.look)
