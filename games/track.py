@@ -78,6 +78,8 @@ class Bird:
 
 
 DISC, CLOCK, CROSS = 0, 1, 2  # bonus shapes
+COIN_RING = ((-9, 4, 5), (-5, 10, 9), (5, 4, 5))  # the coin's dark edge: (top from the centre, height, half width)
+COIN_FACE = ((-8, 2, 3), (-6, 3, 6), (-3, 6, 8), (3, 3, 6), (6, 2, 3))  # its face, inside the edge
 
 
 class Bonus:
@@ -93,11 +95,13 @@ class Bonus:
 
     def paint(self, cv, x, w, h, lift, ground, t):
         cx, cy, c = x + w // 2, ground - lift - h // 2, self.colour
-        if self.shape == DISC:  # a coin that spins: its width runs 14, 10, 4, 10 and round again
-            half = (7, 5, 2, 5)[int(t * 10 + x / 40) % 4]
-            cv.fill(cx - half - 1, cy - 8, 2 * half + 2, 16, BLACK)
-            cv.fill(cx - half, cy - 7, 2 * half, 14, c)
-            cv.fill(cx - half + 1, cy - 5, 2, 7, c565(255, 240, 160))  # the shine
+        if self.shape == DISC:  # a round coin that spins: a stepped circle, narrower as it turns
+            s = (8, 6, 3, 6)[int(t * 10 + x / 40) % 4]
+            for dy, hh, half in COIN_RING:
+                cv.fill(cx - half * s // 8, cy + dy, 2 * (half * s // 8), hh, BLACK)
+            for dy, hh, half in COIN_FACE:
+                cv.fill(cx - half * s // 8, cy + dy, 2 * (half * s // 8), hh, c)
+            cv.fill(cx - 3 * s // 8, cy - 4, 2, 5, c565(255, 240, 160))  # the shine
         elif self.shape == CROSS:  # a star, twinkling
             cv.fill(cx - 8, cy - 3, 16, 6, BLACK)
             cv.fill(cx - 3, cy - 8, 6, 16, BLACK)

@@ -100,10 +100,10 @@ class Runner(Game):
 
     def base_speed(self):
         """px/s from the distance run, not the score, so a score bonus does not speed the game up. The same start as
-        before, then it keeps growing and levels off softly near 700 (the PO, 2026-11-02: harder patterns from there)."""
+        before, then it keeps growing and levels off softly near 600 (the PO, 2026-11-02: harder patterns from there)."""
         level = self.far / 20
-        v = 150 + 4 * min(level, 40) + 12 * sqrt(max(0.0, level - 40))
-        return v if v <= 600 else 600 + 100 * (1 - exp((600 - v) / 100))
+        v = 150 + 4 * min(level, 40) + 6 * sqrt(max(0.0, level - 40))  # 6: the PO found 12 too fast (2026-11-02)
+        return v if v <= 520 else 520 + 80 * (1 - exp((520 - v) / 80))
 
     def play(self, pressed, held):
         dt, base = self.dt, self.base_speed()
