@@ -1,63 +1,96 @@
 """Three more for one button: stack (tap drops the block), cave (hold to rise), gravity pong (tap turns the paddle)."""
 
 import random
+from math import sin
 
 import pictures
 
-from gfx import BLACK, GREEN, GREY, HEIGHT, ORANGE, PALETTE, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
+from gfx import BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, PALETTE, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
 
 W, H = WIDTH, HEIGHT
 
 
 class Stack(Game):
+    """RENT (P568): you build a tower of flats nobody will live in. The next floor hangs from a hook on a cable and
+    swings wider as the tower climbs; each drop kicks the tower into a sway; a perfect drop holds the world still for a
+    beat; a miss shakes the tower, and it leans and falls."""
+
     name = "stack"
     hint = "tap to drop"
     bg = c565(20, 20, 50)
     accent = c565(250, 220, 40)
     LEVEL_H, BASE = 14, 220
+    SHOWN = 14  # floors drawn at most: the 12 the view keeps, and two sinking under the street
+    SWING_HZ = 1.2  # the hanging floor's pendulum
+    SWING_PX, SWING_PER_FLOOR, SWING_MAX = 6.0, 0.5, 14.0  # the market gets shakier as the tower climbs (D9)
+    SPRING, DAMP, KICK = 250.0, 11.0, 7.0  # the tower's sway: about 2.5 Hz, settled in about 0.6 s
+    SHAKE = (3, -2, 2, -1)  # the death shake, one offset per 40 ms frame
+    SHAKE_MS, FALL_MS, CARD_MS = 160, 250, 500  # the lean starts after the shake, the floors fall, then the card
     stars = ()
 
     STRIPS = tuple("stack_block%d" % i for i in range(8))  # painted textures in PALETTE's order (P563)
 
     def setup(self):
         self.covers = pictures.load()  # the painted night covers the screen, so no fill goes under it
-        self.layers = [(90, 140)]  # (x, width) of each placed block
+        self.floors = [(90, 140)]  # (x, width) of each placed floor, x without the sway
         self.x, self.w, self.dir, self.speed = 0.0, 140, 1, 120.0
-        self.cuts = []  # the slices that fell off: [x, y, width, speed, colour]
+        self.swing, self.sway, self.sway_v = 0.0, 0.0, 0.0  # the pendulum's phase; the tower top's offset and speed
+        self.hold, self.lean, self.dusted = 0, 1, False  # hitstop frames left; the side the tower falls to
+        self.slabs = []  # the cut-offs that fell: [x, y, width, speed, colour]
         if not self.stars:  # still, so made once: the kept background must not change on a retry
             self.stars = [(random.randrange(W), random.randrange(18, 200)) for _ in range(30)]
 
     def level_y(self, i):
-        return self.BASE - (i - max(0, len(self.layers) - 12) + 1) * self.LEVEL_H
+        return self.BASE - (i - max(0, len(self.floors) - 12) + 1) * self.LEVEL_H
+
+    def floor_x(self, i):
+        """Floor i's drawn x: its own, plus the sway, more of it the higher it is. The hit test reads this too."""
+        return int(self.floors[i][0] + self.sway * i / len(self.floors))
+
+    def hanging_x(self):
+        """The hanging floor's drawn x: the slide plus the pendulum, kept on the screen."""
+        reach = min(self.SWING_MAX, self.SWING_PX + self.SWING_PER_FLOOR * self.score)
+        return max(0, min(W - self.w, int(self.x + reach * sin(self.swing))))
 
     def play(self, pressed, held):
-        for c in self.cuts:
-            c[3] += 700 * self.dt
-            c[1] += c[3] * self.dt
-        self.cuts = [c for c in self.cuts if c[1] < self.BASE]
-        self.x += self.dir * self.speed * self.dt
+        if self.hold:  # the hitstop after a perfect drop: nothing moves for two frames
+            self.hold -= 1
+            return
+        dt = self.dt
+        for c in self.slabs:
+            c[3] += 700 * dt
+            c[1] += c[3] * dt
+        self.slabs = [c for c in self.slabs if c[1] < self.BASE]
+        self.sway_v -= (self.SPRING * self.sway + self.DAMP * self.sway_v) * dt
+        self.sway += self.sway_v * dt
+        self.swing += 6.283 * self.SWING_HZ * dt
+        self.x += self.dir * self.speed * dt
         if self.x < 0:
             self.x, self.dir = 0.0, 1
         elif self.x > W - self.w:
             self.x, self.dir = float(W - self.w), -1
         if not pressed:
             return
-        tx, tw = self.layers[-1]
-        x, y = int(self.x), self.level_y(len(self.layers))
+        n = len(self.floors)
+        tx, tw = self.floor_x(n - 1), self.floors[-1][1]
+        x, y = self.hanging_x(), self.level_y(n)
         left, right = max(x, tx), min(x + self.w, tx + tw)
         if right - left < 4:
+            self.lean = 1 if x > tx else -1
             return self.die(x + self.w // 2, y)
-        i = len(self.layers) % 8
+        i = n % 8
         colour = PALETTE[i]
-        if abs(x - tx) < 4:  # a perfect drop keeps the whole width, and glows
+        if abs(x - tx) < 4:  # a perfect drop keeps the whole width, glows, and holds the world still
             left, right = tx, tx + tw
+            self.hold = 2
             self.fx.burst(left + (right - left) // 2, y, WHITE, 10, 120.0, 0.5, 100.0)
             self.fx.burst(left + (right - left) // 2, y, colour, 14, 160.0, 0.6, -60.0)
         elif x < left:
-            self.cuts.append([x, y, left - x, 0.0, i])
+            self.slabs.append([x, y, left - x, 0.0, i])
         elif x + self.w > right:
-            self.cuts.append([right, y, x + self.w - right, 0.0, i])
-        self.layers.append((left, right - left))
+            self.slabs.append([right, y, x + self.w - right, 0.0, i])
+        self.floors.append((left - self.sway * n / (n + 1), right - left))  # stored without the sway it lands in
+        self.sway_v += max(-24, min(24, x - tx)) * self.KICK  # the tower leans the way the floor landed
         self.w = right - left
         self.score += 1
         self.pop(left + self.w // 2, y)
@@ -73,6 +106,13 @@ class Stack(Game):
         cv.fill(x, y, w, 2, WHITE)  # top light
         cv.fill(x, y + self.LEVEL_H - 4, w, 3, shade(60, 60, 60, 1))
 
+    def hook(self, cv, x, y):
+        """The cable from the score bar to the hook over the hanging floor's middle (x, y: its top middle). The
+        cable's top rides the slide, so it leans as the floor swings under it."""
+        cv.line(int(self.x) + self.w // 2, 16, x, y - 12, GREY)
+        cv.fill(x - 4, y - 14, 8, 4, GREY)
+        cv.fill(x - 1, y - 10, 2, 10, GREY)
+
     def paint_static(self, cv):
         if pictures.draw(cv, "stack_bg", 0, 0):  # the painted night (P563)
             return
@@ -82,11 +122,36 @@ class Stack(Game):
         cv.fill(0, self.BASE + 14, W, H - self.BASE - 14, GREY)
 
     def paint(self, cv):
-        for i, (x, w) in enumerate(self.layers):
-            self.block(cv, x, self.level_y(i), w, PALETTE[i % 8], self.STRIPS[i % 8])
-        self.block(cv, int(self.x), self.level_y(len(self.layers)), self.w, c565(255, 255, 255), "stack_mover")
-        for x, y, w, _, i in self.cuts:
-            self.block(cv, x, int(y), w, PALETTE[i], self.STRIPS[i])
+        """The tower, the hanging floor and the slabs. Over, the tower shakes, then leans and falls, from self.age."""
+        n, shake, lean, drop = len(self.floors), 0, 0.0, 0.0
+        if self.state == OVER:
+            t = self.age
+            if t < self.SHAKE_MS:
+                shake = self.SHAKE[t // 40]
+            lean = self.lean * 600.0 * (max(0, t - self.SHAKE_MS) / 1000) ** 2  # px at the top; (i / n)^2 below
+            drop = 450.0 * (max(0, t - self.FALL_MS) / 1000) ** 2
+            if drop and not self.dusted:  # the street takes the first floor: one cloud of dust
+                self.dusted = True
+                self.fx.burst(self.floor_x(0) + self.floors[0][1] // 2, self.BASE + 10, GREY, 20, 90.0, 0.8, -40.0)
+        for i in range(max(0, n - self.SHOWN), n):
+            k = i / n
+            y = self.level_y(i) + int(drop * (0.3 + 0.7 * k))
+            if y < H:
+                strip = self.STRIPS[i % 8]
+                self.block(cv, self.floor_x(i) + shake + int(lean * k * k), y, self.floors[i][1], PALETTE[i % 8], strip)
+                if self.hold == 2 and i == n - 1:  # the perfect drop's one white frame
+                    cv.fill(self.floor_x(i), y, self.floors[i][1], self.LEVEL_H, WHITE)
+        x, y = self.hanging_x() + shake + int(lean), self.level_y(n) + int(drop)
+        if y < H:
+            self.hook(cv, x + self.w // 2, y)
+            self.block(cv, x, y, self.w, c565(255, 255, 255), "stack_mover")
+        for x, y, w, _, i in self.slabs:
+            self.block(cv, x, int(y + drop), w, PALETTE[i], self.STRIPS[i])  # over, they fall with the tower
+
+    def draw_over(self, cv):
+        """The collapse plays over the live scene first; the card comes after it."""
+        if self.age >= self.CARD_MS:
+            Game.draw_over(self, cv)
 
 
 class Cave(Game):

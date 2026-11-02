@@ -372,15 +372,19 @@ class Game:
         self.hud(cv)
         t = slowest(3, t)
         if self.state == OVER:
-            x, y = WIDTH // 2 - 100, HEIGHT // 2 - 50
-            cv.fill(x, y, 200, 100, BLACK)
-            cv.box(x, y, 200, 100, self.accent)
-            cv.box(x + 3, y + 3, 194, 94, GREY)
-            cv.big("game over", x + 28, y + 12, RED, 2)
-            cv.text("score %d   best %d" % (self.score, BEST.get(self.name, 0)), x + 20, y + 48, WHITE)
-            if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
-                cv.text("tap to retry", x + 52, y + 74, YELLOW)
+            self.draw_over(cv)
             slowest(4, t)
+
+    def draw_over(self, cv):
+        """The game-over box over the live scene. A game with its own end (stack's collapse) draws its own."""
+        x, y = WIDTH // 2 - 100, HEIGHT // 2 - 50
+        cv.fill(x, y, 200, 100, BLACK)
+        cv.box(x, y, 200, 100, self.accent)
+        cv.box(x + 3, y + 3, 194, 94, GREY)
+        cv.big("game over", x + 28, y + 12, RED, 2)
+        cv.text("score %d   best %d" % (self.score, BEST.get(self.name, 0)), x + 20, y + 48, WHITE)
+        if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
+            cv.text("tap to retry", x + 52, y + 74, YELLOW)
 
     def draw_title(self, cv):
         a, cx, cy = self.age, WIDTH // 2, HEIGHT // 2
