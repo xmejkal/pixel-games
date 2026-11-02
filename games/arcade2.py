@@ -5,7 +5,7 @@ from math import sin
 
 import pictures
 
-from gfx import BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, PALETTE, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
+from gfx import ACCENT, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
 
 W, H = WIDTH, HEIGHT
 
@@ -13,12 +13,14 @@ W, H = WIDTH, HEIGHT
 class Stack(Game):
     """RENT (P568): you build a tower of flats nobody will live in. The next floor hangs from a hook on a cable and
     swings wider as the tower climbs; each drop kicks the tower into a sway; a perfect drop holds the world still for a
-    beat; a miss shakes the tower, and it leans and falls."""
+    beat; a miss shakes the tower, and it leans and falls. Watercolour noir at noon: ink, bone and one accent."""
 
+    INK, BONE = c565(24, 20, 30), c565(236, 230, 214)  # art/sets/stack.py's pair
     name = "stack"
     hint = "tap to drop"
-    bg = c565(20, 20, 50)
-    accent = c565(250, 220, 40)
+    bg = c565(196, 192, 208)
+    accent = HUD_BEST = ACCENT
+    HUD_SCORE = BONE
     LEVEL_H, BASE = 14, 220
     SHOWN = 14  # floors drawn at most: the 12 the view keeps, and two sinking under the street
     SWING_HZ = 1.2  # the hanging floor's pendulum
@@ -26,19 +28,20 @@ class Stack(Game):
     SPRING, DAMP, KICK = 250.0, 11.0, 7.0  # the tower's sway: about 2.5 Hz, settled in about 0.6 s
     SHAKE = (3, -2, 2, -1)  # the death shake, one offset per 40 ms frame
     SHAKE_MS, FALL_MS, CARD_MS = 160, 250, 500  # the lean starts after the shake, the floors fall, then the card
-    stars = ()
+    RENT, RENT_PER_FLOOR = 900, 140  # what the billboard asks: every floor raises it
+    PLATE_RIGHT, PLATE_TOP, DIGIT_W = 301, 38, 8  # the billboard's empty plate in stack_noon; the digits are 8 x 12
 
-    STRIPS = tuple("stack_block%d" % i for i in range(8))  # painted textures in PALETTE's order (P563)
+    LIT = tuple("stack_lit%d" % i for i in range(8))  # the show flat on top, its windows warm
+    DARK = tuple("stack_dark%d" % i for i in range(8))  # every floor below it: nobody lives there
+    CONCRETE = tuple(c565(v, v, v + 8) for v in (172, 160, 180, 150, 168, 186, 156, 166))  # the Mac's flat floors
 
     def setup(self):
-        self.covers = pictures.load()  # the painted night covers the screen, so no fill goes under it
+        self.covers = pictures.load()  # the painted noon covers the screen, so no fill goes under it
         self.floors = [(90, 140)]  # (x, width) of each placed floor, x without the sway
         self.x, self.w, self.dir, self.speed = 0.0, 140, 1, 120.0
         self.swing, self.sway, self.sway_v = 0.0, 0.0, 0.0  # the pendulum's phase; the tower top's offset and speed
         self.hold, self.lean, self.dusted = 0, 1, False  # hitstop frames left; the side the tower falls to
         self.slabs = []  # the cut-offs that fell: [x, y, width, speed, colour]
-        if not self.stars:  # still, so made once: the kept background must not change on a retry
-            self.stars = [(random.randrange(W), random.randrange(18, 200)) for _ in range(30)]
 
     def level_y(self, i):
         return self.BASE - (i - max(0, len(self.floors) - 12) + 1) * self.LEVEL_H
@@ -77,14 +80,13 @@ class Stack(Game):
         left, right = max(x, tx), min(x + self.w, tx + tw)
         if right - left < 4:
             self.lean = 1 if x > tx else -1
-            return self.die(x + self.w // 2, y)
+            return self.die(x + self.w // 2, y, (ACCENT, self.INK))
         i = n % 8
-        colour = PALETTE[i]
         if abs(x - tx) < 4:  # a perfect drop keeps the whole width, glows, and holds the world still
             left, right = tx, tx + tw
             self.hold = 2
-            self.fx.burst(left + (right - left) // 2, y, WHITE, 10, 120.0, 0.5, 100.0)
-            self.fx.burst(left + (right - left) // 2, y, colour, 14, 160.0, 0.6, -60.0)
+            self.fx.burst(left + (right - left) // 2, y, self.BONE, 10, 120.0, 0.5, 100.0)
+            self.fx.burst(left + (right - left) // 2, y, ACCENT, 14, 160.0, 0.6, -60.0)
         elif x < left:
             self.slabs.append([x, y, left - x, 0.0, i])
         elif x + self.w > right:
@@ -93,33 +95,44 @@ class Stack(Game):
         self.sway_v += max(-24, min(24, x - tx)) * self.KICK  # the tower leans the way the floor landed
         self.w = right - left
         self.score += 1
-        self.pop(left + self.w // 2, y)
+        self.pop(left + self.w // 2, y, self.INK)
         self.speed = min(330.0, 120 + self.score * 8)
 
-    def block(self, cv, x, y, w, colour, strip):
-        if pictures.draw_cut(cv, strip, x, y, w):  # painted, with its own top and bottom lines: the ends in pencil
-            ink = c565(40, 30, 50)
-            cv.fill(x, y, 1, self.LEVEL_H, ink)
-            cv.fill(x + w - 1, y, 1, self.LEVEL_H, ink)
+    def block(self, cv, x, y, w, i, lit):
+        """Floor i, w px wide: painted lit or dark, else a flat grey on the Mac."""
+        if pictures.draw_cut(cv, (self.LIT if lit else self.DARK)[i % 8], x, y, w):  # its top and bottom in pencil
+            cv.fill(x, y, 1, self.LEVEL_H, self.INK)  # the ends, where any width was cut
+            cv.fill(x + w - 1, y, 1, self.LEVEL_H, self.INK)
             return
-        cv.fill(x, y, w, self.LEVEL_H - 1, colour)
-        cv.fill(x, y, w, 2, WHITE)  # top light
-        cv.fill(x, y + self.LEVEL_H - 4, w, 3, shade(60, 60, 60, 1))
+        cv.fill(x, y, w, self.LEVEL_H - 1, self.CONCRETE[i % 8] if lit else shade(110, 106, 120, 1))
+        cv.fill(x, y, w, 2, self.BONE)  # the slab in the sun
+        cv.fill(x, y + self.LEVEL_H - 4, w, 3, shade(60, 56, 70, 1))
 
     def hook(self, cv, x, y):
         """The cable from the score bar to the hook over the hanging floor's middle (x, y: its top middle). The
         cable's top rides the slide, so it leans as the floor swings under it."""
-        cv.line(int(self.x) + self.w // 2, 16, x, y - 12, GREY)
-        cv.fill(x - 4, y - 14, 8, 4, GREY)
-        cv.fill(x - 1, y - 10, 2, 10, GREY)
+        cv.line(int(self.x) + self.w // 2, 16, x, y - 12, self.INK)
+        if not pictures.draw(cv, "stack_hook", x - 8, y - 16):
+            cv.fill(x - 4, y - 14, 8, 4, GREY)
+            cv.fill(x - 1, y - 10, 2, 10, GREY)
+
+    def price(self):
+        return self.RENT + self.RENT_PER_FLOOR * self.score
+
+    def rent(self, cv):
+        """What a flat costs now, on the billboard's plate, right-aligned: one digit picture each, the last first."""
+        price, x = self.price(), self.PLATE_RIGHT
+        while price:  # never 0 at the start: the rent starts at 900
+            x -= self.DIGIT_W
+            if not pictures.draw(cv, "stack_digit%d" % (price % 10), x, self.PLATE_TOP):
+                return cv.text(str(self.price()), self.PLATE_RIGHT - 40, self.PLATE_TOP + 2, self.INK)
+            price //= 10
 
     def paint_static(self, cv):
-        if pictures.draw(cv, "stack_bg", 0, 0):  # the painted night (P563)
+        if pictures.draw(cv, "stack_noon", 0, 0):  # the painted noon (P568)
             return
-        cv.gradient(16, self.BASE + 14, (10, 10, 40), (90, 40, 90), 12)
-        for sx, sy in self.stars:
-            cv.fill(sx, sy, 2, 2, WHITE)
-        cv.fill(0, self.BASE + 14, W, H - self.BASE - 14, GREY)
+        cv.gradient(16, self.BASE + 14, (128, 120, 150), (238, 234, 226), 12)
+        cv.fill(0, self.BASE + 14, W, H - self.BASE - 14, c565(58, 54, 66))
 
     def paint(self, cv):
         """The tower, the hanging floor and the slabs. Over, the tower shakes, then leans and falls, from self.age."""
@@ -136,17 +149,17 @@ class Stack(Game):
         for i in range(max(0, n - self.SHOWN), n):
             k = i / n
             y = self.level_y(i) + int(drop * (0.3 + 0.7 * k))
-            if y < H:
-                strip = self.STRIPS[i % 8]
-                self.block(cv, self.floor_x(i) + shake + int(lean * k * k), y, self.floors[i][1], PALETTE[i % 8], strip)
+            if y < H:  # only the top floor is the show flat, lit
+                self.block(cv, self.floor_x(i) + shake + int(lean * k * k), y, self.floors[i][1], i, i == n - 1)
                 if self.hold == 2 and i == n - 1:  # the perfect drop's one white frame
                     cv.fill(self.floor_x(i), y, self.floors[i][1], self.LEVEL_H, WHITE)
         x, y = self.hanging_x() + shake + int(lean), self.level_y(n) + int(drop)
         if y < H:
             self.hook(cv, x + self.w // 2, y)
-            self.block(cv, x, y, self.w, c565(255, 255, 255), "stack_mover")
+            self.block(cv, x, y, self.w, n, True)
         for x, y, w, _, i in self.slabs:
-            self.block(cv, x, int(y + drop), w, PALETTE[i], self.STRIPS[i])  # over, they fall with the tower
+            self.block(cv, x, int(y + drop), w, i, True)  # over, they fall with the tower
+        self.rent(cv)
 
     def draw_over(self, cv):
         """The collapse plays over the live scene first; the card comes after it."""

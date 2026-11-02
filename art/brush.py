@@ -16,6 +16,7 @@ STRIP = 640  # a parallax strip's width in game px
 KEY = 0xF81F  # the transparent pixel, RGB565 as written (big-endian bytes F8 1F)
 NUDGE = 0xF81E  # an opaque pixel that would be the key
 GRAPHITE = (58, 50, 62)
+ACCENT = (214, 40, 48)  # the one saturated colour the restyled games share (P565 D5); games pin it as c565 too
 rnd = random.Random()  # the one random stream: each ArtSet seeds it before painting
 
 

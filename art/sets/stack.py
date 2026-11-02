@@ -1,23 +1,31 @@
-"""The stack game's art (P563): a dusk-to-night background with a far town, the eight blocks and the mover."""
+"""The stack game's art as RENT (P568): watercolour noir at noon. A bleached sky, a hard white sun, the town in long
+grey-violet shadows, a billboard that sells flats from an empty plate, and the floors of a tower nobody lives in:
+the top one lit, the show flat, every one below dark. The only saturated colour is the accent."""
 
 from math import sin
 
 from PIL import Image, ImageChops, ImageDraw
 
 from artset import ArtSet, Painting
-from brush import H, W, Strip, autocontrast, blur, glaze, jitter, lay, rnd, scale
+from brush import ACCENT, H, W, Sprite, Strip, autocontrast, blur, glaze, jitter, lay, rnd, scale
+from letters import text_width, write
 
 
 STACK_FLOOR, BLOCK_H = 234, 14
-PALETTE = ((230, 40, 40), (250, 140, 30), (250, 220, 40), (40, 210, 70), (40, 220, 230), (50, 90, 240),
-           (230, 60, 220), (226, 230, 244))  # gfx.PALETTE in its order; white painted as a cool paper white
-NIGHT = ((26, 22, 66), (74, 46, 110), (150, 82, 128))  # the sky from the top, to the middle, to the horizon
-STACK_INK = (40, 30, 50)  # the pencil, as the game draws the block ends
+INK, BONE = (24, 20, 30), (236, 230, 214)  # the noir pair: the pencil and the paper in the sun
+SHADOW = (96, 86, 116)  # grey-violet, every shadow at noon
+NOON = ((128, 120, 150), (196, 192, 208), (238, 234, 226))  # the sky from the top, to the middle, to the haze
+CONCRETE = ((178, 174, 170), (164, 166, 174), (186, 180, 172), (156, 154, 164), (172, 170, 178), (190, 186, 180),
+            (160, 156, 154), (170, 172, 168))  # eight greys a little warm or cool, one per floor in turn
+LIT, DARK = (250, 232, 188), INK  # a window of the show flat, and one where nobody lives
+BOARD = (222, 20, 314, 57)  # the billboard under the score bar: x0, y0, x1, y1
+PLATE = (248, 35, 305, 53)  # its empty number plate; the game writes the rent on it, right-aligned at x 301, y 38
+DIGIT_W, DIGIT_H = 8, 12
 
 
-def night_at(y):
-    t = max(0.0, min(1.0, (y - 16) / (STACK_FLOOR - 16)))
-    a, b, t = (NIGHT[0], NIGHT[1], t / 0.6) if t < 0.6 else (NIGHT[1], NIGHT[2], (t - 0.6) / 0.4)
+def noon_at(y):
+    t = max(0.0, min(1.0, y / STACK_FLOOR))
+    a, b, t = (NOON[0], NOON[1], t / 0.5) if t < 0.5 else (NOON[1], NOON[2], (t - 0.5) / 0.5)
     return tuple(int(p + (q - p) * t) for p, q in zip(a, b))
 
 
@@ -31,147 +39,226 @@ def calm(s, lo=0.35):
     return m
 
 
-def paint_stack_bg():
-    """Dusk to night: violet and indigo washes, soft stars, a pale moon, a far town with lit windows, a stone floor."""
-    s = Strip(W, 0, H, False, night_at)
-    blooms = autocontrast(blur(s.noise(160), 24))
+def town(x0, x1, base, tall):
+    """Houses and blocks from x0 to x1 standing on base: (body polygons, their shadow faces, windows)."""
+    bodies, faces, windows = [], [], []
+    x = x0
+    while x < x1:
+        w = rnd.uniform(9, 18)
+        h = rnd.choice((rnd.uniform(10, 18), rnd.uniform(20, tall)))
+        roof = rnd.random() < 0.5  # a pitched roof, else a flat block
+        top = base - h
+        body = [(x, base), (x, top)] + ([(x + w / 2, top - w * 0.45)] if roof else []) + [(x + w, top), (x + w, base)]
+        bodies.append(body)
+        faces.append([(x + w * 0.62, base), (x + w * 0.62, top + (w * 0.2 if roof else 0)), (x + w, top),
+                      (x + w, base)])
+        for wy in range(int(top + 4), int(base - 3), 5):
+            for wx in (x + 2.5, x + w * 0.62 - 3.5):
+                if rnd.random() < 0.55:
+                    windows.append((wx, wy))
+        x += w + rnd.uniform(-1, 2)
+    return bodies, faces, windows
+
+
+def paint_noon():
+    """Noon in the city: a bleached sky with grey washes, a hard white sun, a far skyline and a crane, the town in long
+    shadows, the billboard with its empty plate, a pavement and the tarmac from row 234."""
+    s = Strip(W, 0, H, False, noon_at)
     sides = calm(s)
-    glaze(s.rgb, ImageChops.multiply(scale(blooms, 1.5, -150), sides), (150, 120, 220), 0.45)  # indigo blooms
-    glaze(s.rgb, ImageChops.multiply(scale(ImageChops.invert(blooms), 1.4, -170), sides), (220, 150, 210), 0.35)
-    mx, my, mr = 266, 50, 12
-    halo = s.mask()
-    s.ellipse(halo, mx, my, mr * 3, mr * 3, 110)
-    lay(s.rgb, blur(halo, mr * 5), (176, 160, 214))
-    moon = s.mask()
-    s.ellipse(moon, mx, my, mr, mr)
-    s.wash(moon, (244, 238, 214), alpha=0.98, rim=0.35, rim_px=6, grain=0.15, cell=12, rough=(2, 0.3, 10), dark=0.9,
-           soft=1.5)
-    craters = s.mask()
-    for cx, cy, r in ((-4, -3, 3.2), (3, 2, 2.4), (-2, 6, 1.8), (6, -5, 1.4)):
-        s.ellipse(craters, mx + cx, my + cy, r, r * 0.9)
-    glaze(s.rgb, ImageChops.multiply(blur(craters, 3), moon), (214, 204, 196), 0.6)
-    stars, twinkles = s.mask(), []
-    for _ in range(46):
-        x, y = rnd.uniform(4, W - 4), rnd.uniform(22, 170)
-        middle = 64 < x < 256
-        if middle and rnd.random() < 0.55:
-            continue
-        r = rnd.uniform(0.5, 0.9) * (0.7 if middle else 1.0)
-        s.ellipse(stars, x, y, r, r, 255 if not middle else 170)
-        if not middle and r > 0.8 and len(twinkles) < 6 and abs(x - mx) > 22:
-            twinkles.append((x, y))
-    lay(s.rgb, blur(stars, 2.2), (255, 246, 214))
-    rays = s.mask()
-    d = ImageDraw.Draw(rays)
-    for x, y in twinkles:  # a four-pointed twinkle
-        px, py = x * s.S, y * s.S
-        d.line([(px - 14, py), (px + 14, py)], fill=230, width=2)
-        d.line([(px, py - 14), (px, py + 14)], fill=230, width=2)
-    lay(s.rgb, blur(rays, 1.2), (255, 250, 230))
-    # The far hills, low in the middle, and a little town at each side with warm windows.
-    hill = [(x, 214 - 10 * (0.5 + 0.5 * sin(x / 34 + 1.3)) * (1.0 if not 60 < x < 260 else 0.5)) for x in range(0, W + 1, 2)]
-    m = s.mask()
-    s.polygon(m, hill + [(W, STACK_FLOOR + 2), (0, STACK_FLOOR + 2)])
-    s.wash(m, (70, 44, 92), alpha=0.95, rim=0.6, rim_px=6, grain=0.3, cell=16, rough=(1.5, 0.35, 8), dark=0.8, soft=1)
-    town, windows = s.mask(), []
-    for x0, x1 in ((0, 64), (250, W)):
-        x = x0
-        while x < x1:
-            w, h = rnd.uniform(8, 16), rnd.choice((rnd.uniform(8, 16), rnd.uniform(18, 34)))
-            gy = 222
-            body = [(x, gy + 14), (x, gy - h), (x + w / 2, gy - h - w * 0.45), (x + w, gy - h), (x + w, gy + 14)]
-            s.polygon(town, body)
-            for wy in range(int(gy - h + 4), int(gy - 2), 6):
-                for wx in (x + 2.5, x + w - 4.5):
-                    if rnd.random() < 0.4:
-                        windows.append((wx, wy))
-            x += w + rnd.uniform(-1, 2)
-    s.wash(town, (46, 32, 70), alpha=0.97, rim=0.5, rim_px=4, grain=0.25, cell=10, rough=(1, 0.3, 6), dark=0.78,
+    blooms = autocontrast(blur(s.noise(150), 26))
+    glaze(s.rgb, ImageChops.multiply(scale(blooms, 1.5, -150), sides), (170, 160, 196), 0.4)  # grey-violet washes
+    sx, sy, sr = 52, 46, 14
+    glow = s.mask()  # the white-out: the sun bleaches the sky close round it, the rest stays heavy
+    s.ellipse(glow, sx, sy, sr * 2.2, sr * 2.2)
+    lay(s.rgb, blur(glow, sr * 3), (246, 244, 240), 0.9)
+    sun = s.mask()
+    s.ellipse(sun, sx, sy, sr, sr)
+    lay(s.rgb, sun, (255, 255, 255))
+    s.pencil([([(sx + sr * 1.25 * sin(a / 10 + 1.571), sy + sr * 1.25 * sin(a / 10)) for a in range(64)], 2)],
+             strength=0.25, colour=SHADOW)  # a faint ring: the sun is a hole in the sky
+    # The far skyline across the middle, pale and flat: it says city, and keeps out of the tower's way.
+    far, x = s.mask(), 0.0
+    while x < W:
+        w, h = rnd.uniform(10, 22), rnd.uniform(26, 70)
+        s.polygon(far, [(x, 224), (x, 224 - h), (x + w, 224 - h), (x + w, 224)])
+        x += w + rnd.uniform(0, 6)
+    s.wash(far, (204, 200, 214), alpha=0.8, rim=0.5, rim_px=4, grain=0.25, cell=14, rough=(1, 0.3, 8), dark=0.9,
            soft=0.8)
-    lit = s.mask()
-    for wx, wy in windows:
-        s.polygon(lit, [(wx, wy), (wx + 2, wy), (wx + 2, wy + 2.4), (wx, wy + 2.4)])
-    lay(s.rgb, blur(lit, 3), (255, 170, 80), 0.5)  # the glow
-    lay(s.rgb, lit, (255, 214, 120))
-    # The stone floor from row 234: a grey-violet wash, a pencil line on top, joints between the stones.
-    floor = s.mask()
-    s.polygon(floor, [(0, STACK_FLOOR), (W, STACK_FLOOR), (W, H + 2), (0, H + 2)])
-    s.wash(floor, (122, 110, 132), alpha=1.0, rim=0.0, grain=0.35, cell=12, rough=None, soft=0)
-    stones = s.mask()
-    for x in range(0, W, 18):  # each stone a little lighter on top
-        s.ellipse(stones, x + 9, STACK_FLOOR + 2.5, 7, 1.6)
-    lay(s.rgb, ImageChops.multiply(blur(stones, 3), floor), (160, 150, 172), 0.6)
-    joints = [([(x, STACK_FLOOR + 0.5), (x + rnd.uniform(-0.5, 0.5), H)], 2) for x in range(18, W, 18)]
-    joints.append((jitter([(0, STACK_FLOOR + 0.3), (W, STACK_FLOOR + 0.3)], 0.2), 3))
-    s.pencil(joints, strength=0.7, colour=STACK_INK)
-    s.paper(0.06)
+    # A tower crane on the left, in ink: who builds here builds for nobody.
+    crane = [([(30, 224), (30, 92)], 5), ([(36, 224), (36, 92)], 5), ([(8, 92), (128, 92)], 5),
+             ([(8, 98), (128, 98)], 3), ([(33, 92), (33, 78), (8, 92)], 3), ([(33, 78), (128, 92)], 2),
+             ([(96, 98), (96, 126)], 2)]
+    crane += [([(30, y), (36, y - 8)], 2) for y in range(220, 100, -8)]
+    crane += [([(x, 92), (x + 6, 98)], 2) for x in range(40, 128, 8)]
+    s.pencil(crane, strength=0.9, colour=INK)
+    weight = s.mask()
+    s.polygon(weight, [(8, 99), (20, 99), (20, 108), (8, 108)])
+    s.wash(weight, (110, 102, 122), alpha=1.0, rim=0.3, rim_px=3, grain=0.2, cell=6, rough=None, soft=0.5)
+    x0, y0, x1, y1 = BOARD  # the billboard's posts, down behind the right-hand blocks
+    s.pencil([([(x0 + 18, y1), (x0 + 18, 224)], 6), ([(x1 - 18, y1), (x1 - 18, 224)], 6),
+              ([(x0 + 18, y1 + 20), (x1 - 18, y1 + 8)], 3), ([(x0 + 18, y1 + 8), (x1 - 18, y1 + 20)], 3)],
+             strength=0.9, colour=INK)
+    # The town at each side: lit fronts, grey-violet shadow faces, dark windows, and long shadows thrown to the right.
+    for x0, x1, tall in ((0, 66, 44), (248, W, 90)):
+        bodies, faces, windows = town(x0, x1, 222, tall)
+        m = s.mask()
+        for body in bodies:
+            s.polygon(m, body)
+        s.wash(m, (214, 208, 202), alpha=0.97, rim=0.5, rim_px=4, grain=0.3, cell=10, rough=(1, 0.3, 6), dark=0.8,
+               soft=0.8)
+        f = s.mask()
+        for face in faces:
+            s.polygon(f, face)
+        glaze(s.rgb, ImageChops.multiply(blur(f, 1.5), m), SHADOW, 0.85)
+        throw = s.mask()
+        for body in bodies:  # each shadow lies along the pavement, three times as long as the body is wide
+            left, right = body[0][0], body[-1][0]
+            s.polygon(throw, [(left, 222), (right, 222), (right + (right - left) * 3, 234), (left + 6, 234)])
+        glaze(s.rgb, blur(throw, 2), SHADOW, 0.6)
+        dark = s.mask()
+        for wx, wy in windows:
+            s.polygon(dark, [(wx, wy), (wx + 2, wy), (wx + 2, wy + 2.4), (wx, wy + 2.4)])
+        lay(s.rgb, dark, INK, 0.85)
+        s.pencil([(jitter(b, 0.25), 2) for b in bodies], strength=0.45, colour=INK)
+    # The billboard: FLATS FROM, a red rule, and the empty plate.
+    x0, y0, x1, y1 = BOARD
+    board = s.mask()
+    s.polygon(board, [(x0, y0), (x1, y0), (x1, y1), (x0, y1)])
+    s.wash(board, BONE, alpha=1.0, rim=0.6, rim_px=4, grain=0.3, cell=8, rough=None, dark=0.86, soft=0)
+    words = s.mask()
+    unit = 1.25
+    write(words, "FLATS FROM", ((x0 + x1) / 2 - text_width("FLATS FROM", unit) / 2) * s.S, (y0 + 4) * s.S, unit * s.S,
+          1.3 * s.S)
+    lay(s.rgb, words, INK)
+    rule = s.mask()
+    s.polygon(rule, [(x0 + 5, y0 + 13.5), (x1 - 5, y0 + 13.5), (x1 - 5, y0 + 15), (x0 + 5, y0 + 15)])
+    lay(s.rgb, rule, ACCENT)
+    px0, py0, px1, py1 = PLATE
+    plate = s.mask()
+    s.polygon(plate, [(px0, py0 + 1), (px1, py0 + 1), (px1, py1), (px0, py1)])
+    lay(s.rgb, plate, (250, 248, 242))
+    s.pencil([([(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)], 3),
+              ([(px0, py0 + 1), (px1, py0 + 1), (px1, py1), (px0, py1), (px0, py0 + 1)], 2)], strength=0.9, colour=INK)
+    # The street: the tarmac from row 234, with a white lane.
+    tar = s.mask()
+    s.polygon(tar, [(0, STACK_FLOOR), (W, STACK_FLOOR), (W, H + 2), (0, H + 2)])
+    s.wash(tar, (58, 54, 66), alpha=1.0, rim=0.0, grain=0.4, cell=6, rough=None, soft=0)
+    lane = s.mask()
+    for x in range(6, W, 26):
+        s.polygon(lane, [(x, 236.6), (x + 13, 236.6), (x + 13, 237.8), (x, 237.8)])
+    lay(s.rgb, lane, (226, 222, 214), 0.85)
+    s.pencil([(jitter([(0, STACK_FLOOR + 0.3), (W, STACK_FLOOR + 0.3)], 0.2), 3)], strength=0.8, colour=INK)
+    s.paper(0.08)
     return s.rgb.resize((W, H), Image.LANCZOS).convert("RGBA")
 
 
-def paint_block(colour, edge=None):
-    """A 320 x 14 block strip: a light top, a darker foot, grain and a gentle change along it, pencil top and bottom.
-    Any width is cut from its left end, so the change along it is slow and even."""
+def paint_flat(colour, lit):
+    """A 320 x 14 floor of flats: concrete, a sunlit slab on top and a shadow under it, 3 x 3 windows every 8 px from
+    the left end, so a floor cut to any width ends where the game draws its pencil end. Lit: the show flat, its
+    windows warm. Dark: a floor below it, the concrete greyer, the windows ink: nobody lives there."""
+    if not lit:
+        colour = tuple(int(c * 0.72 + s * 0.28 * 0.6) for c, s in zip(colour, SHADOW))
     s = Strip(W, 0, BLOCK_H, False, colour)
     body = s.mask()
     s.polygon(body, [(0, 0), (W, 0), (W, BLOCK_H), (0, BLOCK_H)])
-    s.wash(body, colour, alpha=1.0, rim=0.0, grain=0.45, cell=6, rough=None, soft=0)
-    drift = autocontrast(blur(s.noise(90), 10))  # slow light and dark along the length
-    glaze(s.rgb, scale(drift, 1.2, -110), tuple(int(c * 0.82) for c in colour), 0.7)
-    light = tuple(min(255, int(c + (255 - c) * 0.55)) for c in colour)
-    top = s.mask()
-    s.polygon(top, [(0, 1), (W, 1), (W, 3.2), (0, 3.2)])
-    broken = blur(s.noise(14), 2).point(lambda v: 255 if v > 105 else 90)  # a dry-brush highlight, not a stripe
-    lay(s.rgb, ImageChops.multiply(blur(top, 2), broken), light, 0.7)
-    blooms = blur(scale(s.noise(28), 2.4, -330), 3)  # pale wet blooms here and there
-    lay(s.rgb, blooms, light, 0.25)
+    s.wash(body, colour, alpha=1.0, rim=0.0, grain=0.5, cell=5, rough=None, soft=0)
+    drift = autocontrast(blur(s.noise(70), 9))  # stains along the length
+    glaze(s.rgb, scale(drift, 1.3, -120), SHADOW, 0.45)
+    slab = s.mask()
+    s.polygon(slab, [(0, 1), (W, 1), (W, 2.6), (0, 2.6)])
+    lay(s.rgb, blur(slab, 1.5), BONE if lit else tuple(min(255, c + 30) for c in colour), 0.75)
+    under = s.mask()
+    s.polygon(under, [(0, 2.8), (W, 2.8), (W, 4.2), (0, 4.2)])
+    glaze(s.rgb, blur(under, 1.5), SHADOW, 0.7)
     foot = s.mask()
-    s.polygon(foot, [(0, 10.5), (W, 10.5), (W, 13), (0, 13)])
-    glaze(s.rgb, blur(foot, 3), tuple(int(c * 0.62) for c in colour), 0.9)
-    if edge:  # the mover: a warm glow along its top and foot
-        glow = s.mask()
-        s.polygon(glow, [(0, 0), (W, 0), (W, 2.5), (0, 2.5)])
-        s.polygon(glow, [(0, 11), (W, 11), (W, 14), (0, 14)])
-        glaze(s.rgb, blur(glow, 3), edge, 0.6)
-    strokes = []
-    for _ in range(14):  # a few faint dry-brush streaks
-        x, y = rnd.uniform(-10, W), rnd.uniform(4.5, 9.5)
-        strokes.append(([(x, y), (x + rnd.uniform(14, 30), y + rnd.uniform(-0.4, 0.4))], 2))
-    s.pencil(strokes, strength=0.12, colour=tuple(int(c * 0.5) for c in colour))
+    s.polygon(foot, [(0, 10), (W, 10), (W, 13), (0, 13)])
+    glaze(s.rgb, blur(foot, 2), SHADOW, 0.75)
+    drips = s.mask()  # rain streaks under the windows, here and there
+    for x in range(2, W, 8):
+        if rnd.random() < 0.35:
+            s.polygon(drips, [(x + 0.6, 8), (x + 1.6, 8), (x + 1.3, 11.5), (x + 0.9, 11.5)])
+    glaze(s.rgb, blur(drips, 1.2), SHADOW, 0.5)
     img = s.rgb.resize((W, BLOCK_H), Image.LANCZOS)
-    ink = tuple(int(i * 0.8 + c * 0.2) for i, c in zip(STACK_INK, colour))
+    d = ImageDraw.Draw(img)
+    for x in range(2, W, 8):  # the windows at 1x, so each stays a hard 3 x 3
+        if lit:
+            d.rectangle((x, 5, x + 2, 7), fill=LIT if rnd.random() < 0.8 else (236, 214, 170))
+            d.point((x, 5), fill=(255, 246, 222))  # a glint in its corner
+        else:
+            d.rectangle((x, 5, x + 2, 7), fill=DARK)
+        d.line([(x, 8), (x + 2, 8)], fill=tuple(min(255, c + 24) for c in colour))  # the sill in the sun
+    ink = tuple(int(i * 0.85 + c * 0.15) for i, c in zip(INK, colour))
     for x in range(W):  # the pencil rows, a little uneven
-        k = 1.0 + 0.12 * sin(x * 0.7) * sin(x * 0.13)
+        k = 1.0 + 0.15 * sin(x * 0.7) * sin(x * 0.13)
         for y in (0, BLOCK_H - 1):
             img.putpixel((x, y), tuple(max(0, min(255, int(c * k))) for c in ink))
     return img.convert("RGBA")
 
 
-def stack_scene(pics):
-    """A tower of ten blocks, narrower as it grows, and the mover, as the game draws them (its pencil ends too)."""
-    out = pics["stack_bg"].copy()
-    x, w = 90, 140
-    rows = []
-    for i in range(10):
-        rows.append((x, 220 - (i + 1) * BLOCK_H, w, "stack_block%d" % (i % 8)))
-        cut = (3, 7, 2, 11, 5, 9, 4, 6, 8, 3)[i]
-        x, w = (x + cut, w - cut) if i % 2 else (x, w - cut)
-    rows.append((150, 220 - 11 * BLOCK_H, w, "stack_mover"))
-    d = ImageDraw.Draw(out)
-    for x, y, w, name in rows:
-        out.paste(pics[name].crop((0, 0, w, BLOCK_H)), (x, y))
-        d.line([(x, y), (x, y + BLOCK_H - 1)], fill=STACK_INK)
-        d.line([(x + w - 1, y), (x + w - 1, y + BLOCK_H - 1)], fill=STACK_INK)
-    return out.convert("RGB")
+def paint_hook():
+    """The crane hook, 16 x 16 keyed: a steel block with a red band, a shank, and the hook's curve."""
+    sp = Sprite(16, 16)
+    sp.part(sp.shape("rect", 3.5, 0, 12.5, 6.5, 1), (124, 120, 134), light=(11, 1, 4, (190, 186, 196)))
+    sp.part(sp.shape("rect", 3.5, 2.6, 12.5, 4.2, 0), ACCENT, rim=0.2, grain=0)
+    for x in range(5, 12):  # the band's middle row at 1x, so the accent stays the accent after the shrink
+        sp.dot(x, 3, ACCENT)
+    sp.part(sp.shape("line", (8, 6), (8, 10), width=1.8), (96, 92, 106), rim=0.1)
+    sp.part(sp.shape("line", (8, 9.5), (8.4, 12.5), (7, 14.4), (4.8, 14.6), (3.6, 13), (3.8, 11.6), width=1.7),
+            (96, 92, 106), light=(8, 12, 3, (170, 166, 178)), rim=0.2)
+    return sp.cut(ink=INK)
+
+
+def paint_digit(d):
+    """One digit of the rent, 8 x 12 keyed: ink strokes, cut to a hard mask, for the billboard's plate."""
+    k = 8
+    m = Image.new("L", (DIGIT_W * k, DIGIT_H * k), 0)
+    write(m, str(d), 1.2 * k, 1.2 * k, 1.5 * k, 1.5 * k)
+    a = m.resize((DIGIT_W, DIGIT_H), Image.BOX).point(lambda v: 255 if v >= 100 else 0)
+    out = Image.new("RGBA", (DIGIT_W, DIGIT_H), INK + (255,))
+    out.putalpha(a)
+    return out
 
 
 def paint_stack():
-    """Every stack picture: the background, the eight blocks in the game's palette order, the mover."""
-    pics = {"stack_bg": paint_stack_bg()}
-    for i, colour in enumerate(PALETTE):
-        pics["stack_block%d" % i] = paint_block(colour)
-    pics["stack_mover"] = paint_block((255, 248, 230), edge=(255, 196, 120))
-    return Painting({n: (img, False) for n, img in pics.items()})
+    """Every stack picture: the noon backdrop, the lit and the dark floors in turn, the hook, the rent's digits."""
+    pics = {"stack_noon": (paint_noon(), False)}
+    for i, colour in enumerate(CONCRETE):
+        pics["stack_lit%d" % i] = (paint_flat(colour, True), False)
+    for i, colour in enumerate(CONCRETE):
+        pics["stack_dark%d" % i] = (paint_flat(colour, False), False)
+    pics["stack_hook"] = (paint_hook(), True)
+    for d in range(10):
+        pics["stack_digit%d" % d] = (paint_digit(d), True)
+    return Painting(pics)
 
+
+def over(out, img, x, y):
+    """img on out at (x, y), its clear pixels skipped, as the board's keyed blit draws it."""
+    out.paste(img, (x, y), img)
+
+
+def stack_scene(pics, floors=10):
+    """The tower as the game draws it: the dark floors, the lit show flat on top, the next one on the hook, its cable,
+    and the rent on the plate."""
+    out = pics["stack_noon"].copy()
+    x, w = 90, 140
+    rows = []
+    for i in range(floors):
+        rows.append((x, 220 - (i + 1) * BLOCK_H, w, ("stack_lit%d" if i == floors - 1 else "stack_dark%d") % (i % 8)))
+        cut = (3, 7, 2, 11, 5, 9, 4, 6, 8, 3)[i % 10]
+        x, w = (x + cut, w - cut) if i % 2 else (x, w - cut)
+    hx, hy = 150, 220 - (floors + 1) * BLOCK_H
+    rows.append((hx, hy, w, "stack_lit%d" % (floors % 8)))
+    d = ImageDraw.Draw(out)
+    d.line([(hx + w // 2 - 6, 16), (hx + w // 2, hy - 12)], fill=INK)
+    over(out, pics["stack_hook"], hx + w // 2 - 8, hy - 16)
+    for x, y, w, name in rows:
+        out.paste(pics[name].crop((0, 0, w, BLOCK_H)), (x, y))
+        d.line([(x, y), (x, y + BLOCK_H - 1)], fill=INK)
+        d.line([(x + w - 1, y), (x + w - 1, y + BLOCK_H - 1)], fill=INK)
+    for k, ch in enumerate(reversed(str(900 + 140 * floors))):
+        over(out, pics["stack_digit" + ch], PLATE[2] - 4 - DIGIT_W * (k + 1), PLATE[1] + 3)
+    return out.convert("RGB")
 
 
 def stack_frame(painting):
@@ -179,14 +266,22 @@ def stack_frame(painting):
 
 
 def stack_sheet(painting, sheet, y):
-    """The tower as the game draws it, and each block alone."""
-    stack = painting.images()
-    sheet.put("stack: stack_bg with ten blocks and the mover, at 2x",
-              stack_scene(stack).resize((W * 2, H * 2), Image.NEAREST), 10, y)
-    for i, name in enumerate(["stack_block%d" % k for k in range(8)] + ["stack_mover"]):
-        sheet.put("%s 320x14, at 2x" % name, stack[name].convert("RGB").resize((W * 2, BLOCK_H * 2), Image.NEAREST),
-                  W * 2 + 30, y + i * 52)
+    """The tower as the game draws it, then a lit and a dark floor, the hook and the digits, enlarged."""
+    pics = painting.images()
+    sheet.put("stack (RENT): stack_noon with ten floors, the hook and the rent, at 2x",
+              stack_scene(pics).resize((W * 2, H * 2), Image.NEAREST), 10, y)
+    x, at = W * 2 + 30, y
+    for name in ("stack_lit0", "stack_lit3", "stack_dark0", "stack_dark3"):
+        at = sheet.put("%s 320x14, first 160 px at 4x" % name,
+                       pics[name].convert("RGB").crop((0, 0, 160, BLOCK_H)).resize((640, BLOCK_H * 4), Image.NEAREST),
+                       x, at) + 10
+    strip = Image.new("RGB", (16 + 10 * (DIGIT_W + 2), 16), BONE)
+    over(strip, pics["stack_hook"], 0, 0)
+    for k in range(10):
+        over(strip, pics["stack_digit%d" % k], 18 + k * (DIGIT_W + 2), 2)
+    sheet.put("stack_hook 16x16 and stack_digit0..9 8x12, at 4x", strip.resize((strip.width * 4, 64), Image.NEAREST),
+              x, at)
     return y + H * 2 + 32
 
 
-ART_SET = ArtSet("stack", 563, paint_stack, sheet_fn=stack_sheet, scene_fn=stack_frame, ink_accent=PALETTE[4])
+ART_SET = ArtSet("stack", 563, paint_stack, sheet_fn=stack_sheet, scene_fn=stack_frame, ink_accent=ACCENT)
