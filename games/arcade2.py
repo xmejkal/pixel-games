@@ -30,14 +30,16 @@ class Stack(Game):
     SHAKE_MS, FALL_MS, CARD_MS = 160, 250, 500  # the lean starts after the shake, the floors fall, then the card
     RENT, RENT_PER_FLOOR = 900, 140  # what the billboard asks: every floor raises it
     PLATE_RIGHT, PLATE_TOP, DIGIT_W = 301, 38, 8  # the billboard's empty plate in stack_noon; the digits are 8 x 12
-    SOLD_AT = (248, 36)  # stack_sold over that plate when the tower falls
-    CARD_AT = (60, 70)  # stack_over; its plates' right ends and top, for the floors and the best (art/sets/stack.py)
-    CARD_PLATES = ((161, 123), (237, 123))
-    TITLE_PLATE = (193, 161)  # the title's plate for the best
+    SOLD_X, SOLD_Y = 248, 36  # stack_sold over that plate when the tower falls
+    CARD_X, CARD_Y = 60, 70  # stack_over; its plates' right ends and top, for the floors and the best (art/sets/stack.py)
+    FLOORS_RIGHT, BEST_RIGHT, CARD_PLATE_TOP = 161, 237, 123
+    TITLE_BEST_RIGHT, TITLE_BEST_TOP = 193, 161  # the title's plate for the best
     LOWER_MS = 1200  # the title's hook lowers the first floor this long
 
     LIT = tuple("stack_lit%d" % i for i in range(8))  # the show flat on top, its windows warm
     DARK = tuple("stack_dark%d" % i for i in range(8))  # every floor below it: nobody lives there
+    DIGITS = tuple("stack_digit%d" % d for d in range(10))  # the names made once: no formatting while drawing
+    COTS = tuple("stack_cot%d" % k for k in range(4))  # a quarter turn each
     CONCRETE = tuple(c565(v, v, v + 8) for v in (172, 160, 180, 150, 168, 186, 156, 166))  # the Mac's flat floors
 
     def setup(self):
@@ -52,8 +54,10 @@ class Stack(Game):
         return self.BASE - (i - max(0, len(self.floors) - 12) + 1) * self.LEVEL_H
 
     def floor_x(self, i):
-        """Floor i's drawn x: its own, plus the sway, more of it the higher it is. The hit test reads this too."""
-        return int(self.floors[i][0] + self.sway * i / len(self.floors))
+        """Floor i's drawn x: its own, plus the sway, more of it the higher it sits in the visible window, so the
+        floor at the street stays put. The hit test reads this too; paint works it out the same way."""
+        first = max(0, len(self.floors) - self.SHOWN)
+        return int(self.floors[i][0] + self.sway / (len(self.floors) - first) * (i - first))
 
     def hanging_x(self):
         """The hanging floor's drawn x: the slide plus the pendulum, kept on the screen."""
@@ -61,7 +65,7 @@ class Stack(Game):
         return max(0, min(W - self.w, int(self.x + reach * sin(self.swing))))
 
     def play(self, pressed, held):
-        if self.hold:  # the hitstop after a perfect drop: nothing moves for two frames
+        if self.hold:  # the hitstop after a perfect drop: the tower and the hanging floor stand still for two frames
             self.hold -= 1
             return
         dt = self.dt
@@ -73,7 +77,7 @@ class Stack(Game):
         self.slabs = [c for c in self.slabs if c[1] < self.BASE]
         self.sway_v -= (self.SPRING * self.sway + self.DAMP * self.sway_v) * dt
         self.sway += self.sway_v * dt
-        self.swing += 6.283 * self.SWING_HZ * dt
+        self.swing = (self.swing + 6.283 * self.SWING_HZ * dt) % 6.283  # bounded, so sin stays exact
         self.x += self.dir * self.speed * dt
         if self.x < 0:
             self.x, self.dir = 0.0, 1
@@ -98,7 +102,8 @@ class Stack(Game):
             self.slabs.append([x, y, left - x, 0.0, i])
         elif x + self.w > right:
             self.slabs.append([right, y, x + self.w - right, 0.0, i])
-        self.floors.append((left - self.sway * n / (n + 1), right - left))  # stored without the sway it lands in
+        first = max(0, n + 1 - self.SHOWN)  # the window once this floor is in it
+        self.floors.append((left - self.sway / (n + 1 - first) * (n - first), right - left))  # stored without the sway
         self.sway_v += max(-24, min(24, x - tx)) * self.KICK  # the tower leans the way the floor landed
         self.w = right - left
         self.score += 1
@@ -128,7 +133,7 @@ class Stack(Game):
         x, rest = right, value
         while True:
             x -= self.DIGIT_W
-            if not pictures.draw(cv, "stack_digit%d" % (rest % 10), x, top):
+            if not pictures.draw(cv, self.DIGITS[rest % 10], x, top):
                 return cv.text(str(value), right - 8 * len(str(value)), top + 2, self.INK)
             rest //= 10
             if not rest:
@@ -144,8 +149,8 @@ class Stack(Game):
         self.hook(cv, x + w // 2, y, x + w // 2)
         self.block(cv, x, y, w, 0, True)
         if self.age >= self.LOWER_MS:
-            pictures.draw(cv, "stack_sold", *self.SOLD_AT)
-        self.number(cv, BEST.get(self.name, 0), *self.TITLE_PLATE)
+            pictures.draw(cv, "stack_sold", self.SOLD_X, self.SOLD_Y)
+        self.number(cv, BEST.get(self.name, 0), self.TITLE_BEST_RIGHT, self.TITLE_BEST_TOP)
 
     def paint_static(self, cv):
         if pictures.draw(cv, "stack_noon", 0, 0):  # the painted noon (P568)
@@ -155,8 +160,8 @@ class Stack(Game):
 
     def paint(self, cv):
         """The tower, the hanging floor and the slabs. Over, the tower shakes, then leans and falls, from self.age."""
-        n, shake, lean, drop = len(self.floors), 0, 0.0, 0.0
-        if self.state == OVER:
+        n, shake, lean, drop, over = len(self.floors), 0, 0.0, 0.0, self.state == OVER
+        if over:
             t = self.age
             if t < self.SHAKE_MS:
                 shake = self.SHAKE[t // 40]
@@ -165,33 +170,41 @@ class Stack(Game):
             if drop and not self.dusted:  # the street takes the first floor: one cloud of dust
                 self.dusted = True
                 self.fx.burst(self.floor_x(0) + self.floors[0][1] // 2, self.BASE + 10, GREY, 20, 90.0, 0.8, -40.0)
-        for i in range(max(0, n - self.SHOWN), n):
-            k = i / n
-            y = self.level_y(i) + int(drop * (0.3 + 0.7 * k))
-            if y < H:  # only the top floor is the show flat, lit
-                self.block(cv, self.floor_x(i) + shake + int(lean * k * k), y, self.floors[i][1], i, i == n - 1)
-                if self.hold == 2 and i == n - 1:  # the perfect drop's one white frame
-                    cv.fill(self.floor_x(i), y, self.floors[i][1], self.LEVEL_H, WHITE)
+        first = max(0, n - self.SHOWN)
+        span, top = n - first, n - 1
+        step = self.sway / span  # the sway per floor up the visible window, as floor_x works it out
+        for i in range(first, n):
+            x, w = self.floors[i]
+            x, y = int(x + step * (i - first)), self.level_y(i)
+            if over:  # the lean and the fall, more of them the higher the floor; only here, so play makes few floats
+                k = (i - first) / span
+                x += shake + int(lean * k * k)
+                y += int(drop * (0.3 + 0.7 * k))
+                if y >= H:
+                    continue
+            self.block(cv, x, y, w, i, i == top)  # only the top floor is the show flat, lit
+            if self.hold == 2 and i == top:  # the perfect drop's one white frame
+                cv.fill(x, y, w, self.LEVEL_H, WHITE)
         x, y = self.hanging_x() + shake + int(lean), self.level_y(n) + int(drop)
         if y < H:
             self.hook(cv, x + self.w // 2, y, int(self.x) + self.w // 2)
             self.block(cv, x, y, self.w, n, True)
         for x, y, w, _, i in self.slabs:  # over, they fall with the tower; each carries a cot, tumbling as it falls
             self.block(cv, x, int(y + drop), w, i, True)
-            pictures.draw(cv, "stack_cot%d" % (int(y) // 10 % 4), x + w // 2 - 8, int(y + drop) - 12)
-        if self.state != OVER or not pictures.draw(cv, "stack_sold", *self.SOLD_AT):
+            pictures.draw(cv, self.COTS[int(y) // 10 % 4], x + w // 2 - 8, int(y + drop) - 12)
+        if not over or not pictures.draw(cv, "stack_sold", self.SOLD_X, self.SOLD_Y):
             self.number(cv, self.RENT + self.RENT_PER_FLOOR * self.score, self.PLATE_RIGHT, self.PLATE_TOP)
 
     def draw_over(self, cv):
         """The collapse plays over the live scene first; then SOLD OUT, 0 RESIDENTS, the floors and the best."""
         if self.age < self.CARD_MS:
             return
-        if not pictures.draw(cv, "stack_over", *self.CARD_AT):
+        if not pictures.draw(cv, "stack_over", self.CARD_X, self.CARD_Y):
             return Game.draw_over(self, cv)
-        for (right, top), value in zip(self.CARD_PLATES, (self.score, BEST.get(self.name, 0))):
-            self.number(cv, value, right, top)
+        self.number(cv, self.score, self.FLOORS_RIGHT, self.CARD_PLATE_TOP)
+        self.number(cv, BEST.get(self.name, 0), self.BEST_RIGHT, self.CARD_PLATE_TOP)
         if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
-            cv.text("tap to retry", self.CARD_AT[0] + 52, self.CARD_AT[1] + 84, self.BONE)
+            cv.text("tap to retry", self.CARD_X + 52, self.CARD_Y + 84, self.BONE)
 
 
 class Cave(Game):
