@@ -4,7 +4,7 @@ block for more. needed by: the decider's words, quoted. value proven by: a proof
 status: proposed, or filed D<n>.
 e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)` -->
 
-Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (the newest issue was P566 #770 on 2026-11-02); P580 #771 and P581 follow. After D4 to D13 the order is D8's: P567 probe, P572 paint.py table, P568 stack RENT slice 0, then the rest. P575 (importer) is dropped: D11 says paint.py only. P576 (one city) is now in: D4. The pixel-games repository holds no issues and no issue form; the cards live in xmejkal/spark, whose labels are epic, story, task, chore, spike. Titles follow the PO's card style "P<n>: <problem> → <outcome>". The Slice field of the sibling cards (#766, #769) did not come back from `gh issue view --json projectItems`, so every item asks the decider for its slice. Dependencies are the tech lead's reading of the code (council/tech-lead.md TL-16), proposed. The order below follows D8; the PO orders Ready.
+Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (the newest issue was P566 #770 on 2026-11-02); P580 #771 follows. After D4 to D13 the order is D8's: P567 probe, P572 paint.py table, P568 stack RENT slice 0, then the rest. P575 (importer) is dropped: D11 says paint.py only. P576 (one city) is now in: D4. The pixel-games repository holds no issues and no issue form; the cards live in xmejkal/spark, whose labels are epic, story, task, chore, spike. Titles follow the PO's card style "P<n>: <problem> → <outcome>". The Slice field of the sibling cards (#766, #769) did not come back from `gh issue view --json projectItems`, so every item asks the decider for its slice. Dependencies are the tech lead's reading of the code (council/tech-lead.md TL-16), proposed. The order below follows D8; the PO orders Ready.
 
 ## P567: nobody has measured what the new art costs on the board → one probe session: PSRAM-destination blits, a partly off-screen blit, a picture draw through Python, the pool against the heap, the file system, one body update in Python; a table in bench.md
 - type: spike <!-- REQUIRED:item-type -->
@@ -29,7 +29,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 ## P568: a theme is a belief until one game carries it → stack with its RENT take (D7), one theme pass (a palette, a backdrop, one sprite with 3 to 4 frames, one death cue, a painted title and over card), played and rated by the PO in his words, fps logged before and after in the same session
 - type: story (slice 0; the test of A1, A2, A3, A9)
 - needed by: "I want it to be shoking and cool and beautiful" (the PO, 2026-11-02, #769)
-- value proven by: his verdict in his words in bench.md ("exciting" or stronger), and the `time` line's fps not below the same game's fps before the pass (the proposed pass lines of A2 and A3, the riskiest; A1's theme-naming a lower line, pending Q1)
+- value proven by: his verdict in his words in bench.md ("exciting" or stronger), and the `time` line's average fps at most 2 fps below the same game's fps before the pass (D3's pass line, for A2 and A3, the riskiest; stack tests A3 only weakly, the real test is P574)
 - depends on: P567 for sizing (D8: probe first); P572 (the table); stack is a static-backdrop game and needs no driver card; small rule changes allowed where RENT needs one (D9)
 - status: proposed (order D8: third)
 - label (the repository's type label): story
@@ -80,7 +80,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - type: story (one card per game may follow)
 - needed by: "each one is a wild, beautiful indie game with its own theme" (#769); "flappy is a bit stucky" (the PO, P564)
 - value proven by: fps per game not below the P556 numbers (flappy 20 to 22, runner 21 to 24) or its own pre-slice fps; his verdict
-- depends on: P556 #760 merged (the overlap; #769 says "starts after P556"); P572; D8: the driver cards P554 #758 (kept background) and P580 #771 (PIE effects) follow for these games; parallax depth wants P557 #761; sprite counts want P555 #759 (TL-16); runner and flappy are re-dressed as the courier and the city pigeon (D10)
+- depends on: P556 #760 merged (the card's own precondition: #769 says "starts after P556"; not a D8 pick, D8 names P554 #758 and P580 #771); P572; D8: the driver cards P554 #758 (kept background) and P580 #771 (PIE effects) follow for these games; parallax depth wants P557 #761; sprite counts want P555 #759 (TL-16); runner and flappy are re-dressed as the courier and the city pigeon (D10)
 - status: proposed
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P565 #769
@@ -108,16 +108,6 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 
 Existing card, not an item of this list: P580 #771 (effects in C on the PIE, D2). The scrolling games (P574) depend on it and on P554 #758 (D8); the static games do not.
 
-## P581: the games are silent → a buzzer on a free pin and a one-line sound call, as new hardware in its own card
-- type: story (new hardware; D13)
-- needed by: "shoking and cool" (the PO, 2026-11-02, #769); D13: a buzzer card later, the restyle does not wait for it
-- value proven by: a pin map line for the buzzer, the games call it, and the PO hears a cue on a death or a hit (his words); the free pin and the parts come from a spark research step (the board has no speaker today, ★C20)
-- depends on: — (the restyle does not wait for it)
-- status: proposed
-- label (the repository's type label): story
-- parent (the epic, as a sub-issue): P565 #769
-- slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
-
 Found on the way, outside this epic (proposed as separate cards, parent to be named by the decider):
 - P578: a tap inside the 900 ms game-over lock is silently ignored → the press is kept and fires when the lock ends, or the lock shows (user.md USER-4) · label: story · parent: — (ask the decider) · depends on: —
 - P579: snake turns right only, so a left turn is three taps and up to about 0.5 s → a second control or a tap-and-hold turn (user.md USER-12) · label: story · parent: — (ask the decider) · depends on: D9 (small rule changes are allowed, so a second control may count; the one-button control stays, so a tap-and-hold turn fits better) · caveat: the PO's account (Q15) first; this may be the game's intended rule
@@ -125,7 +115,6 @@ Found on the way, outside this epic (proposed as separate cards, parent to be na
 ## Board actions
 <!-- Each action, taken or pending, with its D. e.g. `- move the item to Discovery · pending` -->
 - move #769 to Discovery · taken under D1 (its Status read Discovery on 2026-11-02, `gh issue view 769 --json projectItems`) <!-- REQUIRED:board-actions -->
-- file P567 to P574, P576, P577, P581 as sub-issues of #769, and P578, P579 with the parent he names; P575 is dropped (D11), P580 #771 already exists · pending (a D that names items.md)
-- comment on #769 with the brief's path and the Q1 question · pending
-- set "Waiting on" the PO and "Waiting since" the day Q1 is asked · pending
+- file P567 to P574, P576, P577 as sub-issues of #769, and P578, P579 with the parent he names; P575 is dropped (D11), P580 #771 already exists · pending (a D that names items.md)
+- comment on #769 with the brief's path, D3 to D13 and the one open ask (the jobs, the remaining risk, items.md) · pending
 - a Miro frame for this discovery, linked from #769 · pending

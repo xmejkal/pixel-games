@@ -34,7 +34,7 @@ e.g. `- ★C3 · STATUS.md:84 · refuter: partly — "Shown on the C6, assumed f
 e.g. `- Split: Feasibility says a day, Risks says a week · Q4` -->
 - Agree: the refuter and the lenses agree that nothing is blocked (★C22), that driver cards are a precondition for the parallax games only (★C3), and that the pipeline that runs is paint.py (★C9, ★C10).
 - Split: the art lens says 8.32 MB of PSRAM was free for the pool, the tech lead 6.81 MB; both are measured, at different moments, and 6.81 MB most likely already excludes today's art (★C6) · Q9 (P567 settles it)
-- Split: the facilitator's first riskiest was A1; the refuter shows it rests on the request's optional clause and that a blind test is impossible, so the riskiest is now A2 with A3 (proposed, pending Q1) · Q1
+- Split: the facilitator's first riskiest was A1; the refuter shows it rests on the request's optional clause and that a blind test is impossible, so the riskiest is now A2 with A3 (rated high by D3) · Q1 answered D3
 - Split: the art lens calls EVAC and SMILE shocking but not cruel; the refuter reads EVAC as a game-over joke on real victims (Paradise 2018, Lahaina 2023) and SMILE as possibly one named country's programme (A7) · Q4
-- Split: the art lens's hours (flappy, runner, tunnel, ...) against the D14 order (app.py:39): W reorders the games · Q2
+- Split: the art lens's hours (flappy, runner, tunnel, ...) against the D14 order (app.py:39): D4 fixed the hours to the GAMES order, so nothing is reordered · Q2 answered D4
 - Agree: the lead reproduced four claims (★C6, ★C12, ★C8, ★C1) and the refuter's findings held on all four, 2026-11-02. <!-- REQUIRED:agree-split -->

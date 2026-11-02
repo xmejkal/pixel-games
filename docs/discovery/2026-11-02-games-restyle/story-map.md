@@ -13,11 +13,11 @@ The steps are the PO's journey in jobs-and-journeys.md (steps 1 to 7). "Show som
 <!-- Walking skeleton first: the thinnest slice that runs end to end. One row per story. job: a job in
 jobs-and-journeys.md. tag: as in the brief. proof: something the decider can read.
 e.g. `| 0 | Notice | the assignee gets one daily digest | job 1 | H ★C2 | the digest log for one team |` -->
-Slice 0 is the smallest thing the PO can play and judge: one game, one theme pass. It is also the test of the riskiest assumption (A2 with A3 in risks-and-tests.md; A1 is a lower assumption). D7 names the game: stack with its RENT take; D8 puts the probe (P567) before it, so slice 0 is the probe plus stack RENT. The slices after 0 are grouped by what they depend on (tech-lead.md TL-16), not by the order the PO must take; he orders them.
+Slice 0 is the smallest thing the PO can play and judge: one game, one theme pass. It is also the test of the riskiest assumption (A2 with A3 in risks-and-tests.md; A1 is rated high by D3 but is not the riskiest). D7 names the game: stack with its RENT take; D8 puts the probe (P567) before it, so slice 0 is the probe, the table refactor (P572), then stack RENT (P568), D8's order. Stack tests A3 only weakly (it paints in 15.7 ms at a 40 ms pace, bench.md P556); the real A3 test is P574, the scrolling games. The slices after 0 are grouped by what they depend on (tech-lead.md TL-16), not by the order the PO must take; he orders them.
 
 | slice | activity | story | job | tag | proof |
 | --- | --- | --- | --- | --- | --- |
-| 0 walking skeleton <!-- REQUIRED:slices --> | Title → Play → Die | the probe (P567), then stack (RENT) gets one theme pass: a palette, a backdrop, one sprite with 3 to 4 frames, one death cue, a painted title and over card with baked lettering; the PO plays and rates it in his words (no blind clause: he picks the themes first) | jobs 1, 3 | H ★C15, ★C19 (po-assistant.md PO-19; art-direction.md Q-F) | his words in bench.md, and the `time` log line's fps for that game before and after the pass |
+| 0 walking skeleton <!-- REQUIRED:slices --> | Title → Play → Die | the probe (P567), the table refactor (P572), then stack (RENT, P568) gets one theme pass: a palette, a backdrop, one sprite with 3 to 4 frames, one death cue, a painted title and over card with baked lettering; the PO plays and rates it in his words (no blind clause: he picks the themes first) | jobs 1, 3 | H ★C15, ★C19 (po-assistant.md PO-19; art-direction.md Q-F) | his words in bench.md, and the `time` log line's fps for that game before and after the pass |
 | 1 | Title → Die | every game gets its own painted title and game-over card (3 to 6 frames inside 1.5 s, 4 to 6 inside 900 ms), replacing the shared shell; no drawn text | jobs 1, 3 | E ★C11 (user.md USER-1, USER-8; art-direction.md ART-7, ART-8) | ten cards on the board; the over-screen paint time against the over box re-timed today (the 33 to 54 ms of p537-finding.md:7 was measured before partial show) |
 | 2 | Play | a game-feel pack in Python with no driver dependency: coyote time and jump buffer, hitstop of 2 to 3 frames, a 3 to 5 frame death shake, squash and stretch by frame choice, damped springs for secondary parts (backpack, cage, net) | job 1 | E ★C12; H ★C13 (tech-lead.md PHYS-5; art-direction.md "well animated" table) | the PO's verdict per game in bench.md; a timed loop of the body update on the board |
 | 3 | Play | the four static-backdrop games (snake, stack, gravpong, cube) get their theme and look; a still backdrop keeps partial sends small | jobs 1, 3 | E ★C4, ★C5 (tech-lead.md TL-2, TL-16a) | fps per game in the time log not below its own pre-slice fps; his words |
@@ -35,7 +35,7 @@ Dependencies, as the tech lead reads the code (TL-16), proposed:
 
 ```mermaid
 flowchart LR
-  s0["0 probe, then stack RENT theme pass"] --> s1["1 title and over cards"]
+  s0["0 probe, table refactor, then stack RENT theme pass"] --> s1["1 title and over cards"]
   s0 --> s2["2 game-feel pack"]
   s0 --> s3["3 four static-backdrop games"]
   p760["P556 #760 overlap"] --> s4["4 six scrolling games"]
