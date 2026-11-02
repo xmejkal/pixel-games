@@ -92,3 +92,23 @@
 - 10:58 to 11:01 run 17 (`run17-sprite-key.log`): stack at 16 fps, paint 19 to 21 ms while playing, hud 13 to 16 ms (64 ms in run 15, the heap runner left behind), heap 69 to 129 KB and flat. Runner was passed in seconds, so it was not measured. The PO: "Its good to aknowledge that also the whole game is faster now, the pipes and other things still appear a bit stepped, but overall way better."
 - 11:01 to 11:04 run 18, runner alone (`run(games=(app.Runner,))`, `run18-runner.log`): 14 fps, paint 32 ms, heap 68 to 145 KB and flat for 80 s of play. Then the game-over box at 7 fps (over 66 ms, static 50 ms). The leak is fixed. The PO: "even better, I think at least the runner s almost fully playable, I like it. Maybe we can somehow even lower the steppness?"
 - 11:04 to 11:07 run 19, flappy alone (`run19-flappy.log`): 16 fps while playing, paint 18 to 20 ms, send 31.3 ms, worst gap 61 to 71 ms; the game-over box 33 to 49 ms. Paint plus send is about 50 ms, so the 60 ms pace sets the rate. A shorter pace gains little until the send shrinks: slice 5 (partial sends) is the next step toward smaller steps.
+
+## P533 slice 5: partial show
+
+- What changed: the driver marks the 16 px tiles each draw touches (`_setpixel`, `_fill_rect`, `blit_buffer`; `fill` and the other direct writers mark all). `show()` sends the tiles drawn in this frame or the one before, as windows: runs along each tile row, joined down when the columns match. Whole rows go straight from the internal framebuffer, the rest through the two strips. Past `windows` (40) it sends the whole frame. `TftOut.draw` paints the background and the still picture with `tft.track(False)`. A game switch sends one whole frame. `show()` returns the count of windows it sent.
+- 11:20 run 20, flappy with `config(partial=True)` (`run20` log in the scratchpad): send 38 ms, worse than 31. The probe counted about 200 windows a frame.
+- 11:30 cause, an upstream bug: the constructor's index list lacks `ARG_idle_mode`, so `dma_rows` read `idle_mode` (true, 1) and `options` read `dma_rows` (16, no wrap bits, harmless). Every strip held one row of 320 pixels. Slice 3's "strips 71.9 ms, overlap gains nothing" was measured with one-row strips, so it says nothing about real strips. Fixed: strips of 16 rows.
+- 11:35 probe7, one rectangle per frame: an unchanged frame 0.08 ms; one 16 px tile 0.35 ms; a 240x16 band 1.78 ms; a 16x240 column through a strip 1.85 ms; a full frame 31.0 ms.
+- 11:40 probe6, 120 frames per game played by a fixed tap pattern, 40 ms pause per frame, avg per state:
+
+| game | tile | play: windows, send | game over: windows, send |
+| --- | --- | --- | --- |
+| flappy | 8 | 21, 10.1 ms | 31, 21.4 ms |
+| flappy | 16 | 14, 11.3 ms | 25, 21.3 ms |
+| flappy | 32 | 11, 15.0 ms | 16, 26.5 ms |
+| runner | 8 | 16, 7.1 ms | 27, 17.9 ms |
+| runner | 16 | 7, 7.7 ms | 18, 18.3 ms |
+| runner | 32 | 8, 13.0 ms | 13, 25.1 ms |
+
+- Tile 16 stays the default: tile 8 saves about 1 ms with twice the windows. The plan's pass number (flappy send under 15 ms) holds while playing. Still owed: the PO's eyes on a 2-minute run through title, play, game over and three switches, for stale pixels, and the `PARTIAL = False` comparison.
+- Left: the score bar redraws its same pixels every frame, so its tiles go out every frame. Drawing it untracked while the score stays the same would save more. Not done here.
