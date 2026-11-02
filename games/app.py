@@ -23,6 +23,7 @@ from space3d import CubeTiming, Starfire
 from world3d import Road, Tunnel
 
 FPS_EVERY_MS = 5000
+FRAME_MS = 110  # each frame starts this long after the last, so the pipes move in equal steps; 0 = as fast as it goes
 FULL_FRAME_FREE = 400_000
 GC_FLOOR = 1_000_000  # with PSRAM gc is off in the loop; below this much free heap it runs at once
 GC_FRAMES = 5  # with gc off, a timed collection every this many frames: small ones often, not one long pause over 8 MB
@@ -156,8 +157,15 @@ def run():
     console.register(sys.stdin, select.POLLIN)
     print("ready")
     app.start()
+    due = time.ticks_ms()
     while True:  # the s3lcd port may lose USB at init; the lines still print in case it stays
         app.frame()
         if console.poll(0):
             sys.stdin.read(1)
-        time.sleep_ms(1)
+        due = time.ticks_add(due, FRAME_MS)
+        wait = time.ticks_diff(due, time.ticks_ms())
+        if wait > 0:
+            time.sleep_ms(wait)
+        else:  # a slow frame: start again from now, never rush to catch up
+            due = time.ticks_ms()
+            time.sleep_ms(1)
