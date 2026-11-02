@@ -2,7 +2,9 @@
 The s3lcd backend: russhughes' C driver for the ESP32-S3, in our MicroPython image (v1.29.0, ESP32_GENERIC_S3 SPIRAM_OCT).
 
 Each frame the game draws straight into the driver's framebuffer (TftCanvas, which keeps gfx.Canvas's clipping and its
-shapes but draws at once), and show() sends it by DMA. No dirty boxes, no bands. `import s3lcd` is inside open_tft(),
+shapes but draws at once), and show() sends it by DMA. With PARTIAL, the driver marks the 16 px tiles each draw touches,
+and show() sends only the tiles drawn in this frame or the one before (P533 slice 5). The still picture repaints the
+same pixels every frame, so TftOut draws it with tracking off. `import s3lcd` is inside open_tft(),
 because spark's Mac stand-ins have no such module; it answers None then, and the app falls back to the st7789 driver.
 
 Colours: the games use gfx.c565's values, already in the panel's byte order, so the bus sends the framebuffer as it is
@@ -24,13 +26,14 @@ from gfx import FULL, Canvas, clamp
 
 ORIENTATION = 0  # 0: upright in the PO's playing hold, the panel's row 0 along the right edge (bench.md); 180: turned
 PANEL_W, PANEL_H = 240, 320  # the panel's own width and height at rotation 0
+PARTIAL = True  # False sends the whole frame each show(), for a comparison on the bench
 
 
 class TftCanvas(Canvas):
     immediate = True
 
-    def __init__(self, tft):  # no big buffers: the driver owns the framebuffer
-        self.tft, self.full, self.bg_ok, self.clip, self.ops, self.cache = tft, False, False, FULL, (), {}
+    def __init__(self, tft):  # no big buffers: the driver owns the framebuffer; bg_ok, because TftOut paints the still picture
+        self.tft, self.full, self.bg_ok, self.clip, self.ops, self.cache = tft, False, True, FULL, (), {}
         self.mono = framebuf.FrameBuffer(bytearray(16 * 8), 16 * 8, 8, framebuf.MONO_HLSB)
         if ORIENTATION not in (0, 180):
             raise ValueError("ORIENTATION must be 0 or 180, not %r" % ORIENTATION)
@@ -94,18 +97,22 @@ class TftOut:
     """Same job as render.StOut: draw the frame, then one show()."""
 
     def __init__(self, tft):
-        self.tft, self.canvas = tft, TftCanvas(tft)
+        self.tft, self.canvas, self.fresh = tft, TftCanvas(tft), True
 
     def clear(self):
         self.tft.fill(0)
 
     def reset(self):
-        pass
+        self.fresh = True  # another game: another still picture, which no draw of the new game marks
 
     def draw(self, game, us):
-        t1, cv = time.ticks_us(), self.canvas
+        t1, cv, tft = time.ticks_us(), self.canvas, self.tft
+        tft.track(self.fresh)  # untracked, the background fill and the still picture mark nothing; fresh, fill marks all
+        self.fresh = False
+        tft.fill(game.bg)
+        game.paint_static(cv)
+        tft.track(True)
         cv.start()
-        self.tft.fill(game.bg)
         game.draw(cv)
         t2 = time.ticks_us()
         self.tft.show()
@@ -126,5 +133,5 @@ def open_tft(spi_hz):
     bus = s3lcd.SPI_BUS(1, mosi=gdi.MOSI, sck=gdi.SCLK, dc=gdi.DC, cs=gdi.CS, pclk=spi_hz, swap_color_bytes=False)
     tft = s3lcd.ESPLCD(bus, 240, 320, inversion_mode=True, color_space=s3lcd.RGB, reset=gdi.RST, rotation=0)
     tft.init()
-    print("size", tft.width(), tft.height())
+    print("size", tft.width(), tft.height(), tft.config(partial=PARTIAL))
     return TftOut(tft)
