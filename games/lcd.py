@@ -4,8 +4,11 @@ The s3lcd backend: russhughes' C driver for the ESP32-S3, in our MicroPython ima
 Each frame the game draws straight into the driver's framebuffer (TftCanvas, which keeps gfx.Canvas's clipping and its
 shapes but draws at once), and show() sends it by DMA. With PARTIAL, the driver marks the 16 px tiles each draw touches,
 and show() sends only the tiles drawn in this frame or the one before (P533 slice 5). The still picture repaints the
-same pixels every frame, so TftOut draws it with tracking off. `import s3lcd` is inside open_tft(),
-because spark's Mac stand-ins have no such module; it answers None then, and the app falls back to the st7789 driver.
+same pixels every frame, so TftOut draws it with tracking off. `import s3lcd` is inside open_tft(), because spark's Mac
+stand-ins have no such module; it answers None then, and the app falls back to the st7789 driver.
+
+With FRAMEBUFFER "double", show() returns once the send starts, so the "send" in the time log is the copy (about 3.4 ms
+for a full frame) plus any wait for the last send.
 
 Colours: the games use gfx.c565's values, already in the panel's byte order, so the bus sends the framebuffer as it is
 (swap_color_bytes=False) and no colour is swapped on the way in or out. Painted pictures (pictures.py) go through blit_buffer
@@ -28,6 +31,15 @@ from gfx import FULL, Canvas, clamp
 ORIENTATION = 0  # 0: upright in the PO's playing hold, the panel's row 0 along the right edge (bench.md); 180: turned
 PANEL_W, PANEL_H = 240, 320  # the panel's own width and height at rotation 0
 PARTIAL = True  # False sends the whole frame each show(), for a comparison on the bench
+# Where the driver keeps the frame. "double" (P556; needs that firmware): in PSRAM, and show() copies it into an internal
+# buffer, starts the send and returns, so the next frame paints during the send. "dma": internal, show() waits for the
+# send. "strips": PSRAM, sent through two small buffers.
+FRAMEBUFFER = "double"
+# Past this many windows of changed tiles, show() sends the whole frame. esp_lcd starts a window only when the last one
+# ended, so with "double" a whole frame (sent in the background, 3.4 ms of copy) beats many windows (show() waits for
+# all but the last). Tunnel: 13 fps at 40 windows, 17 at 4, 16 at 1; stack 24 at each (bench.md, P556). 4 is one run per
+# value, so it is a first pick, not a measured best. 40 is the driver's own default.
+WINDOWS = 4 if FRAMEBUFFER == "double" else 40
 
 
 class TftCanvas(Canvas):
@@ -152,6 +164,7 @@ def open_tft(spi_hz):
     Pin(gdi.BL, Pin.OUT, value=1)
     bus = s3lcd.SPI_BUS(1, mosi=gdi.MOSI, sck=gdi.SCLK, dc=gdi.DC, cs=gdi.CS, pclk=spi_hz, swap_color_bytes=False)
     tft = s3lcd.ESPLCD(bus, 240, 320, inversion_mode=True, color_space=s3lcd.RGB, reset=gdi.RST, rotation=0)
+    tft.config(framebuffer=FRAMEBUFFER, partial=PARTIAL, windows=WINDOWS)  # the framebuffer is read at init()
     tft.init()
-    print("size", tft.width(), tft.height(), tft.config(partial=PARTIAL))
+    print("size", tft.width(), tft.height(), tft.config())
     return TftOut(tft)
