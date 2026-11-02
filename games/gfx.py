@@ -151,7 +151,7 @@ class Canvas:
 
     def sprite(self, rows, palette, x, y, scale=1):
         """Rows of letters, each a colour in palette (a dict); '.' is clear. Drawn once into a small buffer, then one op."""
-        key = (id(rows), scale)
+        key = (rows, scale)  # the rows, not id(rows): see TftCanvas.sprite
         art = self.cache.get(key)
         if art is None:
             w, h = len(rows[0]) * scale, len(rows) * scale

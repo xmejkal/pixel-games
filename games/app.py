@@ -23,7 +23,7 @@ from space3d import CubeTiming, Starfire
 from world3d import Road, Tunnel
 
 FPS_EVERY_MS = 5000
-FRAME_MS = 110  # each frame starts this long after the last, so the pipes move in equal steps; 0 = as fast as it goes
+FRAME_MS = 60  # each frame starts this long after the last, so objects move in equal steps; 0 = as fast as it goes. 110 while a send took 63 to 71 ms
 FULL_FRAME_FREE = 400_000
 GC_FLOOR = 1_000_000  # with PSRAM gc is off in the loop; below this much free heap it runs at once
 GC_FRAMES = 5  # with gc off, a timed collection every this many frames: small ones often, not one long pause over 8 MB
@@ -105,6 +105,8 @@ class App:
                 + tuple(x // 1000 for x in self.slow)))
             print("phases %s static %d paint %d fx %d hud %d over %d title %d" % ((game.name,) + tuple(x // 1000 for x in gfx.PHASES)))
             gfx.PHASES[:] = [0] * 6
+            # Once per interval: does the heap fill during play? (P533 run 16; gc.mem_alloc costs about 20 ms per MB)
+            print("heap %s alloc %d glyphs %d" % (game.name, gc.mem_alloc(), len(gfx.GLYPHS)))
             self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
 
 

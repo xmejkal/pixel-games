@@ -72,9 +72,12 @@ class TftCanvas(Canvas):
         self.big(words, x, y, c, 1)
 
     def sprite(self, rows, palette, x, y, scale=1):
-        rects = self.cache.get((id(rows), scale))
+        # Keyed by the rows, not id(rows): runner builds its rows anew each frame, and an id key grew the cache
+        # by one entry per frame (P533 run 16) and could hit a freed object's old entry.
+        key = (rows, scale)
+        rects = self.cache.get(key)
         if rects is None:
-            rects = self.cache[(id(rows), scale)] = []
+            rects = self.cache[key] = []
             for j, row in enumerate(rows):
                 i = 0
                 while i < len(row):
