@@ -190,6 +190,8 @@ class Stack(Game):
             self.hook(cv, x + self.w // 2, y, int(self.x) + self.w // 2)
             self.block(cv, x, y, self.w, n, True)
         for x, y, w, _, i in self.slabs:  # over, they fall with the tower; each carries a cot, tumbling as it falls
+            if y + drop >= H:  # gone below the street: drop grows for as long as the over screen stays, past 2^31 px
+                continue
             self.block(cv, x, int(y + drop), w, i, True)
             pictures.draw(cv, self.COTS[int(y) // 10 % 4], x + w // 2 - 8, int(y + drop) - 12)
         if not over or not pictures.draw(cv, "stack_sold", self.SOLD_X, self.SOLD_Y):
