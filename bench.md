@@ -114,3 +114,21 @@
 - Left: the score bar redraws its same pixels every frame, so its tiles go out every frame. Drawing it untracked while the score stays the same would save more. Not done here.
 - 11:29 to 11:31 run 21, all games at the 60 ms pace with partial show: 16 fps everywhere (the pace). Send: flappy 14 to 17 ms, runner about 8, snake about 4. No errors. The PO: "Nice, really nice!"
 - 11:36 to 11:38 run 22, `FRAME_MS = 40`: flappy 21 to 24 fps, runner 20 to 21, stack 24. Runner's paint is 34 ms a frame, and the slowest frame of each interval has a paint of about 60 ms (worst gap 70 to 80 ms). Paint now sets the rate, not the send: the C drawing in P537 is the next lever.
+- 11:40 the PO on run 22: "I saw it, looks great." No stale pixels reported through title, play, game over and switches. Slice 5 passes.
+
+## P533 slice 4: every setting
+
+`tft.config(**kw)` applies all or none and returns every setting. `tft.config()` only reads.
+
+| key | default | effect | slice |
+| --- | --- | --- | --- |
+| `timeout` | 100 | the longest time one `show()` may take, 1 to 60000 ms; past it `OSError(ETIMEDOUT)` | 3 |
+| `framebuffer` | "dma" | "dma": internal RAM, sent with no copy; "strips": PSRAM, copied through two internal strips. Before `init()` only | 3 |
+| `partial` | False | send only the tiles drawn in this frame or the one before | 5 |
+| `tile` | 16 | the tile's side: 8, 16 or 32 px | 5 |
+| `windows` | 40 | past this many rectangles, send the whole frame; 1 to 64 | 5 |
+| `swap` | the bus's `swap_color_bytes` | swap the bytes of each pixel on send; needs "strips" | 4 |
+| `defaults` | (none) | True restores every setting first, then applies the others given | 4 |
+
+- 11:55 probe8 at the REPL, every line as expected. Before `init()`: `config(swap=True, framebuffer="strips")`, then `init()` keeps both, and `show()` sends 16 strips of 21 rows. After `init()` in "strips", `swap=False` applies. With "dma": `bogus=1` raises `TypeError: config() has no setting 'bogus'`; `tile=12`, `tile="16"`, `timeout="x"`, `timeout=0`, `windows=65`, `partial=1`, `framebuffer=3` and `defaults=1` each raise ValueError naming the key and what it allows; `swap=True` and `framebuffer="strips"` after `init()` raise ValueError saying to set them before `init()`. `config(timeout=50, tile=12)` raises and changes nothing. A call with every key, `config(**config())`, `defaults=True` and `defaults=True, partial=True` all return the expected dict.
+- Slices 6 (TE sync) and 7 (scroll) stay out: this module has no TE line (plan E5), and scroll does not fit the games (E7).
