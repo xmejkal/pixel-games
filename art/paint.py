@@ -466,7 +466,7 @@ class Sprite:
     def dot(self, x, y, colour):
         self.details.append((x, y, colour))
 
-    def cut(self, outline=True, threshold=120):
+    def cut(self, outline=True, threshold=120, ink=None):
         w, h = self.w, self.h
         a = self.alpha.resize((w, h), Image.BOX)
         rgb = self.rgb.resize((w, h), Image.BOX)
@@ -486,7 +486,7 @@ class Sprite:
                     if near:
                         cs = [rgb.getpixel(q) for q in near]
                         avg = [sum(c[i] for c in cs) / len(cs) for i in range(3)]
-                        col = tuple(int(GRAPHITE[i] * 0.72 + avg[i] * 0.28 * 0.6) for i in range(3))
+                        col = ink or tuple(int(GRAPHITE[i] * 0.72 + avg[i] * 0.28 * 0.6) for i in range(3))
                         out.putpixel((x, y), col + (255,))
         for x, y, c in self.details:
             if 0 <= x < w and 0 <= y < h:
@@ -497,59 +497,99 @@ class Sprite:
 SKIN, SKIN_L = (246, 196, 158), (255, 222, 192)
 RED, RED_L = (222, 60, 50), (250, 120, 90)
 BLUE, BLUE_L = (60, 104, 222), (120, 160, 245)
-NAVY, NAVY_L = (44, 46, 118), (80, 82, 160)
+NAVY, NAVY_L = (62, 68, 158), (104, 110, 196)
 SHOE = (34, 30, 36)
+INK = (30, 26, 40)  # the runner's inner pencil lines
+
+
+# A pose: body drop (game px, + is lower), then per limb the knee and ankle (legs) or elbow and hand (arms), in game
+# px with the feet on row 21.3 when on the ground (the shoe's sole is row 22, its outline row 23). Near is the
+# viewer's side, drawn in front; far is drawn darker behind.
+RUN = {  # contact, down, pass: then the same three with the legs and arms swapped
+    "contact": (0.0, ((10.0, 18.2), (11.4, 21.3)), ((6.8, 18.4), (4.0, 19.6)),
+                ((6.6, 12.6), (4.8, 14.0)), ((10.4, 12.4), (12.2, 11.0))),
+    "down": (0.8, ((9.8, 18.8), (9.0, 21.3)), ((6.8, 18.6), (4.8, 18.4)),
+             ((7.4, 13.2), (6.0, 14.6)), ((9.8, 13.0), (11.4, 12.2))),
+    "pass": (-0.4, ((7.6, 18.2), (5.8, 21.0)), ((10.4, 17.2), (8.4, 19.2)),
+             ((9.8, 12.8), (11.6, 11.8)), ((6.8, 12.8), (5.2, 13.8))),
+}
+JUMP = {
+    "takeoff": (1.6, ((10.8, 19.2), (9.6, 21.3)), ((7.0, 19.6), (5.6, 21.3)),
+                ((6.4, 13.4), (4.4, 14.8)), ((6.8, 13.6), (5.0, 15.2))),
+    "rise": (-0.4, ((10.8, 16.8), (9.4, 19.4)), ((7.0, 18.6), (5.4, 21.4)),
+             ((10.4, 9.2), (12.0, 7.2)), ((6.4, 9.4), (5.2, 7.4))),
+    "apex": (0.0, ((11.0, 16.6), (9.0, 19.0)), ((10.0, 17.4), (7.4, 19.6)),
+             ((10.8, 11.2), (13.0, 9.6)), ((5.8, 11.4), (3.6, 9.8))),
+    "fall": (-0.2, ((10.0, 18.4), (10.4, 21.4)), ((7.4, 18.8), (6.4, 21.4)),
+             ((10.8, 9.6), (12.6, 7.8)), ((5.8, 9.8), (4.0, 8.2))),
+    "land": (2.0, ((11.0, 19.6), (10.2, 21.3)), ((8.6, 19.8), (6.4, 21.3)),
+             ((10.8, 13.8), (13.2, 13.0)), ((5.6, 14.0), (3.2, 13.2))),
+}
+
+
+ALIASES = {"runner_jump": "runner_apex"}  # old name: the picture it now shows
+
+
+def run_cycle():
+    """Six frames: contact, down, pass with the near leg in front, then the same with the far leg in front."""
+    frames = []
+    for swap in (False, True):
+        for name in ("contact", "down", "pass"):
+            dy, near_leg, far_leg, near_arm, far_arm = RUN[name]
+            if swap:
+                near_leg, far_leg, near_arm, far_arm = far_leg, near_leg, far_arm, near_arm
+            frames.append((dy, near_leg, far_leg, near_arm, far_arm))
+    return frames
 
 
 def runner(pose):
+    dy, near_leg, far_leg, near_arm, far_arm = pose
     s = Sprite(16, 24)
-    # (back leg, front leg, back arm, front arm) as limb polylines in game pixels; the feet at row 22.
-    if pose == "run0":  # stride: legs apart
-        legs = ([(7.5, 15.5), (5.6, 18.5), (3.2, 20.2)], [(8.6, 15.5), (10.6, 18.6), (11.6, 21.3)])
-        feet = ((2.0, 19.3, 4.8, 21.8), (10.6, 20.4, 14.2, 22.7))
-        arms = ([(8.6, 10.6), (11.2, 12.0), (12.6, 10.6)], [(7.4, 10.8), (5.4, 12.8), (4.0, 14.2)])
-        body_dy = 0
-    elif pose == "run1":  # passing: one leg folded under
-        legs = ([(8.0, 15.5), (6.6, 18.2), (5.0, 19.0)], [(8.2, 15.5), (9.0, 18.8), (8.4, 21.4)])
-        feet = ((3.6, 17.9, 6.6, 20.0), (7.6, 20.4, 11.2, 22.7))
-        arms = ([(8.0, 10.6), (6.2, 12.2), (6.4, 14.0)], [(8.4, 10.8), (10.6, 12.6), (12.0, 12.0)])
-        body_dy = 0
-    else:  # jump: knees up, arms high
-        legs = ([(7.4, 15.0), (5.2, 16.6), (4.0, 19.6)], [(8.8, 15.0), (11.4, 16.6), (11.0, 19.4)])
-        feet = ((2.2, 18.8, 5.4, 21.2), (10.0, 18.8, 13.6, 21.0))
-        arms = ([(7.6, 10.2), (5.4, 8.6), (4.4, 6.6)], [(8.8, 10.2), (11.2, 8.6), (12.6, 6.8)])
-        body_dy = -0.6
-    dy = body_dy
-    s.part(s.shape("line", *arms[0], width=1.7), (40, 76, 190), rim=0.2)  # far arm, in shade
-    s.part(s.shape("line", *legs[0], width=2.3), (34, 36, 96), rim=0.2)
-    s.part(s.shape("ellipse", *feet[0]), SHOE, rim=0)
-    s.part(s.shape("line", *legs[1], width=2.4), NAVY, light=(10, 16, 3, NAVY_L), rim=0.3)
-    s.part(s.shape("ellipse", *feet[1]), SHOE, light=(13, 21, 1.5, (90, 86, 100)), rim=0)
-    s.part(s.shape("rect", 5.4, 9.6 + dy, 11.0, 16.2 + dy, 2.0), BLUE, light=(10.5, 10.5, 3.5, BLUE_L), rim=0.4)
-    s.part(s.shape("ellipse", 4.9, 1.8 + dy, 12.3, 9.6 + dy), SKIN, light=(11, 4, 3, SKIN_L), rim=0.3)
+    hip, shoulder = (8.2, 15.4 + dy), (8.2, 10.8 + dy)
+
+    def leg(knee_ankle, colour, light, edge):
+        knee, ankle = knee_ankle
+        ax, ay = ankle
+        if edge:  # a pencil line around the near leg, so it reads over the far one
+            s.part(s.shape("line", hip, knee, ankle, width=3.3), INK, rim=0, grain=0)
+            s.part(s.shape("ellipse", ax - 1.8, ay - 1.4, ax + 2.9, ay + 1.9), INK, rim=0, grain=0)
+        s.part(s.shape("line", hip, knee, ankle, width=2.3), colour, light=light, rim=0.25)
+        s.part(s.shape("ellipse", ax - 1.3, ay - 0.9, ax + 2.4, ay + 1.4), SHOE, rim=0)
+
+    def arm(elbow_hand, colour, skin, edge):
+        elbow, hand = elbow_hand
+        if edge:  # a pencil line around the near arm, so it reads over the shirt
+            s.part(s.shape("line", shoulder, elbow, hand, width=2.7), INK, rim=0, grain=0)
+        s.part(s.shape("line", shoulder, elbow, width=1.8), colour, rim=0.2)  # the sleeve
+        s.part(s.shape("line", elbow, hand, width=1.5), skin, rim=0.1)  # the forearm and hand
+
+    arm(far_arm, (40, 76, 190), (226, 172, 136), False)
+    leg(far_leg, (30, 32, 84), None, False)
+    leg(near_leg, NAVY, (10, 17, 3, NAVY_L), True)
+    s.part(s.shape("rect", 5.4, 9.6 + dy, 11.0, 16.2 + dy, 2.0), BLUE, light=(10.5, 10.5 + dy, 3.5, BLUE_L), rim=0.4)
+    s.part(s.shape("ellipse", 4.9, 1.8 + dy, 12.3, 9.6 + dy), SKIN, light=(11, 4 + dy, 3, SKIN_L), rim=0.3)
     cap = s.shape("ellipse", 4.4, 0.7 + dy, 12.4, 7.4 + dy)
     cap = ImageChops.multiply(cap, s.shape("rect", 0, 0, 16, 4.6 + dy, 0))
     cap = ImageChops.lighter(cap, s.shape("rect", 8.5, 3.4 + dy, 14.6, 4.9 + dy, 0.7))  # the brim, forward
-    s.part(cap, RED, light=(10, 1.5, 3, RED_L), rim=0.35)
-    s.part(s.shape("line", *arms[1], width=1.8), BLUE, light=(arms[1][-1][0], arms[1][-1][1], 2, BLUE_L), rim=0.3)
-    hx, hy = arms[1][-1]
-    s.part(s.shape("ellipse", hx - 1.2, hy - 1.2, hx + 1.2, hy + 1.2), SKIN, rim=0.1)
-    hx, hy = arms[0][-1]
-    s.part(s.shape("ellipse", hx - 1.0, hy - 1.0, hx + 1.0, hy + 1.0), (226, 172, 136), rim=0.1)
-    ey = 6 if pose != "jump" else 5
+    s.part(cap, RED, light=(10, 1.5 + dy, 3, RED_L), rim=0.35)
+    arm(near_arm, BLUE, SKIN, True)
+    ey = int(6 + dy + 0.5)
     s.dot(10, ey, (30, 26, 40))  # the eye
     s.dot(11, ey + 2, (200, 90, 90))  # a smile
     s.dot(8, ey + 1, (250, 150, 140))  # a rosy cheek
     return s.cut()
 
 
+CACTUS_INK = (20, 34, 30)  # its outline: near black, so it stands out on the green hills
+
+
 def cactus(h):
+    """A saguaro in a deep, slightly blue green, a yellow-green stripe where the light falls, a near-black outline."""
     s = Sprite(20, h)
-    green, light = (78, 160, 78), (140, 206, 112)
+    green, light = (34, 118, 92), (64, 156, 108)
     cx, tw = 10.0, (7.0 if h >= 32 else 6.0)
     top = 1.2
-    # Arms: left low, right higher, each out and up; smaller on short ones.
-    k = min(1.0, h / 40)
+    k = min(1.0, h / 40)  # arms: left low, right higher, each out and up; smaller on short ones
     aw = 3.6 if h >= 24 else 3.0
     ly, ry = h * 0.62, h * 0.45
     lh, rh = max(3.0, h * 0.30 * (0.6 + 0.4 * k)), max(3.0, h * 0.28 * (0.6 + 0.4 * k))
@@ -557,23 +597,28 @@ def cactus(h):
     if h <= 16:
         ly, ry, lh, rh = 10.0, 8.0, 3.0, 3.0
     s.part(s.shape("line", (cx - 1, ly), (lx, ly), (lx, ly - lh), width=aw), green, light=(lx, ly - lh, 2, light),
-           rim=0.45, grain=0.12)
+           rim=0.45, grain=0.1)
     s.part(s.shape("line", (cx + 1, ry), (rx, ry), (rx, ry - rh), width=aw), green, light=(rx, ry - rh, 2, light),
-           rim=0.45, grain=0.12)
-    trunk = s.shape("rect", cx - tw / 2, top, cx + tw / 2, h + 2, tw / 2)
-    s.part(trunk, green, light=(cx + 1.5, top + 4, max(3.0, h / 6), light), rim=0.5, grain=0.12)
-    img = s.cut()
-    # Pencil ribs: one faint broken line down the trunk; spines: pale ticks on the outline, every few rows.
-    rib = (58, 128, 64)
-    x = int(cx) - 1
-    for y in range(int(top) + 3, h - 1):
-        if y % 4 != 0 and img.getpixel((x, y))[3]:
-            img.putpixel((x, y), rib + (255,))
-    for i, y in enumerate(range(5, h - 3, 3)):
-        x = int(cx - tw / 2) - 1 if i % 2 else int(cx + tw / 2)
-        p = img.getpixel((x, y))
-        if p[3] and sum(p[:3]) < 300:  # on the pencil outline
-            img.putpixel((x, y), (170, 190, 130, 255))
+           rim=0.45, grain=0.1)
+    s.part(s.shape("rect", cx - tw / 2, top, cx + tw / 2, h + 2, tw / 2), green,
+           light=(cx + 1.5, top + 4, max(3.0, h / 6), light), rim=0.5, grain=0.1)
+    img = s.cut(ink=CACTUS_INK)
+    stripe, rib = (168, 214, 92), (24, 92, 74)
+
+    def paint(x, y0, y1, colour, every=0):
+        for y in range(int(y0), int(y1)):
+            p = img.getpixel((x, y))
+            if p[3] and p[:3] != CACTUS_INK and not (every and y % every == 0):
+                img.putpixel((x, y), colour + (255,))
+
+    paint(int(cx) + 1, top + 2, h, stripe)  # the lit stripe down the trunk
+    paint(int(cx) - 2, top + 3, h, rib, 4)  # a broken rib in the shade
+    paint(int(lx), ly - lh + 1, ly, stripe)  # and up each arm
+    paint(int(rx), ry - rh + 1, ry, stripe)
+    for i, y in enumerate(range(5, h - 3, 4)):  # spines: pale ticks just outside the outline
+        x = int(cx - tw / 2) - 2 if i % 2 else int(cx + tw / 2) + 1
+        if 0 <= x < 20 and img.getpixel((x, y))[3] == 0 and img.getpixel((x + (1 if i % 2 else -1), y))[3]:
+            img.putpixel((x, y), (226, 222, 170, 255))
     if h >= 40:  # a pink flower on the tall ones
         for x, y, c in ((9, 1, (240, 110, 150)), (10, 1, (255, 170, 190)), (11, 1, (240, 110, 150))):
             img.putpixel((x, y), c + (255,))
@@ -720,7 +765,7 @@ SCENE = (("runner_run0", 52, GROUND - 24), ("cactus40", 150, GROUND - 40), ("cac
          ("star", 280, 116), ("clock", 210, 136))
 
 
-def frame(layers, sprites, shift):
+def frame(layers, sprites, shift, scene=SCENE):
     """One composed game frame: each layer moved by its speed, the sprites on top, as the board would."""
     out = Image.new("RGBA", (W, H))
     for name, img, top, speed in layers:
@@ -729,7 +774,7 @@ def frame(layers, sprites, shift):
         strip.paste(img, (0, 0))
         strip.paste(img, (img.width, 0))
         out.alpha_composite(strip.crop((x, 0, x + W, img.height)), (0, top))
-    for name, x, y in SCENE:
+    for name, x, y in scene:
         out.alpha_composite(sprites[name], (x, y))
     return out.convert("RGB")
 
@@ -774,10 +819,29 @@ def preview(bg, layers, sprites, path):
         y = put("%s %dx%d, rows %d to %d, speed %.2f: the seam in the middle, at 2x" %
                 (name, img.width, img.height, top, top + img.height, speed), ch, 0, y) + 10
         d.line([(660, y - 10 - ch.height), (660, y - 14)], fill=(255, 0, 0), width=1)
-    y += 6
+    def frames(names, k=4, gap=6):
+        """Sprites side by side at k times, each on the background where it would stand."""
+        w, h = sprites[names[0]].size
+        out = Image.new("RGB", (len(names) * (w * k + gap), h * k), (245, 240, 230))
+        for i, name in enumerate(names):
+            under = bg.convert("RGBA").crop((60, GROUND - h, 60 + w, GROUND))
+            under.alpha_composite(sprites[name])
+            out.paste(under.convert("RGB").resize((w * k, h * k), Image.NEAREST), (i * (w * k + gap), 0))
+        return out
+
+    run = ["runner_run%d" % i for i in range(6)]
+    jump = ["runner_" + n for n in JUMP]
+    put("the run cycle, runner_run0 to runner_run5, at 4x", frames(run), 10, y)
+    y = put("the jump: " + ", ".join(jump) + ", at 4x", frames(jump), 10 + 6 * 70 + 30, y) + 14
+    cacti = [n for n in sprites if n.startswith("cactus")]
+    scene = [(n, 14 + i * 44, GROUND - sprites[n].height) for i, n in enumerate(cacti)] + [(run[0], 300, GROUND - 24)]
+    over = frame(layers, sprites, 0, scene).crop((0, 110, W, H)).resize((W * 3, (H - 110) * 3), Image.NEAREST)
+    y = put("every cactus over the hills band, a composed frame at 3x", over, 10, y) + 14
     x = 10
     tallest = 0
     for name, img in sprites.items():
+        if name.startswith("runner"):
+            continue  # shown in the strips above
         w, h = img.size
         big = img.resize((w * 4, h * 4), Image.NEAREST)
         cell = 2 * w * 4 + 6
@@ -812,7 +876,8 @@ def main():
     strips = {name: painter() for name, painter, _, _ in LAYERS}
     bg = compose_bg(strips)
     layers = [(name, strips[name].game(keyed), strips[name].top, speed) for name, _, speed, keyed in LAYERS]
-    sprites = {"runner_run0": runner("run0"), "runner_run1": runner("run1"), "runner_jump": runner("jump")}
+    sprites = {"runner_run%d" % i: runner(pose) for i, pose in enumerate(run_cycle())}
+    sprites.update({"runner_" + name: runner(pose) for name, pose in JUMP.items()})
     for h in (16, 24, 32, 40, 48, 56, 64):
         sprites["cactus%d" % h] = cactus(h)
     sprites["bird0"], sprites["bird1"] = bird(0), bird(1)
@@ -850,6 +915,8 @@ def main():
              "# name: (game width, game height, path on the board). A file is the picture turned to the panel: h x w,",
              "# so a strip's game x runs along the file's rows, and a 320 px window of a strip is one contiguous slice.",
              "ART = {"]
+    for old, new in ALIASES.items():  # an old name the game may still ask for, the same file
+        index[old] = index[new]
     lines += ['    "%s": (%d, %d, "%s"),' % (n, w, h, p) for n, (w, h, p) in index.items()]
     lines += ["}", "",
               "# The parallax layers, back to front: (name, top game row, width, height, speed as a fraction of the",

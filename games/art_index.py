@@ -14,7 +14,15 @@ ART = {
     "ground": (640, 50, "art/ground.bin"),
     "runner_run0": (16, 24, "art/runner_run0.bin"),
     "runner_run1": (16, 24, "art/runner_run1.bin"),
-    "runner_jump": (16, 24, "art/runner_jump.bin"),
+    "runner_run2": (16, 24, "art/runner_run2.bin"),
+    "runner_run3": (16, 24, "art/runner_run3.bin"),
+    "runner_run4": (16, 24, "art/runner_run4.bin"),
+    "runner_run5": (16, 24, "art/runner_run5.bin"),
+    "runner_takeoff": (16, 24, "art/runner_takeoff.bin"),
+    "runner_rise": (16, 24, "art/runner_rise.bin"),
+    "runner_apex": (16, 24, "art/runner_apex.bin"),
+    "runner_fall": (16, 24, "art/runner_fall.bin"),
+    "runner_land": (16, 24, "art/runner_land.bin"),
     "cactus16": (20, 16, "art/cactus16.bin"),
     "cactus24": (20, 24, "art/cactus24.bin"),
     "cactus32": (20, 32, "art/cactus32.bin"),
@@ -30,6 +38,7 @@ ART = {
     "coin3": (16, 16, "art/coin3.bin"),
     "clock": (16, 16, "art/clock.bin"),
     "star": (16, 16, "art/star.bin"),
+    "runner_jump": (16, 24, "art/runner_apex.bin"),
 }
 
 # The parallax layers, back to front: (name, top game row, width, height, speed as a fraction of the
