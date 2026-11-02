@@ -42,8 +42,8 @@ for i, c in enumerate((s3lcd.RED, s3lcd.GREEN, s3lcd.BLUE, s3lcd.YELLOW, s3lcd.C
     tft.fill_rect(0, i * 40, W, 40, c)
 tft.show()
 tft.vscrdef(0, 320, 0)
-print("scroll trial for about 10 s")
-for _ in range(2):
+print("scroll trial for about %d s" % (int(SCROLL) * 5))
+for _ in range(int(SCROLL) * 2):
     for line in range(0, 320, 2):
         tft.vscsad(line)
         time.sleep_ms(15)
