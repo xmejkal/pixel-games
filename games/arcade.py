@@ -125,7 +125,7 @@ class Runner(Game):
             self.vy = 0.0
         effects = self.effects
         effects.step(dt)
-        step = base * effects.factor(track.SLOW) * dt
+        step = base * max(0.5, effects.factor(track.SLOW)) * dt  # two clocks at once: still at least half speed
         self.odo += step
         self.far += base * dt
         self.points += base * dt / 20 * effects.factor(track.X2, 8)
@@ -183,8 +183,11 @@ class Runner(Game):
             cv.fill(28, top + 13, 20, 3, c)
             cv.fill(40, top + 20, 10, 2, c)
         x2 = self.effects.factor(track.X2, 8)
-        if x2 > 1:  # the multiplier, next to the bars
-            cv.text("x%d" % x2, 70, 19, track.BONUSES[2].colour)
+        i = 0
+        while x2 > 1:  # the multiplier as one small box per doubling, next to the bars: no text, which costs ~2.5 ms
+            cv.fill(70 + i * 8, 19, 6, 6, track.BONUSES[2].colour)
+            x2 //= 2
+            i += 1
         leg = RUN_LEGS[int(self.t * 10) % 2] if self.h <= 0 else RUN_LEGS[1]  # by time, so the legs do not flicker at speed
         cv.sprite(RUN_TOP + leg, RUN_COLOURS, 52, top, 2)
 

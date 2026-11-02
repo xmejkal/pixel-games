@@ -185,10 +185,11 @@ class Track:
             if r < 0:
                 b = c
                 break
-        if b not in self.seen:  # the first of a kind comes alone, with room to see it
+        first = b not in self.seen
+        if first:  # the first of a kind comes alone, with room to see it
             self.seen.add(b)
-            gap = max(gap, 400)
-        n = min(5, max(1, int((gap - 140) // 24))) if b is COIN and random.random() < 0.6 else 1  # coins in a row
+            gap = max(gap, 450 * k)
+        n = min(5, max(1, int((gap - 140) // 24))) if b is COIN and not first and random.random() < 0.6 else 1  # a row
         x = self.last_end + (gap - 24 * (n - 1) - Bonus.SIZE) / 2
         lift = random.randrange(6, 90) if b is COIN else random.randrange(20, 100)
         for i in range(n):
