@@ -186,7 +186,10 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 - Two bench entries disagree on whether a flash needs the buttons: 08:13 says both builds need BOOT held plus RST, slice 3 logs a no-button path that worked · E `council/user.md` USER-6, bench.md:22, bench.md:27 · caveat: which holds on a fresh board is —
 - Board power-off harm: a long hold of D14 powers the FireBeetle 2 V1.1 off through the AXP313A PWRON diode, and at 12:31 the board was dark with no USB until a 1 to 2 s D14 hold · E `council/user.md` USER-8, bench.md:56, bench.md:149 · caveat: a board fact the library cannot carry, already noted on P534 #738
 
-## Board actions <!-- REQUIRED:spark-process:board-actions -->
+## Board actions
+- filed 20 cards, #744 to #763 (items.md) · taken, D8
+- Miro frame "P539 A public graphics library for small chips (discovery, 2026-11-02)" on the hub board, https://miro.com/app/board/uXjVEavQ4JQ=/?moveToWidget=3458764689145466074 · taken, D8
+- comment on #743 linking this brief and the Miro frame · taken, D8 <!-- REQUIRED:spark-process:board-actions -->
 <!-- Each action on the board or the issue (stage, waiting flag, comment, filing): taken, with its D, or pending.
 None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - comment on #743 with the path of this brief and its commit hash · pending

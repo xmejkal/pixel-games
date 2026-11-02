@@ -27,7 +27,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "let's really not reinvent the wheel, we have a lot of inspiration" (the PO, 2026-11-02, #743) <!-- REQUIRED:needed-by -->
 - value proven by: one table in bench.md: candidate, builds for this board yes or no, ms per frame for the fixed scene (20 sprites 16 x 16 with a key colour, a score text, a tiled background, 120 frames), against the pass line of A3 (no candidate at or under 33 ms) <!-- REQUIRED:value-proven-by -->
 - depends on: Q3 (the PO's yes to benching before building), the PO's bench time <!-- REQUIRED:depends-on -->
-- status: proposed <!-- REQUIRED:item-status -->
+- status: filed D8 as #744 (Idea) · before: proposed <!-- REQUIRED:item-status -->
 - label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P539 #743 <!-- REQUIRED:spark-process:parent -->
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one <!-- REQUIRED:spark-process:slice -->
@@ -39,7 +39,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - value proven by: runner's sprite-phase average at FRAME_MS 40 with the sprites drawn by `framebuf.blit`, against A5's line (under 4 ms, P537 slice 3's line), the C change is about 10 lines (an estimate), reversible
 - note: text is not tried here. `framebuf.text` has no scale and the hud draws at scale 2 (games/gfx.py:344), so the text stays P537 slice 2's glyph cache in C. `framebuf` knows no orientation map, so the map stays in Python per call and its cost is counted. If A5 passes, the slice-3 card's blit part becomes this adapter, and the slice-3 card owns it
 - depends on: Q3, P550 (the phase averages)
-- status: proposed
+- status: filed D8 as #745 (Idea) · before: proposed
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P536 #740
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -49,7 +49,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "each frame painted and sent within one frame period" (J1, the PO's "smooth, not stucky", #741)
 - value proven by: a table n against ms in bench.md and the fitted fixed cost per window, against A7's line (within 15 % of 0.08 ms + n x 0.128 ms + bytes / 5 MB/s), the default tile size and join rule follow from it
 - depends on: the PO's bench time, the probe code lives in the fork behind a flag
-- status: proposed
+- status: filed D8 as #746 (Idea) · before: proposed
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P536 #740
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -59,7 +59,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "use C but if possible C++ if not too much slower … the newest C++ standard" (the PO, 2026-11-02, #743)
 - value proven by: the quoted compile line of the `.cpp` file (its `-std`, `-fno-exceptions`, `-fno-rtti` present or absent), and the `target_compile_options` line that fixes it, no board needed, minutes
 - depends on: —
-- status: proposed
+- status: filed D8 as #747 (Idea) · before: proposed
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -69,7 +69,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "maybe we could even use the AI chip or instructions that the S3 has" (the PO, 2026-11-02, #743)
 - value proven by: cycles per pixel at 16 x 16, 32 x 32, 127 x 127, 128 x 128 and 320 x 240, aligned and at a 2-byte offset, internal and PSRAM, within 25 % of Espressif's table at 128 x 128 aligned, and the frame-time gain in ms on one game, `machine.freq()` printed, so the clock is known. Done as P537 slice 8 states it: the files stay if a frame gains 2 ms or more, otherwise they go and the number stays in bench.md
 - depends on: Q7 (Apache-2.0 with its notice allowed), P537 slices 2 and 3 (no PIE kernel before the paint is batched in C, ★C3), the PO's bench time
-- status: proposed
+- status: filed D8 as #748 (Idea) · before: proposed
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -79,7 +79,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "the architecture really allowed for easy swap ins, porting and applying in various situations for various chips and models and firmwares and drivers" (the PO, 2026-11-02, #743)
 - value proven by: 4 of 4 compile and link, each build log quoted, or the one that fails named with its error, the Arduino and Pico toolchains are not installed here, so their install cost is named first
 - depends on: P543, Q6 (which targets the MVP must build)
-- status: proposed
+- status: filed D8 as #749 (Idea) · before: proposed
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -90,7 +90,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - value proven by: `ctest` green on the Mac with the golden hashes, one bench.md run line of a game painting through the new call at no worse frame time than run 22, and the diff that shows no `py/*.h`, esp_lcd or FreeRTOS include under `core/`
 - note: P537 places a new `scene.c` beside `frame.c` with `frame_t` as its only dependency (p537-finding.md:108), but `frame_t` lives in `frame.h`, which includes FreeRTOS, esp_lcd and `py/obj.h` (frame.h:13-17). Either P537's layer design or this include rule changes. Q4 settles it: until then slices 2 and 3 keep `frame_t`, and this card waits. It holds no primitive of slice 3
 - depends on: Q4 (the layer shape, the standard and the `scene.c` dependency)
-- status: proposed
+- status: filed D8 as #750 (Idea) · before: proposed
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -100,7 +100,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "in the end make it public" (the PO, 2026-11-02, #743)
 - value proven by: the table in the fork, one row per file under `src/`, every row with a permissive licence or the file removed. The lead found that 11 of 14 `pngenc` files name `zlib.h`, whose line 4 carries the Gailly and Adler copyright, and TJpgDec carries ChaN's terms (tjpgd565.c:2-13), so the rows quote those
 - depends on: Q7 (which licences may enter)
-- status: proposed
+- status: filed D8 as #751 (Idea) · before: proposed
 - label (the repository's type label): chore
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -110,7 +110,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "make it public … so we can really offer a good thing" (the PO, 2026-11-02, #743)
 - value proven by: a list of the posts with URL and date, the count of distinct posters, against A1's line (5 or more), and the search terms used, secondhand accounts, labelled so
 - depends on: —
-- status: proposed, deferred by D5 until the PO wants other people as users
+- status: filed D8 as #752 (Idea) · before: proposed, deferred by D5 until the PO wants other people as users
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -120,7 +120,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "comments throughout that get checked and updated if stale" (the PO, 2026-11-02, #743), applied to the two documents the library stands on
 - value proven by: bench.md:77 and bench.md:100 agree (the one-row strip bug held in slices 1 to 3, per s3lcd.c:2809), p537-finding.md's st7789_mpy date, its LVGL "no esp32 path" and its "no published number" lines corrected with PO-7's pointers, the 40 to 55 KB copy line recomputed with the window overhead removed (PHYS-3)
 - depends on: — (#741 is closed, Done, 2026-11-02, so the fix stands on this card)
-- status: proposed
+- status: filed D8 as #753 (Idea) · before: proposed
 - label (the repository's type label): chore
 - parent (the epic, as a sub-issue): P536 #740
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -130,7 +130,7 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: "smooth, not stucky" (the PO, 2026-11-02, #741, J1), and the refuter's riskiest assumption under D5 (A2)
 - value proven by: three numbers in bench.md: (a) `fill_rect` calls per frame for runner, from a counter in `TftCanvas.fill`, (b) the cost of one 8 x 8 and one 240 x 16 `tft.fill_rect`, 1000 calls each by `time.ticks_cpu()`, (c) the average paint per phase, a sum beside the maximum in `gfx.PHASES` (P537 slice 0 step one, which this card contains), and the collection time inside it, with `GC_FRAMES` set to a very large value for one run (never 0, games/app.py:96 divides by it). Pass line, set 2026-11-02 before any result (D7): the calls per frame by size class, each times its measured per-call cost (8 x 8 up to 64 pixels, 240 x 16 above), summed, account for at least 70 % of the average runner paint re-measured in the same session, since run 22's 34 ms log is not kept. Under 40 %: batching alone will not reach 12 ms
 - depends on: the PO's bench time
-- status: proposed, test and pass line chosen by the PO (D6, D7, D8)
+- status: filed D8 as #754 (Ready) · before: proposed, test and pass line chosen by the PO (D6, D7, D8)
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -140,12 +140,15 @@ Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whol
 - needed by: A8, rated high by the PO (D6, 2026-11-02): the showcase must still build when MicroPython or the IDF moves
 - value proven by: a branch of the fork bumped once (MicroPython master recommends IDF v5.5.5 against v1.29.0's v5.5.2, PO-17), the build log quoted, the host tests run, and the minutes of the PO and the AI logged. Pass line, set 2026-11-02 and proposed, pending the PO (D7 covers only P550): the image builds and the host tests pass within 4 hours of logged time in total. Over that, the showcase pins one MicroPython and IDF pair and its README says so
 - depends on: the PO's time, the host tests of P546 if they exist by then (otherwise the build alone)
-- status: proposed
+- status: filed D8 as #755 (Idea) · before: proposed
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
 
 ## Board actions
+- filed P540 to P551 as #744 to #755, sub-issues of P539 #743 or P536 #740, on spark project 2: P550 #754 in Ready, the rest in Idea · taken, D8
+- filed the P537 slice cards 0 to 7 as P552 to P559, #756 to #763, sub-issues of P536 #740, in Idea · taken, D8
+- Slice field: not set on any of them; the PO is asked for a new Slice option · pending
 <!-- Each action, taken or pending, with its D. e.g. `- move the item to Discovery · pending` -->
 - file P540 to P551 as issues, except P548 (deferred by D5), and file the P537 slice cards of the table above with their labels, each a sub-issue of P539 #743 or P536 #740, after the PO's yes to this list · pending <!-- REQUIRED:board-actions -->
 - ask the PO for a new Slice option for the library (none of the board's options fits) · pending
