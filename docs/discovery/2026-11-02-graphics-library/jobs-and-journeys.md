@@ -12,11 +12,11 @@ e.g. `- Team leads who assign work · H Lena's belief, no interview yet` -->
 ## Jobs
 <!-- One job story per line, each clause tagged: When …, I want to …, so I can ….
 e.g. `- When I assign a task in a meeting [E tickets.csv:6], I want the assignee to see it that day [H Lena], so I can stop chasing people [E tickets.csv:7]` -->
-- J1 · When my game moves objects on a small display [E p537-finding.md, ed58361], I want each frame painted and sent within one frame period [E bench.md slice 4, FRAME_MS 40], so the motion looks smooth, not "stucky" [D the PO, 2026-11-02, #741]
-- J2 · When I write a game in MicroPython [E games/], I want fast sprites, tiles and text that I call from Python [D the PO, #743], so I keep Python's ease without its speed cost [H the lead]
-- J3 · When I move a project to another chip, board, panel or firmware [D the PO, #743], I want to swap one port layer [D the PO, #743], so my game code stays the same [H the lead]
-- J4 · When a chip has special hardware or instructions (S3 PIE and GDMA, P4 PPA, Pico PIO) [D the PO, #743], I want the library to use them behind the same calls [H the lead], so my game gets their speed without chip code of its own [H the lead]
-- J5 · When I find a bug or want a feature [H the lead], I want a public, tested project with released builds [D the PO, #743], so I trust it and can contribute [H the lead] <!-- REQUIRED:jobs -->
+- J1 · When my game moves objects on a small display [E p537-finding.md, ed58361], I want each frame painted and sent within one frame period [E bench.md:116, FRAME_MS 40], so the motion looks smooth, not "stucky" [E #741, the PO's words, 2026-11-02]
+- J2 · When I write a game in MicroPython [E games/], I want fast sprites, tiles and text that I call from Python [E #743, the PO's words], so I keep Python's ease without its speed cost [H the lead]
+- J3 · When I move a project to another chip, board, panel or firmware [E #743, the PO's words], I want to swap one port layer [E #743, the PO's words], so my game code stays the same [H the lead]
+- J4 · When a chip has special hardware or instructions (S3 PIE and GDMA, P4 PPA, Pico PIO) [E #743, the PO's words], I want the library to use them behind the same calls [H the lead], so my game gets their speed without chip code of its own [H the lead]
+- J5 · When I find a bug or want a feature [H the lead], I want a public, tested project with released builds [E #743, the PO's words], so I trust it and can contribute [H the lead] <!-- REQUIRED:jobs -->
 
 ## Today they…
 <!-- Per job: what they do instead today (a competitor, a workaround or nothing), tagged.
