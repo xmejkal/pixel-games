@@ -1,7 +1,9 @@
 """Three side-on games for one button: flappy (tap), runner (tap, hold for a high jump), snake (tap turns right)."""
 
 import random
+from math import exp, sqrt
 
+import track
 from gfx import (BLACK, GREEN, GREY, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565)
 
 W, H = WIDTH, HEIGHT
@@ -92,41 +94,64 @@ class Runner(Game):
     BUFFER = 0.15  # seconds a tap in the air is kept for the landing
 
     def setup(self):
-        self.h, self.vy, self.odo, self.buffer = 0.0, 0.0, 0.0, 0.0
-        self.obs = [[W + 20.0, 16, 30]]
-        self.next = 220
+        self.h, self.vy, self.buffer = 0.0, 0.0, 0.0
+        self.odo, self.far, self.points = 0.0, 0.0, 0.0  # px the world moved, px at the base speed, and the exact score
+        self.track, self.effects = track.Track(), track.Effects()
+
+    def base_speed(self):
+        """px/s from the distance run, not the score, so a score bonus does not speed the game up. The same start as
+        before, then it keeps growing and levels off softly near 700 (the PO, 2026-11-02: harder patterns from there)."""
+        level = self.far / 20
+        v = 150 + 4 * min(level, 40) + 12 * sqrt(max(0.0, level - 40))
+        return v if v <= 600 else 600 + 100 * (1 - exp((600 - v) / 100))
 
     def play(self, pressed, held):
-        dt = self.dt
+        dt, base = self.dt, self.base_speed()
+        k = max(1.0, sqrt(base / 310))  # quicker jumps at speed, the same heights; from the base, so slow keeps them
         if pressed:  # a tap shortly before landing still jumps
             self.buffer = self.BUFFER
         self.buffer -= dt
         if self.h <= 0 and (held or self.buffer > 0):  # held: jump again at each landing
-            self.vy, self.buffer = 420.0, 0.0
+            self.vy, self.buffer = 420.0 * k, 0.0
             self.fx.burst(60, self.GROUND, c565(150, 110, 70), 5, 60.0, 0.4, 200.0)
-        self.vy -= (700 if held and self.vy > 0 else 1300) * dt
+        if not held and self.vy > 150 * k:  # let go while rising: the jump ends low, so the hold time sets the height
+            self.vy = 150 * k
+        self.vy -= (560 if held and self.vy > 0 else 1300) * k * k * dt
         was = self.h
         self.h = max(0.0, self.h + self.vy * dt)
         if self.h == 0:
             if was > 0:
                 self.fx.burst(60, self.GROUND, c565(150, 110, 70), 5, 60.0, 0.4, 200.0)
             self.vy = 0.0
-        speed = 150 + min(self.score, 40) * 4
-        self.odo += speed * dt
-        score = int(self.odo / 20)
-        if score != self.score and score % 10 == 0:
+        effects = self.effects
+        effects.step(dt)
+        step = base * effects.factor(track.SLOW) * dt
+        self.odo += step
+        self.far += base * dt
+        self.points += base * dt / 20 * effects.factor(track.X2, 8)
+        self.count()
+        tr = self.track
+        tr.move(step)
+        tr.spawn(self.far / 20, k)
+        for t in tr.things:
+            if tr.hit(t, step, was, self.h):
+                kind = t[1]
+                if kind.deadly:
+                    self.die(60, self.GROUND - self.h - 12)
+                    return  # nothing after death counts
+                self.points += kind.points
+                if kind.effect:
+                    effects.add(kind.effect, kind.seconds, kind.mult, kind.colour)
+                self.fx.burst(60, self.GROUND - self.h - 12, kind.colour, 10, 120.0, 0.5, 100.0)
+                t[0] = -1000.0  # taken: move() drops it
+        self.count()
+
+    def count(self):
+        """The whole score from the exact one, with a pop each time it passes a ten, even when x2 or a coin skips one."""
+        score = int(self.points)
+        if score // 10 != self.score // 10:
             self.pop(W - 40, 40)
         self.score = score
-        for o in self.obs:
-            o[0] -= speed * dt
-        if self.obs[0][0] + self.obs[0][1] < -10:
-            self.obs.pop(0)
-        if not self.obs or self.obs[-1][0] < W - self.next:
-            self.obs.append([W + 10.0, random.randrange(14, 26), random.randrange(16, 64)])
-            self.next = random.randrange(180, 300)
-        for x, w, h in self.obs:
-            if x < 66 and x + w > 52 and self.h < h - 2:
-                self.die(60, self.GROUND - self.h - 12)
 
     def paint_static(self, cv):
         g = self.GROUND
@@ -141,16 +166,11 @@ class Runner(Game):
         g = self.GROUND
         for i in range(9):
             cv.fill((i * 44 - int(self.odo)) % (W + 44) - 20, g + 16, 12 + i % 4 * 3, 3, c565(90, 55, 25))
-        green, dark = GREEN, c565(20, 120, 40)
-        for x, w, h in self.obs:  # a cactus with two arms
-            cv.fill(x + w // 3, g - h, w // 3 + 2, h, green)
-            cv.fill(x, g - h * 2 // 3, w // 3 + 1, 5, green)
-            cv.fill(x, g - h * 2 // 3 - 8, 5, 10, green)
-            cv.fill(x + w * 2 // 3, g - h // 2, w // 3 + 1, 5, green)
-            cv.fill(x + w - 5, g - h // 2 - 8, 5, 10, green)
-            cv.fill(x + w // 3 + 3, g - h, 2, h, dark)
+        self.track.paint(cv, g)
+        for i, e in enumerate(self.effects.on):  # one bar per effect, shrinking with its time left
+            cv.fill(6, 19 + i * 5, 4 + int(56 * e[1] / e[3]), 3, e[4])
         top = g - self.h - 24
-        leg = RUN_LEGS[int(self.odo / 14) % 2] if self.h <= 0 else RUN_LEGS[1]
+        leg = RUN_LEGS[int(self.t * 10) % 2] if self.h <= 0 else RUN_LEGS[1]  # by time, so the legs do not flicker at speed
         cv.sprite(RUN_TOP + leg, RUN_COLOURS, 52, top, 2)
 
 
