@@ -89,3 +89,24 @@ none. Three page reads for the ★ claims: en.wikipedia.org/wiki/Downwell_(video
 - The seven flat games' draw code and the user lens's per-game sizes: not re-read; I checked the pointers the brief cites, not the whole table.
 - Theme originality by search: none run (the brief's P577 owns it).
 - art/preview.png as an image: I read its size with PIL, not the picture.
+
+## Second pass
+
+Re-read at 0f82924 (after 3c02372, 3903293, cb30633, 0f82924): brief.md, items.md, story-map.md, risks-and-tests.md as changed. The D rows quote the PO's picks; I cannot see the AskUserQuestion texts, so "matches" means the brief is consistent with its own D row. Verdicts: MUST (contradicts a D or leaves a D unapplied) · SHOULD (stale or weaker).
+
+1. MUST · A1, A2 and A3 (risks-and-tests.md) still read "proposed 2026-11-02, pending Q1", and A3's pass line is "average fps in play not below the same game's fps before the pass". D3 answered Q1 and set "at most 2 fps below". Change the three rows to "D3 (the PO, 2026-11-02)" and A3 to "at most 2 fps below".
+2. MUST · items.md P568 "value proven by: … the `time` line's fps not below the same game's fps before the pass (… pending Q1)" contradicts D3's −2 fps. Same fix.
+3. MUST · brief Options Q2 W (marked "chosen D4") still lists the art lens's hours (flappy, runner, tunnel, cube, …), says "W reorders the games, because the D14 cycle is … so W needs a code change to GAMES" and its caveat repeats "W reorders the games". D4 fixed the hours to the GAMES order, so nothing is reordered and no code change is needed. Rewrite the option's hours and drop the reorder cost and caveat (P576 and story-map slice 6 already carry D4's order).
+4. MUST · items.md P581 (buzzer) has "parent: P565 #769", while Scope says new hardware is out and "a buzzer is its own later card, D13", and the no-gos bar "new hardware such as a buzzer inside this epic". Either the parent is "ask the decider" or the scope line changes.
+5. MUST · Q7 still "decides: P575's shape … unblocks: P575"; D11 dropped P575. Point it at P572's night-ink mode.
+6. SHOULD · Options Q4 says AUTOPILOT is "the default, EVAC stays an option the PO must pick" and offers the facilitator's PHOTO BOOTH; D6 picked EVAC and SMILE as main takes. Mark the alternates as not chosen (D6), keep my flags where they are (A7 carries them: no caveat dropped).
+7. SHOULD · Slice 0 on stack against the riskiest A2 with A3: stack paints in 15.7 ms at a 40 ms pace (24 fps, pace-bound), so a −2 fps line cannot fail A3 unless paint grows by about 20 ms; the test row should say A3 is tested weakly on stack and really in the first scrolling game (P574). The Q6 caveat says it; the test row and story-map slice 0 do not.
+8. SHOULD · Board actions in brief.md and items.md: "comment on #769 with … Q1" and "Waiting since the day Q1 is asked" are stale; Q1 is answered (D3). The comment should carry D3 to D13 and the one open ask (jobs, remaining risk, items.md).
+9. SHOULD · A1 row calls itself "a lower assumption" while its importance is "high · D3": the PO rated it high. Write "not the riskiest (refuter part 5), rated high by the PO (D3)".
+10. SHOULD · D8 names P554 #758 and P580 #771 as the driver cards that follow, and not P556 #760; P574 and story-map slice 4 keep "#760 merged first" from the card's note. Consistent, but say in D8 or P574 that #760 is the card's own precondition, not a D8 pick.
+11. SHOULD · story-map slice 0 is "the probe (P567), then stack (RENT)"; items.md's D8 order is P567, P572, P568, and P568 depends on P572. Add P572 to slice 0 or say the table refactor precedes it.
+12. SHOULD · P581 "needed by: 'shoking and cool'": the request has no word about sound; the need is D13 alone. Quote D13.
+
+Caveats I raised: none dropped. EVAC/SMILE (A7), the non-blind test (test row, A1, A2), the 6.81 MB rival (A4, verification split), the no-headroom narrowing (A3, slice 4), the D14 order (fixed by D4), tunnel as E (F5), the pointer fixes (★C5, ★C11, ★C15, ★C21) are all in. Verification.md reads "pending Q1" in the A1 split line: stale with D3, same as finding 1.
+
+Not checked: the AskUserQuestion texts behind D3 to D13 (not in the folder), and whether the Q6 question named the stack trade (loved art at stake, weak A3 test) before he chose.
