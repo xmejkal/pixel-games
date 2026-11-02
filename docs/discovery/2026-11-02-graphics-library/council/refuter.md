@@ -1,6 +1,6 @@
 # P539 refuter: the brief against its sources
 
-Refuter (Fable 5.1), 2026-11-02, 13:15 to about 14:15 Europe/Prague. Read-only on every tree. this file is the only write. Start: own idea (the PO's), decider as the only reachable user (n = 1). Item: spark #743 (read by `gh issue view 743`. body only, 0 comments). Every bench.md, p537-finding.md, `s3lcd/src/*` and `games/*` line below was re-read in firebeetle-games at HEAD c241a92 on this date. Every build fact was re-run against `~/esp/micropython-v1.29.0/ports/esp32/build-s3lcd` and `~/esp/esp-idf-v5.5.2`. Downloaded into the session scratchpad only: the RP2040 datasheet (sha256 be56fbb7…, matches chip-hardware.md), the ESP32-S3 TRM v1.8 (sha256 4484bf8a…, matches), raw source files from GitHub named at each claim. Web searches: none (see the last section). "Verbatim" means the line as read, trimmed to the clause that matters.
+Refuter (Fable 5.1), 2026-11-02, 13:15 to about 14:15 Europe/Prague. Read-only on every tree. this file is the only write. Start: own idea (the PO's), decider as the only reachable user (n = 1). Item: spark #743 (read by `gh issue view 743`. body only, 0 comments). Every bench.md, p537-finding.md, `s3lcd/src/*` and `games/*` line below was re-read in firebeetle-games at HEAD 5c4e3e1 on this date. Every build fact was re-run against `~/esp/micropython-v1.29.0/ports/esp32/build-s3lcd` and `~/esp/esp-idf-v5.5.2`. Downloaded into the session scratchpad only: the RP2040 datasheet (sha256 be56fbb7…, matches chip-hardware.md), the ESP32-S3 TRM v1.8 (sha256 4484bf8a…, matches), raw source files from GitHub named at each claim. Web searches: none (see the last section). "Verbatim" means the line as read, trimmed to the clause that matters.
 
 Verdict words: holds, partly (the source says something weaker or narrower), refuted, could not open. A pointer that turned out wrong is noted even when the claim holds.
 
@@ -132,7 +132,7 @@ None. Every URL above was a fetch of a source the folder had already cited (esp-
 
 ## Second pass
 
-Refuter (Fable 5.1), 2026-11-02, after commits 43c218c and d4c960f. Read: brief.md (What we found, Options, Riskiest, Test, Questions, Decisions D5 to D7, Ready, Stands on), verification.md, items.md, story-map.md, risks-and-tests.md, the jobs diff. Re-checked on the way: `gh issue view 741` (CLOSED 2026-11-02T12:00:49Z), p537-finding.md:134, bench.md:70, games/gfx.py:344, games/app.py:29 and :96, `mphalport.h:96` (`mp_hal_ticks_cpu` exists on the esp32 port), `grep -l zlib.h s3lcd/src/pngenc/*` (11 files). Parts 1 and 3 are not repeated. Nothing in the folder was changed by me.
+Refuter (Fable 5.1), 2026-11-02, after commits 10e2d46 and f3b38fa. Read: brief.md (What we found, Options, Riskiest, Test, Questions, Decisions D5 to D7, Ready, Stands on), verification.md, items.md, story-map.md, risks-and-tests.md, the jobs diff. Re-checked on the way: `gh issue view 741` (CLOSED 2026-11-02T12:00:49Z), p537-finding.md:134, bench.md:70, games/gfx.py:344, games/app.py:29 and :96, `mphalport.h:96` (`mp_hal_ticks_cpu` exists on the esp32 port), `grep -l zlib.h s3lcd/src/pngenc/*` (11 files). Parts 1 and 3 are not repeated. Nothing in the folder was changed by me.
 
 ### 2. The changed sections against their detail
 

@@ -1,6 +1,6 @@
 # P539 council: the tech lead (feasibility, fit, electronics-firmware:physics)
 
-The tech lead (Opus) wrote this on 2026-11-02, from about 12:46 CET. It reads and changes nothing in the product. Tags: E means evidence, with a pointer. H means a hypothesis or model knowledge, with its source. D means a decision, with who and when. A dash (—) is an unknown. "fg" is firebeetle-games at its working tree on 2026-11-02 (HEAD b4576e7). "Scratch" means the session scratchpad. A web page cited as "read 2026-11-02" was fetched on that day. Nothing here is a decision.
+The tech lead (Opus) wrote this on 2026-11-02, from about 12:46 CET. It reads and changes nothing in the product. Tags: E means evidence, with a pointer. H means a hypothesis or model knowledge, with its source. D means a decision, with who and when. A dash (—) is an unknown. "fg" is firebeetle-games at its working tree on 2026-11-02 (HEAD 5badc28). "Scratch" means the session scratchpad. A web page cited as "read 2026-11-02" was fetched on that day. Nothing here is a decision.
 
 ## Findings
 
