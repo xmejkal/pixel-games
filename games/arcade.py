@@ -89,16 +89,20 @@ class Runner(Game):
     bg = c565(250, 190, 120)
     accent = ORANGE
     GROUND = 192
+    BUFFER = 0.15  # seconds a tap in the air is kept for the landing
 
     def setup(self):
-        self.h, self.vy, self.odo = 0.0, 0.0, 0.0
+        self.h, self.vy, self.odo, self.buffer = 0.0, 0.0, 0.0, 0.0
         self.obs = [[W + 20.0, 16, 30]]
         self.next = 220
 
     def play(self, pressed, held):
         dt = self.dt
-        if pressed and self.h <= 0:
-            self.vy = 420.0
+        if pressed:  # a tap shortly before landing still jumps
+            self.buffer = self.BUFFER
+        self.buffer -= dt
+        if self.h <= 0 and (held or self.buffer > 0):  # held: jump again at each landing
+            self.vy, self.buffer = 420.0, 0.0
             self.fx.burst(60, self.GROUND, c565(150, 110, 70), 5, 60.0, 0.4, 200.0)
         self.vy -= (700 if held and self.vy > 0 else 1300) * dt
         was = self.h
