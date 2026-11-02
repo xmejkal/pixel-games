@@ -60,6 +60,7 @@ class App:
         self.game = self.games[self.index]()
         self.out.reset()
         self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
+        self.last, self.worst = time.ticks_us(), 0  # the longest gap between two frame starts: a freeze shows here
         print("game", self.game.name)
 
     def collect(self):
@@ -70,6 +71,7 @@ class App:
 
     def frame(self):
         us, t0 = self.us, time.ticks_us()
+        self.worst, self.last = max(self.worst, time.ticks_diff(t0, self.last)), t0
         now = time.ticks_ms()
         pressed, switched = self.fire.update(now), self.boot.update(now)
         if switched:
@@ -91,9 +93,9 @@ class App:
             fps = self.frames * 1000 // elapsed
             print("fps", game.name, fps)
             n = 1000 * self.frames  # microseconds to milliseconds per frame
-            print("time %s step %.1f paint %.1f send %.1f gc %.1f fps %d" % (
-                game.name, us[0] / n, us[1] / n, us[2] / n, us[3] / n, fps))
-            self.frames, self.mark, self.us = 0, now, [0, 0, 0, 0]
+            print("time %s step %.1f paint %.1f send %.1f gc %.1f fps %d worst %d" % (
+                game.name, us[0] / n, us[1] / n, us[2] / n, us[3] / n, fps, self.worst // 1000))
+            self.frames, self.mark, self.us, self.worst = 0, now, [0, 0, 0, 0], 0
 
 
 def open_st7789():
