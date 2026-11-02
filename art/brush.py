@@ -2,6 +2,7 @@
 big and cut to a hard mask. Every game's art set paints with these, on the one shared random stream."""
 
 import random
+from dataclasses import dataclass, field
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
@@ -287,3 +288,31 @@ class Sprite:
             if 0 <= x < w and 0 <= y < h:
                 out.putpixel((x, y), tuple(c) + (255,))
         return out
+
+
+# --- an art set: one game's pictures, on its own seed ------------------------------------------------------------
+
+@dataclass
+class Painting:
+    """What one art set paints. pictures: name to (image, keyed), in the order their files are written; layers: the
+    parallax layers back to front, as (name, image, top, speed, keyed), each one also among the pictures."""
+
+    pictures: dict
+    layers: list = field(default_factory=list)
+
+    def images(self):
+        return {name: img for name, (img, _) in self.pictures.items()}
+
+
+@dataclass
+class ArtSet:
+    """One game's art. Its painter starts on the set's own seed, so a change to one game moves no other game's art."""
+
+    name: str
+    seed: int
+    painter: object  # a function that returns a Painting
+    aliases: dict = field(default_factory=dict)  # an old name the game may still ask for: the picture it now shows
+
+    def paint(self):
+        rnd.seed(self.seed)
+        return self.painter()
