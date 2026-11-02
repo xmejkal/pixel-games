@@ -147,3 +147,11 @@ A reviewer (Sonnet) and a refuter (Opus) read the driver diff since slice 3 (9ff
 - 12:20 probe9 on the board: the refuter's crash steps (`timeout=1`, `show()` raises, `deinit()`) pass; a timed-out frame left for a soft reset, then `soft-reset`, passes; a second `init()` raises; `defaults=True` on a swapping bus with "dma" raises and changes nothing; the messages name the key. probe6 after the soft reset: flappy 11.2 ms in play, runner 7.7 ms, as before.
 
 - 12:31 the board was dark after a power-off (no Espressif device on USB, replug did not help). The schematic (V1.0, AXP313A) has no power LED: D3 is the charger STAT LED, LED1 sits on GPIO21 with the backlight. Holding D14 (K1, PWRON) for 1 to 2 s switched the power chip on (a few red blinks), and the port came back. Redeployed: the 11:51 image (current, make rebuilt nothing), all game files and main.py, so the games start at power-on. Serial after reset: flappy 17 fps, then runner, snake, stack.
+
+## P550 (#754), 2026-11-02: what runner's paint is made of
+
+- Plan: `~/.claude/plans/enchanted-marinating-falcon.md`, checked by one refuter. Code 9ec66df: `gfx.PHASE_SUM` and an `avg` line per interval (P537 slice 0 step one), the still picture timed as "static" in `TftOut.draw`, `probe550.py`.
+- Per-call costs, no play (`run25-p550-bench.log`, three runs, equal to 0.01 µs): empty loop 2.10 µs, `fill_rect` 8 x 8 5.61 µs, 16 x 240 52.33 µs, `TftCanvas.fill` 8 x 8 113.5 µs, 240 x 16 325.3 µs, full-screen `tft.fill` 2885.4 µs. Tiles tracked as in the games, gc on.
+- `TftCanvas.fill` allocates 32 bytes per call, `fill_rect` none (`run27-p550-alloc.log`, and `probe550.bench()` since). A call clipped away, so no C call at all, still costs 155.3 µs and 32 bytes, against 15.5 µs for the raw 8 x 8 `fill_rect` in the same loop. Reading, not measured: the 32 bytes are the 4-tuple that `lcd.py:51` builds (`x0, y0, x1, y1 = max(...), ...`).
+- Costs rise as garbage builds up: with gc off, the Python-only call went from 161 to 605 µs between two passes, while an empty call stayed at 5.5 µs (`run26-p550-split.log`). A first split that passed `*args` allocated in the harness itself and is void.
+- So the Python wrapper, not the C call, is most of a canvas call's cost. The count per play frame (R2) and the baseline paint (R1) still wait on the PO's play.

@@ -101,5 +101,16 @@ def bench():
     for _ in range(100):
         tft.fill(c)
     screen = time.ticks_diff(time.ticks_us(), t) / 100 - empty
+    gc.collect()
+    a = gc.mem_alloc()
+    for _ in range(n):
+        fill(100, 100, 8, 8, c)
+    per_fill = (gc.mem_alloc() - a) // n  # 32 on 2026-11-02: lcd.py's four-name assignment builds a tuple per call
+    gc.collect()
+    a = gc.mem_alloc()
+    for _ in range(n):
+        fill_rect(100, 100, 8, 8, c)
+    per_rect = (gc.mem_alloc() - a) // n
+    print("bench bytes allocated per call: canvas.fill %d fill_rect %d" % (per_fill, per_rect))
     print("bench us per call: empty loop %.2f fill_rect 8x8 %.2f 16x240 %.2f canvas.fill 8x8 %.2f 240x16 %.2f screen fill %.1f" % (
         empty, rect8, rect240, canvas8, canvas240, screen))
