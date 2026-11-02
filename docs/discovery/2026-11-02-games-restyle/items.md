@@ -11,7 +11,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: "great physics like movement and well animated sprites" (the PO, 2026-11-02, #769); the tech lead's Q-g: size the per-game budget from measurement or leave the calculated bounds <!-- REQUIRED:needed-by -->
 - value proven by: a bench.md table with the six numbers (★C5, ★C6, ★C13 gaps), each measured, replacing "—" in risks-and-tests.md Budgets <!-- REQUIRED:value-proven-by -->
 - depends on: — (the board on USB; no driver card) <!-- REQUIRED:depends-on -->
-- status: proposed <!-- REQUIRED:item-status -->
+- status: filed #772 (D14) <!-- REQUIRED:item-status -->
 - label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P565 #769 <!-- REQUIRED:spark-process:parent -->
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one (the pixel-games slice was not read) <!-- REQUIRED:spark-process:slice -->
@@ -21,7 +21,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: "prettyfy all the games" (the PO, 2026-11-02): ten games through one pipeline (★C9, TL-12)
 - value proven by: the same 55 .bin files byte for byte after the refactor (seed 562), and a fourth game added as one table entry
 - depends on: —; before P568, P573 and P574 (D8)
-- status: proposed (order D8: second)
+- status: filed #773 (D14) 
 - label (the repository's type label): chore
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -31,7 +31,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: "I want it to be shoking and cool and beautiful" (the PO, 2026-11-02, #769)
 - value proven by: his verdict in his words in bench.md ("exciting" or stronger), and the `time` line's average fps at most 2 fps below the same game's fps before the pass (D3's pass line, for A2 and A3, the riskiest; stack tests A3 only weakly, the real test is P574)
 - depends on: P567 for sizing (D8: probe first); P572 (the table); stack is a static-backdrop game and needs no driver card; small rule changes allowed where RENT needs one (D9)
-- status: proposed (order D8: third)
+- status: filed #774 (D14) 
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -41,7 +41,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: "each one is a wild, beautiful indie game with its own theme" (#769 title, the PO's card)
 - value proven by: ten cards on the board, and the over-screen paint time in the `time` log below the over box re-timed today (the 33 to 54 ms of p537-finding.md:7 was measured before partial show)
 - depends on: — (no driver card; ★C11)
-- status: proposed
+- status: filed #775 (D14) 
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -51,7 +51,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: "great physics like movement" (the PO, 2026-11-02, #769)
 - value proven by: his verdict per game in bench.md; the body-update loop time from P567 under the A5 pass line
 - depends on: — (tech-lead.md PHYS-5: no driver card); sub-pixel motion later with P558 #762
-- status: proposed
+- status: filed #776 (D14) 
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -61,7 +61,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: the tech lead's Q-f (TL-9); every restyle step adds art
 - value proven by: copy a new .bin, soft reset, the game draws it, no "the pool is smaller: reset the board" (s3lcd.c:2927-2949)
 - depends on: —
-- status: proposed
+- status: filed #777 (D14) 
 - label (the repository's type label): chore
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -71,7 +71,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: "each one is a wild, beautiful indie game with its own theme" (#769)
 - value proven by: his verdict per game; fps per game not below its own pre-slice fps in the `time` log
 - depends on: P568's verdict; D4 to D6 decided; P572; P554 #758 helps (a kept background) but is not required (TL-16a)
-- status: proposed
+- status: filed #778 (D14) 
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -81,7 +81,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: "each one is a wild, beautiful indie game with its own theme" (#769); "flappy is a bit stucky" (the PO, P564)
 - value proven by: fps per game not below the P556 numbers (flappy 20 to 22, runner 21 to 24) or its own pre-slice fps; his verdict
 - depends on: P556 #760 merged (the card's own precondition: #769 says "starts after P556"; not a D8 pick, D8 names P554 #758 and P580 #771); P572; D8: the driver cards P554 #758 (kept background) and P580 #771 (PIE effects) follow for these games; parallax depth wants P557 #761; sprite counts want P555 #759 (TL-16); runner and flappy are re-dressed as the courier and the city pigeon (D10)
-- status: proposed
+- status: filed #779 (D14) 
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -91,7 +91,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: "it can even be about some controversial political or social topic" (the PO, 2026-11-02); the art-direction lens's opinion for W (H)
 - value proven by: the ten title cards in cycle order as stills, dawn to night; the shared layer's bytes counted once in the pool
 - depends on: D4 (decided); P569; P572
-- status: proposed
+- status: filed #780 (D14) 
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
@@ -101,7 +101,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - needed by: #769's note "each game gets an original theme, so none stays a copy of a known game"; A8
 - value proven by: a table of premise, verb, search query, result, with URLs and dates; each theme passes or gets its alt
 - depends on: D4 to D6 (decided: the themes are the takes in the per-game table)
-- status: proposed
+- status: filed #781 (D14) 
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one

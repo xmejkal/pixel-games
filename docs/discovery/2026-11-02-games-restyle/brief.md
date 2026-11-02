@@ -7,7 +7,7 @@ the remaining risk (D rows). An extension may tighten these. Next: design, or a 
 → the design skill the facts name, with this file; otherwise none, and the collection plan says who runs it.
 Stands on: the assumptions not retired in risks-and-tests.md; of which those the decider rated high, or — while any
 is unrated. check computes both. -->
-**Ready for:** collecting evidence <!-- REQUIRED:ready -->
+**Ready for:** design <!-- REQUIRED:ready -->
 **Stands on:** 10 H, 6 of which would change the decision <!-- REQUIRED:debt -->
 **Decision needed:** the PO has answered the direction (D4 to D13: one city, the mix of looks, shocking where it fits, small rule changes, stack first, paint.py only, probe first, keep all ten, re-dress the kid and the bird, a buzzer card later); still to confirm, by the lead asking him: the jobs, the remaining risk (the unrated and the high assumptions) and items.md; still queued: Q8 (the fps gate beyond slice 0), Q12 (which games keep a scrolling parallax), Q13 (the latency half), Q15 (accounts) <!-- REQUIRED:decision-needed -->
 
@@ -133,6 +133,8 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 - D11 · Q7: paint.py only, refactored into a table per game, with a night-ink mode · the PO · 2026-11-02 · AskUserQuestion in the session · options: paint.py only, generated images too, hand pixel art
 - D12 · Q10: keep all ten games · the PO · 2026-11-02 · AskUserQuestion in the session · options: keep all, drop the weakest, merge
 - D13 · Q14: a buzzer card later (a separate proposal in Found on the way, F7); the restyle does not wait for it · the PO · 2026-11-02 · AskUserQuestion in the session · options: buzzer card later, stay silent
+- D14 · confirms the hand-off: the jobs, the direction (D4 to D13) and the remaining risk (A1, A2, A3, A6, A7, A8 high, accepted), so Ready for design; and yes to filing items.md's ten items under #769 (P567 to Ready, the rest Idea), a Miro frame on the journey board, and a comment on #769 · the PO · 2026-11-02 · AskUserQuestion "Hand-off" · options: yes to all, yes but no Miro, not yet
+- D15 · the buzzer card (F7) goes under P536 #740, Idea · the PO · 2026-11-02 · AskUserQuestion "Buzzer" · options: under the games epic, under the restyle, not now
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
@@ -148,16 +150,18 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 <!-- Each action on the board or the issue (stage, waiting flag, comment, filing): taken, with its D, or pending.
 None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - move #769 to Discovery · taken under D1 (its Status read Discovery on 2026-11-02)
-- file P567 to P574, P576, P577 as sub-issues of #769, and P578, P579 with the parent he names (items.md; P575 is dropped) · pending a D that names items.md
-- comment on #769 with the brief's path, D3 to D13 and the one open ask (the jobs, the remaining risk, items.md) · pending
-- a Miro frame for this discovery (the map, the options, the per-game takes), linked from #769 · pending
+- file P567 to P574, P576, P577 as sub-issues of #769 · taken under D14: #772 (P567, Ready), #773 to #781 (Idea)
+- file the buzzer card (F7) under #740 · taken under D15: P581 #782 (Idea)
+- file P578, P579 (found on the way) · pending: not named by D14
+- comment on #769 with the brief's path, the decisions and the filed cards · taken under D14
+- a Miro frame for this discovery (the map, the options, the per-game takes), linked from #769 · yes under D14, drawn after this commit
 <!-- EXTEND:brief-sections -->
 
 ## Hand-off
 <!-- Written only after the decider confirms the understanding (a D); copies only confirmed constraints. Holds: outcome ·
 who · success and its proof · constraints (appetite, confirmed no-gos, rabbit holes) · what they said (D) against what
 we assume (H) · links to the journeys and the map · riskiest assumptions and their tests · options considered. -->
-not yet: the frame is confirmed (D1); the direction is answered (D4 to D13) and the importance of A1 to A10 is rated (D3); the jobs, the remaining risk and items.md are unconfirmed, and the lead asks for them; the refuter ran on the first draft (step 6, council/refuter.md) and its fixes are applied, not yet on D4 to D13 <!-- REQUIRED:handoff -->
+Confirmed by D14 (the PO, 2026-11-02). Outcome: the ten games as one city on one bad day (D4), each game one citizen at one hour; the PO plays each and calls it exciting, fps at most 2 below the game's own (D3). Look: watercolour noir for the side-on games, night ink for the space games, one shared accent (D5); themes shocking where they fit, aimed at systems, never at people or groups (D6); small rule changes allowed (D9); the courier and the pigeon (D10); paint.py only (D11); all ten games (D12). Order (D8): the probe P567 #772, the paint.py table P572 #773, then stack RENT P568 #774 as slice 0 (D7), then the cards, game feel and the other games; the scrolling games wait on P556 #760, P554 #758 and the PIE effects P580 #771 (D2). Riskiest: A2 with A3 (wild and beautiful at fps), tested by slice 0 (weakly on stack, fully in P574). What we assume (H): the take reads while playing (A1), the effort for ten games (A6), the sharp themes cost nothing in a job application (A7). Journeys: jobs-and-journeys.md; map: story-map.md; options: Options above <!-- REQUIRED:handoff -->
 
 ## Files
 [Jobs and journeys](jobs-and-journeys.md) · [Story map](story-map.md) · [Risks and tests](risks-and-tests.md) · [Verification](verification.md) · [Items](items.md) · council/
