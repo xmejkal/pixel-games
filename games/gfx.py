@@ -281,6 +281,7 @@ class Game:
     hint = "tap to play"
     bg = BLACK
     accent = GREEN
+    covers = False  # True: paint_static covers the whole screen, so no background fill goes under it (TftOut)
     TITLE_MS = 1500
     OVER_MS = 900
 

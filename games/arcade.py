@@ -3,6 +3,7 @@
 import random
 from math import exp, sqrt
 
+import art
 import track
 from gfx import (BLACK, GREEN, GREY, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565)
 
@@ -97,6 +98,7 @@ class Runner(Game):
         self.h, self.vy, self.buffer = 0.0, 0.0, 0.0
         self.odo, self.far, self.points = 0.0, 0.0, 0.0  # px the world moved, px at the base speed, and the exact score
         self.track, self.effects = track.Track(), track.Effects()
+        self.covers = art.load()  # painted art on the board: its sky covers the screen, so no fill goes under it
 
     def base_speed(self):
         """px/s from the distance run, not the score, so a score bonus does not speed the game up. The same start as
@@ -156,6 +158,8 @@ class Runner(Game):
         self.score = score
 
     def paint_static(self, cv):
+        if art.draw_layers(cv, 0, False) or art.draw(cv, "bg", 0, 0):  # painted (P562): the still sky, or all of it
+            return
         g = self.GROUND
         cv.gradient(16, g, (255, 150, 90), (255, 225, 150), 12)
         cv.disc(250, 70, 22, c565(255, 245, 190))
@@ -166,8 +170,9 @@ class Runner(Game):
 
     def paint(self, cv):
         g = self.GROUND
-        for i in range(9):
-            cv.fill((i * 44 - int(self.odo)) % (W + 44) - 20, g + 16, 12 + i % 4 * 3, 3, c565(90, 55, 25))
+        if not art.draw_layers(cv, self.odo, True):  # painted layers, each at its own speed (parallax), or the old marks
+            for i in range(9):
+                cv.fill((i * 44 - int(self.odo)) % (W + 44) - 20, g + 16, 12 + i % 4 * 3, 3, c565(90, 55, 25))
         base = self.base_speed()
         if base > 450:  # speed lines in the sky, more of them the faster it runs
             for i in range(3 if base > 600 else 2):
@@ -188,7 +193,10 @@ class Runner(Game):
             cv.fill(70 + i * 8, 19, 6, 6, track.BONUSES[2].colour)
             x2 //= 2
             i += 1
-        leg = RUN_LEGS[int(self.t * 10) % 2] if self.h <= 0 else RUN_LEGS[1]  # by time, so the legs do not flicker at speed
+        run = int(self.t * 10) % 2  # by time, so the legs do not flicker at speed
+        if art.draw(cv, ("runner_run0", "runner_run1")[run] if self.h <= 0 else "runner_jump", 52, top):
+            return
+        leg = RUN_LEGS[run] if self.h <= 0 else RUN_LEGS[1]
         cv.sprite(RUN_TOP + leg, RUN_COLOURS, 52, top, 2)
 
 

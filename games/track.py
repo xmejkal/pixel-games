@@ -8,6 +8,7 @@ and asks Track which things the runner touched in this frame. Every number is a 
 
 import random
 
+import art
 from gfx import BLACK, GREEN, WIDTH, WHITE, c565
 
 W = WIDTH
@@ -46,10 +47,14 @@ class Cactus:
 
     deadly = True
 
-    def size(self, low):
-        return random.randrange(14, 26), random.randrange(16, 41 if low else 65), 0
+    PICS = {h: "cactus%d" % h for h in range(16, 65, 8)}  # the painted heights (art/paint.py)
 
-    def paint(self, cv, x, w, h, lift, ground, t):  # a cactus with two arms
+    def size(self, low):
+        return 20, 16 + 8 * random.randrange(0, 4 if low else 7), 0  # one of the painted heights
+
+    def paint(self, cv, x, w, h, lift, ground, t):  # painted, or a cactus with two arms
+        if art.draw(cv, self.PICS[h], x, ground - h):
+            return
         green, dark = GREEN, c565(20, 120, 40)
         cv.fill(x + w // 3, ground - h, w // 3 + 2, h, green)
         cv.fill(x, ground - h * 2 // 3, w // 3 + 1, 5, green)
@@ -74,7 +79,9 @@ class Bird:
         return 20, 12, random.randrange(34, 51)
 
     def paint(self, cv, x, w, h, lift, ground, t):
-        cv.sprite(BIRD_UP if int(t * 8) % 2 else BIRD_DOWN, BIRD_COLOURS, x, ground - lift - h, 2)
+        up = int(t * 8) % 2
+        if not art.draw(cv, "bird0" if up else "bird1", x, ground - lift - h):
+            cv.sprite(BIRD_UP if up else BIRD_DOWN, BIRD_COLOURS, x, ground - lift - h, 2)
 
 
 DISC, CLOCK, CROSS = 0, 1, 2  # bonus shapes
@@ -88,12 +95,16 @@ class Bonus:
     deadly = False
     SIZE = 16
 
-    def __init__(self, colour, shape, points, effect, seconds, mult, first, weight):
+    def __init__(self, colour, shape, points, effect, seconds, mult, first, weight, pics):
+        self.pics = pics  # its painted frames (art/paint.py), shown in turn
         self.colour, self.shape, self.points = colour, shape, points
         self.effect, self.seconds, self.mult = effect, seconds, mult
         self.first, self.weight = first, weight  # the level it first comes at, and how often against the others
 
     def paint(self, cv, x, w, h, lift, ground, t):
+        pics = self.pics
+        if art.draw(cv, pics[int(t * 10 + x / 40) % len(pics)], x, ground - lift - h):
+            return
         cx, cy, c = x + w // 2, ground - lift - h // 2, self.colour
         if self.shape == DISC:  # a round coin that spins: a stepped circle, narrower as it turns
             s = (8, 6, 3, 6)[int(t * 10 + x / 40) % 4]
@@ -116,11 +127,11 @@ class Bonus:
             cv.fill(cx, cy - 1, 4, 2, WHITE)
 
 
-COIN = Bonus(c565(230, 180, 20), DISC, 25, None, 0, 1, 0, 6)
+COIN = Bonus(c565(230, 180, 20), DISC, 25, None, 0, 1, 0, 6, ("coin0", "coin1", "coin2", "coin3"))
 BONUSES = (
     COIN,
-    Bonus(c565(40, 90, 230), CLOCK, 0, SLOW, 4.0, 0.6, 50, 2),  # the world at 0.6 of its speed for 4 s
-    Bonus(c565(220, 40, 200), CROSS, 0, X2, 6.0, 2, 120, 2),  # x2 score for 6 s, and two at once give x4
+    Bonus(c565(40, 90, 230), CLOCK, 0, SLOW, 4.0, 0.6, 50, 2, ("clock",)),  # the world at 0.6 of its speed for 4 s
+    Bonus(c565(220, 40, 200), CROSS, 0, X2, 6.0, 2, 120, 2, ("star",)),  # x2 score for 6 s, and two at once give x4
 )
 CACTUS, BIRD = Cactus(), Bird()
 SINGLE, WIDE, PAIR, RUN3, FLYER = 0, 1, 2, 3, 4  # spawn patterns

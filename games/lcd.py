@@ -8,8 +8,8 @@ same pixels every frame, so TftOut draws it with tracking off. `import s3lcd` is
 because spark's Mac stand-ins have no such module; it answers None then, and the app falls back to the st7789 driver.
 
 Colours: the games use gfx.c565's values, already in the panel's byte order, so the bus sends the framebuffer as it is
-(swap_color_bytes=False) and no colour is swapped on the way in or out. Sprites need a clear colour and blit_buffer has
-none, so they are drawn as the same runs of fill_rect. s3lcd's text needs a font module that may not be in the image, so
+(swap_color_bytes=False) and no colour is swapped on the way in or out. Painted pictures (art.py) go through blit_buffer
+with a clear colour (P562); the old row sprites are drawn as runs of fill_rect. s3lcd's text needs a font module that may not be in the image, so
 text uses the 8x8 font of framebuf, drawn as fill_rect runs (Canvas.big with scale 1).
 
 Orientation: the driver stays at rotation 0, the panel's own order, so the panel writes each frame in the order it
@@ -39,6 +39,7 @@ class TftCanvas(Canvas):
         if ORIENTATION not in (0, 180):
             raise ValueError("ORIENTATION must be 0 or 180, not %r" % ORIENTATION)
         self.turned = ORIENTATION == 180
+        self.pictures = not self.turned  # art/paint.py makes the pictures for ORIENTATION 0 only
 
     def start(self):
         self.clip = FULL
@@ -73,6 +74,11 @@ class TftCanvas(Canvas):
             self.fill(x, y + h - 1, w, 1, c)
             self.fill(x, y, 1, h, c)
             self.fill(x + w - 1, y, 1, h, c)
+
+    def picture(self, buf, x, y, w, h, key):
+        """A picture made for ORIENTATION 0 (art.py), game (x, y) as its top left; pixels of the key colour are
+        skipped (-1: none). The driver clips it and copies it by rows when it is wholly on the panel."""
+        self.tft.blit_buffer(buf, y, PANEL_H - x - w, h, w, 255, key)
 
     def line(self, x0, y0, x1, y1, c):
         x0, y0, x1, y1 = [clamp(int(v), -2000, 2000) for v in (x0, y0, x1, y1)]
@@ -121,7 +127,8 @@ class TftOut:
         t1, cv, tft = time.ticks_us(), self.canvas, self.tft
         tft.track(self.fresh)  # untracked, the background fill and the still picture mark nothing; fresh, fill marks all
         self.fresh = False
-        tft.fill(game.bg)
+        if not game.covers:  # a game whose still picture covers the whole screen needs no fill under it
+            tft.fill(game.bg)
         game.paint_static(cv)
         gfx.slowest(0, t1)  # the background fill and the still picture: no phase in Game.draw times them here (bg_ok)
         tft.track(True)
