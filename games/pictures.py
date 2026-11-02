@@ -63,6 +63,19 @@ def draw(cv, name, x, y):
     return True
 
 
+def draw_cut(cv, name, x, y, w):
+    """The first w px of a strip picture at game (x, y): a block of any width cut from a painted texture (P563).
+    Opaque, one blit of a contiguous slice. False when it cannot be drawn this way."""
+    pic = PICS.get(name)
+    if pic is None or not getattr(cv, "pictures", False):
+        return False
+    sw, h, buf = pic
+    w = min(int(w), sw)
+    if w > 0:  # game x [0, w) of the strip is panel rows [sw - w, sw)
+        cv.picture(buf[(sw - w) * h * 2:sw * h * 2], int(x), int(y), w, h, -1)
+    return True
+
+
 def draw_layers(cv, travelled, moving):
     """The still layers (moving False) or the scrolling ones, each moved by travelled px times its speed. A strip's
     game x runs along panel rows, so a window of it is one contiguous slice: one blit, or two where the strip wraps."""

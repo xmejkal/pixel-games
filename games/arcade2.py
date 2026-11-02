@@ -2,6 +2,8 @@
 
 import random
 
+import pictures
+
 from gfx import BLACK, GREEN, GREY, HEIGHT, ORANGE, PALETTE, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
 
 W, H = WIDTH, HEIGHT
@@ -15,7 +17,10 @@ class Stack(Game):
     LEVEL_H, BASE = 14, 220
     stars = ()
 
+    STRIPS = tuple("stack_block%d" % i for i in range(8))  # painted textures in PALETTE's order (P563)
+
     def setup(self):
+        self.covers = pictures.load()  # the painted night covers the screen, so no fill goes under it
         self.layers = [(90, 140)]  # (x, width) of each placed block
         self.x, self.w, self.dir, self.speed = 0.0, 140, 1, 120.0
         self.cuts = []  # the slices that fell off: [x, y, width, speed, colour]
@@ -42,26 +47,35 @@ class Stack(Game):
         left, right = max(x, tx), min(x + self.w, tx + tw)
         if right - left < 4:
             return self.die(x + self.w // 2, y)
-        colour = PALETTE[len(self.layers) % 8]
-        if abs(x - tx) < 4:  # a perfect drop keeps the whole width
+        i = len(self.layers) % 8
+        colour = PALETTE[i]
+        if abs(x - tx) < 4:  # a perfect drop keeps the whole width, and glows
             left, right = tx, tx + tw
             self.fx.burst(left + (right - left) // 2, y, WHITE, 10, 120.0, 0.5, 100.0)
+            self.fx.burst(left + (right - left) // 2, y, colour, 14, 160.0, 0.6, -60.0)
         elif x < left:
-            self.cuts.append([x, y, left - x, 0.0, colour])
+            self.cuts.append([x, y, left - x, 0.0, i])
         elif x + self.w > right:
-            self.cuts.append([right, y, x + self.w - right, 0.0, colour])
+            self.cuts.append([right, y, x + self.w - right, 0.0, i])
         self.layers.append((left, right - left))
         self.w = right - left
         self.score += 1
         self.pop(left + self.w // 2, y)
         self.speed = min(330.0, 120 + self.score * 8)
 
-    def block(self, cv, x, y, w, colour):
+    def block(self, cv, x, y, w, colour, strip):
+        if pictures.draw_cut(cv, strip, x, y, w):  # painted, with its own top and bottom lines: the ends in pencil
+            ink = c565(40, 30, 50)
+            cv.fill(x, y, 1, self.LEVEL_H, ink)
+            cv.fill(x + w - 1, y, 1, self.LEVEL_H, ink)
+            return
         cv.fill(x, y, w, self.LEVEL_H - 1, colour)
         cv.fill(x, y, w, 2, WHITE)  # top light
         cv.fill(x, y + self.LEVEL_H - 4, w, 3, shade(60, 60, 60, 1))
 
     def paint_static(self, cv):
+        if pictures.draw(cv, "stack_bg", 0, 0):  # the painted night (P563)
+            return
         cv.gradient(16, self.BASE + 14, (10, 10, 40), (90, 40, 90), 12)
         for sx, sy in self.stars:
             cv.fill(sx, sy, 2, 2, WHITE)
@@ -69,10 +83,10 @@ class Stack(Game):
 
     def paint(self, cv):
         for i, (x, w) in enumerate(self.layers):
-            self.block(cv, x, self.level_y(i), w, PALETTE[i % 8])
-        self.block(cv, int(self.x), self.level_y(len(self.layers)), self.w, c565(255, 255, 255))
-        for x, y, w, _, colour in self.cuts:
-            cv.fill(x, y, w, self.LEVEL_H - 1, colour)
+            self.block(cv, x, self.level_y(i), w, PALETTE[i % 8], self.STRIPS[i % 8])
+        self.block(cv, int(self.x), self.level_y(len(self.layers)), self.w, c565(255, 255, 255), "stack_mover")
+        for x, y, w, _, i in self.cuts:
+            self.block(cv, x, int(y), w, PALETTE[i], self.STRIPS[i])
 
 
 class Cave(Game):
