@@ -121,6 +121,7 @@ If the decider cannot be asked, the queue stays here, and whatever rests on it s
 A yes covers only the actions and choices it names. A standing yes names its kind of action and its source.
 Name what a D confirms in its words: the frame, the jobs, a direction, the remaining risk, a test, items.md. -->
 - D1 · confirms the frame as written (scope all ten games, TRIO plus an art-direction researcher, 12 searches, no paid image tool without his yes) and yes to moving #769 to Discovery and running the council · the PO · 2026-11-02 · AskUserQuestion in the session · options: as written, TRIO only, narrow the scope
+- D2 · direction for effects: real-time effects (smoke, clouds, fire, particles, ripples) computed in C on the S3's PIE, as part of the driver or the P539 library, started by the game when something hits, falls, shakes, burns or breaks; S3 only; filed as P580 #771, after this discovery · the PO · 2026-11-02 · his message in the session ("I'd love to try adding a few effects that we then use in the gamrs and would be part of the graohics driver we made or the library ... they would get added when something hits something or falls or shakes, is on fire, gets broken") · bears on Q13 (effects in C) but does not answer its latency half
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
