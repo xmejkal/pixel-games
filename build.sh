@@ -1,0 +1,17 @@
+#!/bin/bash
+# Build MicroPython v1.29.0 for the FireBeetle 2 ESP32-S3 (N16R8), with ESP-IDF v5.5.2.
+# Usage: ./build.sh            the stock image
+#        ./build.sh s3lcd      the image with the s3lcd C module
+set -euo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+MPY="$HOME/esp/micropython-v1.29.0"
+[ -d "$MPY" ] || git clone -q -b v1.29.0 --depth 1 https://github.com/micropython/micropython.git "$MPY"
+source "$HOME/esp/esp-idf-v5.5.2/export.sh" > /dev/null
+make -C "$MPY/mpy-cross" -j8 > /dev/null
+cd "$MPY/ports/esp32"
+ARGS=(BOARD=ESP32_GENERIC_S3 BOARD_VARIANT=SPIRAM_OCT)
+if [ "${1:-}" = s3lcd ]; then
+  ARGS+=(USER_C_MODULES="$HERE/s3lcd/src/micropython.cmake" BUILD=build-s3lcd)
+fi
+make "${ARGS[@]}" submodules > /dev/null
+make "${ARGS[@]}" -j8
