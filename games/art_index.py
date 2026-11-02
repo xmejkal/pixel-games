@@ -38,6 +38,16 @@ ART = {
     "coin3": (16, 16, "art/coin3.bin"),
     "clock": (16, 16, "art/clock.bin"),
     "star": (16, 16, "art/star.bin"),
+    "stack_bg": (320, 240, "art/stack_bg.bin"),
+    "stack_block0": (320, 14, "art/stack_block0.bin"),
+    "stack_block1": (320, 14, "art/stack_block1.bin"),
+    "stack_block2": (320, 14, "art/stack_block2.bin"),
+    "stack_block3": (320, 14, "art/stack_block3.bin"),
+    "stack_block4": (320, 14, "art/stack_block4.bin"),
+    "stack_block5": (320, 14, "art/stack_block5.bin"),
+    "stack_block6": (320, 14, "art/stack_block6.bin"),
+    "stack_block7": (320, 14, "art/stack_block7.bin"),
+    "stack_mover": (320, 14, "art/stack_mover.bin"),
     "runner_jump": (16, 24, "art/runner_apex.bin"),
 }
 
