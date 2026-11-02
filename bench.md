@@ -112,3 +112,5 @@
 
 - Tile 16 stays the default: tile 8 saves about 1 ms with twice the windows. The plan's pass number (flappy send under 15 ms) holds while playing. Still owed: the PO's eyes on a 2-minute run through title, play, game over and three switches, for stale pixels, and the `PARTIAL = False` comparison.
 - Left: the score bar redraws its same pixels every frame, so its tiles go out every frame. Drawing it untracked while the score stays the same would save more. Not done here.
+- 11:29 to 11:31 run 21, all games at the 60 ms pace with partial show: 16 fps everywhere (the pace). Send: flappy 14 to 17 ms, runner about 8, snake about 4. No errors. The PO: "Nice, really nice!"
+- 11:36 to 11:38 run 22, `FRAME_MS = 40`: flappy 21 to 24 fps, runner 20 to 21, stack 24. Runner's paint is 34 ms a frame, and the slowest frame of each interval has a paint of about 60 ms (worst gap 70 to 80 ms). Paint now sets the rate, not the send: the C drawing in P537 is the next lever.
