@@ -45,10 +45,21 @@ class TftCanvas(Canvas):
 
     def fill(self, x, y, w, h, c):
         """The game rectangle, clipped, as a panel rectangle: game x runs along the panel's y, game y against its x."""
-        x0, y0 = int(x), int(y)
-        x1, y1 = x0 + int(w), y0 + int(h)
-        cx0, cy0, cx1, cy1 = self.clip
-        x0, y0, x1, y1 = max(x0, cx0), max(y0, cy0), min(x1, cx1), min(y1, cy1)
+        # One name per line and no max() or min(): a four-name assignment built a 32-byte tuple on every call, and the
+        # call took twice as long (P550, run28-p550-lean.log: 169 against 87 us for 8 x 8)
+        x0 = int(x)
+        y0 = int(y)
+        x1 = x0 + int(w)
+        y1 = y0 + int(h)
+        clip = self.clip
+        if x0 < clip[0]:
+            x0 = clip[0]
+        if y0 < clip[1]:
+            y0 = clip[1]
+        if x1 > clip[2]:
+            x1 = clip[2]
+        if y1 > clip[3]:
+            y1 = clip[3]
         if x1 > x0 and y1 > y0:  # the map is written out, not a helper: a returned tuple would allocate on every fill
             if self.turned:
                 self.tft.fill_rect(PANEL_W - y1, x0, y1 - y0, x1 - x0, c)
