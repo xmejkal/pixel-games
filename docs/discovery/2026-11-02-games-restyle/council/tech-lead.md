@@ -1,6 +1,6 @@
 # P565 games restyle: tech lead report (feasibility, technical direction, electronics-firmware physics)
 
-Paths are relative to /Users/petr/Development/firebeetle-games unless they begin with a slash. P556 numbers are read from `git show origin/p556-double-buffer:bench.md` (the P556 section is not in the checked-out branch's bench.md).
+Paths are relative to the pixel-games repository root unless they begin with a slash. P556 numbers are read from `git show origin/p556-double-buffer:bench.md` (the P556 section is not in the checked-out branch's bench.md).
 Tags: E = read in an artefact (pointer), H = my reasoning or model knowledge (source named), D = a decision (who, when). Provenance words: stated, datasheet, calculated, measured. — = unknown.
 
 ## Findings
