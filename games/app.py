@@ -1,8 +1,8 @@
 """
-The game box: ten one-button games on the GDI display. The board's own button plays, the BOOT button moves to the
-next game from any state.
+The game box: ten one-button games on the GDI display. The BOOT button plays, the board's own button (D14) moves to
+the next game from any state.
 
-run() prints `ready` once the display is set up, then `game <name>` at the start and after each BOOT press. Its loop
+run() prints `ready` once the display is set up, then `game <name>` at the start and after each D14 press. Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
 Each frame the game paints into a list of recorded draw calls (gfx.Canvas); render.Dirty finds the rectangles that
 changed since the last frame, and only those are drawn into one 51,200-byte RGB565 buffer and blitted. Nothing at module level touches hardware.
@@ -43,8 +43,8 @@ class App:
 
     def __init__(self, display, read_fire, read_boot, games=GAMES, full=False, gc_floor=0, out=None):
         self.display, self.games = display, games
-        self.fire = buttons.Button(read_fire, pins.ONBOARD_BUTTON_ON)
-        self.boot = buttons.Button(read_boot, buttons.BOOT_BUTTON_ON)
+        self.fire = buttons.Button(read_fire, buttons.BOOT_BUTTON_ON)  # BOOT plays: holding it is safe once running
+        self.boot = buttons.Button(read_boot, pins.ONBOARD_BUTTON_ON)  # D14 switches: a long hold powers the board off
         self.out = out or StOut(display, full)
         self.frames, self.mark, self.us, self.state, self.gc_floor = 0, 0, [0, 0, 0, 0], 0, gc_floor
         self.index = len(games) - 1
@@ -144,7 +144,9 @@ def run():
         print("backend st7789")
         display, full = open_st7789()
         print("frame", "full" if full else "bands")
-    fire, boot = Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP), Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP)
+    # D14 also drives the power chip's PWRON (boards/firebeetle2-esp32s3.json, hardware_revisions, V1.1 and earlier):
+    # held about 5 s, it powered the board off on 2026-11-02. So BOOT is the game button and D14 only a short press.
+    fire, boot = Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP), Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP)
     app = App(display, fire.value, boot.value, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out)
     app.fire.watch(fire)
     app.boot.watch(boot)

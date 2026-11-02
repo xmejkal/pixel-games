@@ -1,8 +1,9 @@
 """
 The two buttons of the game box: a debounced Button class and the pin of the BOOT button.
 
-The game button is the board's own button, pins.ONBOARD_BUTTON (GPIO47, reads 0 when pressed). The switch button is
-the BOOT button on GPIO0. Spark's board record (boards/firebeetle2-esp32s3.json, pin_roles.strapping.note) says "D9 is
+The game button is the BOOT button on GPIO0. The switch button is the board's own button, pins.ONBOARD_BUTTON (GPIO47,
+reads 0 when pressed), only pressed briefly: it also drives the power chip's PWRON, and a hold of about 5 s powered the
+board off on 2026-11-02. Spark's board record (boards/firebeetle2-esp32s3.json, pin_roles.strapping.note) says "D9 is
 GPIO0, the BOOT pin ... usable as ordinary I/O once running". pins.py does not name it, so it is named here. Holding it
 at reset enters the bootloader, so read it with Pin.IN and PULL_UP only after the firmware has started.
 """
