@@ -98,6 +98,7 @@ class Runner(Game):
         self.h, self.vy, self.buffer = 0.0, 0.0, 0.0
         self.odo, self.far, self.points = 0.0, 0.0, 0.0  # px the world moved, px at the base speed, and the exact score
         self.track, self.effects = track.Track(), track.Effects()
+        self.jumped, self.landed = -1.0, -1.0  # when the last jump and the last landing began (self.t), for the pose
         self.covers = pictures.load()  # painted art on the board: its sky covers the screen, so no fill goes under it
 
     def base_speed(self):
@@ -114,7 +115,7 @@ class Runner(Game):
             self.buffer = self.BUFFER
         self.buffer -= dt
         if self.h <= 0 and (held or self.buffer > 0):  # held: jump again at each landing
-            self.vy, self.buffer = 420.0 * k, 0.0
+            self.vy, self.buffer, self.jumped = 420.0 * k, 0.0, self.t
             self.fx.burst(60, self.GROUND, c565(150, 110, 70), 5, 60.0, 0.4, 200.0)
         if not held and self.vy > 150 * k:  # let go while rising: the jump ends low, so the hold time sets the height
             self.vy = 150 * k
@@ -124,6 +125,7 @@ class Runner(Game):
         if self.h == 0:
             if was > 0:
                 self.fx.burst(60, self.GROUND, c565(150, 110, 70), 5, 60.0, 0.4, 200.0)
+                self.landed = self.t
             self.vy = 0.0
         effects = self.effects
         effects.step(dt)
@@ -149,6 +151,19 @@ class Runner(Game):
                 self.fx.burst(60, y, WHITE, 6, 60.0, 0.6, -120.0)  # sparkles that rise
                 t[0] = -1000.0  # taken: move() drops it
         self.count()
+
+    POSES = tuple("runner_run%d" % i for i in range(6))
+
+    def pose(self):
+        """The painted frame for now: a six-frame run cycle by time, a squash just after landing, and in the air
+        take-off, rise, top or fall by the time since the jump and the vertical speed."""
+        t = self.t
+        if self.h <= 0:
+            return "runner_land" if t - self.landed < 0.12 else self.POSES[int(t * 14) % 6]
+        if t - self.jumped < 0.07:
+            return "runner_takeoff"
+        k = max(1.0, sqrt(self.base_speed() / 310))
+        return "runner_rise" if self.vy > 90 * k else "runner_fall" if self.vy < -90 * k else "runner_apex"
 
     def count(self):
         """The whole score from the exact one, with a pop each time it passes a ten, even when x2 or a coin skips one."""
@@ -193,9 +208,11 @@ class Runner(Game):
             cv.fill(70 + i * 8, 19, 6, 6, track.BONUSES[2].colour)
             x2 //= 2
             i += 1
+        if pictures.draw(cv, self.pose(), 52, top):
+            return
         run = int(self.t * 10) % 2  # by time, so the legs do not flicker at speed
         if pictures.draw(cv, ("runner_run0", "runner_run1")[run] if self.h <= 0 else "runner_jump", 52, top):
-            return
+            return  # the first painted runner, before the six-frame cycle
         leg = RUN_LEGS[run] if self.h <= 0 else RUN_LEGS[1]
         cv.sprite(RUN_TOP + leg, RUN_COLOURS, 52, top, 2)
 
