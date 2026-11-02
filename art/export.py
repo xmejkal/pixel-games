@@ -5,6 +5,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 
 from brush import GROUND, H, KEY, NUDGE, W
+from looks import NightInk
 from sets.flappy import flappy_scene, morning_at
 from sets.runner import JUMP, SCENE
 from sets.stack import BLOCK_H, stack_scene
@@ -83,13 +84,17 @@ def checker(w, h, c=8):
     return img
 
 
+def runner_sprites(runner):
+    """The runner's sprites by name: its pictures less the fallback bg and the layers."""
+    strips = {name for name, *_ in runner.layers}
+    return {n: img for n, img in runner.images().items() if n != "bg" and n not in strips}
+
+
 def preview(paintings, path):
     """The sheet to look at: the runner's background, layers and sprites, stack, flappy, then every other runner
     sprite. One function knows the whole sheet; a new game adds its rows here."""
     runner, stack, flappy = paintings["runner"], paintings["stack"].images(), paintings["flappy"]
-    bg, layers = runner.images()["bg"], runner.layers
-    strips = {name for name, *_ in layers}
-    sprites = {n: img for n, img in runner.images().items() if n != "bg" and n not in strips}
+    bg, layers, sprites = runner.images()["bg"], runner.layers, runner_sprites(runner)
     font = ImageFont.load_default(size=14)
     ink = (40, 40, 40)
     width = 1320
@@ -179,6 +184,29 @@ def preview(paintings, path):
     sheet.crop((0, 0, width, y + tallest + 40)).save(path)
 
 
+
+INK_ACCENTS = {"runner": (222, 60, 50), "stack": (40, 220, 230)}  # the runner's red shirt, the stack's cyan block
+
+
+def preview_ink(paintings, path):
+    """The second look on a sheet to judge it: the runner's frame and the stack's tower, as painted and through
+    NightInk. Only this sheet uses night ink; no board file changes."""
+    font = ImageFont.load_default(size=14)
+    ink = (40, 40, 40)
+    sheet = Image.new("RGB", (W * 4 + 40, 2 * (H * 2 + 28) + 8), (245, 240, 230))
+    d = ImageDraw.Draw(sheet)
+    scenes = {"runner": lambda p: frame(p.layers, runner_sprites(p), 900), "stack": lambda p: stack_scene(p.images())}
+    y = 8
+    for name, accent in INK_ACCENTS.items():
+        painted = paintings[name]
+        inked = painted.through(NightInk(accent))
+        for x, label, painting in ((10, "as painted", painted), (W * 2 + 30, "in night ink", inked)):
+            d.text((x, y), "%s, %s, at 2x" % (name, label), fill=ink, font=font)
+            sheet.paste(scenes[name](painting).resize((W * 2, H * 2), Image.NEAREST), (x, y + 18))
+        y += H * 2 + 28
+    sheet.save(path)
+
+
 # --- checks ------------------------------------------------------------------------------------------------------
 
 def seam(img):
@@ -223,8 +251,8 @@ def write_bins(paintings, out_dir):
 
 def layer_rows(layers, indent):
     """One index row per layer: (name, top, width, height, speed, keyed, path)."""
-    return ['%s("%s", %d, %d, %d, %s, %s, "art/%s.bin"),' % (indent, name, top, img.width, img.height, speed, keyed, name)
-            for name, img, top, speed, keyed in layers]
+    row = '%s("%s", %d, %d, %d, %s, %s, "art/%s.bin"),'
+    return [row % (indent, name, top, img.width, img.height, speed, keyed, name) for name, img, top, speed, keyed in layers]
 
 
 def write_index(sets, paintings, path):

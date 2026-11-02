@@ -10,7 +10,7 @@ given a pencil outline outside its shape, tinted by the colour it borders.
 
 import os
 
-from export import check_seams, preview, write_bins, write_index
+from export import check_seams, preview, preview_ink, write_bins, write_index
 from sets import ART_SETS
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,6 +26,7 @@ def main(root=ROOT):
     count = write_index(ART_SETS, paintings, os.path.join(root, "games", "art_index.py"))
     os.makedirs(os.path.join(root, "art"), exist_ok=True)
     preview(paintings, os.path.join(root, "art", "preview.png"))
+    preview_ink(paintings, os.path.join(root, "art", "preview-ink.png"))
     print("%d pictures, %d bytes" % (count, total))
 
 

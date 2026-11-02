@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
+from looks import Watercolour
+
 W, H, GROUND = 320, 240, 192
 STRIP = 640  # a parallax strip's width in game px
 KEY = 0xF81F  # the transparent pixel, RGB565 as written (big-endian bytes F8 1F)
@@ -303,6 +305,12 @@ class Painting:
     def images(self):
         return {name: img for name, (img, _) in self.pictures.items()}
 
+    def through(self, look):
+        """The same painting seen through a look: every picture, and the layers among them, in the same order."""
+        pictures = {name: (look.apply(img), keyed) for name, (img, keyed) in self.pictures.items()}
+        layers = [(name, pictures[name][0], top, speed, keyed) for name, _, top, speed, keyed in self.layers]
+        return Painting(pictures, layers)
+
 
 @dataclass
 class ArtSet:
@@ -312,7 +320,8 @@ class ArtSet:
     seed: int
     painter: object  # a function that returns a Painting
     aliases: dict = field(default_factory=dict)  # an old name the game may still ask for: the picture it now shows
+    look: object = field(default_factory=Watercolour)  # how the pictures are seen; Watercolour leaves them as painted
 
     def paint(self):
         rnd.seed(self.seed)
-        return self.painter()
+        return self.painter().through(self.look)
