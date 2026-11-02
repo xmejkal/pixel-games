@@ -97,9 +97,9 @@ class App:
             fps = self.frames * 1000 // elapsed
             print("fps", game.name, fps)
             n = 1000 * self.frames  # microseconds to milliseconds per frame
-            print("time %s step %.1f paint %.1f send %.1f gc %.1f fps %d worst %d slowest %d = step %d paint %d send %d gc %d" % (
-                game.name, us[0] / n, us[1] / n, us[2] / n, us[3] / n, fps, self.worst // 1000,
-                *[x // 1000 for x in self.slow]))
+            print("time %s step %.1f paint %.1f send %.1f gc %.1f fps %d worst %d slowest %d = step %d paint %d send %d gc %d" % ((
+                game.name, us[0] / n, us[1] / n, us[2] / n, us[3] / n, fps, self.worst // 1000)
+                + tuple(x // 1000 for x in self.slow)))
             self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
 
 
