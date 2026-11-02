@@ -23,9 +23,23 @@ class Button:
         self.held = False
         self.raw = False
         self.since = 0
+        self.watched, self.pushes, self.taken = False, 0, 0
+
+    def watch(self, pin):
+        """Count each edge toward the pressed level in a pin interrupt. The loop reads the pin once per frame, about
+        140 ms, so a short tap fell between two reads; now every push counts, at most one frame late."""
+        self.watched = True
+        pin.irq(self.edge, pin.IRQ_FALLING if self.pressed_level == 0 else pin.IRQ_RISING)
+
+    def edge(self, pin):
+        self.pushes += 1  # a soft interrupt, run after the current C call: too late to read the pin itself
 
     def update(self, now_ms):
         raw = self.read() == self.pressed_level
+        if self.watched:  # an edge since the last frame is a push, unless it is the bounce of a release seen now
+            edged, self.taken = self.pushes != self.taken, self.pushes
+            pushed, self.held = edged and (raw or not self.held), raw
+            return pushed
         if raw != self.raw:
             self.raw, self.since = raw, now_ms
         if raw != self.held and time.ticks_diff(now_ms, self.since) >= self.debounce_ms:

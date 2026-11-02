@@ -48,6 +48,9 @@ def clamp(v, lo, hi):
     return lo if v < lo else hi if v > hi else v
 
 
+GLYPHS = {}  # each character's dot runs, shared by every canvas
+
+
 class Canvas:
     """Records what a game draws (fill, box, line, text, big, gradient, sprite, hill, disc), then replays a rectangle."""
 
@@ -109,25 +112,32 @@ class Canvas:
         """Text with each dot of the 8x8 font drawn as a scale x scale block."""
         if not (-8 * scale < y < HEIGHT):
             return
-        runs = self.cache.get(words)  # the dots of a word, worked out once
+        step = 8 * scale
+        for ch in words:
+            if ch != " ":
+                for start, row, n in self.glyph(ch):
+                    self.fill(x + start * scale, y + row * scale, n * scale, scale, c)
+            x += step
+
+    def glyph(self, ch):
+        """The dots of one character as (start, row, length) runs, worked out once: a new score allocates nothing."""
+        runs = GLYPHS.get(ch)
         if runs is None:
             self.mono.fill(0)
-            self.mono.text(words, 0, 0, 1)
-            runs, width = [], 8 * len(words)
+            self.mono.text(ch, 0, 0, 1)
+            runs = []
             for row in range(8):
                 col = 0
-                while col < width:
+                while col < 8:
                     if self.mono.pixel(col, row):
                         start = col
-                        while col < width and self.mono.pixel(col, row):
+                        while col < 8 and self.mono.pixel(col, row):
                             col += 1
                         runs.append((start, row, col - start))
                     else:
                         col += 1
-            if len(self.cache) < 60:
-                self.cache[words] = runs
-        for start, row, n in runs:
-            self.fill(x + start * scale, y + row * scale, n * scale, scale, c)
+            runs = GLYPHS[ch] = tuple(runs)
+        return runs
 
     def gradient(self, y0, y1, top, bottom, step=8):
         """Bands of colour from top to bottom, each an (r, g, b); the sky, the cave, the dusk."""
@@ -251,6 +261,15 @@ BEST = {}  # best score of each game since the board started
 TITLE, PLAY, OVER = 0, 1, 2
 
 
+PHASES = [0] * 6  # bench: the slowest of each draw phase in microseconds: static, paint, fx, hud, over, title
+
+
+def slowest(i, t):
+    now = time.ticks_us()
+    PHASES[i] = max(PHASES[i], time.ticks_diff(now, t))
+    return now
+
+
 class Game:
     """One game: a title, play, game over. A subclass sets name, hint, bg and accent and writes setup(), play(pressed,
     held) and paint(cv). It calls self.die() to end the round and adds to self.score."""
@@ -332,15 +351,22 @@ class Game:
             cv.ops.extend(self.hud_ops)
 
     def draw(self, cv):
+        t = time.ticks_us()
         if not cv.bg_ok:
             self.paint_static(cv)
             cv.clip = FULL
+        t = slowest(0, t)
         if self.state == TITLE:
-            return self.draw_title(cv)
+            self.draw_title(cv)
+            slowest(5, t)
+            return
         self.paint(cv)
         cv.clip = FULL
+        t = slowest(1, t)
         self.fx.draw(cv)
+        t = slowest(2, t)
         self.hud(cv)
+        t = slowest(3, t)
         if self.state == OVER:
             x, y = WIDTH // 2 - 100, HEIGHT // 2 - 50
             cv.fill(x, y, 200, 100, BLACK)
@@ -350,6 +376,7 @@ class Game:
             cv.text("score %d   best %d" % (self.score, BEST.get(self.name, 0)), x + 20, y + 48, WHITE)
             if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
                 cv.text("tap to retry", x + 52, y + 74, YELLOW)
+            slowest(4, t)
 
     def draw_title(self, cv):
         a, cx, cy = self.age, WIDTH // 2, HEIGHT // 2

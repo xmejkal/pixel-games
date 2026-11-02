@@ -13,6 +13,7 @@ import time
 
 import buttons
 import gdi
+import gfx
 import pins
 from arcade import Flappy, Runner, Snake
 from arcade2 import Cave, GravityPong, Stack
@@ -24,6 +25,7 @@ from world3d import Road, Tunnel
 FPS_EVERY_MS = 5000
 FULL_FRAME_FREE = 400_000
 GC_FLOOR = 1_000_000  # with PSRAM gc is off in the loop; below this much free heap it runs at once
+GC_FRAMES = 5  # with gc off, a timed collection every this many frames: small ones often, not one long pause over 8 MB
 # The bench decides the SPI clock. 80 MHz showed a dark screen on 2026-11-01 (the panel's write cycle limit is 16 ns,
 # 62.5 MHz) and 40 MHz worked; 60 MHz is under the limit. If the picture breaks, go back to 40_000_000.
 SPI_HZ = 60_000_000
@@ -61,7 +63,6 @@ class App:
         self.out.reset()
         self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
-        self.alloc = [0, 0, 0]  # bytes the draw allocated: sum, most in one frame, frames where the heap shrank (a collection inside the draw)
         print("game", self.game.name)
 
     def collect(self):
@@ -86,19 +87,12 @@ class App:
             if self.gc_floor and self.state != 1:
                 self.collect()
         us[0] += time.ticks_diff(time.ticks_us(), t0)
-        a0 = gc.mem_alloc()
         self.out.draw(game, us)
-        grew, alloc = gc.mem_alloc() - a0, self.alloc
-        if grew < 0:
-            alloc[2] += 1
-        else:
-            alloc[0] += grew
-            alloc[1] = max(alloc[1], grew)
         self.frames += 1
         took = time.ticks_diff(time.ticks_us(), t0)
         if took > self.slow[0]:  # the slowest frame of the interval, and where its time went
             self.slow = [took] + [a - b for a, b in zip(us, before)]
-        if self.gc_floor and self.frames % 30 == 0 and gc.mem_free() < self.gc_floor:
+        if self.gc_floor and self.frames % GC_FRAMES == 0:  # no gc.mem_free(): it costs about 20 ms per MB allocated
             self.collect()
         elapsed = time.ticks_diff(now, self.mark)
         if elapsed >= FPS_EVERY_MS:  # the real rate, for a log or the console
@@ -108,10 +102,9 @@ class App:
             print("time %s step %.1f paint %.1f send %.1f gc %.1f fps %d worst %d slowest %d = step %d paint %d send %d gc %d" % ((
                 game.name, us[0] / n, us[1] / n, us[2] / n, us[3] / n, fps, self.worst // 1000)
                 + tuple(x // 1000 for x in self.slow)))
-            print("alloc %s %d per frame, most %d, collections in the draw %d, free %d" % (
-                game.name, self.alloc[0] // self.frames, self.alloc[1], self.alloc[2], gc.mem_free()))
+            print("phases %s static %d paint %d fx %d hud %d over %d title %d" % ((game.name,) + tuple(x // 1000 for x in gfx.PHASES)))
+            gfx.PHASES[:] = [0] * 6
             self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
-            self.alloc = [0, 0, 0]
 
 
 def open_st7789():
@@ -151,9 +144,10 @@ def run():
         print("backend st7789")
         display, full = open_st7789()
         print("frame", "full" if full else "bands")
-    app = App(display, Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP).value,
-              Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP).value, full=full and not out,
-              gc_floor=GC_FLOOR if full else 0, out=out)
+    fire, boot = Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP), Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP)
+    app = App(display, fire.value, boot.value, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out)
+    app.fire.watch(fire)
+    app.boot.watch(boot)
     if full:
         gc.disable()
     console = select.poll()
