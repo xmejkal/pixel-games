@@ -221,3 +221,4 @@ Memory after deinit ("double" run; "dma" within 420 B): PSRAM free 6747500.00 B,
 
 - Written before the play (A1, the P565 discovery): the system the theme aims at is "speculative housing: flats as investments, nobody lives there". The PO is not told this; his own words are matched against it afterwards.
 - Pass line (D3): his verdict "exciting" or stronger, and the average fps in pure-play intervals (title 0 and over 0 in the `phases` line) at most 2 below the same average before; at least 6 pure-play intervals in each run.
+- Before (`run47-p568-before.log`, the P572 state on the board, the PO playing stack 3 minutes): 23 pure-play intervals; averages fps 24.09, paint 21.41 ms, send 3.53 ms, worst gap 48.39 ms (computed by a parser over the `time` and `phases` lines; the first interval after the switch dropped). The after run must hold at least 22.09 fps.
