@@ -188,3 +188,31 @@ A reviewer (Sonnet) and a refuter (Opus) read the driver diff since slice 3 (9ff
 - Windows (`run43-p556-w*.log`): past 4 windows a whole frame goes out in the background, so tunnel is 17 fps at 4 windows and 16 at 1; stack 24 at 1, 4 and 40. lcd.py sets 4 for "double": one run per value, so a first pick within noise of 1.
 - Pace (`run44-p556-pace*.log`, windows 4): at 40 ms flappy 20 to 22 fps, runner 21 to 24, worst gap 63 to 69 ms. At 50 ms 19 to 20 fps, worst gap still 62 to 73, because the slowest frames paint in 48 to 52 ms (frames of 52 to 64 ms). So 50 ms buys no even pace here, and `FRAME_MS` stays 40. The limit is now the paint, about 39 to 43 ms in PSRAM (8 to 10 ms of it the PSRAM cost, slice 0); the next lever is a smaller paint (P554 #758, the kept background). Done criterion "40 ms pace held" is not met; the PO's play judges what it feels like.
 - Review (Sonnet reviewer, Fable refuter): no MUST in the code; the refuter's MUST was a wrong number here (the pace bullet), fixed. Renames `frame_queue_copy`, `packed_pixels`; the mode names by designated initializer; stale docs of `swap` and `.show()` fixed. Rebuilt and flashed (hash verified). `run45-p556-*.log`: flappy 20 to 22 fps as before; tunnel 18 fps at 2 windows and 14 at 8 (16 at 1, 17 at 4), so 2 to 4 is the best range and 4 stays. Three soft resets with flappy sending, then `probe556.check()`: free memory the same as before (PSRAM 6,813,040, internal block 188,416), and init works again each time.
+
+## P567 (#772), 2026-11-02: what the new art costs, per primitive
+
+`probe567.py`, the real pictures in s3lcd.pool, drawn in TftCanvas.picture's panel shape; `run46-p567-double.log` (the frame in PSRAM, as the games run since P556) and `run46-p567-dma.log` (the internal frame). Per call over n calls, a loop of empty calls taken off. Written before the run: a full-frame blit about 2 ms more in "double".
+
+| what | "double" | "dma" | unit |
+| --- | --- | --- | --- |
+| full-frame blit, opaque (sky 320x240) | 6.83 | 2.58 | ms |
+| full-frame blit, keyed | 6.86 | 3.56 | ms |
+| sprite 16x24, keyed, warm (1000 at one spot) | 23.76 | 23.10 | µs |
+| sprite 16x24 right after a full-frame blit (50) | 67.80 | 52.32 | µs |
+| largest sprite (cactus64, 20x64), warm | 47.23 | 53.83 | µs |
+| sprite 16x24 half off screen (clip path, through Python) | 59.52 | 69.08 | µs |
+| 64x64 at alpha 128 | 1382.49 | 1324.77 | µs |
+| the same, per pixel | 337.52 | 323.43 | ns |
+| TftCanvas.picture, 16x24 (Python + blit) | 33.29 | 42.45 | µs |
+| pictures.draw, 16x24 (as the games call it) | 69.43 | 71.43 | µs |
+| Python physics: 30 spring bodies + 40 particles, one update | 5.69 | 5.71 | ms |
+| Python physics: 40 particles alone, one update | 2.27 | 2.28 | ms |
+| art load at start (pictures.load, 1507152.00 B) | 2154.00 | 2152.00 | ms |
+
+Memory after deinit ("double" run; "dma" within 420 B): PSRAM free 6747500.00 B, its largest block 6553600.00 B; internal largest block 188416.00 B; gc free 6603376.00 B, gc alloc 78304.00 B; a 4,000,000 B bytearray allocates (the substitute for A4's pool test: a larger pool needs a hard reset, so not run). Flash file system 12800000.00 B free of 14680064.00 B; art on the board 1507152.00 B.
+
+- The full-frame blit costs 4.25 ms more into PSRAM (opaque) and 3.30 ms more (keyed), about twice the 2 ms written before the run. Five full-frame layers would pay about 20 ms more than in the old frame; the P556 slice 0 paint difference was 8.4 to 9.7 ms, because those layers are not all full frames.
+- Small sprites cost the same in both frames when warm (23 µs); right after a full-frame blit the 16x24 sprite takes 67.8 µs in PSRAM against 52.3 µs. Through Python a sprite costs 69 to 71 µs (pictures.draw), so 30 sprites are about 2 ms.
+- Python physics costs more than the tech lead's bound of 1 to 2.4 ms (council/tech-lead.md, calculated): 57 µs per particle and 114 µs per spring body per update. 40 particles are 2.3 ms, 30 bodies and 40 particles 5.7 ms. So particle effects belong in C (P580 #771).
+- Translucency costs about 330 ns per pixel: a full-screen fade would be about 25 ms, so a fade fits a title or game-over moment, not play.
+- Flash is not a limit (12.8 MB free); PSRAM is the shared limit of the pool, the frame and MicroPython's heap.
