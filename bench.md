@@ -216,3 +216,13 @@ Memory after deinit ("double" run; "dma" within 420 B): PSRAM free 6747500.00 B,
 - Python physics costs more than the tech lead's bound of 1.75 to 3.5 ms for 30 bodies and 40 particles (council/tech-lead.md PHYS-3, calculated): 57 µs per particle and 114 µs per spring body per update. 40 particles alone are 2.3 ms, 30 bodies and 40 particles 5.7 ms. So A5's pass line (under 3 ms) fails for the full set and holds for 40 particles alone. The ways out are fewer bodies, viper or fixed point in Python (A5's fallback), or effects in C (P580 #771, the PO's D2); the tech lead notes that a C emitter reopens the rule that the C layer draws and decides nothing (TL-15).
 - Translucency costs about 330 ns per pixel: a full-screen fade would be about 25 ms, so a fade fits a title or game-over moment, not play.
 - Flash is not a limit (12.8 MB free); PSRAM is the shared limit of the pool, the frame and MicroPython's heap.
+
+## P568 (#774), 2026-11-02: stack as RENT, the PO's play test
+
+- Written before the play (A1, the P565 discovery): the system the theme aims at is "speculative housing: flats as investments, nobody lives there". The PO is not told this; his own words are matched against it afterwards.
+- Pass line (D3): his verdict "exciting" or stronger, and the average fps in pure-play intervals (title 0 and over 0 in the `phases` line) at most 2 below the same average before; at least 6 pure-play intervals in each run.
+- Before (`run47-p568-before.log`, the P572 state on the board, the PO playing stack 3 minutes): 23 pure-play intervals; averages fps 24.09, paint 21.41 ms, send 3.53 ms, worst gap 48.39 ms (computed by a parser over the `time` and `phases` lines; the first interval after the switch dropped). The after run must hold at least 22.09 fps.
+- After (`run48-p568-after.log`, RENT on the board after a hard reset, the PO playing 3 minutes): 9 pure-play intervals (at least 6 needed); averages fps 24.00, paint 19.89 ms, send 3.20 ms, worst gap 50.67 ms. Against before: fps -0.09 (the line allows -2), paint -1.52 ms (only the visible floors are drawn now). Fewer pure-play intervals than before (9 against 23); shorter rounds under the swing are a likely cause, not checked.
+- The PO's words, verbatim: "yeah, its good. I don't like how it moves unpredictibly, we could change that back to the original linear motion".
+- Against D3: the fps half passes; the verdict "good" is below "exciting", so slice 0 does not pass yet. A1: he did not name the system the theme aims at, so "the theme reads while playing" is not shown.
+- 1f55f98: the hanging floor slides straight again, as he asked; the tower's settling sway stays.

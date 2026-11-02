@@ -34,6 +34,7 @@ BLACK, WHITE = c565(0, 0, 0), c565(255, 255, 255)
 RED, GREEN, BLUE = c565(230, 40, 40), c565(40, 210, 70), c565(50, 90, 240)
 YELLOW, CYAN, MAGENTA = c565(250, 220, 40), c565(40, 220, 230), c565(230, 60, 220)
 ORANGE, GREY, DARK = c565(250, 140, 30), c565(120, 120, 130), c565(30, 30, 40)
+ACCENT = c565(214, 40, 48)  # the one accent the restyled games share (P565 D5): art/brush.py's ACCENT
 KEY = c565(8, 4, 8)  # the colour a sprite buffer keeps for 'clear'; no game uses it
 PALETTE = (RED, ORANGE, YELLOW, GREEN, CYAN, BLUE, MAGENTA, WHITE)
 
@@ -281,6 +282,7 @@ class Game:
     hint = "tap to play"
     bg = BLACK
     accent = GREEN
+    HUD_SCORE, HUD_BEST = WHITE, YELLOW  # the score bar's colours; a restyled game sets its own
     covers = False  # True: paint_static covers the whole screen, so no background fill goes under it (TftOut)
     TITLE_MS = 1500
     OVER_MS = 900
@@ -306,11 +308,12 @@ class Game:
     def paint(self, cv):
         pass
 
-    def die(self, x=None, y=None):
+    def die(self, x=None, y=None, colours=(RED, YELLOW)):
+        """End the round; at (x, y), a burst in the two colours."""
         BEST[self.name] = max(BEST.get(self.name, 0), self.score)
         if x is not None:
-            self.fx.burst(x, y, RED, 14, 170.0, 0.8)
-            self.fx.burst(x, y, YELLOW, 10, 110.0, 0.6)
+            self.fx.burst(x, y, colours[0], 14, 170.0, 0.8)
+            self.fx.burst(x, y, colours[1], 10, 110.0, 0.6)
         self.state, self.since = OVER, self.last
 
     def pop(self, x, y, colour=YELLOW):
@@ -345,9 +348,9 @@ class Game:
         if key != self.hud_key:
             first = len(cv.ops)
             cv.fill(0, 0, WIDTH, 16, DARK)
-            cv.big(str(self.score), 6, 0, WHITE, 2)
+            cv.big(str(self.score), 6, 0, self.HUD_SCORE, 2)
             best = "best %d" % max(self.score, key[1])
-            cv.text(best, WIDTH - 8 * len(best) - 6, 4, YELLOW)
+            cv.text(best, WIDTH - 8 * len(best) - 6, 4, self.HUD_BEST)
             cv.text(self.name, WIDTH // 2 - 4 * len(self.name), 4, GREY)
             if not cv.immediate:
                 self.hud_key, self.hud_ops = key, cv.ops[first:]
@@ -372,15 +375,19 @@ class Game:
         self.hud(cv)
         t = slowest(3, t)
         if self.state == OVER:
-            x, y = WIDTH // 2 - 100, HEIGHT // 2 - 50
-            cv.fill(x, y, 200, 100, BLACK)
-            cv.box(x, y, 200, 100, self.accent)
-            cv.box(x + 3, y + 3, 194, 94, GREY)
-            cv.big("game over", x + 28, y + 12, RED, 2)
-            cv.text("score %d   best %d" % (self.score, BEST.get(self.name, 0)), x + 20, y + 48, WHITE)
-            if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
-                cv.text("tap to retry", x + 52, y + 74, YELLOW)
+            self.draw_over(cv)
             slowest(4, t)
+
+    def draw_over(self, cv):
+        """The game-over box over the live scene. A game with its own end (stack's collapse) draws its own."""
+        x, y = WIDTH // 2 - 100, HEIGHT // 2 - 50
+        cv.fill(x, y, 200, 100, BLACK)
+        cv.box(x, y, 200, 100, self.accent)
+        cv.box(x + 3, y + 3, 194, 94, GREY)
+        cv.big("game over", x + 28, y + 12, RED, 2)
+        cv.text("score %d   best %d" % (self.score, BEST.get(self.name, 0)), x + 20, y + 48, WHITE)
+        if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
+            cv.text("tap to retry", x + 52, y + 74, YELLOW)
 
     def draw_title(self, cv):
         a, cx, cy = self.age, WIDTH // 2, HEIGHT // 2
