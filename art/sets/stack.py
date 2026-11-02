@@ -21,6 +21,11 @@ LIT, DARK = (250, 232, 188), INK  # a window of the show flat, and one where nob
 BOARD = (222, 20, 314, 57)  # the billboard under the score bar: x0, y0, x1, y1
 PLATE = (248, 35, 305, 53)  # its empty number plate; the game writes the rent on it, right-aligned at x 301, y 38
 DIGIT_W, DIGIT_H = 8, 12
+SOLD = (58, 18)  # the plate at game over, in the accent, drawn over the empty one at (248, 36)
+CARD = (200, 100)  # the over card, at (60, 70); its plates for the floors and the best at x 64 and 140, y 50
+CARD_PLATES = ((64, 50), (140, 50))
+TITLE_PLATE = (156, 158)  # the title's plate for the best
+PLATE_W, PLATE_H = 40, 17
 
 
 def noon_at(y):
@@ -219,8 +224,89 @@ def paint_digit(d):
     return out
 
 
+def words(s, text, cx, y, unit, width, colour):
+    """Stroke letters on strip s, centred on game x cx, the top at game y."""
+    m = s.mask()
+    write(m, text, (cx - text_width(text, unit) / 2) * s.S, y * s.S, unit * s.S, width * s.S)
+    lay(s.rgb, m, colour)
+
+
+def plate(s, x, y, w=PLATE_W, h=PLATE_H):
+    """A small empty number plate in bone with a pencil border, for digits the game writes."""
+    m = s.mask()
+    s.polygon(m, [(x, y), (x + w, y), (x + w, y + h), (x, y + h)])
+    lay(s.rgb, m, (250, 248, 242))
+    s.pencil([([(x, y), (x + w, y), (x + w, y + h), (x, y + h), (x, y)], 2)], strength=0.9, colour=INK)
+
+
+def paint_title(noon):
+    """The title, 320 x 240: the noon gone dark round its white sun, RENT in bone with an ink shadow and a red rule,
+    TAP TO DROP, and BEST with a plate. The billboard stays, so the SOLD plate lands on it."""
+    s = Strip(W, 0, H, False, (0, 0, 0))
+    s.rgb = noon.convert("RGB").resize(s.size, Image.LANCZOS)
+    glaze(s.rgb, Image.new("L", s.size, 255), (70, 62, 92), 0.75)
+    m = s.mask()
+    s.polygon(m, [(0, 60), (W, 60), (W, 182), (0, 182)])
+    glaze(s.rgb, blur(s.roughen(m, 3, 0.5, 14), 6), INK, 0.8)  # a band of night across the noon, for the word
+    words(s, "RENT", 163, 73, 10, 4.5, INK)  # the shadow first
+    words(s, "RENT", 160, 70, 10, 4.5, BONE)
+    rule = s.mask()
+    s.polygon(rule, [(50, 136), (270, 136), (270, 138.5), (50, 138.5)])
+    lay(s.rgb, rule, ACCENT)
+    words(s, "TAP TO DROP", 160, 144, 1.6, 1.2, BONE)
+    words(s, "BEST", 136, 163, 1.4, 1.1, BONE)
+    plate(s, *TITLE_PLATE)
+    s.paper(0.06)
+    return s.rgb.resize((W, H), Image.LANCZOS).convert("RGBA")
+
+
+def paint_over():
+    """The over card, 200 x 100: SOLD OUT in the accent, 0 RESIDENTS in bone, and plates for the floors and the
+    best, on an ink wash with a bone border."""
+    w, h = CARD
+    s = Strip(w, 0, h, False, INK)
+    m = s.mask()
+    s.polygon(m, [(0, 0), (w, 0), (w, h), (0, h)])
+    s.wash(m, (40, 34, 50), alpha=0.9, rim=0.0, grain=0.5, cell=10, rough=None, soft=0)
+    border = s.mask()
+    ImageDraw.Draw(border).rectangle((2 * s.S, 2 * s.S, (w - 2) * s.S, (h - 2) * s.S), outline=255, width=s.S)
+    lay(s.rgb, border, BONE)
+    words(s, "SOLD OUT", w / 2, 9, 3, 2.2, ACCENT)
+    words(s, "· 0 RESIDENTS", w / 2, 33, 1.5, 1.1, BONE)
+    words(s, "FLOORS", 41, 55, 1.2, 1.0, BONE)
+    words(s, "BEST", 123, 55, 1.2, 1.0, BONE)
+    for x, y in CARD_PLATES:
+        plate(s, x, y)
+    return s.rgb.resize(CARD, Image.LANCZOS).convert("RGBA")
+
+
+def paint_sold():
+    """The plate at game over, 58 x 18: SOLD in bone on the accent, an ink border."""
+    w, h = SOLD
+    s = Strip(w, 0, h, False, ACCENT)
+    words(s, "SOLD", w / 2, 4.5, 1.6, 1.4, BONE)
+    s.pencil([([(0.5, 0.5), (w - 0.5, 0.5), (w - 0.5, h - 0.5), (0.5, h - 0.5), (0.5, 0.5)], 4)], strength=1.0,
+             colour=INK)
+    return s.rgb.resize(SOLD, Image.LANCZOS).convert("RGBA")
+
+
+def paint_cot(degrees):
+    """A cot, 16 x 16 keyed, turned by degrees: an empty bed, its blanket in the accent. It rides a cut-off slab
+    down to the street: nobody was ever in it."""
+    sp = Sprite(16, 16)
+    sp.part(sp.shape("line", (2.5, 9.6), (2.5, 12.6), width=1.1), (96, 92, 106), rim=0)
+    sp.part(sp.shape("line", (13.5, 9.6), (13.5, 12.6), width=1.1), (96, 92, 106), rim=0)
+    sp.part(sp.shape("rect", 1.5, 8.6, 14.5, 10.2, 0.4), (110, 104, 120), rim=0.1)
+    sp.part(sp.shape("rect", 2, 5.6, 14, 9, 0.8), BONE, rim=0.3)
+    sp.part(sp.shape("ellipse", 2.4, 4.6, 6.2, 7.4), (250, 246, 236), rim=0.3)
+    sp.part(sp.shape("rect", 6.6, 5.2, 14.2, 9.2, 0.6), ACCENT, rim=0, grain=0)
+    sp.turn(degrees, (8, 8))
+    return sp.cut(ink=INK)
+
+
 def paint_stack():
-    """Every stack picture: the noon backdrop, the lit and the dark floors in turn, the hook, the rent's digits."""
+    """Every stack picture: the noon backdrop, the lit and the dark floors in turn, the hook, the rent's digits, the
+    cot's four turns, the SOLD plate, the title and the over card."""
     pics = {"stack_noon": (paint_noon(), False)}
     for i, colour in enumerate(CONCRETE):
         pics["stack_lit%d" % i] = (paint_flat(colour, True), False)
@@ -229,6 +315,11 @@ def paint_stack():
     pics["stack_hook"] = (paint_hook(), True)
     for d in range(10):
         pics["stack_digit%d" % d] = (paint_digit(d), True)
+    for k in range(4):  # a quarter turn a frame: it tumbles end over end
+        pics["stack_cot%d" % k] = (paint_cot(90 * k), True)
+    pics["stack_sold"] = (paint_sold(), False)
+    pics["stack_title"] = (paint_title(pics["stack_noon"][0]), False)
+    pics["stack_over"] = (paint_over(), False)
     return Painting(pics)
 
 
@@ -281,7 +372,33 @@ def stack_sheet(painting, sheet, y):
         over(strip, pics["stack_digit%d" % k], 18 + k * (DIGIT_W + 2), 2)
     sheet.put("stack_hook 16x16 and stack_digit0..9 8x12, at 4x", strip.resize((strip.width * 4, 64), Image.NEAREST),
               x, at)
-    return y + H * 2 + 32
+    y += H * 2 + 32
+    put = (900 + 140 * 12, 12)
+    title = pics["stack_title"].copy()
+    title.paste(pics["stack_lit0"].crop((0, 0, 140, BLOCK_H)), (90, 206))
+    over(title, pics["stack_hook"], 152, 190)
+    title.paste(pics["stack_sold"], (248, 36))
+    number(title, pics, put[1], TITLE_PLATE)
+    sheet.put("stack_title, the floor landed, SOLD, best 12", title.convert("RGB"), 10, y)
+    end = stack_scene(pics, 6).convert("RGBA")
+    end.paste(pics["stack_sold"], (248, 36))
+    end.paste(pics["stack_over"], (60, 70))
+    for (px, py), value in zip(CARD_PLATES, (6, 12)):
+        number(end, pics, value, (60 + px, 70 + py))
+    sheet.put("game over: stack_over and stack_sold", end.convert("RGB"), 350, y)
+    strip = Image.new("RGB", (4 * 18 + SOLD[0], 18), BONE)
+    for k in range(4):
+        over(strip, pics["stack_cot%d" % k], k * 18, 1)
+    strip.paste(pics["stack_sold"], (72, 0))
+    sheet.put("stack_cot0..3 and stack_sold, at 4x", strip.resize((strip.width * 4, 72), Image.NEAREST), 690, y)
+    return y + H + 32
+
+
+def number(out, pics, value, at):
+    """value in digit pictures on a plate at (x, y), right-aligned, as the game writes it."""
+    x, y = at
+    for k, ch in enumerate(reversed(str(value))):
+        over(out, pics["stack_digit" + ch], x + PLATE_W - 3 - DIGIT_W * (k + 1), y + 3)
 
 
 ART_SET = ArtSet("stack", 563, paint_stack, sheet_fn=stack_sheet, scene_fn=stack_frame, ink_accent=ACCENT)

@@ -5,7 +5,7 @@ from math import sin
 
 import pictures
 
-from gfx import ACCENT, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
+from gfx import ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
 
 W, H = WIDTH, HEIGHT
 
@@ -30,6 +30,11 @@ class Stack(Game):
     SHAKE_MS, FALL_MS, CARD_MS = 160, 250, 500  # the lean starts after the shake, the floors fall, then the card
     RENT, RENT_PER_FLOOR = 900, 140  # what the billboard asks: every floor raises it
     PLATE_RIGHT, PLATE_TOP, DIGIT_W = 301, 38, 8  # the billboard's empty plate in stack_noon; the digits are 8 x 12
+    SOLD_AT = (248, 36)  # stack_sold over that plate when the tower falls
+    CARD_AT = (60, 70)  # stack_over; its plates' right ends and top, for the floors and the best (art/sets/stack.py)
+    CARD_PLATES = ((161, 123), (237, 123))
+    TITLE_PLATE = (193, 161)  # the title's plate for the best
+    LOWER_MS = 1200  # the title's hook lowers the first floor this long
 
     LIT = tuple("stack_lit%d" % i for i in range(8))  # the show flat on top, its windows warm
     DARK = tuple("stack_dark%d" % i for i in range(8))  # every floor below it: nobody lives there
@@ -63,6 +68,8 @@ class Stack(Game):
         for c in self.slabs:
             c[3] += 700 * dt
             c[1] += c[3] * dt
+            if c[1] >= self.BASE:  # the cot on it breaks on the street
+                self.fx.burst(c[0] + c[2] // 2, self.BASE + 8, GREY, 8, 70.0, 0.5, 200.0)
         self.slabs = [c for c in self.slabs if c[1] < self.BASE]
         self.sway_v -= (self.SPRING * self.sway + self.DAMP * self.sway_v) * dt
         self.sway += self.sway_v * dt
@@ -108,25 +115,37 @@ class Stack(Game):
         cv.fill(x, y, w, 2, self.BONE)  # the slab in the sun
         cv.fill(x, y + self.LEVEL_H - 4, w, 3, shade(60, 56, 70, 1))
 
-    def hook(self, cv, x, y):
-        """The cable from the score bar to the hook over the hanging floor's middle (x, y: its top middle). The
+    def hook(self, cv, x, y, top):
+        """The cable from (top, 16) to the hook over the hanging floor's middle (x, y: its top middle). In play the
         cable's top rides the slide, so it leans as the floor swings under it."""
-        cv.line(int(self.x) + self.w // 2, 16, x, y - 12, self.INK)
+        cv.line(top, 16, x, y - 12, self.INK)
         if not pictures.draw(cv, "stack_hook", x - 8, y - 16):
             cv.fill(x - 4, y - 14, 8, 4, GREY)
             cv.fill(x - 1, y - 10, 2, 10, GREY)
 
-    def price(self):
-        return self.RENT + self.RENT_PER_FLOOR * self.score
-
-    def rent(self, cv):
-        """What a flat costs now, on the billboard's plate, right-aligned: one digit picture each, the last first."""
-        price, x = self.price(), self.PLATE_RIGHT
-        while price:  # never 0 at the start: the rent starts at 900
+    def number(self, cv, value, right, top):
+        """value in digit pictures on a plate, right-aligned at right, the last digit first; text on the Mac."""
+        x, rest = right, value
+        while True:
             x -= self.DIGIT_W
-            if not pictures.draw(cv, "stack_digit%d" % (price % 10), x, self.PLATE_TOP):
-                return cv.text(str(self.price()), self.PLATE_RIGHT - 40, self.PLATE_TOP + 2, self.INK)
-            price //= 10
+            if not pictures.draw(cv, "stack_digit%d" % (rest % 10), x, top):
+                return cv.text(str(value), right - 8 * len(str(value)), top + 2, self.INK)
+            rest //= 10
+            if not rest:
+                return
+
+    def draw_title(self, cv):
+        """RENT: the title card, the hook lowering the first floor onto the street over 1.2 s, then the SOLD plate,
+        and the best on its plate."""
+        if not pictures.draw(cv, "stack_title", 0, 0):
+            return Game.draw_title(self, cv)
+        x, w = self.floors[0]
+        y = -self.LEVEL_H + (self.level_y(0) + self.LEVEL_H) * min(self.age, self.LOWER_MS) // self.LOWER_MS
+        self.hook(cv, x + w // 2, y, x + w // 2)
+        self.block(cv, x, y, w, 0, True)
+        if self.age >= self.LOWER_MS:
+            pictures.draw(cv, "stack_sold", *self.SOLD_AT)
+        self.number(cv, BEST.get(self.name, 0), *self.TITLE_PLATE)
 
     def paint_static(self, cv):
         if pictures.draw(cv, "stack_noon", 0, 0):  # the painted noon (P568)
@@ -155,16 +174,24 @@ class Stack(Game):
                     cv.fill(self.floor_x(i), y, self.floors[i][1], self.LEVEL_H, WHITE)
         x, y = self.hanging_x() + shake + int(lean), self.level_y(n) + int(drop)
         if y < H:
-            self.hook(cv, x + self.w // 2, y)
+            self.hook(cv, x + self.w // 2, y, int(self.x) + self.w // 2)
             self.block(cv, x, y, self.w, n, True)
-        for x, y, w, _, i in self.slabs:
-            self.block(cv, x, int(y + drop), w, i, True)  # over, they fall with the tower
-        self.rent(cv)
+        for x, y, w, _, i in self.slabs:  # over, they fall with the tower; each carries a cot, tumbling as it falls
+            self.block(cv, x, int(y + drop), w, i, True)
+            pictures.draw(cv, "stack_cot%d" % (int(y) // 10 % 4), x + w // 2 - 8, int(y + drop) - 12)
+        if self.state != OVER or not pictures.draw(cv, "stack_sold", *self.SOLD_AT):
+            self.number(cv, self.RENT + self.RENT_PER_FLOOR * self.score, self.PLATE_RIGHT, self.PLATE_TOP)
 
     def draw_over(self, cv):
-        """The collapse plays over the live scene first; the card comes after it."""
-        if self.age >= self.CARD_MS:
-            Game.draw_over(self, cv)
+        """The collapse plays over the live scene first; then SOLD OUT, 0 RESIDENTS, the floors and the best."""
+        if self.age < self.CARD_MS:
+            return
+        if not pictures.draw(cv, "stack_over", *self.CARD_AT):
+            return Game.draw_over(self, cv)
+        for (right, top), value in zip(self.CARD_PLATES, (self.score, BEST.get(self.name, 0))):
+            self.number(cv, value, right, top)
+        if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
+            cv.text("tap to retry", self.CARD_AT[0] + 52, self.CARD_AT[1] + 84, self.BONE)
 
 
 class Cave(Game):

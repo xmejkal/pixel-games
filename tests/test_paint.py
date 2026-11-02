@@ -141,13 +141,15 @@ class RentTest(unittest.TestCase):
         sizes = {"stack_noon": (320, 240, False), "stack_hook": (16, 16, True)}
         sizes.update({"stack_%s%d" % (kind, i): (320, 14, False) for kind in ("lit", "dark") for i in range(8)})
         sizes.update({"stack_digit%d" % d: (8, 12, True) for d in range(10)})
+        sizes.update({"stack_cot%d" % k: (16, 16, True) for k in range(4)})
+        sizes.update({"stack_sold": (58, 18, False), "stack_title": (320, 240, False), "stack_over": (200, 100, False)})
         shown = {name: img.size + (keyed,) for name, (img, keyed) in self.painting.pictures.items()}
         self.assertEqual(shown, sizes)  # and the night's stack_bg, stack_block and stack_mover are gone
 
     def test_every_name_the_game_asks_for_is_drawn(self):
         names = re.findall(r'"(stack_[a-z]+)(%d)?"', read("games", "arcade2.py"))
         self.assertIn(("stack_digit", "%d"), names)  # the game asks by the patterns, so the test reads them
-        count = {"stack_digit": 10}  # every other pattern runs over the eight floors
+        count = {"stack_digit": 10, "stack_cot": 4}  # every other pattern runs over the eight floors
         for stem, pattern in names:
             for name in [stem + str(i) for i in range(count.get(stem, 8))] if pattern else [stem]:
                 with self.subTest(name=name):
@@ -155,8 +157,10 @@ class RentTest(unittest.TestCase):
 
     def test_one_accent(self):
         self.assertIn("ACCENT = c565(%d, %d, %d)" % ACCENT, read("games", "gfx.py"))  # the board's copy of it
-        hook = {p[:3] for p in q565(self.painting.pictures["stack_hook"][0]).get_flattened_data() if p[3]}
-        self.assertIn(board_colour(ACCENT), hook)  # the hook's red band
+        for name in ("stack_hook", "stack_sold", "stack_cot0", "stack_over"):  # its band, the plate, the blanket, SOLD OUT
+            with self.subTest(name=name):
+                shown = {p[:3] for p in q565(self.painting.pictures[name][0]).get_flattened_data() if p[3]}
+                self.assertIn(board_colour(ACCENT), shown)
 
     def test_letters_fit_their_cells_and_differ(self):
         masks = set()
