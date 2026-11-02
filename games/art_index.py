@@ -48,6 +48,19 @@ ART = {
     "stack_block6": (320, 14, "art/stack_block6.bin"),
     "stack_block7": (320, 14, "art/stack_block7.bin"),
     "stack_mover": (320, 14, "art/stack_mover.bin"),
+    "flappy_sky": (320, 240, "art/flappy_sky.bin"),
+    "flappy_clouds": (640, 100, "art/flappy_clouds.bin"),
+    "flappy_far": (640, 90, "art/flappy_far.bin"),
+    "flappy_near": (640, 62, "art/flappy_near.bin"),
+    "flappy_ground": (640, 18, "art/flappy_ground.bin"),
+    "flappy_pipe_top": (32, 240, "art/flappy_pipe_top.bin"),
+    "flappy_pipe_bottom": (32, 240, "art/flappy_pipe_bottom.bin"),
+    "flappy_bird00": (18, 14, "art/flappy_bird00.bin"),
+    "flappy_bird01": (18, 14, "art/flappy_bird01.bin"),
+    "flappy_bird10": (18, 14, "art/flappy_bird10.bin"),
+    "flappy_bird11": (18, 14, "art/flappy_bird11.bin"),
+    "flappy_bird20": (18, 14, "art/flappy_bird20.bin"),
+    "flappy_bird21": (18, 14, "art/flappy_bird21.bin"),
     "runner_jump": (16, 24, "art/runner_apex.bin"),
 }
 
@@ -60,3 +73,15 @@ LAYERS = [
     ("hills", 120, 640, 75, 0.45, True, "art/hills.bin"),
     ("ground", 190, 640, 50, 1.0, False, "art/ground.bin"),
 ]
+
+# Every game's layers, the same shape as LAYERS, back to front.
+LAYER_SETS = {
+    "runner": LAYERS,
+    "flappy": [
+        ("flappy_sky", 0, 320, 240, 0.0, False, "art/flappy_sky.bin"),
+        ("flappy_clouds", 20, 640, 100, 0.15, True, "art/flappy_clouds.bin"),
+        ("flappy_far", 110, 640, 90, 0.3, True, "art/flappy_far.bin"),
+        ("flappy_near", 160, 640, 62, 0.6, True, "art/flappy_near.bin"),
+        ("flappy_ground", 222, 640, 18, 1.0, False, "art/flappy_ground.bin"),
+    ],
+}
