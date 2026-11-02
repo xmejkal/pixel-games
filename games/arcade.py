@@ -22,7 +22,12 @@ class Flappy(Game):
     accent = YELLOW
     X, GAP, PW, SPACE, FLOOR = 80, 84, 32, 130, 222
 
+    BACK = ("flappy_clouds", "flappy_far", "flappy_near")  # the layers behind the pipes; the ground goes over them
+    BIRDS = tuple(tuple("flappy_bird%d%d" % (tilt, wing) for wing in range(2)) for tilt in range(3))
+
     def setup(self):
+        self.covers = pictures.load()  # the painted morning covers the screen, so no fill goes under it
+        self.flapped = -1.0  # when the last tap came (self.t), for the bird's wing
         self.y, self.vy, self.dist = 110.0, 0.0, 0.0
         self.pipes = [[W + 20 + i * self.SPACE, self.gap_y(), False] for i in range(3)]
         self.clouds = [[random.randrange(W), random.randrange(30, 110), random.randrange(24, 48)] for _ in range(4)]
@@ -33,7 +38,7 @@ class Flappy(Game):
     def play(self, pressed, held):
         dt = self.dt
         if pressed:
-            self.vy = -270.0
+            self.vy, self.flapped = -270.0, self.t
             self.fx.burst(self.X - 8, self.y + 4, WHITE, 3, 40.0, 0.3, 100.0)
         self.vy += 820 * dt
         self.y += self.vy * dt
@@ -64,11 +69,15 @@ class Flappy(Game):
         cv.fill(x + self.PW - 7, y, 7, h, c565(20, 110, 40))  # shadow edge
 
     def paint_static(self, cv):
+        if pictures.draw_layers(cv, 0, False, "flappy"):  # the painted morning sky (P564)
+            return
         cv.gradient(0, self.FLOOR, (60, 150, 230), (170, 220, 250), 12)
         cv.fill(0, self.FLOOR, W, 4, c565(120, 220, 60))
         cv.fill(0, self.FLOOR + 4, W, H - self.FLOOR, c565(200, 150, 80))
 
     def paint(self, cv):
+        if self.paint_art(cv):
+            return
         for x, y, w in self.clouds:
             cv.fill(x, y, w, 8, WHITE)
             cv.fill(x + 6, y - 5, w - 14, 6, WHITE)
@@ -84,6 +93,21 @@ class Flappy(Game):
         flap = 0 if self.vy < 0 else 3
         cv.sprite(BIRD, BIRD_COLOURS, self.X - 9, self.y - 7, 2)
         cv.fill(self.X - 12, self.y - 2 + flap, 6, 3, WHITE)
+
+    def paint_art(self, cv):
+        """The painted flappy (P564): the layers behind, each pipe piece placed so its cap meets the gap (the driver
+        clips the rest), the ground over the pipe feet, then the bird. False when there is no art."""
+        if not pictures.draw_layers(cv, self.dist, True, "flappy", self.BACK):
+            return False
+        half = self.GAP // 2
+        for x, gap_y, _ in self.pipes:
+            pictures.draw(cv, "flappy_pipe_top", x, gap_y - half - 240)
+            pictures.draw(cv, "flappy_pipe_bottom", x, gap_y + half)
+        pictures.draw_layers(cv, self.dist, True, "flappy", ("flappy_ground",))
+        tilt = 0 if self.vy < -60 else 2 if self.vy > 120 else 1
+        wing = 0 if self.t - self.flapped < 0.12 else int(self.t * 6) % 2  # up just after a tap, then a slow beat
+        pictures.draw(cv, self.BIRDS[tilt][wing], self.X - 9, self.y - 7)
+        return True
 
 
 class Runner(Game):

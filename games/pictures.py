@@ -12,7 +12,7 @@ except ImportError:  # no art made yet
     art_index = None
 
 PICS = {}  # name: (w, h, memoryview into the pool)
-LAYERS = []  # [name, top, w, h, speed, keyed, memoryview], back to front
+SETS = {}  # game name: its layers, each [name, top, w, h, speed, keyed, memoryview], back to front
 ready = False
 
 
@@ -23,7 +23,8 @@ def load():
     if ready or art_index is None:
         return ready
     pics = list(art_index.ART.items())
-    layers = list(getattr(art_index, "LAYERS", ()))
+    sets = getattr(art_index, "LAYER_SETS", None) or {"runner": getattr(art_index, "LAYERS", ())}
+    layers = [row for rows in sets.values() for row in rows]
     sizes = {}  # path: bytes, each file once: a layer's file is also a picture
     for _, (w, h, path) in pics:
         sizes[path] = w * h * 2
@@ -48,8 +49,8 @@ def load():
         return False
     for name, (w, h, path) in pics:
         PICS[name] = (w, h, files[path])
-    for name, top, w, h, speed, keyed, path in layers:
-        LAYERS.append([name, top, w, h, speed, keyed, files[path]])
+    for game, rows in sets.items():
+        SETS[game] = [[name, top, w, h, speed, keyed, files[path]] for name, top, w, h, speed, keyed, path in rows]
     ready = True
     return True
 
@@ -76,13 +77,15 @@ def draw_cut(cv, name, x, y, w):
     return True
 
 
-def draw_layers(cv, travelled, moving):
-    """The still layers (moving False) or the scrolling ones, each moved by travelled px times its speed. A strip's
-    game x runs along panel rows, so a window of it is one contiguous slice: one blit, or two where the strip wraps."""
-    if not LAYERS or not getattr(cv, "pictures", False):
+def draw_layers(cv, travelled, moving, game="runner", only=None):
+    """A game's still layers (moving False) or its scrolling ones, each moved by travelled px times its speed; only
+    those named in only, when given. A strip's game x runs along panel rows, so a window of it is one contiguous
+    slice: one blit, or two where the strip wraps."""
+    layers = SETS.get(game)
+    if not layers or not getattr(cv, "pictures", False):
         return False
-    for _, top, w, h, speed, keyed, mv in LAYERS:
-        if (speed > 0) != moving:
+    for name, top, w, h, speed, keyed, mv in layers:
+        if (speed > 0) != moving or (only and name not in only):
             continue
         key = art_index.KEY_C565 if keyed else -1
         o = int(travelled * speed) % w
