@@ -106,12 +106,7 @@ Nothing is filed. Numbers P567 upward were the next free ones in xmejkal/spark (
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
 
-## P580 #771: effects in C on the PIE → smoke, clouds, fire, particles, ripples started by the game (an existing card, D2; not filed by this discovery)
-- type: existing card (story), already filed as P580 #771
-- needed by: D2 (the PO, 2026-11-02)
-- value proven by: the card's own
-- depends on: —; the scrolling games (P574) depend on it and on P554 #758 (D8); the restyle of the static games does not
-- status: filed D2
+Existing card, not an item of this list: P580 #771 (effects in C on the PIE, D2). The scrolling games (P574) depend on it and on P554 #758 (D8); the static games do not.
 
 ## P581: the games are silent → a buzzer on a free pin and a one-line sound call, as new hardware in its own card
 - type: story (new hardware; D13)
