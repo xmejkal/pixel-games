@@ -17,7 +17,7 @@ e.g. `- When I assign a task in a meeting [E tickets.csv:6], I want the assignee
 ## Today they…
 <!-- Per job: what they do instead today (a competitor, a workaround or nothing), tagged.
 e.g. `- Job 1 · paste each task into Slack by hand · E tickets.csv:7` -->
-- Job 1 · three games painted (runner, stack, flappy) in one pencil-and-watercolour style; seven games are flat fills and lines · E games/art (55 files, 1.6 MB), art_index.py <!-- REQUIRED:today -->
+- Job 1 · three games painted (runner, stack, flappy) in one pencil-and-watercolour style; seven games are flat fills and lines · E games/art (55 files, 1,506,384 B; 1632 KB on disk), art_index.py <!-- REQUIRED:today -->
 - Job 2 · the repository is private and its README is short; no pictures of the games · E P566 #770, the PO's repo setting (private first, 2026-11-02)
 - Job 3 · no game has a theme beyond its rules · E games/arcade.py, arcade2.py, space3d.py, world3d.py class names
 
@@ -54,13 +54,13 @@ flowchart LR
 | step | what they do | evidence | friction or harm | today | open question |
 | --- | --- | --- | --- | --- | --- |
 | 1 | opens the repository link from a job application | E P539 D5 (showcase first); the repository is private today (jobs-and-journeys.md Today, P566 #770) | cannot open it today | not yet | when does it go public, and with what in it? (P566) |
-| 2 | reads the first lines of README.md: 36 lines, opening "A C display driver, a fork of russhughes/s3lcd ...", a build recipe needing ESP-IDF v5.5.2, a Status line about paint time | E README.md (user.md USER-10) | the first 30 seconds show a build log, not a game | not yet (P566) | — |
+| 2 | reads the first lines of README.md: 36 lines, opening (line 3) "Small arcade games in MicroPython on a DFRobot FireBeetle 2 ESP32-S3 ..." and a driver sentence second, a build recipe needing ESP-IDF v5.5.2, a Status line about paint time | E README.md (user.md USER-10) | the first 30 seconds show a build log, not a game (whether a 30-second reader stops at the technical second sentence is H; nobody of this group was asked) | not yet (P566) | — |
 | 3 | looks for a picture: zero images in README; art/preview.png is a 1320x3234 contact sheet of assets at 2x to 4x, not linked, not the games | E README.md image grep 0; art/preview.png (USER-10, USER-11) | the only art that looks designed is runner, stack and flappy; the flat seven beside them would look like an earlier project | not yet | does the restyle produce stills or a clip that P566 can show? (user.md Q10) |
 | 4 | decides whether this person builds well with AI, and closes the tab | H the facilitator (job 2); nobody of this group was asked | nothing on the page shows a game running | not yet | — |
 
 ```mermaid
 flowchart LR
-  h1["1 opens the link (private today)"] --> h2["2 reads a driver sentence"]
+  h1["1 opens the link (private today)"] --> h2["2 reads a games sentence, then a driver one"]
   h2 --> h3["3 finds no picture of a game"]
   h3 --> h4["4 decides in 30 s, closes"]
 ```

@@ -16,10 +16,10 @@ Nothing is filed. Numbers P567 upward are the next free ones in xmejkal/spark (t
 - parent (the epic, as a sub-issue): P565 #769 <!-- REQUIRED:spark-process:parent -->
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one (the pixel-games slice was not read) <!-- REQUIRED:spark-process:slice -->
 
-## P568: a theme is a belief until one game carries it → one game, one theme pass (a palette, a backdrop, one sprite with 3 to 4 frames, one death cue, a painted title and over card), played blind by the PO, fps logged before and after
+## P568: a theme is a belief until one game carries it → one game, one theme pass (a palette, a backdrop, one sprite with 3 to 4 frames, one death cue, a painted title and over card), played and rated by the PO in his words, fps logged before and after in the same session
 - type: story (slice 0; the test of A1, A2, A3, A9)
 - needed by: "I want it to be shoking and cool and beautiful" (the PO, 2026-11-02, #769)
-- value proven by: his words in bench.md naming what the game is about without being told, and the `time` line's fps not below the same game's fps before the pass (the proposed pass lines of A1 to A3, pending Q1)
+- value proven by: his verdict in his words in bench.md ("exciting" or stronger), and the `time` line's fps not below the same game's fps before the pass (the proposed pass lines of A2 and A3, the riskiest; A1's theme-naming a lower line, pending Q1)
 - depends on: P567 for sizing (optional); Q6 names the game; a static-backdrop game needs no driver card, a scrolling game waits for P556 #760
 - status: proposed
 - label (the repository's type label): story
@@ -29,7 +29,7 @@ Nothing is filed. Numbers P567 upward are the next free ones in xmejkal/spark (t
 ## P569: ten games share one generic title and game-over shell → a painted title and over card per game, lettering baked, 3 to 6 frames inside the 1.5 s title and 4 to 6 inside the 900 ms over window
 - type: story
 - needed by: "each one is a wild, beautiful indie game with its own theme" (#769 title, the PO's card)
-- value proven by: ten cards on the board, and the over-screen paint time in the `time` log below today's 33 to 54 ms box (bench.md:163)
+- value proven by: ten cards on the board, and the over-screen paint time in the `time` log below the over box re-timed today (the 33 to 54 ms of p537-finding.md:7 was measured before partial show)
 - depends on: — (no driver card; ★C11)
 - status: proposed
 - label (the repository's type label): story
@@ -59,7 +59,7 @@ Nothing is filed. Numbers P567 upward are the next free ones in xmejkal/spark (t
 ## P572: art/paint.py's main() hard-codes three games in 1,452 lines → a data table per game (an index), so a fourth game is a row, not an edit of main()
 - type: chore (a refactor before the per-game art)
 - needed by: "prettyfy all the games" (the PO, 2026-11-02): ten games through one pipeline (★C9, TL-12)
-- value proven by: the same 56 .bin files byte for byte after the refactor (seed 562), and a fourth game added as one table entry
+- value proven by: the same 55 .bin files byte for byte after the refactor (seed 562), and a fourth game added as one table entry
 - depends on: —; before P573 and P574
 - status: proposed
 - label (the repository's type label): chore
@@ -96,10 +96,10 @@ Nothing is filed. Numbers P567 upward are the next free ones in xmejkal/spark (t
 - parent (the epic, as a sub-issue): P565 #769
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
 
-## P576: the ten games have no shared world → one city, one day: a sky colour script across the D14 cycle and one skyline layer reused by flappy, runner, stack and road (only if Q2 picks option W)
+## P576: the ten games have no shared world → one city, one day: a sky colour script across the cycle (W reorders GAMES in games/app.py:39) and one skyline layer reused by flappy, runner, stack and road (only if Q2 picks option W)
 - type: story
 - needed by: "it can even be about some controversial political or social topic" (the PO, 2026-11-02); the art-direction lens's opinion for W (H)
-- value proven by: the ten title cards in cycle order as stills, dawn to night; the shared layer's bytes counted once in the pool
+- value proven by: the ten title cards in cycle order (W's order, not D14's) as stills, dawn to night; the shared layer's bytes counted once in the pool
 - depends on: Q2 = W; P569; P572
 - status: proposed
 - label (the repository's type label): story
