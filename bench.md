@@ -161,3 +161,9 @@ A reviewer (Sonnet) and a refuter (Opus) read the driver diff since slice 3 (9ff
 - The cut (11e5841): `TftCanvas.fill` without the four-name tuple. Bench (`run28-p550-lean.log`): 8 x 8 169 to 87 µs, clipped away 161 to 80 µs, 0 bytes per call. `probe550.bench()` after it: canvas.fill 8 x 8 40.3 µs, 240 x 16 86.8 µs.
 - 14:25 to 14:28, R4 with the cut, the PO playing (`run29-p550-lean-play.log`): pure-play intervals only 6 of 24. Paint 24.40 ms (static 13.25, game 2.22, fx 0.60, hud 8.20), send 7.98, fps 24.0, worst gap 52 ms. So the paint fell by 8.2 ms (25 %), on fewer pure-play intervals than R1.
 - What is left: about 80 µs of Python per call even with the cut, and the still picture is repainted every frame. Both are what a batch in C or a kept background (P537 slice 2, P554 #758) removes.
+
+## P562 (#766), 2026-11-02: painted art, the blit cost
+
+- Before (`run34-blit-cost.log`): `blit_buffer` of a full 240 x 320 picture from PSRAM 9.65 ms, a 100 x 320 band 4.07 ms, the screen fill 2.90 ms. It blended every pixel through `alpha_blend_565` with a bounds check.
+- d4e4996: `blit_buffer` takes a key colour, and a picture wholly on screen at alpha 255 is copied by rows (memcpy, or every pixel but the key). Refuter: two overflows fixed before the flash. Flashed without buttons (`mpremote bootloader`, esptool write-flash 0x10000, hash verified).
+- After (`run35-p562-blit-fast.log`): full frame from PSRAM 2.65 ms, a keyed 16 x 24 sprite 19.8 µs.
