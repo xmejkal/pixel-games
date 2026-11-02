@@ -175,3 +175,11 @@ A reviewer (Sonnet) and a refuter (Opus) read the driver diff since slice 3 (9ff
 - `run38-p563-Runner.log`, `run38-p563-Stack.log`, no play: no errors; runner 18 fps (paint 18.6, send 31.4, gc 1.4 ms, heap 96 KB); stack 23 fps (paint 15.4, send 9.7, gc 1.4 ms, heap 81 KB).
 - 88f8b10, 67145d2: flappy painted (P564): a morning sky, clouds 0.15, a hill town 0.3, bushes 0.6, ground 1.0, sandstone pillars with caps at the gap (placed 240 px long, the driver clips them), a bird with 2 wings x 3 tilts. Art 1,506,384 bytes in the pool. The first copy failed when the port dropped ("Device not configured"): the runs after it used the old files and are void. Copied again and checked (55 files), hard reset.
 - `run39-p564-Flappy.log`, `run39-p564-Runner.log`, no play, mostly on the game-over screen: no errors, heap 80 to 88 KB; flappy 14 fps (paint 32.5, send 31.4 ms), runner 15 fps (paint 30.0, send 31.4 ms). Fps in play waits on the PO's play.
+
+## P556 (#760), 2026-11-02: overlap the paint with the send, slice 0 probe
+
+- Plan: a "double" framebuffer, the frame in PSRAM, an internal buffer for the send. A frame costs copy + max(step + paint, send). The probe asks what painting into PSRAM costs, with no firmware change: `framebuffer="strips"` keeps the frame in PSRAM.
+- `run40-p556-{dma,strips}-{Flappy,Runner}.log`, no play, about 14 s each; the second interval is steady (game-over screen).
+- Flappy: paint 32.9 ms internal, 41.3 ms PSRAM (+8.4, +26 %). Runner: 30.1 against 39.8 (+9.7, +32 %). Step 0.3 in both.
+- The strips send of a full frame is 33.5 ms (the old 71.9 ms number was void). gc 3.1 ms with the frame in MicroPython's heap against 1.3 ms: the collector scans it. So the "double" frame goes outside that heap.
+- Gate: step + paint in PSRAM is 40 to 42 ms, over the 31 ms send, so the overlap is not full. Expected frame: 3 + 41 = about 44 ms, against 64 ms now (14 to 15 fps to about 22). The card's rule holds: the frame gains about 28 ms, more than the 9 ms the PSRAM paint costs. So slice 1 goes on. The 40 ms pace needs a smaller paint as well (kept background, P554 #758).

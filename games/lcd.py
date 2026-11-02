@@ -28,6 +28,7 @@ from gfx import FULL, Canvas, clamp
 ORIENTATION = 0  # 0: upright in the PO's playing hold, the panel's row 0 along the right edge (bench.md); 180: turned
 PANEL_W, PANEL_H = 240, 320  # the panel's own width and height at rotation 0
 PARTIAL = True  # False sends the whole frame each show(), for a comparison on the bench
+FRAMEBUFFER = "dma"  # where the driver keeps the frame: "dma" (internal) or "strips" (PSRAM, sent through two strips)
 
 
 class TftCanvas(Canvas):
@@ -152,6 +153,7 @@ def open_tft(spi_hz):
     Pin(gdi.BL, Pin.OUT, value=1)
     bus = s3lcd.SPI_BUS(1, mosi=gdi.MOSI, sck=gdi.SCLK, dc=gdi.DC, cs=gdi.CS, pclk=spi_hz, swap_color_bytes=False)
     tft = s3lcd.ESPLCD(bus, 240, 320, inversion_mode=True, color_space=s3lcd.RGB, reset=gdi.RST, rotation=0)
+    tft.config(framebuffer=FRAMEBUFFER)  # read at init(), so set before it
     tft.init()
     print("size", tft.width(), tft.height(), tft.config(partial=PARTIAL))
     return TftOut(tft)
