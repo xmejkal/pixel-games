@@ -10,17 +10,17 @@ P537 (`p537-finding.md:134-143`, closed as Done) has nine slices. Its slices bec
 
 | P537 slice | covered by |
 | --- | --- |
-| 0 measure first, then the step probe | a P537 slice card to file. P550 reads its step one (average per phase) and adds the per-call timing |
+| 0 measure first, then the step probe | step one (the average per phase) is inside P550. A P537 slice card to file keeps only step two, the step probe |
 | 1 even pace | a P537 slice card to file |
 | 2 kept background and score text in C (glyph cache, `keep()` and restore inside `show()`) | a P537 slice card to file. P541 does not replace its text part |
-| 3 sprites in C (`sprite()`, `blit()` with key and flips, orientation map in C) | a P537 slice card to file. P541 tests whether `framebuf.blit` can stand in for the blit part, P546 holds the walking skeleton of the same primitives, Q4 settles which one is built |
+| 3 sprites in C (`sprite()`, `blit()` with key and flips, orientation map in C) | the slice-3 card to file owns the primitives (`sprite()`, `blit()` with key and flips, the orientation map). P541 only decides whether its blit is an adapter, and P546 only builds the core's surface, clipping and `fill_rect`, so neither holds a primitive of slice 3 |
 | 4 overlap (4a `show(wait=False)`, 4b PSRAM back buffer) | a P537 slice card to file. P542 gives its window cost |
 | 5 tile layers and software parallax | a P537 slice card to file, later (R2 of the story map) |
 | 6 soft edges | a P537 slice card to file, later, optional |
 | 7 blend modes | a P537 slice card to file, later, optional |
 | 8 PIE fill and copy | P544, the same work, one card |
 
-Items with no slice: P540 (reopens P537's "No library is adopted whole" on the PO's "do not reinvent"), P542, P543, P545, P546, P547, P549, P550. P542 is a P536 follow-up, not P539 work.
+Items with no slice: P551 (A8), P540 (reopens P537's "No library is adopted whole" on the PO's "do not reinvent"), P542, P543, P545, P546, P547, P549, P550. P542 is a P536 follow-up, not P539 work.
 
 ## P540 — Spike: nobody measured whether an existing stack is fast enough → the adopt bench: one fixed scene on CircuitPython displayio plus `_stage`, lvgl_micropython and UIFlow2 `User_GFX` on the FireBeetle, ms per frame each
 - type: spike <!-- REQUIRED:item-type -->
@@ -37,8 +37,8 @@ Items with no slice: P540 (reopens P537's "No library is adopted whole" on the P
 - type: spike
 - needed by: "fast sprites, tiles and text that I call from Python" (J2, from the PO's "all fully usable from micropython", #743)
 - value proven by: runner's sprite-phase average at FRAME_MS 40 with the sprites drawn by `framebuf.blit`, against A5's line (under 4 ms, P537 slice 3's line), the C change is about 10 lines (an estimate), reversible
-- note: text is not tried here. `framebuf.text` has no scale and the hud draws at scale 2 (games/gfx.py:344), so the text stays P537 slice 2's glyph cache in C. `framebuf` knows no orientation map, so the map stays in Python per call and its cost is counted. If A5 passes, slice 3's blit part becomes this adapter
-- depends on: Q3, P537 slice 0 (the phase averages)
+- note: text is not tried here. `framebuf.text` has no scale and the hud draws at scale 2 (games/gfx.py:344), so the text stays P537 slice 2's glyph cache in C. `framebuf` knows no orientation map, so the map stays in Python per call and its cost is counted. If A5 passes, the slice-3 card's blit part becomes this adapter, and the slice-3 card owns it
+- depends on: Q3, P550 (the phase averages)
 - status: proposed
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P536 #740
@@ -64,13 +64,13 @@ Items with no slice: P540 (reopens P537's "No library is adopted whole" on the P
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
 
-## P544 — P537 slice 8: the S3's PIE gain for fill and copy is Espressif's number, not ours → esp_lvgl_port's three `.S` files (fill, copy, `lv_macro_memcpy.S`) behind a build flag and `s3lcd.simd_bench(op, w, h, offset, reps)`, cycles per pixel for the C loop, a word loop and the asm
-- type: spike
+## P544 — Story with a kill line, P537 slice 8: the S3's PIE gain for fill and copy is Espressif's number, not ours → esp_lvgl_port's three `.S` files (fill, copy, `lv_macro_memcpy.S`) behind a build flag and `s3lcd.simd_bench(op, w, h, offset, reps)`, cycles per pixel for the C loop, a word loop and the asm
+- type: story
 - needed by: "maybe we could even use the AI chip or instructions that the S3 has" (the PO, 2026-11-02, #743)
 - value proven by: cycles per pixel at 16 x 16, 32 x 32, 127 x 127, 128 x 128 and 320 x 240, aligned and at a 2-byte offset, internal and PSRAM, within 25 % of Espressif's table at 128 x 128 aligned, and the frame-time gain in ms on one game, `machine.freq()` printed, so the clock is known. Done as P537 slice 8 states it: the files stay if a frame gains 2 ms or more, otherwise they go and the number stays in bench.md
 - depends on: Q7 (Apache-2.0 with its notice allowed), P537 slices 2 and 3 (no PIE kernel before the paint is batched in C, ★C3), the PO's bench time
 - status: proposed
-- label (the repository's type label): spike
+- label (the repository's type label): story
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
 
@@ -84,12 +84,12 @@ Items with no slice: P540 (reopens P537's "No library is adopted whole" on the P
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
 
-## P546 — the drawing primitives live inside `s3lcd_obj_t` and raise Python errors from C → a walking skeleton: a surface type with signed, clipped `fill_rect` and `blit_keyed`, error codes, host golden-hash tests under ASan, bound into the fork so one game paints through it
+## P546 — the drawing primitives live inside `s3lcd_obj_t` and raise Python errors from C → a walking skeleton: a surface type with signed, clipped `fill_rect`, error codes, host golden-hash tests under ASan, bound into the fork so one game paints through it (the keyed blit is the slice-3 card's, not this card's)
 - type: story
 - needed by: "good engineering practices, code design and tests, refactorings, from the beginning" and "the MVP is ok to just be quick and dirty, but always refactor and test" (the PO, 2026-11-02, #743)
 - value proven by: `ctest` green on the Mac with the golden hashes, one bench.md run line of a game painting through the new call at no worse frame time than run 22, and the diff that shows no `py/*.h`, esp_lcd or FreeRTOS include under `core/`
-- note: P537 places a new `scene.c` beside `frame.c` with `frame_t` as its only dependency (p537-finding.md:108), but `frame_t` lives in `frame.h`, which includes FreeRTOS, esp_lcd and `py/obj.h` (frame.h:13-17). Either P537's layer design or this include rule changes. Q4 settles it: until then slices 2 and 3 keep `frame_t`, and this card waits. It covers the primitives of slice 3 in the core's form
-- depends on: Q4 (the layer shape A or B, with or without C, and the `scene.c` dependency), Q5 (the standard), P541's result (adapter or C blit first)
+- note: P537 places a new `scene.c` beside `frame.c` with `frame_t` as its only dependency (p537-finding.md:108), but `frame_t` lives in `frame.h`, which includes FreeRTOS, esp_lcd and `py/obj.h` (frame.h:13-17). Either P537's layer design or this include rule changes. Q4 settles it: until then slices 2 and 3 keep `frame_t`, and this card waits. It holds no primitive of slice 3
+- depends on: Q4 (the layer shape, the standard and the `scene.c` dependency)
 - status: proposed
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P539 #743
@@ -109,7 +109,7 @@ Items with no slice: P540 (reopens P537's "No library is adopted whole" on the P
 - type: spike
 - needed by: "make it public … so we can really offer a good thing" (the PO, 2026-11-02, #743)
 - value proven by: a list of the posts with URL and date, the count of distinct posters, against A1's line (5 or more), and the search terms used, secondhand accounts, labelled so
-- depends on: Q1 (the PO's pass line for the riskiest test)
+- depends on: —
 - status: proposed, deferred by D5 until the PO wants other people as users
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P539 #743
@@ -119,7 +119,7 @@ Items with no slice: P540 (reopens P537's "No library is adopted whole" on the P
 - type: chore
 - needed by: "comments throughout that get checked and updated if stale" (the PO, 2026-11-02, #743), applied to the two documents the library stands on
 - value proven by: bench.md:77 and bench.md:100 agree (the one-row strip bug held in slices 1 to 3, per s3lcd.c:2809), p537-finding.md's st7789_mpy date, its LVGL "no esp32 path" and its "no published number" lines corrected with PO-7's pointers, the 40 to 55 KB copy line recomputed with the window overhead removed (PHYS-3)
-- depends on: P537 #741 leaving Review (or the fix lands on that card)
+- depends on: — (#741 is closed, Done, 2026-11-02, so the fix stands on this card)
 - status: proposed
 - label (the repository's type label): chore
 - parent (the epic, as a sub-issue): P536 #740
@@ -128,16 +128,26 @@ Items with no slice: P540 (reopens P537's "No library is adopted whole" on the P
 ## P550 — Spike: nobody measured what the 34 ms runner paint is made of → the paint composition probe: calls per frame, cost per call and collection time, in one session on the board
 - type: spike
 - needed by: "smooth, not stucky" (the PO, 2026-11-02, #741, J1), and the refuter's riskiest assumption under D5 (A2)
-- value proven by: three numbers in bench.md: (a) `fill_rect` calls per frame for runner, from a counter in `TftCanvas.fill`, (b) the cost of one 8 x 8 and one 240 x 16 `tft.fill_rect`, 1000 calls each by `time.ticks_cpu()`, (c) the average paint per phase (P537 slice 0) and the collection time inside it (`GC_FRAMES` 0 for one run). Pass line, set 2026-11-02 before any result: calls per frame times the per-call cost accounts for at least 70 % of the 34 ms. Under 40 %: batching alone will not reach 12 ms
-- depends on: P537 slice 0 step one (the phase averages), the PO's bench time, Q1 (the PO rates A2)
-- status: proposed, the refuter's opinion, pending Q1
+- value proven by: three numbers in bench.md: (a) `fill_rect` calls per frame for runner, from a counter in `TftCanvas.fill`, (b) the cost of one 8 x 8 and one 240 x 16 `tft.fill_rect`, 1000 calls each by `time.ticks_cpu()`, (c) the average paint per phase, a sum beside the maximum in `gfx.PHASES` (P537 slice 0 step one, which this card contains), and the collection time inside it, with `GC_FRAMES` set to a very large value for one run (never 0, games/app.py:96 divides by it). Pass line, set 2026-11-02 before any result (D7): the calls per frame by size class, each times its measured per-call cost (8 x 8 up to 64 pixels, 240 x 16 above), summed, account for at least 70 % of the average runner paint re-measured in the same session, since run 22's 34 ms log is not kept. Under 40 %: batching alone will not reach 12 ms
+- depends on: the PO's bench time
+- status: proposed, test and pass line chosen by the PO (D6, D7, D8)
+- label (the repository's type label): spike
+- parent (the epic, as a sub-issue): P539 #743
+- slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
+
+## P551 — Spike: nobody measured what one version bump costs the fork → one ESP-IDF or MicroPython bump on a branch, with the PO's and the AI's time logged
+- type: spike
+- needed by: A8, rated high by the PO (D6, 2026-11-02): the showcase must still build when MicroPython or the IDF moves
+- value proven by: a branch of the fork bumped once (MicroPython master recommends IDF v5.5.5 against v1.29.0's v5.5.2, PO-17), the build log quoted, the host tests run, and the minutes of the PO and the AI logged. Pass line, set 2026-11-02 and proposed, pending the PO (D7 covers only P550): the image builds and the host tests pass within 4 hours of logged time in total. Over that, the showcase pins one MicroPython and IDF pair and its README says so
+- depends on: the PO's time, the host tests of P546 if they exist by then (otherwise the build alone)
+- status: proposed
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P539 #743
 - slice (one Slice option of the board, or "ask the decider for a new one"): ask the decider for a new one
 
 ## Board actions
 <!-- Each action, taken or pending, with its D. e.g. `- move the item to Discovery · pending` -->
-- file P540 to P550 as issues, except P548 (deferred by D5), and file the P537 slice cards of the table above with their labels, each a sub-issue of P539 #743 or P536 #740, after the PO's yes to this list · pending <!-- REQUIRED:board-actions -->
+- file P540 to P551 as issues, except P548 (deferred by D5), and file the P537 slice cards of the table above with their labels, each a sub-issue of P539 #743 or P536 #740, after the PO's yes to this list · pending <!-- REQUIRED:board-actions -->
 - ask the PO for a new Slice option for the library (none of the board's options fits) · pending
 - run spark's `tools/check_backlog.py` after filing · pending
-- order the Ready column with P543 first (no board, no bench), then P550, P541 and P542 (bench), as a proposal for the PO · pending
+- order the Ready column with P543 first (no board, no bench), then P550, then P541 and P542 (bench), as a proposal for the PO · pending
