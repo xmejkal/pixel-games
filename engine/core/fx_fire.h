@@ -43,8 +43,9 @@ void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, i
 // row down, becomes (the three cells below it + the cell two below) * decay >> 7, at most the hottest of those four,
 // less the cooling map's cell * cool >> 8, at least 0. A fast cell reads the same four cells one row further down,
 // so its heat climbs two rows a step, unless that puts its three cells past the bottom. A cell outside the field
-// counts 0.
-void fx_fire_step(fx_fire_t *f, int32_t steps);
+// counts 0. wind -255 to 255: a row reads one column against the wind in |wind| of 256 steps, so positive wind blows
+// the flames toward larger x. 0 takes no draw.
+void fx_fire_step(fx_fire_t *f, int32_t steps, int32_t wind);
 
 // The whole panel, 2h px wide and 2w px high, as palette[heat], in the panel order of lcd.py's TftCanvas.fill at
 // ORIENTATION 0: panel (px, py) shows cell ((2w - 1 - py) / 2, px / 2). The palette is already in the panel's byte order.

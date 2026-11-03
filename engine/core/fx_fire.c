@@ -17,9 +17,11 @@ static uint32_t xorshift32(uint32_t *state) {
 // - fx_fire_step, per step: with spots 0, the bottom row's cells left to right, one draw each (part 1's row). Else
 //   each spot in turn, one draw (its walk or jump), then the bottom row's cells left to right, one draw each (the
 //   flicker). Then, with sway 1, the rows from the top down, one draw per 16 cells from x = 0, 16, 32 and so on.
+//   With wind not 0, each row takes one draw first, before its sway draws (the wind's).
 // A spot's place is r % w. A spot's draw r: when its top 6 bits are 0 (1 in 64) it jumps to (r >> 8) % w, else it
 // walks r % 3 - 1 cells, clamped to the field. The flicker keeps heat * (128 + (r >> 25)) >> 8. The sway's draw gives
-// 2 bits per cell, the lowest first: 00 is -1, 01 and 10 are 0, 11 is +1.
+// 2 bits per cell, the lowest first: 00 is -1, 01 and 10 are 0, 11 is +1. The wind's draw r shifts the row's read one
+// column against the wind when r & 255 is under |wind|.
 
 static void place_spots(fx_fire_t *f) {
     for (int32_t i = 0; i < FX_FIRE_MAX_SPOTS; i++) {
@@ -130,10 +132,12 @@ static inline uint32_t cell(const uint8_t *row, int32_t x, int32_t w) {  // 0 ou
     return (uint32_t)x < (uint32_t)w ? row[x] : 0;
 }
 
-void fx_fire_step(fx_fire_t *f, int32_t steps) {
+void fx_fire_step(fx_fire_t *f, int32_t steps, int32_t wind) {
     int32_t w = f->w, h = f->h;
     uint32_t decay = (uint32_t)f->decay, cool = (uint32_t)f->cool;
     uint32_t fast_at = 256 - (uint32_t)f->fast;  // a map cell at least this makes a fast cell, 256 never
+    uint32_t gust = (uint32_t)(wind < 0 ? -wind : wind);
+    int32_t against = wind > 0 ? -1 : 1;  // a cell reads upwind, so positive wind carries heat to larger x
     uint8_t *bottom = f->heat + (h - 1) * w;
     for (int32_t s = 0; s < steps; s++) {
         if (f->spots > 0) {
@@ -151,9 +155,10 @@ void fx_fire_step(fx_fire_t *f, int32_t steps) {
             const uint8_t *cooling = f->cooling + ((y + f->scroll) & (FX_FIRE_MAP_H - 1)) * FX_FIRE_MAP_W;
             const uint8_t *fast = below2 ? f->cooling + ((y + f->fast_scroll) & (FX_FIRE_MAP_H - 1)) * FX_FIRE_MAP_W
                                          : NULL;
+            int32_t shift = gust && (xorshift32(&f->rng) & 255) < gust ? against : 0;
             uint32_t bits = 0;
             for (int32_t x = 0; x < w; x++) {
-                int32_t c = x;  // the column read below, shifted by the sway
+                int32_t c = x + shift;  // the column read below, shifted by the wind and the sway
                 if (f->sway) {
                     if ((x & 15) == 0) {
                         bits = xorshift32(&f->rng);

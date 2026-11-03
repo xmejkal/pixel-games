@@ -75,8 +75,8 @@ class Engine:
                 engine.looks.append(look)
                 lib.fx_fire_set_look(ctypes.byref(self.f), *look)
 
-            def step(self, steps):
-                lib.fx_fire_step(ctypes.byref(self.f), steps)
+            def step(self, steps, wind):
+                lib.fx_fire_step(ctypes.byref(self.f), steps, wind)
 
             def draw(self, target, palette):
                 engine.targets.append("tft" if isinstance(target, Tft) else "buffer")
@@ -183,7 +183,7 @@ class FireTest(unittest.TestCase):
                 field.set_look(fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST)
                 top = []
                 for k in range(50):
-                    field.step(100)  # step 3's wind blows here: +fire.WIND when k is even, -fire.WIND when odd
+                    field.step(100, fire.WIND if k % 2 == 0 else -fire.WIND)  # the wind one way, then the other
                     top.append(sum(field.heat[:10 * fire.W]) / (10 * fire.W))
                 self.assertLess(max(top), 48, "the top rows' mean heat, %s" % [round(v) for v in top])
 

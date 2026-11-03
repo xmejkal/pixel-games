@@ -217,17 +217,18 @@ static mp_obj_t heat_field_set_look(size_t n_args, const mp_obj_t *args) {
 }
 static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(heat_field_set_look_obj, 7, 7, heat_field_set_look);
 
-// step(steps): see fx_fire_step. A frame takes at most 2 steps, so more than 64 is a mistake.
-static mp_obj_t heat_field_step(mp_obj_t self_in, mp_obj_t steps_in) {
+// step(steps, wind): see fx_fire_step. A frame takes at most 2 steps, so more than 64 is a mistake.
+static mp_obj_t heat_field_step(mp_obj_t self_in, mp_obj_t steps_in, mp_obj_t wind_in) {
     heat_field_obj_t *self = live(self_in);
     mp_int_t steps = mp_obj_get_int(steps_in);
-    if (steps < 0 || steps > 64) {
-        mp_raise_ValueError(MP_ERROR_TEXT("steps is 0 to 64"));
+    mp_int_t wind = mp_obj_get_int(wind_in);
+    if (steps < 0 || steps > 64 || wind < -255 || wind > 255) {
+        mp_raise_ValueError(MP_ERROR_TEXT("steps is 0 to 64, wind -255 to 255"));
     }
-    fx_fire_step(&self->fire, (int32_t)steps);
+    fx_fire_step(&self->fire, (int32_t)steps, (int32_t)wind);
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_2(heat_field_step_obj, heat_field_step);
+static MP_DEFINE_CONST_FUN_OBJ_3(heat_field_step_obj, heat_field_step);
 
 // draw(target, palette): the whole panel as palette[heat], palette an array('H') of 256. target is an s3lcd ESPLCD
 // (into its frame, all of it marked to send: path B) or a writable buffer of 2h x 2w pixels, which the picture mode

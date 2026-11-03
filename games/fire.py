@@ -38,7 +38,8 @@ COOL = 24  # 0 to 255: how much the rising cooling map takes, so the flames brea
 SWAY = 1  # 1: each cell reads the cells below it shifted by -1, 0 or +1 at random, the sideways flicker
 SPOTS = 12  # 0 to 16 hot spots at the base, each walking and now and then jumping. 0 is part 1's random bottom row
 SPREAD = 16  # 1 to 64: a spot's half-width in cells
-FAST = 0  # 0 to 255: how much of the field rises two rows a step, in patches from the cooling map. 0 is none
+FAST = 128  # 0 to 255: how much of the field rises two rows a step, in patches from the cooling map. 0 is none
+WIND = 60  # 0 to 255: the strongest gust, a row shifts one column with the wind in WIND of 256 steps
 SEED = 595
 # The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, the key
 # of the picture mode.
@@ -70,6 +71,7 @@ class Fire(Game):
         self.mode = B
         self.covers = engine is not None  # every mode paints every pixel: the fire in B, the sky in picture
         self.buf = bytearray(PANEL_W * PANEL_H * 2)  # the picture mode's buffer, made once (gc heap, PSRAM)
+        self.wind = 0
         super().__init__()
 
     def setup(self):
@@ -99,7 +101,7 @@ class Fire(Game):
         self.acc -= steps * STEP_MS
         if self.field is not None and steps:
             t = time.ticks_us()
-            self.field.step(steps)
+            self.field.step(steps, self.wind)
             self.add(0, t)
 
     def add(self, i, t):

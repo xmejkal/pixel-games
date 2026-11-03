@@ -93,7 +93,7 @@ class Reference:
                     row[x0 + dx] = max(row[x0 + dx], 255 - abs(dx) * 255 // (self.spread + 1))
         return [v * (128 + (self.draw() >> 25)) >> 8 for v in row]
 
-    def step(self, steps):
+    def step(self, steps, wind=0):
         w, h, heat = self.w, self.h, self.heat
 
         def at(x, y):
@@ -102,9 +102,12 @@ class Reference:
         for _ in range(steps):
             heat[(h - 1) * w:] = self.spots_row() if self.spots else [self.draw() >> 24 for _ in range(w)]
             for y in range(h - 1):
+                shift = 0
+                if wind and self.draw() & 255 < abs(wind):
+                    shift = -1 if wind > 0 else 1
                 bits = 0
                 for x in range(w):
-                    c = x
+                    c = x + shift
                     if self.sway:
                         if x % 16 == 0:
                             bits = self.draw()
@@ -198,19 +201,21 @@ class FireCoreTest(unittest.TestCase):
         self.assertEqual((ref.rng, PART1), (f.rng, (f.decay, f.cool, f.sway, f.spots, f.spread, f.fast)))
 
     def test_the_step_matches_the_reference(self):
-        for w, h, look in ((SMALL_W, SMALL_H, ALL_ON), (SMALL_W, SMALL_H, PART1), (3, 4, (31, 0, 1, 0, 1, 0)),
-                           (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0)), (3, 4, (40, 60, 1, 2, 2, 255)), (1, 4, ALL_ON),
-                           (1, 4, (31, 0, 0, 0, 1, 255))):
-            with self.subTest(w=w, h=h, look=look):  # sway on 3 x 4 and 1 x 4: an unguarded read at 0 or w - 1 shows
-                f, heat = self.field(w, h, look=look)
-                self.lib.fx_fire_step(ctypes.byref(f), STEPS)
+        for w, h, look, wind in ((SMALL_W, SMALL_H, ALL_ON, 0), (SMALL_W, SMALL_H, PART1, 0),
+                                 (3, 4, (31, 0, 1, 0, 1, 0), 0), (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0), 0),
+                                 (3, 4, (40, 60, 1, 2, 2, 255), 0), (1, 4, ALL_ON, 0), (1, 4, (31, 0, 0, 0, 1, 255), 0),
+                                 (SMALL_W, SMALL_H, ALL_ON, 200), (SMALL_W, SMALL_H, ALL_ON, -200), (3, 4, PART1, 255),
+                                 (1, 4, ALL_ON, -255)):
+            with self.subTest(w=w, h=h, look=look, wind=wind):  # sway or wind on 3 x 4 and 1 x 4: an unguarded read
+                f, heat = self.field(w, h, look=look)  # at 0 or w - 1 shows
+                self.lib.fx_fire_step(ctypes.byref(f), STEPS, wind)
                 ref = Reference(w, h, SEED)
                 ref.set_look(*look)
-                ref.step(STEPS)
+                ref.step(STEPS, wind)
                 self.assertEqual(ref.heat, list(heat), "the field byte for byte, edge cells reading 0 outside")
                 self.assertEqual((ref.rng, ref.scroll, ref.fast_scroll, ref.spot_x),
                                  (f.rng, f.scroll, f.fast_scroll, list(f.spot_x)))
-                if look == ALL_ON and w == SMALL_W:
+                if look == ALL_ON and w == SMALL_W and wind == 0:
                     self.assertIn(0, ref.heat[:-w])  # the map cut the flames
                     self.assertNotEqual(ref.heat[-w:], [0] * w)  # the spots heat the base
                     slow = Reference(w, h, SEED)
@@ -218,11 +223,24 @@ class FireCoreTest(unittest.TestCase):
                     slow.step(STEPS)
                     self.assertNotEqual(slow.heat, ref.heat)  # fast cells took part
 
+    def test_the_wind_blows_the_flames_its_way(self):
+        """A byte for byte reference would share a wrong sign, so: after 100 steps on the real field, the heat-weighted
+        mean column of the top half lies right of the same seed's at wind 0 with wind 255, and left with -255."""
+        def mean_column(wind):
+            f, heat = self.field(W, H, look=(33, 24, 1, 12, 16, 128))
+            self.lib.fx_fire_step(ctypes.byref(f), 100, wind)
+            top = heat[:H // 2 * W]
+            return sum(v * (i % W) for i, v in enumerate(top)) / max(1, sum(top))
+
+        still = mean_column(0)
+        self.assertGreater(mean_column(255), still)
+        self.assertLess(mean_column(-255), still)
+
     def test_at_decay_31_the_bound_does_nothing(self):
         """Part 2's look at decay 31 gives the field of the step without the bound. Part 3's 256 x 32 map (the PO's
         three columns: the 64-wide map repeated at x, x + 64 and x + 128) ended byte equality with part 2's kernel."""
         f, heat = self.field(SMALL_W, SMALL_H, look=PART2_AT_31)
-        self.lib.fx_fire_step(ctypes.byref(f), STEPS)
+        self.lib.fx_fire_step(ctypes.byref(f), STEPS, 0)
         ref = Reference(SMALL_W, SMALL_H, SEED)
         ref.set_look(*PART2_AT_31)
         ref.bound = False
@@ -235,7 +253,7 @@ class FireCoreTest(unittest.TestCase):
             with self.subTest(decay=decay):
                 f, heat = self.field(SMALL_W, SMALL_H, look=(decay, 0, 0, 0, 1, 0))
                 rng = f.rng
-                self.lib.fx_fire_step(ctypes.byref(f), STEPS)
+                self.lib.fx_fire_step(ctypes.byref(f), STEPS, 0)
                 ref = [0] * (SMALL_W * SMALL_H)
                 self.assertEqual(part1_step(ref, SMALL_W, SMALL_H, rng, STEPS, decay), f.rng)
                 self.assertEqual(ref, list(heat))
@@ -256,7 +274,7 @@ class FireCoreTest(unittest.TestCase):
     def test_the_bottom_row_is_xorshift32(self):
         f, heat = self.field(4, 3, look=(0, 0, 0, 0, 1, 0))
         rng, row = f.rng, []
-        self.lib.fx_fire_step(ctypes.byref(f), 1)  # decay 0: every row above the bottom stays 0
+        self.lib.fx_fire_step(ctypes.byref(f), 1, 0)  # decay 0: every row above the bottom stays 0
         for _ in range(4):
             rng = xorshift32(rng)
             row.append(rng >> 24)
@@ -264,7 +282,7 @@ class FireCoreTest(unittest.TestCase):
 
     def test_the_draw_matches_the_reference_and_writes_every_pixel(self):
         f, heat = self.field(W, H)
-        self.lib.fx_fire_step(ctypes.byref(f), 20)
+        self.lib.fx_fire_step(ctypes.byref(f), 20, 0)
         palette = list(range(1000, 1256))
         panel = self.draw(f, palette)
         self.assertNotIn(0xABCD, panel)
