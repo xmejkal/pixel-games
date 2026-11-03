@@ -42,11 +42,28 @@ FRAMEBUFFER = "double"
 WINDOWS = 4 if FRAMEBUFFER == "double" else 40
 
 
-class TftCanvas(Canvas):
-    immediate = True
+# --- MVP (P599) ---
+class Strip:
+    """A panel rectangle with its own pixels. A TftCanvas draws into it as into the panel, and blit() copies it to the
+    panel by rows, blit_buffer's memcpy path. A new strip is black, so each draw must cover its whole rect. It takes
+    fill_rect only, so a draw into it uses fill, box, text, big and sprite, not line or picture."""
 
+    def __init__(self, px, py, pw, ph):
+        self.px, self.py, self.pw, self.ph = px, py, pw, ph
+        self.buf = bytearray(pw * ph * 2)
+        self.fb = framebuf.FrameBuffer(self.buf, pw, ph, framebuf.RGB565)
+
+    def fill_rect(self, x, y, w, h, c):
+        """The panel rectangle, moved to the strip's origin. The FrameBuffer clips what lies outside."""
+        self.fb.fill_rect(x - self.px, y - self.py, w, h, c)
+
+    def blit(self, tft):
+        tft.blit_buffer(self.buf, self.px, self.py, self.pw, self.ph)
+
+
+class TftCanvas(Canvas):
     def __init__(self, tft):  # no big buffers: the driver owns the framebuffer; bg_ok, because TftOut paints the still picture
-        self.tft, self.full, self.bg_ok, self.clip, self.ops, self.cache = tft, False, True, FULL, (), {}
+        self.tft, self.full, self.bg_ok, self.clip, self.ops, self.cache, self.kept = tft, False, True, FULL, (), {}, {}
         self.mono = framebuf.FrameBuffer(bytearray(16 * 8), 16 * 8, 8, framebuf.MONO_HLSB)
         if ORIENTATION not in (0, 180):
             raise ValueError("ORIENTATION must be 0 or 180, not %r" % ORIENTATION)
@@ -78,6 +95,26 @@ class TftCanvas(Canvas):
                 self.tft.fill_rect(PANEL_W - y1, x0, y1 - y0, x1 - x0, c)
             else:
                 self.tft.fill_rect(y0, PANEL_H - x1, y1 - y0, x1 - x0, c)
+
+    # --- MVP (P599) ---
+    def panel_rect(self, x, y, w, h):
+        """The game rectangle as (x, y, w, h) on the panel: fill's map, unclipped."""
+        if self.turned:
+            return PANEL_W - y - h, x, h, w
+        return y, PANEL_H - x - w, h, w
+
+    def keep(self, key, rect, draw):
+        """draw(canvas) fills rect. It runs into a Strip only when key changes, and the Strip is blitted every frame
+        (P599). The key names the caller, such as the game's name."""
+        kept = self.kept.get(rect)
+        if kept is None:
+            strip = Strip(*self.panel_rect(*rect))
+            kept = self.kept[rect] = [None, strip, TftCanvas(strip)]  # key, strip, the canvas that draws into it
+        key_now, strip, canvas = kept
+        if key_now != key:
+            draw(canvas)
+            kept[0] = key
+        strip.blit(self.tft)
 
     def box(self, x, y, w, h, c):
         x, y, w, h = int(x), int(y), int(w), int(h)

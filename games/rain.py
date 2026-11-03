@@ -15,7 +15,7 @@ import random
 import time
 from array import array
 
-from gfx import DARK, HEIGHT, PALETTE, WHITE, WIDTH, YELLOW, Game
+from gfx import DARK, HEIGHT, LABEL_RECT, PALETTE, WHITE, WIDTH, YELLOW, Game
 from motion import Bodies
 
 try:
@@ -31,7 +31,7 @@ STEP_MS, DT = 1000 // RATE, 1 / RATE
 GRAVITY, RESTITUTION, FRICTION = 2000.0, 0.35, 0.6  # stack's heavy floors (p582-heavy)
 SEED = 593
 REPORT_MS = 5000  # app.py's FPS_EVERY_MS, so a rain line comes with each of its time lines
-HUD_MS = 500  # the HUD's text is rebuilt this often: its glyphs are drawn every frame anyway
+HUD_MS = 500  # the HUD's text is rebuilt this often, and its strip is blitted every frame (P599)
 BAR_US_PER_PX = 200  # the step bar: 1 px for each 0.2 ms of step in a frame, so 45 ms is 225 px
 
 
@@ -158,7 +158,10 @@ class Rain(Game):
             self.us, self.frames, self.mark = [0, 0, 0], 0, now
 
     def hud(self, cv):
-        """One short line and the step bar, drawn every frame: TftCanvas keeps nothing to reuse."""
-        cv.fill(0, 0, W, 14, DARK)
+        """One short line and the step bar, drawn again only when either changes (P599)."""
+        cv.keep((self.name, self.label, self.bar), LABEL_RECT, self.draw_hud)
+
+    def draw_hud(self, cv):
+        cv.fill(0, 0, W, LABEL_RECT[3], DARK)
         cv.text(self.label, 4, 2, WHITE)
         cv.fill(0, 11, self.bar, 3, YELLOW)
