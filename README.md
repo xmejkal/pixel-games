@@ -33,6 +33,9 @@ If the board stays dark after a long press of its D14 button, hold D14 for 1 to 
 
 Runs now:
 
+- The rain (P593, `games/rain.py`), first at power-on: boxes fall, stepped by the C engine, and a BOOT tap swaps C
+  and Python. It needs the engine image (`./build.sh engine`); without it, the rain runs in Python only. It has not
+  run on the board yet.
 - Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 20 to 22 and runner 21 to 24 at a 40 ms frame pace, with no play; stack 24.
