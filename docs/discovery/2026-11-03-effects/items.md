@@ -24,7 +24,7 @@ Everything here is proposed, filed only on the PO's yes to this list. Nothing is
 - depends on: P595 played (D13). Size S (H)
 - status: proposed
 - label (the repository's type label): story
-- parent (the epic, as a sub-issue): P594 #795 (under P586 #787). The team's proposal: D13 orders it among P594's turns, though its gain reaches every game
+- parent (the epic, as a sub-issue): P586 #787, chosen by the lead under D17 because its gain reaches every game. D13 orders it after P595
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
 
 ## P596: only fire uses the heat kernel → smoke, and bodies on fire that trail flames, from the same kernel, each its own scene
@@ -60,7 +60,7 @@ Everything here is proposed, filed only on the PO's yes to this list. Nothing is
 - parent (the epic, as a sub-issue): P594 #795 (under P586 #787)
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
 
-## P600: four effects of the ten have no kernel yet → ripple seen from above, falling sand and water cells, a shockwave or glow, and plasma or dissolve, each its own scene
+## P600: four effects of the ten have no kernel yet → ripple seen from above, falling sand and water cells, a shockwave, and plasma, each its own scene (glow and dissolve wait, D17)
 - type: story (K3, K6 and the rest, one play turn, D10)
 - needed by: "let's try to make 10 more effects" (the PO, 2026-11-03, #795). His list holds these four (D4)
 - value proven by: he plays the four, his words sorted as in P595 (D5). One bench.md row per effect from three 5 s intervals
