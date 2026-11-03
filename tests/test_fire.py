@@ -150,7 +150,8 @@ class FireTest(unittest.TestCase):
         self.assertRegex(out.getvalue(), REPORT)
         self.assertRegex(game.label, r"^fire B \d+\.\d ms \d+ fps$")
         self.assertEqual({"tft"}, set(fire.engine.targets))
-        look = (fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST, fire.EMBERS)
+        look = (fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST, fire.EMBERS,
+                    fire.FADE)
         self.assertEqual([look], fire.engine.looks)  # once
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the fire reached the frame
 
@@ -185,14 +186,15 @@ class FireTest(unittest.TestCase):
         self.assertLess(min(winds), 0)  # the gusts blow both ways
         self.assertGreater(max(winds), 0)
 
-    @unittest.expectedFailure  # the lead changes the look: on the 256 x 32 map seed 4 still reaches 63.1
     def test_the_look_stays_low_at_the_top_for_any_seed(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
-        stays under 48. Part 2's look without the bound reached white at the top with seed 7."""
+        stays under 48, with the wind +WIND for 100 steps, then -WIND. Part 2's look without the bound reached white at
+        the top with seed 7, and without FADE seed 4 reached 55.1."""
         for seed in (1, 2, 3, 4, 5, 7, 595):
             with self.subTest(seed=seed):
                 field = fire.engine.HeatField(fire.W, fire.H, seed)
-                field.set_look(fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST, fire.EMBERS)
+                field.set_look(fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST, fire.EMBERS,
+                               fire.FADE)
                 top = []
                 for k in range(50):
                     field.step(100, fire.WIND if k % 2 == 0 else -fire.WIND)  # the wind one way, then the other

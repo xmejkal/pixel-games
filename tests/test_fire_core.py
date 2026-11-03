@@ -21,9 +21,9 @@ W, H = 160, 120  # games/fire.py's field: the panel is 240 x 320
 SEED, STEPS = 595, 50
 SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps the run short
 MAP_W, MAP_H, MAX_SPOTS, MAX_EMBERS = 256, 32, 16, 24  # FX_FIRE_MAP_W, FX_FIRE_MAP_H, FX_FIRE_MAX_SPOTS and EMBERS
-PART1 = (31, 0, 0, 0, 1, 0, 0)  # the look at init: decay, cool, sway, spots, spread, fast, embers
-ALL_ON = (33, 90, 1, 5, 4, 120, 200)  # decay 33 lifts sums past the hottest cell read, so the bound is reached too
-PART2_AT_31 = (31, 24, 1, 12, 16, 0, 0)  # part 2's look at decay 31, where the bound does nothing
+PART1 = (31, 0, 0, 0, 1, 0, 0, 0)  # the look at init: decay, cool, sway, spots, spread, fast, embers, fade
+ALL_ON = (33, 90, 1, 5, 4, 120, 200, 3)  # decay 33 lifts sums past the hottest cell read, so the bound is reached too
+PART2_AT_31 = (31, 24, 1, 12, 16, 0, 0, 0)  # part 2's look at decay 31, where the bound does nothing
 
 
 class Field(ctypes.Structure):
@@ -31,7 +31,8 @@ class Field(ctypes.Structure):
                 ("cooling", ctypes.POINTER(ctypes.c_uint8)), ("rng", ctypes.c_uint32), ("scroll", ctypes.c_int32),
                 ("fast_scroll", ctypes.c_int32), ("decay", ctypes.c_int32), ("cool", ctypes.c_int32),
                 ("sway", ctypes.c_int32), ("spots", ctypes.c_int32), ("spread", ctypes.c_int32),
-                ("fast", ctypes.c_int32), ("embers", ctypes.c_int32), ("spot_x", ctypes.c_int32 * MAX_SPOTS)]
+                ("fast", ctypes.c_int32), ("embers", ctypes.c_int32), ("fade", ctypes.c_int32),
+                ("spot_x", ctypes.c_int32 * MAX_SPOTS)]
     _fields_ += [(name, ctypes.c_int32 * MAX_EMBERS) for name in ("ember_x", "ember_y", "ember_vx", "ember_vy",
                                                                    "ember_heat")]
 
@@ -48,7 +49,7 @@ class Reference:
 
     def __init__(self, w, h, seed):
         self.w, self.h, self.rng, self.scroll, self.fast_scroll = w, h, seed or 1, 0, 0
-        self.decay, self.cool, self.sway, self.spots, self.spread, self.fast, self.embers = PART1
+        self.decay, self.cool, self.sway, self.spots, self.spread, self.fast, self.embers, self.fade = PART1
         self.ember = [[0] * 5 for _ in range(MAX_EMBERS)]  # x, y, vx, vy, heat: as fx_fire_t's ember arrays
         self.bound = True  # part 3's bound: False for the step without it
         self.heat = [0] * (w * h)
@@ -75,8 +76,9 @@ class Reference:
     def place_spots(self):
         self.spot_x = [self.draw() % self.w for _ in range(MAX_SPOTS)]
 
-    def set_look(self, decay, cool, sway, spots, spread, fast, embers):
-        self.decay, self.cool, self.sway, self.spread, self.fast, self.embers = decay, cool, sway, spread, fast, embers
+    def set_look(self, decay, cool, sway, spots, spread, fast, embers, fade):
+        self.decay, self.cool, self.sway, self.spread = decay, cool, sway, spread
+        self.fast, self.embers, self.fade = fast, embers, fade
         if spots != self.spots:
             self.spots = spots
             self.place_spots()
@@ -121,7 +123,7 @@ class Reference:
                     if fast and y + 2 < h:
                         d = 2
                     read = (at(c - 1, y + d), at(c, y + d), at(c + 1, y + d), at(c, y + d + 1))
-                    loss = self.cooling[(y + self.scroll) % MAP_H * MAP_W + x % MAP_W] * self.cool >> 8
+                    loss = (self.cooling[(y + self.scroll) % MAP_H * MAP_W + x % MAP_W] * self.cool >> 8) + self.fade
                     top = max(read) if self.bound else 255
                     heat[y * w + x] = max(0, min(top, sum(read) * self.decay >> 7) - loss)
             self.embers_step(wind)
@@ -221,15 +223,16 @@ class FireCoreTest(unittest.TestCase):
         self.assertEqual(ref.cooling, list(f.cooling[:MAP_W * MAP_H]))
         self.assertEqual((0, 255), (min(ref.cooling), max(ref.cooling)))  # stretched
         self.assertEqual(ref.spot_x, list(f.spot_x))
-        self.assertEqual((ref.rng, PART1), (f.rng, (f.decay, f.cool, f.sway, f.spots, f.spread, f.fast, f.embers)))
+        self.assertEqual((ref.rng, PART1), (f.rng, (f.decay, f.cool, f.sway, f.spots, f.spread, f.fast, f.embers,
+                                                f.fade)))
 
     def test_the_step_matches_the_reference(self):
         for w, h, look, wind in ((SMALL_W, SMALL_H, ALL_ON, 0), (SMALL_W, SMALL_H, PART1, 0),
-                                 (3, 4, (31, 0, 1, 0, 1, 0, 0), 0), (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 0), 0),
-                                 (3, 4, (40, 60, 1, 2, 2, 255, 255), 0), (1, 4, ALL_ON, 0),
-                                 (1, 4, (31, 0, 0, 0, 1, 255, 0), 0),
+                                 (3, 4, (31, 0, 1, 0, 1, 0, 0, 0), 0), (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 0, 0), 0),
+                                 (3, 4, (40, 60, 1, 2, 2, 255, 255, 255), 0), (1, 4, ALL_ON, 0),
+                                 (1, 4, (31, 0, 0, 0, 1, 255, 0, 0), 0),
                                  (SMALL_W, SMALL_H, ALL_ON, 200), (SMALL_W, SMALL_H, ALL_ON, -200), (3, 4, PART1, 255),
-                                 (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 255), 100), (2, 3, ALL_ON, 0),
+                                 (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 255, 0), 100), (2, 3, ALL_ON, 0),
                                  (1, 4, ALL_ON, -255)):
             with self.subTest(w=w, h=h, look=look, wind=wind):  # sway or wind on 3 x 4 and 1 x 4: an unguarded read
                 f, heat = self.field(w, h, look=look)  # at 0 or w - 1 shows
@@ -246,12 +249,12 @@ class FireCoreTest(unittest.TestCase):
                     self.assertIn(0, ref.heat[:-w])  # the map cut the flames
                     self.assertNotEqual(ref.heat[-w:], [0] * w)  # the spots heat the base
                     slow = Reference(w, h, SEED)
-                    slow.set_look(*look[:-2], 0, look[-1])
+                    slow.set_look(*look[:5], 0, *look[6:])
                     slow.step(STEPS)
                     self.assertNotEqual(slow.heat, ref.heat)  # fast cells took part
                     self.assertTrue(any(e[4] for e in ref.ember))  # embers fly
                     still = Reference(w, h, SEED)
-                    still.set_look(*look[:-1], 0)
+                    still.set_look(*look[:6], 0, look[7])
                     still.step(STEPS)
                     self.assertNotEqual(still.heat, ref.heat)  # and left heat in the field
 
@@ -259,7 +262,7 @@ class FireCoreTest(unittest.TestCase):
         """A byte for byte reference would share a wrong sign, so: after 100 steps on the real field, the heat-weighted
         mean column of the top half lies right of the same seed's at wind 0 with wind 255, and left with -255."""
         def mean_column(wind):
-            f, heat = self.field(W, H, look=(33, 24, 1, 12, 16, 128, 0))
+            f, heat = self.field(W, H, look=(33, 24, 1, 12, 16, 128, 0, 0))
             self.lib.fx_fire_step(ctypes.byref(f), 100, wind)
             top = heat[:H // 2 * W]
             return sum(v * (i % W) for i, v in enumerate(top)) / max(1, sum(top))
@@ -283,7 +286,7 @@ class FireCoreTest(unittest.TestCase):
     def test_part_1s_look_is_part_1s_step(self):
         for decay in (31, 40):  # 40 lifts the sum past the hottest cell read, so the bound is reached too
             with self.subTest(decay=decay):
-                f, heat = self.field(SMALL_W, SMALL_H, look=(decay, 0, 0, 0, 1, 0, 0))
+                f, heat = self.field(SMALL_W, SMALL_H, look=(decay, 0, 0, 0, 1, 0, 0, 0))
                 rng = f.rng
                 self.lib.fx_fire_step(ctypes.byref(f), STEPS, 0)
                 ref = [0] * (SMALL_W * SMALL_H)
@@ -300,11 +303,11 @@ class FireCoreTest(unittest.TestCase):
         rng, spots = f.rng, list(f.spot_x)
         self.lib.fx_fire_set_look(ctypes.byref(f), *ALL_ON)  # the same count: no draw
         self.assertEqual((rng, spots), (f.rng, list(f.spot_x)))
-        self.lib.fx_fire_set_look(ctypes.byref(f), 31, 0, 0, 3, 4, 0, 0)
+        self.lib.fx_fire_set_look(ctypes.byref(f), 31, 0, 0, 3, 4, 0, 0, 0)
         self.assertNotEqual(rng, f.rng)
 
     def test_the_bottom_row_is_xorshift32(self):
-        f, heat = self.field(4, 3, look=(0, 0, 0, 0, 1, 0, 0))
+        f, heat = self.field(4, 3, look=(0, 0, 0, 0, 1, 0, 0, 0))
         rng, row = f.rng, []
         self.lib.fx_fire_step(ctypes.byref(f), 1, 0)  # decay 0: every row above the bottom stays 0
         for _ in range(4):

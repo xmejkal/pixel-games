@@ -84,6 +84,7 @@ void fx_fire_init(fx_fire_t *f, uint8_t *heat, uint8_t *cooling, int32_t w, int3
     f->spread = 1;
     f->fast = 0;
     f->embers = 0;
+    f->fade = 0;
     memset(f->ember_heat, 0, sizeof f->ember_heat);
     memset(heat, 0, (size_t)w * (size_t)h);
     make_cooling(f);
@@ -91,13 +92,14 @@ void fx_fire_init(fx_fire_t *f, uint8_t *heat, uint8_t *cooling, int32_t w, int3
 }
 
 void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, int32_t spots, int32_t spread,
-                      int32_t fast, int32_t embers) {
+                      int32_t fast, int32_t embers, int32_t fade) {
     f->decay = decay;
     f->cool = cool;
     f->sway = sway;
     f->spread = spread;
     f->fast = fast;
     f->embers = embers;
+    f->fade = fade;
     if (spots != f->spots) {
         f->spots = spots;
         place_spots(f);
@@ -174,7 +176,7 @@ static inline uint32_t cell(const uint8_t *row, int32_t x, int32_t w) {  // 0 ou
 
 void fx_fire_step(fx_fire_t *f, int32_t steps, int32_t wind) {
     int32_t w = f->w, h = f->h;
-    uint32_t decay = (uint32_t)f->decay, cool = (uint32_t)f->cool;
+    uint32_t decay = (uint32_t)f->decay, cool = (uint32_t)f->cool, fade = (uint32_t)f->fade;
     uint32_t fast_at = 256 - (uint32_t)f->fast;  // a map cell at least this makes a fast cell, 256 never
     uint32_t gust = (uint32_t)(wind < 0 ? -wind : wind);
     int32_t against = wind > 0 ? -1 : 1;  // a cell reads upwind, so positive wind carries heat to larger x
@@ -218,7 +220,7 @@ void fx_fire_step(fx_fire_t *f, int32_t steps, int32_t wind) {
                 hot = two > hot ? two : hot;
                 uint32_t sum = ((left + mid + right + two) * decay) >> 7;
                 sum = sum > hot ? hot : sum;  // never hotter than its source, so no decay runs away
-                uint32_t loss = (cooling[x & (FX_FIRE_MAP_W - 1)] * cool) >> 8;
+                uint32_t loss = ((cooling[x & (FX_FIRE_MAP_W - 1)] * cool) >> 8) + fade;
                 row[x] = (uint8_t)(sum > loss ? sum - loss : 0);
             }
         }

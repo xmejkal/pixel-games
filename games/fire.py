@@ -42,6 +42,7 @@ SPOTS = 12  # 0 to 16 hot spots at the base, each walking and now and then jumpi
 SPREAD = 16  # 1 to 64: a spot's half-width in cells
 FAST = 128  # 0 to 255: how much of the field rises two rows a step, in patches from the cooling map. 0 is none
 EMBERS = 40  # 0 to 255: an ember starts in EMBERS of 256 kernel steps and rises faster than any flame
+FADE = 1  # 0 to 255: a loss every cell pays on every row, so no parcel keeps its heat to the top (any seed)
 WIND = 60  # 0 to 255: the strongest gust, a row shifts one column with the wind in WIND of 256 steps
 GUST_MS = 1500  # a new gust, -WIND to WIND, every GUST_MS to 2 * GUST_MS; the wind eases an eighth of the way a frame
 SEED = 595
@@ -84,7 +85,7 @@ class Fire(Game):
         if engine is not None:
             print("fire internal largest", engine.largest_free_internal())
             self.field = engine.HeatField(W, H, SEED)
-            self.field.set_look(DECAY, COOL, SWAY, SPOTS, SPREAD, FAST, EMBERS)
+            self.field.set_look(DECAY, COOL, SWAY, SPOTS, SPREAD, FAST, EMBERS, FADE)
             print("fire field", self.field.where)
         self.begin()
 
