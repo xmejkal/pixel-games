@@ -13,15 +13,15 @@ e.g. `- Team leads who assign work · H Lena's belief, no interview yet` -->
 e.g. `- When I assign a task in a meeting [E tickets.csv:6], I want the assignee to see it that day [H Lena], so I can stop chasing people [E tickets.csv:7]` -->
 - When I want a new game or a new physical feel [E #787, #783 comments 2026-11-03], I want to say it in words about what I see (the steel tips, it thuds) and get it built from shared parts [E #783 "The PO's decisions on the material" (USER-3), #787 "a simple game engine"], so I can play it the same day and judge it [H the synthesis, from USER-4: work went on without his words and was partly thrown away] <!-- REQUIRED:jobs -->
 - When a physical moment happens in a game, a landing or a tip-off [E #787 "The PO's words on the order"], I want the game's Python code to react to it, even when the physics runs in C [E #787: "be able to react both ways", D3], so I can add dust, a clang, a score or a lost life without touching C [H the synthesis, from PO-6: "numbers from Python, never constants in C"]
-- When I play [E bench.md dated verdicts (USER-12)], I want heavy, natural movement that never freezes [E #774 comment "heavy, natural movement and bigger effects", bench.md:36 "froze sometimes"], so I can enjoy the games as they grow [H the synthesis]
+- When I play [E bench.md dated verdicts (USER-12)], I want heavy, natural movement that does not freeze [E #774 comment "heavy, natural movement and bigger effects". H the synthesis for "does not freeze": bench.md:36 "froze sometimes" is from the first P533 day and was about tearing and the old send, not physics], so I can enjoy the games as they grow [H the synthesis]
 - When my sister picks up the board [H #786 body], I want a game she can play at once [E #786 body: "a simple one that his sister can play at once"], so I can share the games with her [H the synthesis, her view is —, n = 0]
 
 ## Today they…
 <!-- Per job: what they do instead today (a competitor, a workaround or nothing), tagged.
 e.g. `- Job 1 · paste each task into Slack by hand · E tickets.csv:7` -->
-- Job 1 · the AI writes each game's physics inline in its own `play()`, and RENT's on an unmerged branch (motion.py), the feel changed four times in one day, each time as new code · E council/tech-lead.md TL-3 table, origin/p582-heavy:games/motion.py:12-83, #783 comments 2026-11-03 (PO-25) <!-- REQUIRED:today -->
+- Job 1 · the AI writes each game's physics inline in its own `play()`, and RENT's on an unmerged branch (motion.py), the feel changed four times in one day, each time as new code, and three of the four were AI slices built without his words · E council/tech-lead.md TL-3 table, origin/p582-heavy:games/motion.py:12-83, origin/p582-heavy:bench.md:233-234, #783 comments 2026-11-03 (USER-4, ★C20) <!-- REQUIRED:today -->
 - Job 2 · RENT reads a Python `hit[]` array after the step and calls four moment methods, no C code calls back into Python except file reads for jpg and png · E origin/p582-heavy:games/arcade2.py:222-254 (PO-4, TL-6), s3lcd/src/mpfile.c:65-99 (EVT-10, ENG-37)
-- Job 3 · stack plays at 24.00 fps with worst gaps of 50 to 70 ms, flappy at 20 to 22 fps, he reports "froze", "stepped", "stucky" in free text · E origin/p582-heavy bench.md run 52, bench.md P556 section, bench.md:36, :92 (USER-18, USER-19)
+- Job 3 · stack plays at 24.00 fps with worst gaps of 50 to 70 ms, flappy at 20 to 22 fps in run 44 (run 42 gave 14 to 20 in "double" with no play, bench.md:187), he reports "froze", "stepped", "stucky" in free text · E origin/p582-heavy bench.md run 52, bench.md P556 section, bench.md:36, :92 (USER-18, USER-19)
 - Job 4 · no game is made for her, she has not been observed · — (USER-24)
 
 ## Journeys
