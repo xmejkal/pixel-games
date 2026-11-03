@@ -2,7 +2,7 @@
 
 Researcher: Python and C events, with the networking seam (Opus). Read 2026-11-03. Read only. This file is the one write.
 Local primary source: MicroPython v1.29.0 at `~/esp/micropython-v1.29.0` (the tree `build.sh` builds), and its built
-sdkconfig at `ports/esp32/build-s3lcd/sdkconfig`. Pixel-games paths are relative to `/Users/petr/Development/firebeetle-games`.
+sdkconfig at `ports/esp32/build-s3lcd/sdkconfig`. Pixel-games paths are relative to the repository root.
 "p582-heavy:" means `git show origin/p582-heavy:<path>`.
 
 ## Findings
