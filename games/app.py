@@ -1,6 +1,6 @@
 """
-The game box: ten one-button games on the GDI display. The BOOT button plays, the board's own button (D14) moves to
-the next game from any state.
+The game box: the rain demo of the C engine (P593) and ten one-button games on the GDI display. The BOOT button plays,
+the board's own button (D14) moves to the next game from any state.
 
 run() prints `ready` once the display is set up, then `game <name>` at the start and after each D14 press. Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
@@ -18,6 +18,7 @@ import pins
 from arcade import Flappy, Runner, Snake
 from arcade2 import Cave, GravityPong, Stack
 from lcd import open_tft
+from rain import Rain
 from render import StOut
 from space3d import CubeTiming, Starfire
 from world3d import Road, Tunnel
@@ -36,7 +37,7 @@ FRAME_MODE = "auto"
 # "s3lcd" is russhughes' C driver (smooth on the bench); "st7789" is our driver with dirty boxes. s3lcd falls back to
 # st7789 when the image has no such module.
 BACKEND = "s3lcd"
-GAMES = (Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
+GAMES = (Rain, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
 
 
 class App:
