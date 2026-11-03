@@ -52,7 +52,7 @@ e.g. `| A2 | Assignees never see new tasks | value | H ★C2 | — (decider) | q
 | Which moment broke "the real physics" most: the overhang, the landing or the collapse? | slice 1's first event | the PO | account question Q-U3 (council/user.md) | at Q1 or after |
 | How is the 14 to 16 ms slowest-frame step split (integrator, `Pile` pair scan, slabs, effects), and how much of the worst gap is paint or gc? | A5, Q11, slice 1 | the tech lead | the bench bot with `ticks_us` brackets (TL "could not check") | with P589 |
 | Does Wi-Fi start beside "double", and what is left? | A9, D2's seam | the tech lead, on the board | `esp32.idf_heap_info` with WLAN active | before any networking card |
-| Does a core 0 task slow the Python paint through PSRAM? | Q2 option C | the tech lead, on the board | a core 0 PSRAM read loop while the bot runs Stack | only if option C stays open |
+| Does a core 0 task slow the Python paint through PSRAM? | Q2 option C | the tech lead, on the board | a core 0 PSRAM read loop while the bot runs Stack | dropped: D11 chose B, not C |
 | Which game did his sister play, and what did she do? | P585's simple version | the PO | account question Q-U10 (council/user.md) | before P585's design |
 
 ## Results

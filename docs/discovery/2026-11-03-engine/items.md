@@ -20,7 +20,7 @@ Nothing is filed. P588 was the next free number in xmejkal/spark (the newest iss
 - type: spike (tests A2, A3, A8). It serves every option, because A, B and C all step in C
 - needed by: "the core of the engine and the various parts of it to be in C and higly optimised" (the PO, 2026-11-03, D3)
 - value proven by: a bench.md table with the five numbers, each measured on the board in one session, replacing "—" in risks-and-tests.md Budgets. The baseline (today's `@native` `fall_bodies` per body) gives A2's "against today's `Bodies.step`" its number
-- depends on: D5 and D6 (done). The board on USB. It puts new probe C into the image before Q8 (where the engine's C lives) is answered, so the probe C is throwaway. Size S, one session
+- depends on: D5 and D6 (done). The board on USB. It puts new probe C into the image before the engine module of D17 exists, so the probe C is throwaway. D16 adds float against fixed-point. Size S, one session
 - status: filed #790 (D8), Idea, Slice pixel-games, sub-issue of #787
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P586 #787
@@ -30,7 +30,7 @@ Nothing is filed. P588 was the next free number in xmejkal/spark (the newest iss
 - type: story (slice 0, the walking skeleton). It serves every option: Python still draws each body, which is option A's shape, and it is the first rung of B or C, whose C drawing comes in slice 2 (story-map.md). Q2 says so
 - needed by: "now, be able to react on physical events from python maybe, etc." (the PO, 2026-11-03, #787)
 - value proven by: RENT plays the same in his words. The Mac tests pass on the twin. `Bodies.step` allocates 0 B in a `gc.mem_alloc()` bracket (544 B today). Pure-play fps at or above 22.09 fps in the `time` line. A landing raised in C starts the dust burst in Python, seen on the panel
-- depends on: P588 and P589 passing their lines. Q2 (the architecture), Q3 (the rule), Q4 (the event path), Q8 (where the C lives). The motion.py source on origin/p582-heavy (draft PR #10). Size S to M
+- depends on: P588 and P589 passing their lines. Q2, Q3, Q4 and Q8, answered by D11, D12, D13 and D17. The motion.py source on origin/p582-heavy (draft PR #10). Size S to M
 - status: filed #791 (D8), Idea, Slice pixel-games, sub-issue of #787
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P586 #787
@@ -50,16 +50,16 @@ Nothing is filed. P588 was the next free number in xmejkal/spark (the newest iss
 - type: story (slice 1, the first user's need on the engine)
 - needed by: the PO's material decisions on #783 (2026-11-03): floors "topple as rigid pieces that pivot on their edges"
 - value proven by: the PO plays RENT and says whether it is "heavy and natural" in his words. The collapse step in the `time` line against today's 14 to 16 ms. Worst gap against today's 70 ms, which may be paint-bound or gc-bound, so it may not move (★C6, A5)
-- depends on: P590, P591. Q5 (RENT's material slice in Python first, or on this path) and Q9 (the fixed step). Size M
+- depends on: P590, P591. Q5 and Q9, answered by D14 (on this path) and D18 (a fixed step). Size M
 - status: filed #793 (D8), Idea, Slice pixel-games, sub-issue of #787
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P586 #787
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
 
 ## Changes to existing cards (proposals, none applied)
-- P584 #785: shrinks to one file per game, named numbers and dead-code removal, because `gfx.Game` already is the base class (PO-2). It stays the first move of the Game base into the engine package. The order waits on Q10.
-- P587 #788: scope unchanged. If Q8 keeps the engine inside the s3lcd fork, physics becomes one more job file in the split. Its place before or after P590 waits on Q10 (TL-19).
-- P582 #783: becomes the engine's first user. Its unmerged motion.py is the source of P590. Whether its material slice lands first in Python or on the C path waits on Q5.
+- P584 #785: shrinks to one file per game, named numbers and dead-code removal, because `gfx.Game` already is the base class (PO-2). It stays the first move of the Game base into the engine package. D19 places it after P592.
+- P587 #788: scope unchanged. D17 puts the engine in its own module, so physics is no job file of the split. D19 places it after P584.
+- P582 #783: becomes the engine's first user. Its unmerged motion.py is the source of P590. Whether its material slice lands first in Python or on the C path: on the C path (D14).
 - P585 #786: is built on the engine after P590 and P584. Its flood fill enters the engine with it, by the growth rule (PO-33, PO-34).
 - P583 #784: its `fx()` module is the engine's effects module, and the landing event is its first caller. Road's read-back of particle state (world3d.py:182-183) needs a Python flag (TL-5).
 
