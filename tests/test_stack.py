@@ -15,7 +15,7 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)
 
 import bench582  # noqa: E402
-from arcade2 import Stack, pile_under  # noqa: E402
+from arcade2 import Pile, Stack, pile_under  # noqa: E402
 from gfx import OVER, PLAY  # noqa: E402
 
 H = 240
@@ -123,6 +123,75 @@ class SlabTest(unittest.TestCase):
         for _ in range(50):
             game.move_slabs(0.04)
             self.assertFalse([y for y in block_tops(game) if y >= H])
+
+
+class PileTest(unittest.TestCase):
+    """The wreck's pool on its own: a floor that release() lets go, the floors still standing, the street and the
+    edge of the screen. RENT's wreck numbers: gravity 2000, restitution 0.25, friction 0.5, drag 4."""
+
+    G, BOUNCE, FRICTION, DRAG, STREET = 2000.0, 0.25, 0.5, 4.0, 220
+
+    def tower(self, n=3, x=90):
+        pile = Pile(n, 14, self.STREET)
+        for i in range(n):
+            pile.add(x, self.STREET - 14 * (i + 1), 140, i)
+        return pile
+
+    def step(self, pile, dt=0.04):
+        pile.step(dt, self.G, self.BOUNCE, self.FRICTION, self.DRAG)
+
+    def test_a_released_floor_starts_falling_at_its_push(self):
+        for dt in (0.04, 0.06):
+            with self.subTest(dt=dt):
+                pile = self.tower()
+                b = pile.bodies
+                x, y = b.x[2], b.y[2]
+                pile.release(2, 150.0)
+                self.step(pile, dt)
+                self.assertAlmostEqual(b.vx[2], 150.0)
+                self.assertAlmostEqual(b.x[2], x + 150.0 * dt)
+                self.assertAlmostEqual(b.vy[2], self.G * dt)
+                self.assertGreater(b.y[2], y)
+
+    def test_a_standing_floor_stays_put(self):
+        pile = self.tower()
+        b = pile.bodies
+        before = [(b.x[j], b.y[j]) for j in range(2)]
+        pile.release(2, 150.0)
+        for _ in range(50):
+            self.step(pile)
+            self.assertEqual([(b.x[j], b.y[j]) for j in range(2)], before)
+        self.assertEqual(b.y[2], self.STREET)  # a standing floor holds nothing up: the released one reached the street
+
+    def test_a_floor_bounces_on_the_street_then_sleeps(self):
+        for dt in (0.04, 0.06):
+            with self.subTest(dt=dt):
+                pile = self.tower(1)
+                b = pile.bodies
+                b.y[0] = 60.0  # high over the street, so it lands hard enough to bounce
+                pile.release(0, 0.0)
+                bounces = 0
+                for _ in range(int(2 / dt)):
+                    self.step(pile, dt)
+                    self.assertLessEqual(b.y[0], self.STREET)
+                    if b.hit[0]:
+                        bounces += 1
+                        self.assertAlmostEqual(b.vy[0], -b.hit[0] * self.BOUNCE, delta=self.BOUNCE)
+                self.assertGreaterEqual(bounces, 1)
+                self.assertEqual((b.asleep[0], b.y[0]), (1, self.STREET))
+                self.assertTrue(pile.still())
+
+    def test_a_floor_thrown_off_the_screen_leaves_the_pool(self):
+        pile = self.tower(2, x=W - 40)  # 40 px on the screen: a 300 px/s throw takes it all the way off
+        b = pile.bodies
+        pile.release(1, 300.0)
+        for _ in range(50):
+            self.step(pile)
+            if not b.live[1]:
+                break
+        self.assertEqual(b.live[1], 0)
+        self.assertEqual(b.live[0], 1)
+        self.assertTrue(pile.still())  # what left the pool no longer holds the collapse open
 
 
 def fallen(n, width, dt, lean=1):

@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "games"))
 
-from motion import Bodies, Spring  # noqa: E402
+from motion import Bodies, Spring, fall  # noqa: E402
 
 G = 2000.0  # RENT's gravity, px/s^2
 STEPS = (0.04, 0.06)  # the 40 ms pace and the 60 ms clamp in gfx.Game.step
@@ -96,6 +96,45 @@ class BodiesTest(unittest.TestCase):
         b.step(0.04, G, 0.35, 0.6)
         self.assertGreater(b.y[0], 0.0)
         self.assertEqual(b.y[1], 0.0)
+
+
+class FallTest(unittest.TestCase):
+    """motion.fall, the step Bodies.step runs, called on the pool as the games' Pile and slabs call it."""
+
+    def test_a_spawned_body_starts_at_its_speed(self):
+        for dt in STEPS:
+            with self.subTest(dt=dt):
+                b = Bodies(1)
+                b.spawn(0, 50, 20, -30, 100, 1e6)
+                fall(b, dt, G, 0.35, 0.6)
+                self.assertAlmostEqual(b.vx[0], -30.0)
+                self.assertAlmostEqual(b.vy[0], 100.0 + G * dt)
+                self.assertAlmostEqual(b.x[0], 50.0 - 30.0 * dt)
+                self.assertAlmostEqual(b.y[0], 20.0 + (100.0 + G * dt) * dt)
+
+    def test_a_sleeping_body_stays_put(self):
+        b = Bodies(1)
+        b.spawn(0, 50, 20, -30, 100, 200)
+        b.asleep[0] = 1
+        for _ in range(10):
+            fall(b, 0.04, G, 0.35, 0.6)
+        self.assertEqual((b.x[0], b.y[0], b.hit[0]), (50.0, 20.0, 0))
+
+    def test_a_bounce_keeps_the_set_restitution_then_it_sleeps(self):
+        for restitution in (0.25, 0.35):
+            for dt in STEPS:
+                with self.subTest(restitution=restitution, dt=dt):
+                    b = Bodies(1)
+                    b.spawn(0, 0, 0, 40, 0, 200)
+                    bounces = 0
+                    for _ in range(int(2 / dt)):
+                        fall(b, dt, G, restitution, 0.6)
+                        if b.hit[0]:
+                            bounces += 1
+                            self.assertEqual(b.y[0], 200.0)  # on the plane, not through it
+                            self.assertAlmostEqual(b.vy[0], -b.hit[0] * restitution, delta=restitution)
+                    self.assertGreaterEqual(bounces, 1)
+                    self.assertEqual((b.asleep[0], b.y[0], b.vy[0]), (1, 200.0, 0.0))
 
 
 class SpringTest(unittest.TestCase):
