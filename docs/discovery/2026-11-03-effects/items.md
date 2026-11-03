@@ -60,11 +60,11 @@ Everything here is proposed, filed only on the PO's yes to this list. Nothing is
 - parent (the epic, as a sub-issue): P594 #795 (under P586 #787)
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
 
-## P600: four effects of the ten have no kernel yet → ripple seen from above, falling sand and water cells, a shockwave, and plasma, each its own scene (glow and dissolve wait, D17)
+## P600: four effects of the ten have no kernel yet → ripple seen from above, falling sand and water cells, a shockwave, and plasma, each its own scene (glow and dissolve wait, D17 and D18)
 - type: story (K3, K6 and the rest, one play turn, D10)
 - needed by: "let's try to make 10 more effects" (the PO, 2026-11-03, #795). His list holds these four (D4)
 - value proven by: he plays the four, his words sorted as in P595 (D5). One bench.md row per effect from three 5 s intervals
-- done when: four entries in `GAMES` (D9): the ripple on K3, the sand and water cells on K6, a shockwave or glow, and plasma or dissolve. D4 names both of each pair, so the PO picks which one is built. Cost in ms on screen (D15). Ready to play, then played
+- done when: four entries in `GAMES` (D9): the ripple on K3, the sand and water cells on K6, a shockwave and plasma. D4 named both of each pair. The lead picked shockwave and plasma under D17, and the PO's yes to this list (D18) names them. Glow and dissolve wait. Cost in ms on screen (D15). Ready to play, then played
 - depends on: P598 played. P599 built, if a scene needs its room (D13). Size M (H)
 - status: proposed
 - label (the repository's type label): story
@@ -75,7 +75,7 @@ Everything here is proposed, filed only on the PO's yes to this list. Nothing is
 - type: story (the late rungs of D11). The team's proposal for where the probe sits: its own small card after the groups, not inside an effect card. Why: the miss is known only from a bench row, so no effect card can hold the probe before its run. A card of its own keeps each effect card one play turn (D10) and keeps the rungs in D11's order
 - needed by: "or even by trying to call the special assembler methods or through ESP-IDF" (the PO, 2026-11-03, #795). Plain C first, then a SWAR blend in C, then one PIE probe for the effect that misses its line (D11)
 - value proven by: one bench.md row per rung for the effect that missed: plain C, the SWAR blend and PIE, each against the same line
-- done when: the SWAR rung is timed. If the effect still misses, ESP-IDF 5.5.2's coprocessor save code is read first (A10, R0), then one `.S` in engine/port/s3/ is built and timed. If no effect misses its line after P600, the card closes as not needed, and no PIE shows in P594 (D11)
+- done when: the SWAR rung is timed. If the effect still misses, ESP-IDF 5.5.2's coprocessor save code is read first (A10, R0), then one `.S` in engine/port/s3/ is built and timed. If no effect misses its line after P600, the card closes as not needed, and no PIE shows in P594 (D11) The trigger, set by the lead under D17 after the refuter's close pass: an opaque scene whose step plus draw is over A2's 15.3 ms line on the path P595 picked, or a picture variant whose blended draw is over the same line. For an opaque miss, the SWAR rung does not apply (it cuts a blend), so the probe goes straight to a PIE kernel. For a picture-variant miss, the SWAR blend comes first, then PIE on the blend
 - depends on: a bench row that misses its line, in P595 to P600. Size S (H)
 - status: proposed
 - label (the repository's type label): story
@@ -86,10 +86,10 @@ Everything here is proposed, filed only on the PO's yes to this list. Nothing is
 - P583 #784: "The first effects ... exist in the s3lcd fork" becomes "in the engine module, from P594's kernels. P583 places them in RENT" (D8). Its slice 0 `.S` probe moves to engine/port/s3/ and reads P601's result first, if P601 ran (H, the team's). It reads P594's blended numbers first (D12). Its done-when (RENT uses them, fps at most 2 below) stays.
 - P587 #788: its files become "the frame and its DMA send, drawing and blits", without "effects", and its "Needed by" drops P583 (D8).
 - P592 #793: a note: P598's uniform grid in engine/core/ is the broad phase its rigid solver reuses later. The circle solver stays an effects mode (D6).
-- P594 #795: its "Done when" names the ten of D4: fire, smoke, bodies on fire, water from the side with splashes, sparks or fireworks, colliding bodies, ripple from above, falling sand and water cells, a shockwave or glow, and plasma or dissolve. Its sub-issues are the cards above.
+- P594 #795: its "Done when" names the ten of D4: fire, smoke, bodies on fire, water from the side with splashes, sparks or fireworks, colliding bodies, ripple from above, falling sand and water cells, a shockwave and plasma (glow and dissolve wait, D18). Its sub-issues are the cards above.
 
 ## Board actions
 <!-- Each action, taken or pending, with its D. -->
-- file P595 to P601 as sub-issues of #795, Slice pixel-games, stage Idea · pending, needs a D that names items.md <!-- REQUIRED:board-actions -->
+- file P595 to P598, P600 and P601 as sub-issues of #795, and P599 as a sub-issue of P586 #787 (D17), Slice pixel-games, stage Idea · D18 <!-- REQUIRED:board-actions -->
 - apply the changes to #784, #788, #793 and #795 above · pending, needs the same D
 - comment on #795 with the brief's link, and set Waiting on the PO (the confirmation and the yes to this list) · pending

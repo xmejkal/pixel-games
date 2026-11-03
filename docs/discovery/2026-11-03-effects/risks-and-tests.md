@@ -52,7 +52,6 @@ e.g. `| A2 | Assignees never see new tasks | value | H ★C2 | — (decider) | q
 | Do smoke and bodies on fire read as effects different from fire? | A5 | the PO | P596, his words sorted (D5) | slice 1 |
 | What do water and sparks cost, and how many sparks fit? | the sizes of K4 and K2 | the AI team, on the board | P597, bench.md rows | slice 2 |
 | Do 300 circles in a pile cost about 3.4 ms, or 3 to 10 ms, with no tunnelling? | A7 | the AI team | a Mac test (engine D15), then the board, in P598 | slice 3 |
-| Which one of each pair: a shockwave or glow, plasma or dissolve? | P600's scope | the PO | AskUserQuestion | before P600 |
 | Does an effect miss its line in plain C? Does ESP-IDF 5.5.2 save the PIE registers on a task switch? | A10, P601 | the AI team. The tech lead reads the IDF source (R0) | bench.md rows of P595 to P600, then R0 | only if a row misses its line (D11) |
 | Where does the printed fps drop from 24 to 23 for an effect? | A4 | the AI team, on the board | a scene loaded to the line on purpose | only if a scene's step plus draw nears 15.3 ms |
 | Is Adafruit_PixelDust's BSD licence 2-clause or 3-clause? | the notice of D14 | the AI team | read its LICENSE file | only if K6 ports from it |

@@ -22,7 +22,7 @@ jobs-and-journeys.md. tag: as in the brief. proof: something the decider can rea
 | 2, P597 | Watch | water seen from the side: a K4 spring surface that bodies drop into, with K2 splash droplets | job 1 | D4. H ★C14 | he plays it. bench.md row |
 | 2, P597 | Watch | sparks or fireworks from the K2 particle kernel, with a picture variant (D12) | jobs 1, 3 | D4, D12. H ★C10 | he plays it. bench.md row against today's 40 Python particles at 2.27 ms |
 | 3, P598 | Watch | colliding bodies: a few hundred circles in a box, Verlet steps on a K5 uniform grid in core/, each hit a fact in the event buffer, the grid shared with P592 (D6) | job 1 | D6. H ★C12, ★C13 | he plays it. A Mac test shows no tunnelling at 2,000 px/s². bench.md row |
-| 4, P600 | Watch | ripple seen from above (K3), falling sand and water cells (K6), a shockwave or glow, plasma or dissolve | job 1 | D4. H ★C14 | he plays the four. bench.md rows |
+| 4, P600 | Watch | ripple seen from above (K3), falling sand and water cells (K6), a shockwave, plasma (glow and dissolve wait, D18) | job 1 | D4. H ★C14 | he plays the four. bench.md rows |
 | 5, P601 | Read its cost | for the effect that misses its line: a SWAR blend in C, then one PIE `.S` probe (D11). Closed if nothing misses | job 2 | D11. H ★C16, ★C17 | bench.md rows: C, SWAR and PIE against the same line |
 
 ## Delta to the product's map <!-- REQUIRED:spark-process:map-delta -->
