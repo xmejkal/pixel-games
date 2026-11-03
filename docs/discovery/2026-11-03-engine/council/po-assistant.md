@@ -96,4 +96,4 @@ PO-n · claim · tag · pointer · supports only
 - "Chipmunk2D ESP32 microcontroller port" · whether an MIT rigid-body solver is proven on ESP32 (reuse map for physics) · used, as a negative result (PO-22).
 - "32blit SDK MicroPython or Lua scripting binding" · whether 32blit offers a binding pattern to reuse (reuse map, binding shape) · used (PO-16).
 - Fetch, not a search: https://docs.micropython.org/en/latest/library/micropython.html · the C-to-Python event path option (scheduler limits) · used (PO-23).
-- Repository facts came from `gh api repos/<owner>/<repo>` (licence, push date, files) for ten repositories and from micropython/micropython source files, not from web searches.
+- Repository facts came from `gh api repos/<owner>/<repo>` (licence, push date, files) for ten repositories and from micropython/micropython source files, not from web searches · the reuse map (licence and platform per candidate) · used (PO-15 to PO-23).
