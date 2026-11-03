@@ -24,7 +24,7 @@ except ImportError:  # an image without the engine module: Python only, and the 
     engine = None
 
 W, H = WIDTH, HEIGHT
-N = 192  # boxes: set on the board to the most that keep C at 24 fps (the engine's cap is 256)
+N = 160  # boxes: set on the board to the most that keep C at 24 fps (the engine's cap is 256)
 SIZE = 4
 RATE = 100  # steps a second, so a step is STEP_MS (D18)
 STEP_MS, DT = 1000 // RATE, 1 / RATE
@@ -43,6 +43,9 @@ class CStepper:
     def __init__(self):
         self.out = array("h", [0] * (3 * N))
         self.spawn = engine.spawn
+        zero = array("f", [0.0] * N)
+        engine.load(zero, zero, zero, zero, zero)  # exactly N bodies: the C world outlives a soft reset, so a run before
+        # with a larger N would leave more bodies than self.out holds
 
     def step(self, steps):
         engine.step(engine.FLOAT, steps, RATE, GRAVITY, RESTITUTION, FRICTION)

@@ -50,16 +50,24 @@ class Engine:
 
     def __init__(self, lib):
         self.lib, self.world = lib, ctypes.create_string_buffer(lib.world_float_size())
+        self.n = 0  # the world's body count, kept by the binding's rules: load sets it, a spawn past it raises it
+
+    def load(self, *columns):
+        self.n = len(columns[0])
+        self.lib.world_load_float(self.world, self.n, *((ctypes.c_float * self.n).from_buffer(c) for c in columns))
 
     def spawn(self, i, x, y, vx, vy, rest_y):
         if not self.lib.world_spawn_float(self.world, i, *(ctypes.c_float(v) for v in (x, y, vx, vy, rest_y))):
             raise IndexError(i)
+        self.n = max(self.n, i + 1)
 
     def step(self, mode, steps, rate, gravity, restitution, friction):
         self.lib.world_step_float(self.world, steps, rate,
                                   *(ctypes.c_float(v) for v in (gravity, restitution, friction)))
 
     def read(self, out):
+        if len(out) < 3 * self.n:
+            raise ValueError("an array('h') of 3n ints is needed")  # as engine.read does
         self.lib.world_read_float(self.world, (ctypes.c_int16 * len(out)).from_buffer(out))
 
 
@@ -136,6 +144,12 @@ class CRainTest(unittest.TestCase):
         worst = max(abs(a - b) for fc, fp in zip(boxes_c, boxes_py) for a, b in zip(fc, fp))
         self.assertLessEqual(worst, 1, "float32 against Python's float may truncate 1 px apart")
         self.assertNotEqual(boxes_c, play(game_c, 1, 1000)[0])  # and they move
+
+    def test_a_world_left_larger_is_reset(self):
+        rain.engine.spawn(rain.N + 10, 0, 0, 0, 0, 100)  # a run with a larger N before: the C world outlives a soft reset
+        with contextlib.redirect_stdout(io.StringIO()):
+            boxes, _ = play(rain.Rain(), 2, 0)
+        self.assertEqual(rain.N, len(boxes))
 
     def test_a_tap_swaps_the_stepper(self):
         with contextlib.redirect_stdout(io.StringIO()):
