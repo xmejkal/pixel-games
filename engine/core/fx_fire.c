@@ -153,12 +153,13 @@ void fx_fire_step(fx_fire_t *f, int32_t steps) {
                     c += (int32_t)((bits >> 1) & 1) + (int32_t)(bits & 1) - 1;
                     bits >>= 2;
                 }
-                uint32_t sum = cell(below, c - 1, w) + cell(below, c, w) + cell(below, c + 1, w);
-                if (below2) {
-                    sum += cell(below2, c, w);
-                }
-                sum = (sum * decay) >> 7;
-                sum = sum > 255 ? 255 : sum;
+                uint32_t left = cell(below, c - 1, w), mid = cell(below, c, w), right = cell(below, c + 1, w);
+                uint32_t two = below2 ? cell(below2, c, w) : 0;
+                uint32_t hot = left > mid ? left : mid;  // the hottest cell read
+                hot = right > hot ? right : hot;
+                hot = two > hot ? two : hot;
+                uint32_t sum = ((left + mid + right + two) * decay) >> 7;
+                sum = sum > hot ? hot : sum;  // never hotter than its source, so no decay runs away
                 uint32_t loss = (cooling[x & (FX_FIRE_MAP - 1)] * cool) >> 8;
                 row[x] = (uint8_t)(sum > loss ? sum - loss : 0);
             }

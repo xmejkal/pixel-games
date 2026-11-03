@@ -23,7 +23,7 @@ SEED, STEPS = 595, 50
 SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps the run short
 MAP, MAX_SPOTS = 64, 16  # FX_FIRE_MAP and FX_FIRE_MAX_SPOTS
 PART1 = (31, 0, 0, 0, 1)  # the look at init: decay, cool, sway, spots, spread
-ALL_ON = (33, 90, 1, 5, 4)  # decay 33 lifts sums past 255, so the clamp is reached too
+ALL_ON = (33, 90, 1, 5, 4)  # decay 33 lifts sums past the hottest cell read, so the bound is reached too
 # Part 2's look at decay 31 (the bound does nothing there): the small field's sha256 after STEPS steps with commit
 # c4e232f's kernel, recorded from that commit's fx_fire.c before part 3 changed it
 GOLDEN_LOOK = (31, 24, 1, 12, 16)
@@ -112,14 +112,15 @@ class Reference:
                             bits = self.draw()
                         c += (bits >> 1 & 1) + (bits & 1) - 1
                         bits >>= 2
-                    total = at(c - 1, y + 1) + at(c, y + 1) + at(c + 1, y + 1) + at(c, y + 2)
+                    read = (at(c - 1, y + 1), at(c, y + 1), at(c + 1, y + 1), at(c, y + 2))
                     loss = self.cooling[(y + self.scroll) % MAP * MAP + x % MAP] * self.cool >> 8
-                    heat[y * w + x] = max(0, min(255, total * self.decay >> 7) - loss)
+                    heat[y * w + x] = max(0, min(max(read), sum(read) * self.decay >> 7) - loss)
             self.scroll = (self.scroll + 1) % MAP
 
 
-def part1_step(heat, w, h, rng, steps, decay):
-    """Part 1's fx_fire_step, as written then: the field changed in place, and the random state after it."""
+def part1_step(heat, w, h, rng, steps, decay, bound=True):
+    """Part 1's fx_fire_step, as written then (at most 255) but with part 3's bound unless asked: the field changed in
+    place, and the random state after it."""
     def at(x, y):
         return heat[y * w + x] if 0 <= x < w and 0 <= y < h else 0
 
@@ -129,8 +130,8 @@ def part1_step(heat, w, h, rng, steps, decay):
             heat[(h - 1) * w + x] = rng >> 24
         for y in range(h - 1):
             for x in range(w):
-                total = at(x - 1, y + 1) + at(x, y + 1) + at(x + 1, y + 1) + at(x, y + 2)
-                heat[y * w + x] = min(255, total * decay >> 7)
+                read = (at(x - 1, y + 1), at(x, y + 1), at(x + 1, y + 1), at(x, y + 2))
+                heat[y * w + x] = min(max(read) if bound else 255, sum(read) * decay >> 7)
     return rng
 
 
@@ -213,7 +214,7 @@ class FireCoreTest(unittest.TestCase):
         self.assertEqual(GOLDEN, hashlib.sha256(bytes(heat)).hexdigest())
 
     def test_part_1s_look_is_part_1s_step(self):
-        for decay in (31, 40):  # 40 lifts the sum past 255, so the clamp is reached too
+        for decay in (31, 40):  # 40 lifts the sum past the hottest cell read, so the bound is reached too
             with self.subTest(decay=decay):
                 f, heat = self.field(SMALL_W, SMALL_H, look=(decay, 0, 0, 0, 1))
                 rng = f.rng
@@ -222,7 +223,10 @@ class FireCoreTest(unittest.TestCase):
                 self.assertEqual(part1_step(ref, SMALL_W, SMALL_H, rng, STEPS, decay), f.rng)
                 self.assertEqual(ref, list(heat))
                 if decay == 40:
-                    self.assertIn(255, ref)
+                    unbound = [0] * (SMALL_W * SMALL_H)
+                    part1_step(unbound, SMALL_W, SMALL_H, rng, STEPS, decay, bound=False)
+                    self.assertIn(255, unbound)
+                    self.assertNotEqual(unbound, ref)
 
     def test_a_new_spot_count_places_the_spots_again(self):
         f, _ = self.field(SMALL_W, SMALL_H, look=ALL_ON)

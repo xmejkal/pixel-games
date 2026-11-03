@@ -29,11 +29,8 @@ FRAME_MS = 40  # app.py's FRAME_MS
 REPORT = re.compile(r"^fire (B|picture) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 
 
-class Field(ctypes.Structure):  # fx_fire_t
-    _fields_ = [("w", ctypes.c_int32), ("h", ctypes.c_int32), ("heat", ctypes.POINTER(ctypes.c_uint8)),
-                ("cooling", ctypes.POINTER(ctypes.c_uint8)), ("rng", ctypes.c_uint32), ("scroll", ctypes.c_int32),
-                ("decay", ctypes.c_int32), ("cool", ctypes.c_int32), ("sway", ctypes.c_int32),
-                ("spots", ctypes.c_int32), ("spread", ctypes.c_int32), ("spot_x", ctypes.c_int32 * 16)]
+sys.path.insert(0, HERE)
+from test_fire_core import Field  # noqa: E402  fx_fire_t
 
 
 class Tft:
@@ -174,6 +171,20 @@ class FireTest(unittest.TestCase):
             ("B", ["tft", "tft"], [], []),
         ], seen)
         self.assertIn("fire mode picture\nfire mode B\n", out.getvalue())
+
+    @unittest.expectedFailure  # the lead changes the look: with the bound, seeds 4 and 7 reach 85.9 and 95.2
+    def test_the_look_stays_low_at_the_top_for_any_seed(self):
+        """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
+        stays under 48. Part 2's look without the bound reached white at the top with seed 7."""
+        for seed in (1, 2, 3, 4, 5, 7, 595):
+            with self.subTest(seed=seed):
+                field = fire.engine.HeatField(fire.W, fire.H, seed)
+                field.set_look(fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD)
+                top = []
+                for k in range(50):
+                    field.step(100)  # step 3's wind blows here: +fire.WIND when k is even, -fire.WIND when odd
+                    top.append(sum(field.heat[:10 * fire.W]) / (10 * fire.W))
+                self.assertLess(max(top), 48, "the top rows' mean heat, %s" % [round(v) for v in top])
 
 
 if __name__ == "__main__":
