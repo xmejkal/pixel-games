@@ -27,6 +27,7 @@ import fire  # noqa: E402
 FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
 FRAME_MS = 40  # app.py's FRAME_MS
 REPORT = re.compile(r"^fire (B|picture) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
+SEED_WIND = 595  # the gust test's seed for Python's random
 
 
 sys.path.insert(0, HERE)
@@ -175,6 +176,7 @@ class FireTest(unittest.TestCase):
         self.assertIn("fire mode picture\nfire mode B\n", out.getvalue())
 
     def test_the_wind_stays_within_wind(self):
+        fire.random.seed(SEED_WIND)  # the gusts draw from Python's random: seeded, so both signs always show
         with contextlib.redirect_stdout(io.StringIO()):
             game = fire.Fire()
             winds, now = [], 0
@@ -186,7 +188,7 @@ class FireTest(unittest.TestCase):
         self.assertLess(min(winds), 0)  # the gusts blow both ways
         self.assertGreater(max(winds), 0)
 
-    def test_the_look_stays_low_at_the_top_for_any_seed(self):
+    def test_the_look_stays_low_at_the_top_for_the_seven_seeds(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
         stays under 48, with the wind +WIND for 100 steps, then -WIND. Part 2's look without the bound reached white at
         the top with seed 7, and seed 4 reached 55.1 at fade 0 and 47.1 at fade 2."""

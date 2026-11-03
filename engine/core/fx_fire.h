@@ -31,7 +31,7 @@ typedef struct {
 } fx_fire_t;
 
 // Zero the field, seed the random numbers (a seed of 0 becomes 1), make the cooling map and place the spots. The look
-// starts as part 1's: decay 31, cool 0, sway 0, spots 0.
+// starts as part 1's: decay 31, cool 0, sway 0, spots 0, fast 0, embers 0, fade 0.
 void fx_fire_init(fx_fire_t *f, uint8_t *heat, uint8_t *cooling, int32_t w, int32_t h, uint32_t seed);
 
 // The look, each number checked by the caller. decay 0 to 255: 32 keeps the heat, less cools it, more spreads it but

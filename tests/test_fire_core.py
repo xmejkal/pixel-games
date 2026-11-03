@@ -235,9 +235,12 @@ class FireCoreTest(unittest.TestCase):
                                  (1, 4, (31, 0, 0, 0, 1, 255, 0, 0), 0),
                                  (SMALL_W, SMALL_H, ALL_ON, 200), (SMALL_W, SMALL_H, ALL_ON, -200), (3, 4, PART1, 255),
                                  (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 255, 0), 100), (2, 3, ALL_ON, 0),
-                                 (1, 4, ALL_ON, -255)):
-            with self.subTest(w=w, h=h, look=look, wind=wind):  # sway or wind on 3 x 4 and 1 x 4: an unguarded read
-                f, heat = self.field(w, h, look=look)  # at 0 or w - 1 shows
+                                 (1, 4, ALL_ON, -255), (4, 40, (31, 0, 0, 0, 1, 0, 255, 0), 255)):
+            # sway and wind on 3 x 4 and 1 x 4 read at 0 and w - 1, and 4 x 40 with embers at full wind sends embers
+            # past the right edge. Outside cells read 0 in both, so a read past the edge shows only if memory there is
+            # not 0: the edge reads are checked by the mutation run, not proven here.
+            with self.subTest(w=w, h=h, look=look, wind=wind):
+                f, heat = self.field(w, h, look=look)
                 self.lib.fx_fire_step(ctypes.byref(f), STEPS, wind)
                 ref = Reference(w, h, SEED)
                 ref.set_look(*look)

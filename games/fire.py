@@ -42,8 +42,8 @@ SPOTS = 12  # 0 to 16 hot spots at the base, each walking and now and then jumpi
 SPREAD = 16  # 1 to 64: a spot's half-width in cells
 FAST = 128  # 0 to 255: how much of the field rises two rows a step, in patches from the cooling map. 0 is none
 EMBERS = 40  # 0 to 255: an ember starts in EMBERS of 256 kernel steps and rises faster than any flame
-FADE = 4  # 0 to 255: a loss every cell pays, FADE sixteenths of a unit a row, so no parcel keeps its heat to the top
-# (any seed). 2 is the smallest that keeps seeds 1 to 5, 7 and 595 under the stability test's line
+FADE = 4  # 0 to 255: a loss every cell pays, FADE sixteenths of a unit a row, so no parcel keeps its heat to the top.
+# 4 keeps the stability test's seven seeds under its line of 48 (fade 2 reached 47.1 on seed 4)
 WIND = 60  # 0 to 255: the strongest gust, a row shifts one column with the wind in WIND of 256 steps
 GUST_MS = 1500  # a new gust, -WIND to WIND, every GUST_MS to 2 * GUST_MS; the wind eases an eighth of the way a frame
 SEED = 595
@@ -107,7 +107,8 @@ class Fire(Game):
         if self.gust <= 0:
             self.target = random.randrange(-WIND, WIND + 1)
             self.gust = GUST_MS + random.randrange(GUST_MS)
-        self.wind += (self.target - self.wind) // 8
+        d = self.target - self.wind
+        self.wind += d // 8 if d < 0 else (d + 7) // 8  # rounded away from 0, so a gust reaches its target both ways
         self.acc += ms  # whole 40 ms steps; the rest waits for the next frame
         steps = self.acc // STEP_MS
         self.acc -= steps * STEP_MS
