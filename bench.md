@@ -278,3 +278,49 @@ The engine image (`./build.sh engine`, sha256 2a519b269b3bb482, 222,576 B left i
 - The first `mpremote run` after an `mpremote cp`, and a `cat` of the port after a reset, printed nothing, as on 2026-11-01 (line 54). A second run works.
 - Free internal RAM at start was not measured: the logs hold only `mem 8029760`, the total with PSRAM. The plan asked for it.
 - The board keeps the engine image. The rain starts at power-on.
+
+## P595 (#796), 2026-11-03: the fire, the first native effect
+
+The engine image (`./build.sh engine`, sha256 389c0020b31b0f86, 220,768 B left in the app partition) with `games/fire.py` first in `GAMES`. The field is 160 x 120 cells, drawn at 2 x 2 px over the whole screen, one kernel step per 40 ms (`DECAY` 31). Each mode ran alone through `mpremote run` for about 40 s, started by a small script in that mode, because a BOOT tap needs a hand. Logs (git-ignored, kept on the Mac): `run57-p595-fire-B.log`, `run57-p595-fire-A.log`, `run57-p595-fire-picture.log`, and `run58-p595-smoke.log` for the games. Step plus draw is brief.md's one formula: the `time` line's step plus the same interval's `avg` paint. A2's line is 15.3 ms (risks-and-tests.md), and each row holds every 5 s interval of its run.
+
+| mode | intervals | fps | step | paint | step + draw | static | hud | unit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| B: C writes the s3lcd frame | 7 | 24 to 25 | 3.1 to 3.2 | 4.6 | 7.7 to 7.8 | 0.1 | 11.3 to 12.6 | ms |
+| A: C fills a buffer, Python blits it opaque | 7 | 23 to 24 | 3.3 | 11.7 | 15.0 | 0.1 | 11.0 to 11.5 | ms |
+| picture: the buffer at alpha 128 over the sky | 7 | 15 to 17 | 4.2 to 4.5 | 22.5 to 25.5 | 26.7 to 30.0 | 7.1 | 14.8 to 17.0 | ms |
+
+- A2 passes on both paths, B with room (7.7 to 7.8 ms) and A by 0.3 ms (15.0). B is about half of A's cost, so B stays and A's opaque mode is dropped (D7, commit e968acd). The fire swaps B and the sky variant on a BOOT tap.
+- The fire's own lines split B's cost: the kernel step 2.67 to 2.73 ms and the draw into the frame 4.31 to 4.34 ms. The discovery's estimate was 7.6 to 7.7 ms (★C11, H), and the run gives 7.7 to 7.8 ms.
+- A9 passes: the largest free internal block at the scene's start is 31,744 B in every run, and the 19,200 B field went to internal RAM (`fire field internal`).
+- A3, with no pass line: the blended step plus draw is 26.7 to 30.0 ms, 3.5 to 3.9 times B's and 1.8 to 2.0 times A's, plus 7.1 ms of `static` for the sky's keyed blit, which a game pays too. The discovery expected about 33.6 ms (H).
+- The fps print is 24 or 25 in B. A2's room is not the fps limit: the HUD text still costs 11 to 13 ms a frame (P599 #800).
+- Smoke test after the drop: all eleven other entries start and print fps lines, with no error (rain 24, flappy 19 to 22, runner 20 to 23, snake 24, stack 24 to 25, cave 20 to 22, tunnel 19 to 22, road 13 to 21, starfire 20 to 24, cube 22 to 23, gravpong 24). Road's 13 is one interval. P593's smoke run printed 21 for it.
+- The two-mode cycle after the drop was not timed on the board. Its picture path is the one timed above, and a Mac test covers the tap.
+- The board keeps the engine image. The fire starts at power-on, with the rain second.
+
+### P595 part 2, 2026-11-03: the fire's look (the PO's "Both")
+
+The PO saw the first fire and said it "looks a bit uniform" (#796). He chose hot spots at the base, a rising cooling map that cuts the flames into tongues, and a random sideways shift. The numbers were set by eye on Mac renders of the C kernel (decay 33, cool 24, sway 1, 12 spots, spread 16): decay 34 ran away to white columns, cool 64 kept the flames low, and the look stayed stable over 2,000 steps. The engine image (`./build.sh engine`, sha256 2009d38f7e67b498, 219,728 B left in the app partition by its size line). Logs: `run59-p595-look-B.log`, `run59-p595-look-picture.log`, `run60-p595-look-smoke.log`.
+
+| mode | intervals | fps | step | paint | step + draw | static | hud | unit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| B, the new look | 6 | 24 | 5.6 to 5.7 | 4.5 to 4.6 | 10.1 to 10.3 | 0.1 | 10.1 to 12.2 | ms |
+| picture, the new look | 6 | 15 to 17 | 7.4 to 8.0 | 20.6 to 23.3 | 28.0 to 31.3 | 7.1 | 14.5 to 16.9 | ms |
+
+- A2 still passes on B: 10.1 to 10.3 ms against 15.3. The look costs about 2.5 ms a frame: the kernel step grew from 2.67 to 2.73 ms to 5.07 to 5.19 ms (the fire's own lines), and the draw stayed at 4.30 to 4.32 ms. The lead's guess was 1 to 1.5 ms.
+- In the picture mode the same kernel step takes 6.96 to 7.53 ms, about 2.3 ms more than in B. The cause was not looked for. The blend's reads of PSRAM may slow it.
+- A9: the field and its map, 23,296 B in one block, went to internal RAM. The largest free internal block at the start was 31,744 B, as before.
+- Smoke test: all eleven other entries start, with no error. Road printed 21, 13 and 11. Road was also low in the part 1 run (13), and P593 printed 21 for it.
+
+### P595 part 3, 2026-11-03: different rise speeds, wind and embers
+
+The PO saw part 2 and said all the heat rises "at the same speed", and later that "three columns" rise together (#796). Part 3: no cell gets hotter than the hottest cell it reads (a bound: no cell outgrows its source), a cooling map 256 x 32 that never repeats across the field (the three columns), fast patches whose heat jumps two rows a step (fast 128), wind gusts from Python (up to 60, a new gust every 1.5 to 3 s), up to 24 embers (embers 40), and a fade of 4 sixteenths a row. The Mac stability test (seeds 1 to 5, 7 and 595, 5,000 steps) keeps every top-10-row mean under 48, the highest 40.2 (seed 4). The line holds for those seven seeds, not for every seed: the refuter found seed 31 at 49.1, still bounded (its hottest cell 182). The engine image: sha256 900f13c4a626027f, 218,960 B left in the app partition (build output). Logs: `run61-p595-rise-B.log`, `run61-p595-rise-picture.log`, `run62-p595-rise-smoke.log`.
+
+| mode | intervals | fps | step | paint | step + draw | static | hud | unit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| B, part 3 | 6 | 24 | 7.0 to 7.2 | 4.5 to 4.6 | 11.5 to 11.8 | 0.1 | 11.9 to 13.1 | ms |
+| picture, part 3 | 6 | 15 to 16 | 9.3 to 10.0 | 21.4 to 24.1 | 30.7 to 34.1 | 7.0 to 7.1 | 13.9 to 15.7 | ms |
+
+- A2 still passes on B: 11.5 to 11.8 ms against 15.3. Part 3 costs about 1.5 ms a frame over part 2: the kernel step grew from 5.07 to 5.19 ms to 6.53 to 6.69 ms (the fire's own lines). The draw stayed at 4.29 ms.
+- A9: the field and its wider map, 27,392 B in one block, went to internal RAM. The largest free internal block at the start was 31,744 B.
+- Smoke test: all eleven other entries start, with no error. Road printed 21, 12 and 12, as low as in the part 1 and part 2 runs.

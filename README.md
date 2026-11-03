@@ -33,7 +33,12 @@ If the board stays dark after a long press of its D14 button, hold D14 for 1 to 
 
 Runs now:
 
-- The rain (P593, `games/rain.py`), first at power-on: 160 boxes fall, stepped by the C engine, and a BOOT tap swaps C
+- The fire (P595, `games/fire.py`), first at power-on: a heat field in C (`engine.HeatField`) burns over the whole
+  screen, and a BOOT tap swaps B (C writes the screen's frame) and the fire over the painted sky. It needs the engine
+  image. The flames rise from wandering hot spots, break into tongues, rise at two speeds, lean in gusts of wind and
+  throw embers. On the board, B runs at 24 fps with 11.5 to 11.8 ms of step + draw, and the sky variant at 15 to
+  16 fps (bench.md, P595).
+- The rain (P593, `games/rain.py`), second: 160 boxes fall, stepped by the C engine, and a BOOT tap swaps C
   and Python. On the board, C runs at 24 fps with a 0.17 ms step, and Python at 7 to 8 fps with a 30 ms step
   (bench.md P593). It needs the engine image (`./build.sh engine`). Without it, the rain runs in Python only.
 - Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.

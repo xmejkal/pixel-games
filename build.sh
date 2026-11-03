@@ -2,7 +2,7 @@
 # Build MicroPython v1.29.0 for the FireBeetle 2 ESP32-S3 (N16R8), with ESP-IDF v5.5.2.
 # Usage: ./build.sh            the stock image
 #        ./build.sh s3lcd      the image with the s3lcd C module
-#        ./build.sh engine     s3lcd and the engine module (P589 probe), in build-engine
+#        ./build.sh engine     s3lcd and the engine module (P589 probe, P595 fire), in build-engine
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 MPY="$HOME/esp/micropython-v1.29.0"

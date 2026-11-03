@@ -1,0 +1,347 @@
+"""engine/core/fx_fire.c (P595) against a Python reference of its xorshift32, its cooling map, its look, its step and its
+draw: clang builds it into a temporary folder and ctypes calls it. The panel corners are checked against lcd.TftCanvas.fill's own map. Run from
+the repository root: python3 -m unittest discover tests. --- MVP (P595) ---"""
+
+import ctypes
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "stubs"))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+
+import lcd  # noqa: E402
+
+FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
+W, H = 160, 120  # games/fire.py's field: the panel is 240 x 320
+SEED, STEPS = 595, 50
+SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps the run short
+MAP_W, MAP_H, MAX_SPOTS, MAX_EMBERS = 256, 32, 16, 24  # FX_FIRE_MAP_W, FX_FIRE_MAP_H, FX_FIRE_MAX_SPOTS and EMBERS
+PART1 = (31, 0, 0, 0, 1, 0, 0, 0)  # the look at init: decay, cool, sway, spots, spread, fast, embers, fade
+ALL_ON = (33, 90, 1, 5, 4, 120, 200, 21)  # decay 33 lifts sums past the hottest cell read, so the bound is reached too
+PART2_AT_31 = (31, 24, 1, 12, 16, 0, 0, 0)  # part 2's look at decay 31, where the bound does nothing
+
+
+class Field(ctypes.Structure):
+    _fields_ = [("w", ctypes.c_int32), ("h", ctypes.c_int32), ("heat", ctypes.POINTER(ctypes.c_uint8)),
+                ("cooling", ctypes.POINTER(ctypes.c_uint8)), ("rng", ctypes.c_uint32), ("scroll", ctypes.c_int32),
+                ("fast_scroll", ctypes.c_int32), ("decay", ctypes.c_int32), ("cool", ctypes.c_int32),
+                ("sway", ctypes.c_int32), ("spots", ctypes.c_int32), ("spread", ctypes.c_int32),
+                ("fast", ctypes.c_int32), ("embers", ctypes.c_int32), ("fade", ctypes.c_int32),
+                ("spot_x", ctypes.c_int32 * MAX_SPOTS)]
+    _fields_ += [(name, ctypes.c_int32 * MAX_EMBERS) for name in ("ember_x", "ember_y", "ember_vx", "ember_vy",
+                                                                   "ember_heat")]
+
+
+def xorshift32(x):
+    x ^= (x << 13) & 0xFFFFFFFF
+    x ^= x >> 17
+    x ^= (x << 5) & 0xFFFFFFFF
+    return x
+
+
+class Reference:
+    """fx_fire_t and its functions in Python, its random draws in the order fx_fire.c's comment gives."""
+
+    def __init__(self, w, h, seed):
+        self.w, self.h, self.rng, self.scroll, self.fast_scroll = w, h, seed or 1, 0, 0
+        self.decay, self.cool, self.sway, self.spots, self.spread, self.fast, self.embers, self.fade = PART1
+        self.ember = [[0] * 5 for _ in range(MAX_EMBERS)]  # x, y, vx, vy, heat: as fx_fire_t's ember arrays
+        self.bound = True  # part 3's bound: False for the step without it
+        self.heat = [0] * (w * h)
+        self.cooling = [255 if self.draw() >> 28 == 0 else 0 for _ in range(MAP_W * MAP_H)]
+        for _ in range(2):
+            for k in range(MAP_H):
+                self.blur_ring(k * MAP_W, MAP_W, 1)
+            for k in range(MAP_W):
+                self.blur_ring(k, MAP_H, MAP_W)
+        lo, hi = min(self.cooling), max(self.cooling)
+        self.cooling = [(v - lo) * 255 // (hi - lo) if hi > lo else 0 for v in self.cooling]
+        self.place_spots()
+
+    def draw(self):
+        self.rng = xorshift32(self.rng)
+        return self.rng
+
+    def blur_ring(self, start, n, stride):
+        cells = [start + i * stride for i in range(n)]
+        old = [self.cooling[i] for i in cells]
+        for i, at in enumerate(cells):
+            self.cooling[at] = (old[i - 1] + old[i] + old[(i + 1) % n]) // 3
+
+    def place_spots(self):
+        self.spot_x = [self.draw() % self.w for _ in range(MAX_SPOTS)]
+
+    def set_look(self, decay, cool, sway, spots, spread, fast, embers, fade):
+        self.decay, self.cool, self.sway, self.spread = decay, cool, sway, spread
+        self.fast, self.embers, self.fade = fast, embers, fade
+        if spots != self.spots:
+            self.spots = spots
+            self.place_spots()
+
+    def spots_row(self):
+        w = self.w
+        for i in range(self.spots):
+            r = self.draw()
+            if r >> 26 == 0:
+                self.spot_x[i] = (r >> 8) % w
+            else:
+                self.spot_x[i] = min(w - 1, max(0, self.spot_x[i] + r % 3 - 1))
+        row = [0] * w
+        for x0 in self.spot_x[:self.spots]:
+            for dx in range(-self.spread, self.spread + 1):
+                if 0 <= x0 + dx < w:
+                    row[x0 + dx] = max(row[x0 + dx], 255 - abs(dx) * 255 // (self.spread + 1))
+        return [v * (128 + (self.draw() >> 25)) >> 8 for v in row]
+
+    def step(self, steps, wind=0):
+        w, h, heat = self.w, self.h, self.heat
+
+        def at(x, y):
+            return heat[y * w + x] if 0 <= x < w and 0 <= y < h else 0
+
+        for _ in range(steps):
+            heat[(h - 1) * w:] = self.spots_row() if self.spots else [self.draw() >> 24 for _ in range(w)]
+            for y in range(h - 1):
+                shift = 0
+                if wind and self.draw() & 255 < abs(wind):
+                    shift = -1 if wind > 0 else 1
+                bits = 0
+                for x in range(w):
+                    c = x + shift
+                    if self.sway:
+                        if x % 16 == 0:
+                            bits = self.draw()
+                        c += (bits >> 1 & 1) + (bits & 1) - 1
+                        bits >>= 2
+                    d = 1  # a fast cell reads one row further down, unless its three cells would be past the bottom
+                    fast = self.cooling[(y + self.fast_scroll) % MAP_H * MAP_W + (x + 128) % MAP_W] >= 256 - self.fast
+                    if fast and y + 2 < h:
+                        d = 2
+                    read = (at(c - 1, y + d), at(c, y + d), at(c + 1, y + d), at(c, y + d + 1))
+                    up = h - 1 - y  # the fade: fade sixteenths of a unit a row
+                    loss = self.cooling[(y + self.scroll) % MAP_H * MAP_W + x % MAP_W] * self.cool >> 8
+                    loss += ((up + 1) * self.fade >> 4) - (up * self.fade >> 4)
+                    top = max(read) if self.bound else 255
+                    heat[y * w + x] = max(0, min(top, sum(read) * self.decay >> 7) - loss)
+            self.embers_step(wind)
+            self.scroll = (self.scroll + 1) % MAP_H
+            self.fast_scroll = (self.fast_scroll + 2) % MAP_H
+
+
+    def embers_step(self, wind):
+        w, h = self.w, self.h
+        r = self.draw() if self.embers else 0
+        free = [e for e in self.ember if e[4] == 0]
+        if r & 255 < self.embers and free:
+            x = self.spot_x[(r >> 8 & 255) % self.spots] if self.spots else (r >> 8) % w
+            free[0][:] = [x * 256, (h - 2) * 256, (r >> 18 & 127) - 64 + int(wind / 8), -(2 + (r >> 16 & 3)) * 256, 255]
+        for e in self.ember:
+            if e[4]:
+                e[0] += e[2]
+                e[1] += e[3]
+                e[4] -= 12
+                if e[4] < 40 or e[0] < 0 or e[1] < 0 or e[0] >= w * 256:
+                    e[4] = 0
+                else:
+                    at = e[1] // 256 * w + e[0] // 256
+                    self.heat[at] = max(self.heat[at], e[4])
+
+
+def part1_step(heat, w, h, rng, steps, decay, bound=True):
+    """Part 1's fx_fire_step, as written then (at most 255) but with part 3's bound unless asked: the field changed in
+    place, and the random state after it."""
+    def at(x, y):
+        return heat[y * w + x] if 0 <= x < w and 0 <= y < h else 0
+
+    for _ in range(steps):
+        for x in range(w):
+            rng = xorshift32(rng)
+            heat[(h - 1) * w + x] = rng >> 24
+        for y in range(h - 1):
+            for x in range(w):
+                read = (at(x - 1, y + 1), at(x, y + 1), at(x + 1, y + 1), at(x, y + 2))
+                heat[y * w + x] = min(max(read) if bound else 255, sum(read) * decay >> 7)
+    return rng
+
+
+def reference_draw(heat, w, h, palette):
+    """fx_fire_draw in Python: panel (px, py) shows cell ((2w - 1 - py) // 2, px // 2)."""
+    pw, ph = 2 * h, 2 * w
+    return [palette[heat[(px // 2) * w + (2 * w - 1 - py) // 2]] for py in range(ph) for px in range(pw)]
+
+
+class PanelRecorder:
+    """The s3lcd fill_rect calls TftCanvas makes, as panel rectangles."""
+
+    def __init__(self):
+        self.rects = []
+
+    def fill_rect(self, x, y, w, h, c):
+        self.rects.append((x, y, w, h))
+
+
+@unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/core/fx_fire.c is not built")
+class FireCoreTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.tmp = tempfile.TemporaryDirectory()
+        lib_path = os.path.join(cls.tmp.name, "libfire.so")
+        subprocess.run(["clang", "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-o", lib_path,
+                        FIRE_C], check=True)
+        cls.lib = ctypes.CDLL(lib_path)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def field(self, w, h, seed=SEED, look=None):
+        heat = (ctypes.c_uint8 * (w * h))(*([7] * (w * h)))  # init must zero it
+        cooling = (ctypes.c_uint8 * (MAP_W * MAP_H))()
+        f = Field()
+        self.lib.fx_fire_init(ctypes.byref(f), heat, cooling, w, h, seed)
+        f.keep = cooling  # the map lives as long as the field
+        if look:
+            self.lib.fx_fire_set_look(ctypes.byref(f), *look)
+        return f, heat
+
+    def draw(self, f, palette):
+        panel = (ctypes.c_uint16 * (4 * f.w * f.h))(*([0xABCD] * (4 * f.w * f.h)))  # a sentinel no palette holds
+        self.lib.fx_fire_draw(ctypes.byref(f), panel, (ctypes.c_uint16 * 256)(*palette))
+        return list(panel)
+
+    def test_init_zeroes_the_field_and_a_seed_of_0_is_1(self):
+        f, heat = self.field(SMALL_W, SMALL_H, seed=0)
+        self.assertEqual([0] * (SMALL_W * SMALL_H), list(heat))
+        self.assertEqual(Reference(SMALL_W, SMALL_H, 0).rng, f.rng)  # the map's and the spots' draws from 1
+
+    def test_init_makes_the_map_and_the_spots_of_the_reference(self):
+        f, _ = self.field(SMALL_W, SMALL_H)
+        ref = Reference(SMALL_W, SMALL_H, SEED)
+        self.assertEqual(ref.cooling, list(f.cooling[:MAP_W * MAP_H]))
+        self.assertEqual((0, 255), (min(ref.cooling), max(ref.cooling)))  # stretched
+        self.assertEqual(ref.spot_x, list(f.spot_x))
+        self.assertEqual((ref.rng, PART1), (f.rng, (f.decay, f.cool, f.sway, f.spots, f.spread, f.fast, f.embers,
+                                                f.fade)))
+
+    def test_the_step_matches_the_reference(self):
+        for w, h, look, wind in ((SMALL_W, SMALL_H, ALL_ON, 0), (SMALL_W, SMALL_H, PART1, 0),
+                                 (3, 4, (31, 0, 1, 0, 1, 0, 0, 0), 0), (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 0, 0), 0),
+                                 (3, 4, (40, 60, 1, 2, 2, 255, 255, 255), 0), (1, 4, ALL_ON, 0),
+                                 (1, 4, (31, 0, 0, 0, 1, 255, 0, 0), 0),
+                                 (SMALL_W, SMALL_H, ALL_ON, 200), (SMALL_W, SMALL_H, ALL_ON, -200), (3, 4, PART1, 255),
+                                 (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 255, 0), 100), (2, 3, ALL_ON, 0),
+                                 (1, 4, ALL_ON, -255), (4, 40, (31, 0, 0, 0, 1, 0, 255, 0), 255)):
+            # sway and wind on 3 x 4 and 1 x 4 read at 0 and w - 1, and 4 x 40 with embers at full wind sends embers
+            # past the right edge. Outside cells read 0 in both, so a read past the edge shows only if memory there is
+            # not 0: the edge reads are checked by the mutation run, not proven here.
+            with self.subTest(w=w, h=h, look=look, wind=wind):
+                f, heat = self.field(w, h, look=look)
+                self.lib.fx_fire_step(ctypes.byref(f), STEPS, wind)
+                ref = Reference(w, h, SEED)
+                ref.set_look(*look)
+                ref.step(STEPS, wind)
+                self.assertEqual(ref.heat, list(heat), "the field byte for byte, edge cells reading 0 outside")
+                self.assertEqual((ref.rng, ref.scroll, ref.fast_scroll, ref.spot_x),
+                                 (f.rng, f.scroll, f.fast_scroll, list(f.spot_x)))
+                self.assertEqual(ref.ember, [[f.ember_x[i], f.ember_y[i], f.ember_vx[i], f.ember_vy[i],
+                                              f.ember_heat[i]] for i in range(MAX_EMBERS)])
+                if look == ALL_ON and w == SMALL_W and wind == 0:
+                    self.assertIn(0, ref.heat[:-w])  # the map cut the flames
+                    self.assertNotEqual(ref.heat[-w:], [0] * w)  # the spots heat the base
+                    slow = Reference(w, h, SEED)
+                    slow.set_look(*look[:5], 0, *look[6:])
+                    slow.step(STEPS)
+                    self.assertNotEqual(slow.heat, ref.heat)  # fast cells took part
+                    self.assertTrue(any(e[4] for e in ref.ember))  # embers fly
+                    still = Reference(w, h, SEED)
+                    still.set_look(*look[:6], 0, look[7])
+                    still.step(STEPS)
+                    self.assertNotEqual(still.heat, ref.heat)  # and left heat in the field
+
+    def test_the_wind_blows_the_flames_its_way(self):
+        """A byte for byte reference would share a wrong sign, so: after 100 steps on the real field, the heat-weighted
+        mean column of the top half lies right of the same seed's at wind 0 with wind 255, and left with -255."""
+        def mean_column(wind):
+            f, heat = self.field(W, H, look=(33, 24, 1, 12, 16, 128, 0, 0))
+            self.lib.fx_fire_step(ctypes.byref(f), 100, wind)
+            top = heat[:H // 2 * W]
+            return sum(v * (i % W) for i, v in enumerate(top)) / max(1, sum(top))
+
+        still = mean_column(0)
+        self.assertGreater(mean_column(255), still)
+        self.assertLess(mean_column(-255), still)
+
+    def test_at_decay_31_the_bound_does_nothing(self):
+        """Part 2's look at decay 31 gives the field of the step without the bound. Part 3's 256 x 32 map (the PO's
+        three columns: the 64-wide map repeated at x, x + 64 and x + 128) ended byte equality with part 2's kernel."""
+        f, heat = self.field(SMALL_W, SMALL_H, look=PART2_AT_31)
+        self.lib.fx_fire_step(ctypes.byref(f), STEPS, 0)
+        ref = Reference(SMALL_W, SMALL_H, SEED)
+        ref.set_look(*PART2_AT_31)
+        ref.bound = False
+        ref.step(STEPS)
+        self.assertEqual(ref.heat, list(heat))
+        self.assertNotEqual([0] * (SMALL_W * SMALL_H), ref.heat)
+
+    def test_part_1s_look_is_part_1s_step(self):
+        for decay in (31, 40):  # 40 lifts the sum past the hottest cell read, so the bound is reached too
+            with self.subTest(decay=decay):
+                f, heat = self.field(SMALL_W, SMALL_H, look=(decay, 0, 0, 0, 1, 0, 0, 0))
+                rng = f.rng
+                self.lib.fx_fire_step(ctypes.byref(f), STEPS, 0)
+                ref = [0] * (SMALL_W * SMALL_H)
+                self.assertEqual(part1_step(ref, SMALL_W, SMALL_H, rng, STEPS, decay), f.rng)
+                self.assertEqual(ref, list(heat))
+                if decay == 40:
+                    unbound = [0] * (SMALL_W * SMALL_H)
+                    part1_step(unbound, SMALL_W, SMALL_H, rng, STEPS, decay, bound=False)
+                    self.assertIn(255, unbound)
+                    self.assertNotEqual(unbound, ref)
+
+    def test_a_new_spot_count_places_the_spots_again(self):
+        f, _ = self.field(SMALL_W, SMALL_H, look=ALL_ON)
+        rng, spots = f.rng, list(f.spot_x)
+        self.lib.fx_fire_set_look(ctypes.byref(f), *ALL_ON)  # the same count: no draw
+        self.assertEqual((rng, spots), (f.rng, list(f.spot_x)))
+        self.lib.fx_fire_set_look(ctypes.byref(f), 31, 0, 0, 3, 4, 0, 0, 0)
+        self.assertNotEqual(rng, f.rng)
+
+    def test_the_bottom_row_is_xorshift32(self):
+        f, heat = self.field(4, 3, look=(0, 0, 0, 0, 1, 0, 0, 0))
+        rng, row = f.rng, []
+        self.lib.fx_fire_step(ctypes.byref(f), 1, 0)  # decay 0: every row above the bottom stays 0
+        for _ in range(4):
+            rng = xorshift32(rng)
+            row.append(rng >> 24)
+        self.assertEqual([0] * 8 + row, list(heat))
+
+    def test_the_draw_matches_the_reference_and_writes_every_pixel(self):
+        f, heat = self.field(W, H)
+        self.lib.fx_fire_step(ctypes.byref(f), 20, 0)
+        palette = list(range(1000, 1256))
+        panel = self.draw(f, palette)
+        self.assertNotIn(0xABCD, panel)
+        self.assertEqual(reference_draw(heat, W, H, palette), panel)
+
+    def test_a_hot_cell_lands_where_tftcanvas_fills_it(self):
+        palette = [0] * 256
+        palette[200] = 0xF00F
+        for cx, cy in ((0, 0), (W - 1, 0), (0, H - 1), (W - 1, H - 1), (37, 81)):  # the corners and one inside
+            with self.subTest(cell=(cx, cy)):
+                f, heat = self.field(W, H)
+                heat[cy * W + cx] = 200
+                panel = self.draw(f, palette)
+                hot = {(i % (2 * H), i // (2 * H)) for i, c in enumerate(panel) if c == 0xF00F}
+                tft = PanelRecorder()
+                lcd.TftCanvas(tft).fill(2 * cx, 2 * cy, 2, 2, 0)  # the cell's 2 x 2 game pixels
+                x, y, w, h = tft.rects[0]
+                self.assertEqual({(x + i, y + j) for i in range(w) for j in range(h)}, hot)
+
+
+if __name__ == "__main__":
+    unittest.main()
