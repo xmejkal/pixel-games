@@ -297,3 +297,17 @@ The engine image (`./build.sh engine`, sha256 389c0020b31b0f86, 220,768 B left i
 - Smoke test after the drop: all eleven other entries start and print fps lines, with no error (rain 24, flappy 19 to 22, runner 20 to 23, snake 24, stack 24 to 25, cave 20 to 22, tunnel 19 to 22, road 13 to 21, starfire 20 to 24, cube 22 to 23, gravpong 24). Road's 13 is one interval. P593's smoke run printed 21 for it.
 - The two-mode cycle after the drop was not timed on the board. Its picture path is the one timed above, and a Mac test covers the tap.
 - The board keeps the engine image. The fire starts at power-on, with the rain second.
+
+### P595 part 2, 2026-11-03: the fire's look (the PO's "Both")
+
+The PO saw the first fire and said it "looks a bit uniform" (#796). He chose hot spots at the base, a rising cooling map that cuts the flames into tongues, and a random sideways shift. The numbers were set by eye on Mac renders of the C kernel (decay 33, cool 24, sway 1, 12 spots, spread 16): decay 34 ran away to white columns, cool 64 kept the flames low, and the look stayed stable over 2,000 steps. The engine image: sha256 2009d38f7e67b498, 219,728 B left in the app partition. Logs: `run59-p595-look-B.log`, `run59-p595-look-picture.log`, `run60-p595-look-smoke.log`.
+
+| mode | intervals | fps | step | paint | step + draw | static | hud | unit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| B, the new look | 6 | 24 | 5.6 to 5.7 | 4.5 to 4.6 | 10.1 to 10.3 | 0.1 | 10.1 to 12.2 | ms |
+| picture, the new look | 6 | 15 to 17 | 7.4 to 8.0 | 20.6 to 23.3 | 28.0 to 31.3 | 7.1 | 14.5 to 16.9 | ms |
+
+- A2 still passes on B: 10.1 to 10.3 ms against 15.3. The look costs about 2.5 ms a frame: the kernel step grew from 2.67 to 2.73 ms to 5.07 to 5.19 ms (the fire's own lines), and the draw stayed at 4.30 to 4.32 ms. The plan's guess was 1 to 1.5 ms.
+- In the picture mode the same kernel step takes 6.96 to 7.53 ms, about 2.3 ms more than in B. The cause was not looked for. The blend's reads of PSRAM may slow it.
+- A9: the field and its map, 23,296 B in one block, went to internal RAM. The largest free internal block at the start was 31,744 B, as before.
+- Smoke test: all eleven other entries start, with no error. Road printed 21, 13 and 11. Road was also low in the part 1 run (13), and P593 printed 21 for it.
