@@ -162,6 +162,6 @@ class Rain(Game):
         cv.keep((self.name, self.label, self.bar), LABEL_RECT, self.draw_hud)
 
     def draw_hud(self, cv):
-        cv.fill(0, 0, W, 14, DARK)
+        cv.fill(0, 0, W, LABEL_RECT[3], DARK)
         cv.text(self.label, 4, 2, WHITE)
         cv.fill(0, 11, self.bar, 3, YELLOW)

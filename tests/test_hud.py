@@ -130,11 +130,32 @@ class StripTest(unittest.TestCase):
         cv = lcd.TftCanvas(tft)
         first, other = Game(), Game()
         other.name = "other"
+        gfx.BEST[first.name] = gfx.BEST[other.name] = 0  # the keys then differ by the name alone
         first.hud(cv)
         other.hud(cv)
         straight = Tft()
         other.draw_hud(lcd.TftCanvas(straight))
         self.assertEqual(straight.frame, tft.frame)
+
+    def test_each_part_of_the_key_redraws(self):
+        """A change to the score, the best, the label or the bar shows at once: a key that missed one would keep the
+        old strip."""
+        game, drops, flames = scenes()
+        changes = [(game, lambda: setattr(game, "score", game.score + 1)),
+                   (game, lambda: gfx.BEST.__setitem__(game.name, gfx.BEST[game.name] + 1)),
+                   (drops, lambda: setattr(drops, "label", drops.label + "!")),
+                   (drops, lambda: setattr(drops, "bar", drops.bar + 9)),
+                   (flames, lambda: setattr(flames, "label", flames.label + "!"))]
+        for scene, change in changes:
+            with self.subTest(scene=scene.name):
+                tft = Tft()
+                cv = lcd.TftCanvas(tft)
+                scene.hud(cv)
+                change()
+                scene.hud(cv)
+                straight = Tft()
+                scene.draw_hud(lcd.TftCanvas(straight))
+                self.assertEqual(straight.frame, tft.frame)
 
 
 class RecordingTest(unittest.TestCase):

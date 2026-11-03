@@ -163,5 +163,5 @@ class Fire(Game):
         cv.keep((self.name, self.label), LABEL_RECT, self.draw_hud)
 
     def draw_hud(self, cv):
-        cv.fill(0, 0, WIDTH, 14, DARK)
+        cv.fill(0, 0, WIDTH, LABEL_RECT[3], DARK)
         cv.text(self.label, 4, 2, WHITE)

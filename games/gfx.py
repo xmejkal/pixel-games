@@ -83,9 +83,11 @@ class Canvas:
     def start(self):
         self.ops, self.clip = [], FULL
 
+    # --- MVP (P599) ---
     def keep(self, key, rect, draw):
         """draw(canvas) fills rect; it runs only when key changes, else its last tuples are recorded again (P599). The
-        key names the caller, such as the game's name, so another game never reuses this one's tuples."""
+        key names the caller, such as the game's name, so another game never reuses this one's tuples. The clip must be
+        FULL, as Game.draw leaves it: lcd.TftCanvas.keep ignores the clip."""
         kept = self.kept.get(rect)
         if kept is not None and kept[0] == key:
             self.ops.extend(kept[1])
@@ -358,7 +360,7 @@ class Game:
         cv.keep((self.name, self.score, BEST.get(self.name, 0)), HUD_RECT, self.draw_hud)
 
     def draw_hud(self, cv):
-        cv.fill(0, 0, WIDTH, 16, DARK)
+        cv.fill(0, 0, WIDTH, HUD_RECT[3], DARK)
         cv.big(str(self.score), 6, 0, self.HUD_SCORE, 2)
         best = "best %d" % max(self.score, BEST.get(self.name, 0))
         cv.text(best, WIDTH - 8 * len(best) - 6, 4, self.HUD_BEST)
