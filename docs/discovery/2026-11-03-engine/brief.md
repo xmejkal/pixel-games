@@ -156,7 +156,7 @@ sequenceDiagram
   App->>G: draw(cv): one picture per body
 ```
 
-Option B, a proposal: C world and scene, Python rules. This is the tech lead's B. Its World offers `on(kind, fn)` for callbacks and `events()` for a poll, because Q4 is open. The sequence shows both modes. The poll branch is drawn from tech-lead.md:130 ("or by one poll"), not from the tech lead's diagram.
+Option B, a proposal: C world and scene, Python rules. This is the tech lead's B. Its World offers `on(kind, fn)` for callbacks and `events()` for a poll, because Q4 was open when it was drawn. The sequence shows both modes. D13 later chose the poll only (E1), so the callback branch is out. The poll branch is drawn from tech-lead.md:130 ("or by one poll"), not from the tech lead's diagram.
 
 ```mermaid
 classDiagram
@@ -191,7 +191,7 @@ sequenceDiagram
   App->>G: step(now, pressed, held)
   G->>W: step(dt)
   W-->>R: push LANDED(body 0, 400 px/s, x, y)
-  alt callback mode (E2), if Q4 keeps it
+  alt callback mode (E2), dropped by D13
     W->>G: on_landed(ev), after the substeps
   else poll mode (E1)
     W-->>G: returns
@@ -289,7 +289,7 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 - D13 · the event path (Q4): E1, C writes events as ints into a buffer and Python reads it once per frame after the step · the PO · 2026-11-03 · this session, AskUserQuestion Q4 · options: E1 buffer, E2 callbacks, both
 - D14 · slice 0 (Q5): P590 holds only today's falling bodies in C, with no visible change; the rigid tip (P592) is the next slice on the C path, the topple after it · the PO · 2026-11-03 · this session, AskUserQuestion Q5 · options: falling only, tip in Python first, tip in C at once
 - D15 · the Mac tests (Q6): a Mac build (clang) of the same C; the core holds no MicroPython or display types · the PO · 2026-11-03 · this session, AskUserQuestion Q6 · options: Mac build, Python twin, board only
-- D16 · the physics source (Q7): our own small solver, behind a swappable interface (step, bodies by id, the event buffer) so that Box2D or Chipmunk2D can replace it later; ideas taken from Box2D-Lite, Box2D v3 and Chipmunk2D; chip fast paths (the S3's PIE is integer SIMD, so its path needs fixed-point; P589 measures float against fixed-point). The PO's words: "I don't want to reinvent the wheel and we want to keep it possible to switch to another, but lets start with our own one, that can really use the s3 and other specific features of the chips. And we definitelly can get inspired by whats already out there" · the PO · 2026-11-03 · this session, his message after Q7 · options: S1 own, S2 Box2D v3 subset, S3 Chipmunk2D
+- D16 · the physics source (Q7): our own small solver, behind a swappable interface (step, bodies by id, the event buffer) so that Box2D or Chipmunk2D can replace it later; ideas taken from Box2D-Lite, Box2D v3 and Chipmunk2D; chip fast paths. The team added, not the PO: the S3's PIE is integer SIMD, so its path needs fixed-point, and P589 measures float against fixed-point. The PO's words: "I don't want to reinvent the wheel and we want to keep it possible to switch to another, but lets start with our own one, that can really use the s3 and other specific features of the chips. And we definitelly can get inspired by whats already out there" · the PO · 2026-11-03 · this session, his message after Q7 · options: S1 own, S2 Box2D v3 subset, S3 Chipmunk2D
 - D17 · the C home (Q8): H2, an own `engine` C module beside s3lcd: core/ in plain C (Mac and board), port/s3/ for fast paths, one thin binding file; it reaches the screen only through s3lcd.h · the PO · 2026-11-03 · this session, AskUserQuestion Q8 · options: H2 own module, H1 inside the fork, H3 natmod
 - D18 · the time step (Q9): a fixed 10 ms step, as many steps as the frame needs, with a cap (about 8) so a slow frame cannot snowball · the PO · 2026-11-03 · this session, AskUserQuestion Q9 · options: fixed step, today's clamped dt, swept tests
 - D19 · the order (Q10): O1 walking skeleton: P589, P590, P592 (the PO plays), P584, P587, P585 · the PO · 2026-11-03 · this session, AskUserQuestion Q10 · options: O1, O2 RENT in Python first, O3 C split first

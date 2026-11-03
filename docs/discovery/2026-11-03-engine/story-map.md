@@ -13,7 +13,7 @@ The activities follow the game writer's journey in jobs-and-journeys.md (steps 1
 <!-- Walking skeleton first: the thinnest slice that runs end to end. One row per story. job: a job in
 jobs-and-journeys.md. tag: as in the brief. proof: something the decider can read.
 e.g. `| 0 | Notice | the assignee gets one daily digest | job 1 | H ★C2 | the digest log for one team |` -->
-Slice 0 is the thinnest slice that crosses Python and C both ways. It changes no drawing, so it has option A's shape and serves every option. Slice 2 is the move to option B, if Q2 picks B. It moves no rule and designs no rigid solver. It comes from po-assistant.md PO-32 and tech-lead.md TL-13 and TL-14. Every slice is a proposal. The order after slice 1 waits on Q10.
+Slice 0 is the thinnest slice that crosses Python and C both ways. It changes no drawing, so it has option A's shape and serves every option. Slice 2 is the move to option B, which D11 chose. It moves no rule and designs no rigid solver. It comes from po-assistant.md PO-32 and tech-lead.md TL-13 and TL-14. Every slice is a proposal. The order after slice 1 waits on Q10.
 
 | slice | activity | story | job | tag | proof |
 | --- | --- | --- | --- | --- | --- |
@@ -25,7 +25,7 @@ Slice 0 is the thinnest slice that crosses Python and C both ways. It changes no
 | 5 | React to a moment | a sound hook on the same events, a name only until the buzzer exists (P581 #782) | job 2 | E (PO-31, USER-22) | a game calls the hook on a landing, and the hook does nothing without hardware |
 | 6 | Build from shared parts | the area-capture game (P585 #786) on the engine, its flood fill entering with it | jobs 1, 4 | H (PO-33, PO-34) | his sister plays the simple version (n = 0 today), and the PO plays the cool one |
 | 7 | Build from shared parts | the other games ported one by one to the engine, each in its own PR | job 1 | E ★C1 (TL-3, PO-1) | each game plays the same, and its fps is not below today's |
-| 8 | Build from shared parts | the C split by job (P587 #788), with physics as its own file if the engine lives in the fork (Q8) | job 1 | E ★C22 (TL-19, TL-21) | the same bytes on the panel |
+| 8 | Build from shared parts | the C split by job (P587 #788), without physics, because D17 gives the engine its own module | job 1 | E ★C22 (TL-19, TL-21) | the same bytes on the panel |
 | 9 | Draw and show | chip fast paths (D4): S3 PIE for fills, copies and compose, picked at compile time with a plain C twin | job 3 | E, H ★C16 (CHIP-1, CHIP-3, ENG-31) | paint ms per game before and after |
 | 10 | Step the world | the networking seams (D2): fixed step, seeded random, input record, flat state pools, with nothing sent | — | H ★C18 (NET-13) | two bot runs with one seed and one input log give the same state |
 | later | Play and report | the networking MVP: a separate transport module first (ESP-NOW or plain UDP), then absorbed by the engine (D2) | — | H (NET-11, NET-14) | two boards play one game |
