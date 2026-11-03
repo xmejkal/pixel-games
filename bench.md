@@ -311,3 +311,16 @@ The PO saw the first fire and said it "looks a bit uniform" (#796). He chose hot
 - In the picture mode the same kernel step takes 6.96 to 7.53 ms, about 2.3 ms more than in B. The cause was not looked for. The blend's reads of PSRAM may slow it.
 - A9: the field and its map, 23,296 B in one block, went to internal RAM. The largest free internal block at the start was 31,744 B, as before.
 - Smoke test: all eleven other entries start, with no error. Road printed 21, 13 and 11. Road was also low in the part 1 run (13), and P593 printed 21 for it.
+
+### P595 part 3, 2026-11-03: different rise speeds, wind and embers
+
+The PO saw part 2 and said all the heat rises "at the same speed", and later that "three columns" rise together (#796). Part 3: no cell gets hotter than the hottest cell it reads (a bound, so no seed runs away), a cooling map 256 x 32 that never repeats across the field (the three columns), fast patches whose heat jumps two rows a step (fast 128), wind gusts from Python (up to 60, a new gust every 1.5 to 3 s), up to 24 embers (embers 40), and a fade of 4 sixteenths a row. The Mac stability test (seeds 1 to 5, 7 and 595, 5,000 steps) keeps every top-10-row mean under 48, the highest 40.2 (seed 4). The engine image: sha256 900f13c4a626027f, 218,960 B left in the app partition (build output). Logs: `run61-p595-rise-B.log`, `run61-p595-rise-picture.log`, `run62-p595-rise-smoke.log`.
+
+| mode | intervals | fps | step | paint | step + draw | static | hud | unit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| B, part 3 | 6 | 24 | 7.0 to 7.2 | 4.5 to 4.6 | 11.5 to 11.8 | 0.1 | 11.9 to 13.1 | ms |
+| picture, part 3 | 6 | 15 to 16 | 9.3 to 10.0 | 21.4 to 24.1 | 30.7 to 34.1 | 7.0 to 7.1 | 13.9 to 15.7 | ms |
+
+- A2 still passes on B: 11.5 to 11.8 ms against 15.3. Part 3 costs about 1.5 ms a frame over part 2: the kernel step grew from 5.07 to 5.19 ms to 6.53 to 6.69 ms (the fire's own lines). The draw stayed at 4.29 ms.
+- A9: the field and its wider map, 27,392 B in one block, went to internal RAM. The largest free internal block at the start was 31,744 B.
+- Smoke test: all eleven other entries start, with no error. Road printed 21, 12 and 12, as low as in the part 1 and part 2 runs.
