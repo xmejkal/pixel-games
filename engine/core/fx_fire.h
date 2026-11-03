@@ -19,7 +19,8 @@ typedef struct {
     uint8_t *cooling;  // tiled over the field, its row (y + scroll) & 63 under field row y
     uint32_t rng;  // xorshift32 state, never 0
     int32_t scroll;  // 0 to 63, one more each step, so the cold patches rise with the flames
-    int32_t decay, cool, sway, spots, spread;  // the look, see fx_fire_set_look
+    int32_t fast_scroll;  // 0 to 63, two more each step: the map read again for the fast regions, which climb faster
+    int32_t decay, cool, sway, spots, spread, fast;  // the look, see fx_fire_set_look
     int32_t spot_x[FX_FIRE_MAX_SPOTS];  // each hot spot's column
 } fx_fire_t;
 
@@ -27,16 +28,20 @@ typedef struct {
 // starts as part 1's: decay 31, cool 0, sway 0, spots 0.
 void fx_fire_init(fx_fire_t *f, uint8_t *heat, uint8_t *cooling, int32_t w, int32_t h, uint32_t seed);
 
-// The look, each number checked by the caller. decay 0 to 255: 32 keeps the heat, less cools it, more spreads it
-// but no cell grows hotter than the cells it reads. cool 0 to 255: how
-// much the cooling map takes, 0 none. sway 0 or 1: each cell reads the cells below it shifted by -1, 0 or +1 at random.
-// spots 0 to FX_FIRE_MAX_SPOTS: the hot spots at the base, 0 for a random bottom row. spread 1 to 64: a spot's
-// half-width in cells. A change of the spot count places the spots again.
-void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, int32_t spots, int32_t spread);
+// The look, each number checked by the caller. decay 0 to 255: 32 keeps the heat, less cools it, more spreads it but
+// no cell grows hotter than the cells it reads. cool 0 to 255: how much the cooling map takes, 0 none. sway 0 or 1:
+// each cell reads the cells below it shifted by -1, 0 or +1 at random. spots 0 to FX_FIRE_MAX_SPOTS: the hot spots at
+// the base, 0 for a random bottom row. spread 1 to 64: a spot's half-width in cells. fast 0 to 255: a cell is fast
+// when the map's cell at column (x + 32) & 63, row (y + fast_scroll) & 63 is at least 256 - fast, so 0 makes none. A
+// change of the spot count places the spots again.
+void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, int32_t spots, int32_t spread,
+                      int32_t fast);
 
 // steps steps with the look. Each one makes the bottom row (random, or the spots), then each cell above, from the top
 // row down, becomes (the three cells below it + the cell two below) * decay >> 7, at most the hottest of those four,
-// less the cooling map's cell * cool >> 8, at least 0. A cell outside the field counts 0.
+// less the cooling map's cell * cool >> 8, at least 0. A fast cell reads the same four cells one row further down,
+// so its heat climbs two rows a step, unless that puts its three cells past the bottom. A cell outside the field
+// counts 0.
 void fx_fire_step(fx_fire_t *f, int32_t steps);
 
 // The whole panel, 2h px wide and 2w px high, as palette[heat], in the panel order of lcd.py's TftCanvas.fill at

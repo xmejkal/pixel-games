@@ -71,21 +71,25 @@ void fx_fire_init(fx_fire_t *f, uint8_t *heat, uint8_t *cooling, int32_t w, int3
     f->cooling = cooling;
     f->rng = seed ? seed : 1;
     f->scroll = 0;
+    f->fast_scroll = 0;
     f->decay = 31;
     f->cool = 0;
     f->sway = 0;
     f->spots = 0;
     f->spread = 1;
+    f->fast = 0;
     memset(heat, 0, (size_t)w * (size_t)h);
     make_cooling(f);
     place_spots(f);
 }
 
-void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, int32_t spots, int32_t spread) {
+void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, int32_t spots, int32_t spread,
+                      int32_t fast) {
     f->decay = decay;
     f->cool = cool;
     f->sway = sway;
     f->spread = spread;
+    f->fast = fast;
     if (spots != f->spots) {
         f->spots = spots;
         place_spots(f);
@@ -129,6 +133,7 @@ static inline uint32_t cell(const uint8_t *row, int32_t x, int32_t w) {  // 0 ou
 void fx_fire_step(fx_fire_t *f, int32_t steps) {
     int32_t w = f->w, h = f->h;
     uint32_t decay = (uint32_t)f->decay, cool = (uint32_t)f->cool;
+    uint32_t fast_at = 256 - (uint32_t)f->fast;  // a map cell at least this makes a fast cell, 256 never
     uint8_t *bottom = f->heat + (h - 1) * w;
     for (int32_t s = 0; s < steps; s++) {
         if (f->spots > 0) {
@@ -142,7 +147,9 @@ void fx_fire_step(fx_fire_t *f, int32_t steps) {
             uint8_t *row = f->heat + y * w;
             const uint8_t *below = row + w;
             const uint8_t *below2 = y + 2 < h ? below + w : NULL;
+            const uint8_t *below3 = y + 3 < h ? below2 + w : NULL;
             const uint8_t *cooling = f->cooling + ((y + f->scroll) & (FX_FIRE_MAP - 1)) * FX_FIRE_MAP;
+            const uint8_t *fast = below2 ? f->cooling + ((y + f->fast_scroll) & (FX_FIRE_MAP - 1)) * FX_FIRE_MAP : NULL;
             uint32_t bits = 0;
             for (int32_t x = 0; x < w; x++) {
                 int32_t c = x;  // the column read below, shifted by the sway
@@ -153,8 +160,13 @@ void fx_fire_step(fx_fire_t *f, int32_t steps) {
                     c += (int32_t)((bits >> 1) & 1) + (int32_t)(bits & 1) - 1;
                     bits >>= 2;
                 }
-                uint32_t left = cell(below, c - 1, w), mid = cell(below, c, w), right = cell(below, c + 1, w);
-                uint32_t two = below2 ? cell(below2, c, w) : 0;
+                const uint8_t *near = below, *far = below2;  // a fast cell reads one row further down
+                if (fast && fast[(x + 32) & (FX_FIRE_MAP - 1)] >= fast_at) {
+                    near = below2;
+                    far = below3;
+                }
+                uint32_t left = cell(near, c - 1, w), mid = cell(near, c, w), right = cell(near, c + 1, w);
+                uint32_t two = far ? cell(far, c, w) : 0;
                 uint32_t hot = left > mid ? left : mid;  // the hottest cell read
                 hot = right > hot ? right : hot;
                 hot = two > hot ? two : hot;
@@ -165,16 +177,17 @@ void fx_fire_step(fx_fire_t *f, int32_t steps) {
             }
         }
         f->scroll = (f->scroll + 1) & (FX_FIRE_MAP - 1);
+        f->fast_scroll = (f->fast_scroll + 2) & (FX_FIRE_MAP - 1);
     }
 }
 
 void fx_fire_draw(const fx_fire_t *f, uint16_t *panel, const uint16_t *palette) {
     int32_t w = f->w, h = f->h, pw = 2 * h;
     for (int32_t k = 0; k < w; k++) {  // panel rows 2k and 2k + 1 show field column w - 1 - k, top cell first
-        const uint8_t *cell = f->heat + (w - 1 - k);
+        const uint8_t *col = f->heat + (w - 1 - k);
         uint16_t *out = panel + 2 * k * pw;
-        for (int32_t y = 0; y < h; y++, cell += w) {
-            uint16_t c = palette[*cell];
+        for (int32_t y = 0; y < h; y++, col += w) {
+            uint16_t c = palette[*col];
             out[2 * y] = c;
             out[2 * y + 1] = c;
         }

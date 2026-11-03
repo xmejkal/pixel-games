@@ -32,12 +32,13 @@ except ImportError:  # the Mac, or the image with s3lcd only
 W, H = WIDTH // 2, HEIGHT // 2  # cells of 2 x 2 px: 160 x 120
 RATE = 25  # kernel steps a second, one per 40 ms. Game.step caps dt at 60 ms, so a frame takes at most 2
 STEP_MS = 1000 // RATE
-# The look's feel numbers, a first guess until the lead sets them from frames on the Mac (fx_fire_set_look)
-DECAY = 33  # 32 keeps the heat, 33 adds a little each row and the map brakes it; 34 runs away to white columns
+# The look's feel numbers, set by the lead from frames on the Mac (fx_fire_set_look)
+DECAY = 33  # 32 keeps the heat, 33 adds a little each row, never past the hottest cell read, and the map brakes it
 COOL = 24  # 0 to 255: how much the rising cooling map takes, so the flames break into tongues; 64 keeps them low
 SWAY = 1  # 1: each cell reads the cells below it shifted by -1, 0 or +1 at random, the sideways flicker
 SPOTS = 12  # 0 to 16 hot spots at the base, each walking and now and then jumping. 0 is part 1's random bottom row
 SPREAD = 16  # 1 to 64: a spot's half-width in cells
+FAST = 0  # 0 to 255: how much of the field rises two rows a step, in patches from the cooling map. 0 is none
 SEED = 595
 # The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, the key
 # of the picture mode.
@@ -77,7 +78,7 @@ class Fire(Game):
         if engine is not None:
             print("fire internal largest", engine.largest_free_internal())
             self.field = engine.HeatField(W, H, SEED)
-            self.field.set_look(DECAY, COOL, SWAY, SPOTS, SPREAD)
+            self.field.set_look(DECAY, COOL, SWAY, SPOTS, SPREAD, FAST)
             print("fire field", self.field.where)
         self.begin()
 
