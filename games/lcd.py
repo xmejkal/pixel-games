@@ -11,7 +11,8 @@ With FRAMEBUFFER "double", show() returns once the send starts, so the "send" in
 for a full frame) plus any wait for the last send.
 
 Colours: the games use gfx.c565's values, already in the panel's byte order, so the bus sends the framebuffer as it is
-(swap_color_bytes=False) and no colour is swapped on the way in or out. Painted pictures (pictures.py) go through blit_buffer
+(swap_color_bytes=False) and no colour is swapped on the way in or out. Of the calls the games make, only s3lcd's blend (alpha under 255) swaps
+the bytes in and back out, to mix red, green and blue (s3lcd/src/blend565.h, P603). Painted pictures (pictures.py) go through blit_buffer
 with a clear colour (P562); the old row sprites are drawn as runs of fill_rect. s3lcd's text needs a font module that may not be in the image, so
 text uses the 8x8 font of framebuf, drawn as fill_rect runs (Canvas.big with scale 1).
 

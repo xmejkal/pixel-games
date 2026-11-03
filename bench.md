@@ -344,3 +344,19 @@ The engine image 900f13c4a626027f, unchanged: P599 changes Python only. Each HUD
 - Why those draws got slower is not known. Found: on the branch, the rain's draw per frame repeats with a period of 5 frames, the same as the timed collection (`GC_FRAMES`), for example 13.1, 16.0, 23.0, 22.5, 19.7 ms (probe E13, `run72`). E13 marks label changes, not collections, so the phase against a collection is inferred, and master's draw was not traced, so the period is not yet tied to the slowdown. Ruled out, one run each: the blit (E1 without it is slow, E4 master with an extra blit is fast), the frame pace (E5 with no sleep is slow, E6 master at 50 ms is fast), an allocation per frame in `keep` (E7 without it is slow), and the new attribute and buffer alone (E8 is fast). The strip's redraw every 500 ms is the trigger (E10 without it is fast). Not excluded: where the strip buffers landed (PSRAM or internal RAM). The `heap` line spreads by about 1 KB within a run (97.6 to 98.6 KB before, 107.3 to 108.7 KB after), so the garbage per frame is small, under about 0.5 KB. Proposed card: find why a redraw into the strip slows the draws of the frames after it.
 - Smoke test: all twelve entries start and print fps lines, with no error. After the first interval, the HUD field is 0.7 to 1.4 ms in the ten games and 2.3 in the fire and the rain (their labels change every 500 ms). Road printed 23 and 15.
 - The Mac tests (`tests/test_hud.py`) compare the kept HUD with the drawn one pixel by pixel, at both orientations. Nobody looked at the panel in this run.
+
+## P603 (#804), 2026-11-03: the blend in the panel's byte order
+
+The games keep colours in the panel's byte order (`gfx.c565`, `swap_color_bytes=False`). s3lcd's `alpha_blend_565` cut red, green and blue as if the colours were in normal order, so a blend mixed bits across channels: the fire over the sky showed wrong colours. The blend now lives in `s3lcd/src/blend565.h`. It swaps the bytes of both colours in, blends, and swaps the result back. `tests/test_blend.py` checks it on the Mac against a Python reference. With the old body put back, 3 of its 4 tests fail (refuter).
+
+The fire in picture mode alone (the fire blitted at alpha 128 over the sky), about 40 s each, started by a small script that sets the mode, because a BOOT tap needs a hand. Before: image 900f13c4a626027f, `run73-p603-before-picture.log`. After: the engine image sha256 46d79a3385701c35 (218,208 B left in the app partition), built from bbf7121, `run74-p603-after-picture.log`. The later commits on the branch add parentheses to the swap macro and a comment, with the same compiled code for today's callers. Both runs have the P599 HUD. Each row holds the 7 intervals of 5 s.
+
+| run | fps | paint (`avg`) | paint (`time`) | worst frame |
+| --- | --- | --- | --- | --- |
+| before | 18 (20 in the first) | 23.3 to 23.9 ms | 32.8 to 36.1 ms | 80 to 94 ms |
+| after | 18 to 19 | 22.3 to 25.2 ms | 33.6 to 36.2 ms | 81 to 132 ms |
+
+- The swap costs less than the spread between intervals: the paint did not move by more than about 1 ms either way.
+- Three worst frames of the after run were longer (106, 108 and 132 ms). The cause was not looked for. One run each, so this can be noise.
+- Smoke (`run75-p603-smoke.log`): all twelve entries start and report fps (22 to 25), with no error.
+- Not changed: the indexed `bitmap` path, the PNG loader and the font draws in s3lcd.c build or pass colours in normal order. No game calls them. `bitmap` carries a "Later, not MVP" comment.
