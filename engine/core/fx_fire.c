@@ -197,6 +197,8 @@ void fx_fire_step(fx_fire_t *f, int32_t steps, int32_t wind) {
             const uint8_t *cooling = f->cooling + ((y + f->scroll) & (FX_FIRE_MAP_H - 1)) * FX_FIRE_MAP_W;
             const uint8_t *fast = below2 ? f->cooling + ((y + f->fast_scroll) & (FX_FIRE_MAP_H - 1)) * FX_FIRE_MAP_W
                                          : NULL;
+            uint32_t up = (uint32_t)(h - 1 - y);  // rows above the bottom
+            uint32_t faded = (((up + 1) * fade) >> 4) - ((up * fade) >> 4);  // fade / 16 a row, in whole units
             int32_t shift = gust && (xorshift32(&f->rng) & 255) < gust ? against : 0;
             uint32_t bits = 0;
             for (int32_t x = 0; x < w; x++) {
@@ -220,7 +222,7 @@ void fx_fire_step(fx_fire_t *f, int32_t steps, int32_t wind) {
                 hot = two > hot ? two : hot;
                 uint32_t sum = ((left + mid + right + two) * decay) >> 7;
                 sum = sum > hot ? hot : sum;  // never hotter than its source, so no decay runs away
-                uint32_t loss = ((cooling[x & (FX_FIRE_MAP_W - 1)] * cool) >> 8) + fade;
+                uint32_t loss = ((cooling[x & (FX_FIRE_MAP_W - 1)] * cool) >> 8) + faded;
                 row[x] = (uint8_t)(sum > loss ? sum - loss : 0);
             }
         }

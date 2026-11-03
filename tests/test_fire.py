@@ -189,7 +189,7 @@ class FireTest(unittest.TestCase):
     def test_the_look_stays_low_at_the_top_for_any_seed(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
         stays under 48, with the wind +WIND for 100 steps, then -WIND. Part 2's look without the bound reached white at
-        the top with seed 7, and without FADE seed 4 reached 55.1."""
+        the top with seed 7, and seed 4 reached 55.1 at fade 0 and 47.1 at fade 2."""
         for seed in (1, 2, 3, 4, 5, 7, 595):
             with self.subTest(seed=seed):
                 field = fire.engine.HeatField(fire.W, fire.H, seed)

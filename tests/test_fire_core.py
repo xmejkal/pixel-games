@@ -22,7 +22,7 @@ SEED, STEPS = 595, 50
 SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps the run short
 MAP_W, MAP_H, MAX_SPOTS, MAX_EMBERS = 256, 32, 16, 24  # FX_FIRE_MAP_W, FX_FIRE_MAP_H, FX_FIRE_MAX_SPOTS and EMBERS
 PART1 = (31, 0, 0, 0, 1, 0, 0, 0)  # the look at init: decay, cool, sway, spots, spread, fast, embers, fade
-ALL_ON = (33, 90, 1, 5, 4, 120, 200, 3)  # decay 33 lifts sums past the hottest cell read, so the bound is reached too
+ALL_ON = (33, 90, 1, 5, 4, 120, 200, 21)  # decay 33 lifts sums past the hottest cell read, so the bound is reached too
 PART2_AT_31 = (31, 24, 1, 12, 16, 0, 0, 0)  # part 2's look at decay 31, where the bound does nothing
 
 
@@ -123,7 +123,9 @@ class Reference:
                     if fast and y + 2 < h:
                         d = 2
                     read = (at(c - 1, y + d), at(c, y + d), at(c + 1, y + d), at(c, y + d + 1))
-                    loss = (self.cooling[(y + self.scroll) % MAP_H * MAP_W + x % MAP_W] * self.cool >> 8) + self.fade
+                    up = h - 1 - y  # the fade: fade sixteenths of a unit a row
+                    loss = self.cooling[(y + self.scroll) % MAP_H * MAP_W + x % MAP_W] * self.cool >> 8
+                    loss += ((up + 1) * self.fade >> 4) - (up * self.fade >> 4)
                     top = max(read) if self.bound else 255
                     heat[y * w + x] = max(0, min(top, sum(read) * self.decay >> 7) - loss)
             self.embers_step(wind)
