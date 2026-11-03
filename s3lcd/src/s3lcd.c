@@ -1094,6 +1094,8 @@ static mp_obj_t s3lcd_bitmap_from_module(size_t n_args, const mp_obj_t *args) {
         for (int xx = 0; xx < width; xx++) {
             int color_idx = get_color(bpp);
             uint16_t color = mp_obj_get_int(palette[color_idx]);
+            // Later, not MVP (P603): the palette holds normal order and the frame panel order, so a blend here
+            // mixes the two orders. No game calls bitmap().
             if (alpha != 255) {
                 color = alpha_blend_565(color, *b, alpha);
             }

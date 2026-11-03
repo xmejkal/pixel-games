@@ -12,7 +12,7 @@
 
 #include <stdint.h>
 
-#define _swap_bytes(val) (((val >> 8) | (val << 8)) & 0xFFFF)
+#define _swap_bytes(val) ((((val) >> 8) | ((val) << 8)) & 0xFFFF)
 
 static inline uint16_t alpha_blend_565(uint16_t fg, uint16_t bg, uint8_t alpha) {
     if (alpha == 0) {
