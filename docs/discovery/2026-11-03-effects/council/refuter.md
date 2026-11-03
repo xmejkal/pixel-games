@@ -199,3 +199,67 @@ items.md: covered in "Check first".
 ## Searches
 
 None. I used no web search. Pages fetched without a search: code.tutsplus.com (make-a-splash), virtualdub.org/blog2/entry_117.html, lodev.org/cgtutor/plasma.html. `gh api` reads: johnBuffer/VerletSFML-Multithread (physics.hpp, collision_grid.hpp, licence), espressif/esp-dsp (tree, dsps_add_s8_aes3.S, licence), MaxBittker/sandspiel (species.rs at 9936e06b, licence), adafruit/Adafruit_PixelDust (header, licence), FastLED/FastLED, pimoroni/pimoroni-pico, erincatto/box2d-lite, wled/WLED, BitsForPeople/esp-bits-and-pieces (licences). `gh issue view` on xmejkal/spark #784, #788, #793, #794, #795. Local: bench.md, run54 and run55 logs, engine/, s3lcd/src/, games/, p580-finding.md, the engine brief, p588-feel-notes.md, ~/esp/micropython-v1.29.0 (usermod.cmake, makeqstrdefs.py), ~/esp/esp-idf-v5.5.2 (project.cmake).
+
+# Second pass (2026-11-03)
+
+Fable 5.1, read-only on the tree except this file. Reviewed: the sections the fix commit 694fa72 changed (`git diff 669959b 694fa72`), against the logs, bench.md, the code and the council reports. Note: while this pass ran, e8ed823 landed on the branch ("D2, the riskiest is A1"). The sections below are read as 694fa72 wrote them; where D2 changes a verdict, it says so. Every number re-derived in a script in my scratchpad from run55-p593-rain-c160.log, run54-p593-rain-c.log, bench.md:186, :198, :205, games/app.py:27, :101 and games/lcd.py:142. Tags as before.
+
+## 2. The changed sections against their detail
+
+First-pass verdicts applied, checked line by line: the 55.3 delta (★C3, ★C6, ★C15, Q4, Q9, Budgets), the run55 split and the `covers` lever (★C4, A4, Q10, F6), the two bodies-on-fire models and the "at the limit" caveat (★C11), the 50 % and the H on the line count and the pile rival (★C12, c1, A7), the clamp (★C13), the two particle-liquid models (★C14, a2), the per-pixel checks inside the 6 times (★C15, A3), virtualdub (★C16), TL-5's CMake doubt (★C17), the scene-first rival (★C21, journey step 2), USER-9's sentence (★C24), line 46's measured parts, a1's criterion, a2's nine listed, A's D17 tension and 38,400 B, B's frame.h, d1's PO-23, e1's H, g3's PO-26 in full, h1's opinion cell, the no-go's missing `stop` caller, the Outcome's team metric and Q13, the Scope's Q5 condition, the Already-decided's missing quote, Q1's example, Q12 second, the test's attribution, P599 outside the scope, P595's Mac test moved to done, P598's bar as the team's, Q14 and P596. **Applied.** Not applied: items.md's intro still sizes cards in "sessions" with no length (first pass, part 4). The verification lines for ★C3, ★C4 and ★C24 say "the lead reproduced it": the author of the rewrite is its reproducer. ★C4's correction of my 18.7 ms (I counted the unlogged 3.5 ms as free) is right, and I accept it.
+
+The numbers, re-derived:
+
+| number | re-derived from the logs | verdict |
+| --- | --- | --- |
+| step plus draw at N 160: 15.3 to 15.9 ms, prints 24 (★C4, A4) | `time` step plus `avg` paint per interval: 15.9, 15.5, 15.6, 15.6, 15.3 | holds, by that formula |
+| at N 192: 18.2 to 18.9 ms, prints 23 | 18.2, 18.8, 18.9, 18.7, 18.8 | holds |
+| the formula as written, "the `time` step plus the `avg` paint minus static, fx and hud" (★C4, A2, the Test, P595) | `avg` paint IS the paint phase (app.py:109, gfx.PHASE_SUM[1]); subtracting static, fx and hud from it gives a negative number. The subtraction belongs to `time` paint. `time` step plus `time` paint minus static, fx, hud: 16.0, 15.7, 15.8, 15.8, 15.5 at N 160 and 18.3 to 19.0 at N 192 | **the formula text is wrong, and its two readings differ by 0.1 to 0.2 ms.** Read literally, the rain misses A2's 15.3 ms line in every interval. The line that P595 is judged by must name one formula |
+| rest 20.2 to 20.5 ms (★C4) | static + fx + hud + send + gc: 20.5, 20.4, 20.2, 20.2, 20.5 | holds |
+| logged work 36.0 to 36.5, frame 40.0 to 41.7, unlogged 3.5 to 5.7 (★C4) | 36.5, 36.1, 36.0, 36.0, 36.0; 1000/24.99 to 1000/24; 3.5 to 5.7 | holds |
+| rest at N 192 19.3 to 20.3 | 19.3, 20.2, 20.3, 20.3, 20.2 (HUD 9.7 in the first interval) | holds |
+| room 15.3 to 18.2 ms (★C4, A2, A4, Budgets) | the lowest value that printed 24 is 15.3 and the highest 15.9; the lowest that printed 23 is 18.2 | **holds as a bracket, but the threshold lies between 15.9 and 18.2, not between 15.3 and 18.2.** 15.3 is the lowest passing point, a conservative floor; the brief should say so. A4's "none at 18.9 ms or more prints 24" is loose: 18.2 already printed 23 |
+| `covers` 19.9 to 22.9 · cached HUD 25.5 to 28.7 · both 30 to 33 (★C4, Q10, Budgets) | 15.3 + 4.6 = 19.9, 18.2 + 4.7 = 22.9; 15.3 + 10.6 − 0.4 = 25.5, 18.2 + 10.9 − 0.4 = 28.7; 30.1 to 33.4 | hold; "33" rounds 33.4 down. The HUD lever uses N 160's HUD; at N 192 it was 9.7 to 10.7 |
+| 85 µs a fill, 180 to 210 fills, about 300 cached (★C2) | 84.2 to 87.6 µs; 15.3 / 0.085 = 180, 18.2 / 0.085 = 214; 25.5 / 0.085 = 300, 28.7 / 0.085 = 338 | hold ("210" is 214, "300" is 300 to 338) |
+| 2,560 px at 0.14 to 0.23 ms (★C2) | 2,560 × 55.3 = 0.142, × 88.9 = 0.228 | holds |
+| 55.3, 88.9, 337.5 ns/px (★C3) | (6.83 − 2.58) / 76,800 = 55.34; 6.83 / 76,800 = 88.93; 1,382.49 µs / 4,096 = 337.52 | hold |
+| A 11.1 to 13.7, B 4.25 to 6.83, blend 25.9 ms (★C6, ★C15, Q4, Q9) | 76,800 × (55.3 + 88.9) = 11.07, × 2 × 88.9 = 13.66; × 55.3 = 4.25, × 88.9 = 6.83; × 337.5 = 25.92 | hold |
+| "under about 37 ms of logged work prints 24" (Riskiest, A2) | 41.67 − 5.7 = 36.0 to 41.67 − 3.5 = 38.2 | holds as "about" |
+
+**The cost of a C store loop into the PSRAM frame is measured, in the same log.** Line 46 says "Not measured: the cost of a C loop that writes computed pixels into the PSRAM frame", and ★C3, ★C6, ★C15, Q4, Q9, A3, the collection plan and Budgets carry "55.3 to 88.9 ns/px, unmeasured". But `avg rain static 4.6` to `4.7` (ten intervals, both runs) times `tft.fill(game.bg)` (lcd.py:142), which is s3lcd's `_fill` (s3lcd.c:244-252): a plain C loop, `for (i < width * height) *b++ = color`, over 76,800 px of the PSRAM frame, with tracking off (`tft.track(self.fresh)`, fresh only on the first frame) and an empty `paint_static` (gfx.py:340). That is 4.6 to 4.7 ms / 76,800 = 59.9 to 61.2 ns/px (E, calculated). It is a constant store, not a computed one, but it is the same store path a kernel uses, in panel order, with the same cache write-back. So the range's low end is measured at about 60, the high end 88.9 (a memcpy that also reads PSRAM) overstates a store-only loop, and path B's "4.25 to 6.83 ms" for a full screen is about 4.6 ms plus the kernel's cycles. The brief's "unmeasured" is stronger than its own log. The caveat to keep: a kernel's writes are interleaved with reads of its field, so the 60 is the store floor, not the kernel's cost.
+
+Claims stronger than their source, and caveats dropped:
+- Feasibility row, "E: the room is bracketed by run55 and run54 (A4, ★C4)": E for the rain. The room "for an effect's step plus draw" transfers as H: an effect scene has no 1.1 ms `read` inside its `time` step, a HUD of another length, and on B one store where the rain has 160 Python fills. The rest of its frame is not the rain's.
+- A3's pass line, "the blended fire's step plus draw is at most 15.3 ms": by the folder's own ★C15 a full-screen blend through `blit_buffer` costs 25.9 ms before the kernel, so the line is expected to miss, as A2's was expected to pass. And the Test does not name the blend path (the alpha path at 337.5 ns/px, or a kernel's own blend at 1.5 to 3 times opaque, the refuter's H), so the result measures the path, the defect the first pass named for A2.
+- A4's pass line cannot be exercised by P595: the fire at 7.3 to 9.9 ms (H) produces no interval near 15.3 or 18.9 ms, so "every interval at most 15.3 prints 24 or 25" is passed by any scene under about 37 ms of work, and the second clause never runs. A4 is tested only by a scene that is deliberately loaded to the line.
+- A2 "expected to pass: about 7.3 to 9.9 ms against 15.3 to 18.2": on path A the writes alone are 11.1 to 13.7 (★C6), so the sentence holds on B only. The Riskiest line says this; A2's row does not.
+- K1 "carries P583's fire and smoke, named in its done-when (H PO-19, from #784)": if read from #784's Done when it is E, if it is PO-19's reading it is H. One tag.
+- Collection plan row 3, "when: after Q1 to Q6", while P595 depends on Q9 too (items.md). The Decision-needed order (Q12, then Q2 to Q11, Q13, Q14) and the plan's "Q13, Q14 after Q12" differ.
+- F6 says "4.6 to 4.7 ms a frame" and not what that is per pixel, the number the folder calls unmeasured elsewhere.
+
+## 3. The strongest rival each changed interpretation does not rule out
+
+- **A1 as the riskiest, and its pass line.** It can miss, so the first-pass finding is met in form. Three rivals. (1) A miss changes nothing: "the palette or the size changes before the next scene" is D21's normal course for every feel slice. Pass or miss, the ten, the kernels, the home and the order stay as planned. A riskiest-assumption test should be able to change a decision; this one adjusts a palette. The assumptions whose failure reshapes the plan are A8 (one home, pre-mortem cause 6) and Q2's list, both decisions, which the brief says and then sets aside. (2) A miss is near-certain and says little about "cool": his 17 RENT feel notes (p588-feel-notes.md) show he asks for changes to anything he plays, so "a change asked" measures his habit, not A1. A size change asked may be about composition or the HUD, not the look; a "flat" may be A5 (one effect, three colours) and not A1. The miss is not attributable to A1 alone. (3) Fire is the most forgiving of the ten (a familiar fire2012 look, PO-10); a pass on fire does not transfer to smoke banding in 32 levels (PO-27) or to circles. D2 has now chosen A1; the pass line is still proposed, and these three apply to the line, not the choice.
+- **The room as a wall.** The bracket marks where the printed fps drops from 24 to 23 (a 4 % change). A scene at 25 ms step plus draw prints about 20. Whether he sees 20 against 24 is Q13, unasked. Until he answers, the room is the team's criterion in measured clothing.
+- **"Unmeasured" write cost.** Rival: the fill measures it at about 60 ns/px for a store loop (part 2). The range's top end is a memcpy that reads PSRAM, which a kernel on B never does.
+- **Q10, "which lever first".** Rival: `covers` is not a lever to choose but an attribute a full-screen opaque scene sets (one line, lcd.py:142), and nothing competes with it. The only real choice in Q10 is whether P599 is filed and when. Asking him to pick between `covers` and P599 spends a question on a non-choice.
+- **The 15.3 floor.** Rival: the rain's draw and read are inside the bracket's step plus draw, so a B kernel with one store and no `read` has a different, likely larger, room than 15.3 to 18.2. The number may be low for B and about right for A.
+- **★C2's "180 to 210 fills".** Rival: the fill count is the rain's shape; an effect in C draws no Python fills, so the number says only what Python could not do. Fine as a motivation, not as a budget.
+
+## 4. Numbers without a unit, population, period or provenance
+
+- brief.md Riskiest and A1: "2.0 in" panel. Provenance README.md:3 via PO-27, cited nowhere in the brief or the row.
+- A7: "the board step is at most 5 ms". No source: between the 3.4 (H) estimate and the 3 to 10 rival, the team's bar, unlabelled as such in the pass-line cell (the row says so only of the Mac bar).
+- A4: "18.9 ms or more". The data's first failing point is 18.2.
+- ★C4, Q10, Budgets: "about 30 to 33 ms": 30.1 to 33.4.
+- Riskiest, A2: "under about 37 ms": 36.0 to 38.2 by the logs.
+- F6: 4.6 to 4.7 ms, population ten intervals in two runs, no per-pixel figure (60 ns/px).
+- Q14: "about 0.11 ms a body" is FX-16 b (effects-research.md:77, "H calc"), no pointer in the Q.
+- A2 and the Test: "the `time` step plus the `avg` paint minus static, fx and hud" names two lines and a subtraction that does not apply to one of them (part 2).
+- items.md intro: XS, S, M in "working sessions", length undefined (first pass, not applied).
+- A1's belief "at 24 fps": the printed integer floor, the team's rate; his words carry no rate (★C24).
+- Feasibility row: the "E" on the room is E for the rain's frame, H for an effect's (part 2).
+
+## Searches
+
+None. No web search and no fetch. Local reads only: the two logs, bench.md, games/app.py, games/lcd.py, games/gfx.py, s3lcd/src/s3lcd.c, the folder's files at 694fa72 and e8ed823, council/effects-research.md:77.
