@@ -6,11 +6,11 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 
 Nothing is filed. P588 was the next free number in xmejkal/spark (the newest issue was P587 #788, read with `gh issue list --repo xmejkal/spark --state all` on 2026-11-03). The list holds the two spikes that test the riskiest assumptions, the walking skeleton, a solver spike and the next slice. Later slices stay in story-map.md until the PO orders them. Sizes are the synthesis's estimate (H), in working sessions of the AI team: XS is under one session, S is one session, M is more than one. No size was measured.
 
-## P588: nobody knows if the PO's material rules fit a C step that only reports facts → a desk table of his rules from #783, each sorted as "C mechanism", "C fact reported to Python" or "Python reaction or number" under a draft API fixed to four facts, read and marked by him
-- type: spike (tests A1 as restated after the refuter, the proposed riskiest, pending Q1). It serves every option, because A, B and C all step in C <!-- REQUIRED:item-type -->
+## P588: nobody knows if the PO's feel notes on RENT need new C once the engine exists → a desk table of all his dated feel notes, each sorted as "Python number or reaction" or "new C mechanism", read and marked by him
+- type: spike (tests A1, the riskiest, D6, with the test and pass line of D7). It serves every option, because A, B and C all step in C <!-- REQUIRED:item-type -->
 - needed by: "be able to react both ways" (the PO, 2026-11-03, #787), and D3's "the games really can interact with it easily and clearly and readably" (the PO, 2026-11-03) <!-- REQUIRED:needed-by -->
-- value proven by: a table in the discovery folder with one row per rule in his two decision comments on #783 (2026-11-03, 08:35 and 08:36 Prague time), each with its sort and his mark, read against A1's pass line (no number in his rules has to live in C, no rule needs a fifth fact, and he disagrees with at most 1 sort, proposed 2026-11-03). The four past feel changes are not the population, because three were AI slices built without his words (★C20) <!-- REQUIRED:value-proven-by -->
-- depends on: Q1 (the PO picks the riskiest and sets its pass line), and his time to mark the table. Size XS, desk only, no board <!-- REQUIRED:depends-on -->
+- value proven by: a table in the discovery folder with one row per dated feel note of his on RENT (#774, #783, bench.md), the count fixed before the sort, each with its sort and his mark, read against D7's pass line (at most 1 in 4 notes needs a new C mechanism, and he disagrees with at most 1 sort). It presupposes Q3's draft fact list: a note that needs a missing fact counts as new C <!-- REQUIRED:value-proven-by -->
+- depends on: D7 (done), and his time to mark the table. Size XS, desk only, no board <!-- REQUIRED:depends-on -->
 - status: proposed <!-- REQUIRED:item-status -->
 - label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P586 #787 <!-- REQUIRED:spark-process:parent -->
@@ -20,7 +20,7 @@ Nothing is filed. P588 was the next free number in xmejkal/spark (the newest iss
 - type: spike (tests A2, A3, A8). It serves every option, because A, B and C all step in C
 - needed by: "the core of the engine and the various parts of it to be in C and higly optimised" (the PO, 2026-11-03, D3)
 - value proven by: a bench.md table with the five numbers, each measured on the board in one session, replacing "—" in risks-and-tests.md Budgets. The baseline (today's `@native` `fall_bodies` per body) gives A2's "against today's `Bodies.step`" its number
-- depends on: Q1. The board on USB. It puts new probe C into the image before Q8 (where the engine's C lives) is answered, so the probe C is throwaway. Size S, one session
+- depends on: D5 and D6 (done). The board on USB. It puts new probe C into the image before Q8 (where the engine's C lives) is answered, so the probe C is throwaway. Size S, one session
 - status: proposed
 - label (the repository's type label): spike
 - parent (the epic, as a sub-issue): P586 #787
