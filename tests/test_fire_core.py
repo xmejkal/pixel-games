@@ -226,7 +226,8 @@ class FireCoreTest(unittest.TestCase):
     def test_the_step_matches_the_reference(self):
         for w, h, look, wind in ((SMALL_W, SMALL_H, ALL_ON, 0), (SMALL_W, SMALL_H, PART1, 0),
                                  (3, 4, (31, 0, 1, 0, 1, 0, 0), 0), (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 0), 0),
-                                 (3, 4, (40, 60, 1, 2, 2, 255, 255), 0), (1, 4, ALL_ON, 0), (1, 4, (31, 0, 0, 0, 1, 255, 0), 0),
+                                 (3, 4, (40, 60, 1, 2, 2, 255, 255), 0), (1, 4, ALL_ON, 0),
+                                 (1, 4, (31, 0, 0, 0, 1, 255, 0), 0),
                                  (SMALL_W, SMALL_H, ALL_ON, 200), (SMALL_W, SMALL_H, ALL_ON, -200), (3, 4, PART1, 255),
                                  (SMALL_W, SMALL_H, (31, 0, 1, 0, 1, 0, 255), 100), (2, 3, ALL_ON, 0),
                                  (1, 4, ALL_ON, -255)):

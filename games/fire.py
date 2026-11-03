@@ -1,7 +1,8 @@
 """
 The fire (P595): the first native effect. A heat field in C (engine/core/fx_fire.c, through engine.HeatField) rises
 and cools, drawn as 2 x 2 px cells over the whole screen. Its look (part 2): hot spots that wander at the base, a
-cooling map that rises with the flames and cuts them into tongues, and a sideways sway. The fire assumes ORIENTATION 0
+cooling map that rises with the flames and cuts them into tongues, and a sideways sway. Part 3 adds patches that rise
+two rows a step, gusts of wind and embers. The fire assumes ORIENTATION 0
 (lcd.py), as the pictures do. A BOOT tap moves to the next mode:
     B        C writes the s3lcd frame itself
     picture  C fills a buffer, and Python blits it at alpha 128 over the painted sky, its black skipped
@@ -17,6 +18,7 @@ A tap prints `fire mode <mode>` and starts a new interval, so each line holds on
 --- MVP (P595) ---
 """
 
+import random
 import time
 from array import array
 
@@ -41,6 +43,7 @@ SPREAD = 16  # 1 to 64: a spot's half-width in cells
 FAST = 128  # 0 to 255: how much of the field rises two rows a step, in patches from the cooling map. 0 is none
 EMBERS = 40  # 0 to 255: an ember starts in EMBERS of 256 kernel steps and rises faster than any flame
 WIND = 60  # 0 to 255: the strongest gust, a row shifts one column with the wind in WIND of 256 steps
+GUST_MS = 1500  # a new gust, -WIND to WIND, every GUST_MS to 2 * GUST_MS; the wind eases an eighth of the way a frame
 SEED = 595
 # The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, the key
 # of the picture mode.
@@ -72,7 +75,7 @@ class Fire(Game):
         self.mode = B
         self.covers = engine is not None  # every mode paints every pixel: the fire in B, the sky in picture
         self.buf = bytearray(PANEL_W * PANEL_H * 2)  # the picture mode's buffer, made once (gc heap, PSRAM)
-        self.wind = 0
+        self.wind, self.target, self.gust = 0, 0, 0  # the gust model: the wind now, where it goes, ms to the next
         super().__init__()
 
     def setup(self):
@@ -97,7 +100,13 @@ class Fire(Game):
             print("fire mode", MODES[self.mode])
             self.begin()
             return
-        self.acc += int(self.dt * 1000 + 0.5)  # whole 40 ms steps; the rest waits for the next frame
+        ms = int(self.dt * 1000 + 0.5)
+        self.gust -= ms
+        if self.gust <= 0:
+            self.target = random.randrange(-WIND, WIND + 1)
+            self.gust = GUST_MS + random.randrange(GUST_MS)
+        self.wind += (self.target - self.wind) // 8
+        self.acc += ms  # whole 40 ms steps; the rest waits for the next frame
         steps = self.acc // STEP_MS
         self.acc -= steps * STEP_MS
         if self.field is not None and steps:

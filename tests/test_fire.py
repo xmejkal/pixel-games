@@ -173,6 +173,18 @@ class FireTest(unittest.TestCase):
         ], seen)
         self.assertIn("fire mode picture\nfire mode B\n", out.getvalue())
 
+    def test_the_wind_stays_within_wind(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = fire.Fire()
+            winds, now = [], 0
+            for _ in range(1000):
+                _, now = play(game, 1, now, Tft())
+                winds.append(game.wind)
+        self.assertLessEqual(-fire.WIND, min(winds))
+        self.assertLessEqual(max(winds), fire.WIND)
+        self.assertLess(min(winds), 0)  # the gusts blow both ways
+        self.assertGreater(max(winds), 0)
+
     @unittest.expectedFailure  # the lead changes the look: on the 256 x 32 map seed 4 still reaches 63.1
     def test_the_look_stays_low_at_the_top_for_any_seed(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
