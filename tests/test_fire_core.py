@@ -3,6 +3,7 @@ draw: clang builds it into a temporary folder and ctypes calls it. The panel cor
 the repository root: python3 -m unittest discover tests. --- MVP (P595) ---"""
 
 import ctypes
+import hashlib
 import os
 import shutil
 import subprocess
@@ -23,6 +24,10 @@ SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps 
 MAP, MAX_SPOTS = 64, 16  # FX_FIRE_MAP and FX_FIRE_MAX_SPOTS
 PART1 = (31, 0, 0, 0, 1)  # the look at init: decay, cool, sway, spots, spread
 ALL_ON = (33, 90, 1, 5, 4)  # decay 33 lifts sums past 255, so the clamp is reached too
+# Part 2's look at decay 31 (the bound does nothing there): the small field's sha256 after STEPS steps with commit
+# c4e232f's kernel, recorded from that commit's fx_fire.c before part 3 changed it
+GOLDEN_LOOK = (31, 24, 1, 12, 16)
+GOLDEN = "e68a78bfe9ed3a12129f40964e4779a13813d6e79c6788022da14b0b79d32677"
 
 
 class Field(ctypes.Structure):
@@ -201,6 +206,11 @@ class FireCoreTest(unittest.TestCase):
                 if look == ALL_ON and w == SMALL_W:
                     self.assertIn(0, ref.heat[:-w])  # the map cut the flames
                     self.assertNotEqual(ref.heat[-w:], [0] * w)  # the spots heat the base
+
+    def test_part_2s_look_at_decay_31_is_part_2s_field(self):
+        f, heat = self.field(SMALL_W, SMALL_H, look=GOLDEN_LOOK)
+        self.lib.fx_fire_step(ctypes.byref(f), STEPS)
+        self.assertEqual(GOLDEN, hashlib.sha256(bytes(heat)).hexdigest())
 
     def test_part_1s_look_is_part_1s_step(self):
         for decay in (31, 40):  # 40 lifts the sum past 255, so the clamp is reached too
