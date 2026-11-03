@@ -31,7 +31,7 @@ is unrated. check computes both. -->
 - Extensions (each active id · the fact that activated it; when none matched, only "none matched: core only · the fact that decided it", naming no extension; list any directive skipped under rule 9): electronics-firmware · ⟨fill: the request words that activated it⟩; spark-process · electronics-firmware · "doable in C", "special assembler methods", "ESP-IDF" (firmware on the ESP32-S3 and its PIE unit); spark-process · "the cards, the councils", the item is on spark's board (project 2) <!-- REQUIRED:extensions -->
 - The item (its issue, or the proposal in the decider's words) · what is still open elsewhere · the repository's push check, or "no push check here": [P594 #795](https://github.com/xmejkal/spark/issues/795), in Discovery on spark project 2, under the engine epic P586 #787, slice pixel-games · still open elsewhere: P469 #637 and P511 #706 in Build, Ready holds 6 of 5 (#783 waits on P592), the engine discovery P586 is Ready for an experiment (P589 done, P590 #791 next) · pixel-games has no push check: the folder lands by PR <!-- REQUIRED:spark-process:item -->
 <!-- EXTEND:frame -->
-- Depth: TRIO (default: PO assistant, user, tech lead) | FULL or LIGHT (who asked, when); add "no independent review" if subagents could not start: proposed until Q0: TRIO plus one researcher for the gaps: the PO assistant (Opus), the user (Sonnet), the tech lead with the C and PIE lens (Opus), an effects researcher for colliding and burning bodies, water, esp-dsp and licences (Opus); the refuter on Fable 5.1; 5 agents <!-- REQUIRED:depth -->
+- Depth: TRIO (default: PO assistant, user, tech lead) | FULL or LIGHT (who asked, when); add "no independent review" if subagents could not start: TRIO plus one researcher (D1) for the gaps: the PO assistant (Opus), the user (Sonnet), the tech lead with the C and PIE lens (Opus), an effects researcher for colliding and burning bodies, water, esp-dsp and licences (Opus); the refuter on Fable 5.1; 5 agents <!-- REQUIRED:depth -->
   <!-- Cost, measured once: the P900 rehearsal's council took 6 agents, 499 calls and about 90M input tokens (2026-10-06). -->
 - Search budget: web searches: PO assistant 6, tech lead 8, effects researcher 14, user 0, refuter 6 <!-- REQUIRED:budget -->
 - Appetite (the decider's, asked only when heading for design) | —: — <!-- REQUIRED:appetite -->
@@ -67,6 +67,7 @@ If the decider cannot be asked, the queue stays here, and whatever rests on it s
 <!-- D<n> · what · who · when · where recorded · options considered.
 A yes covers only the actions and choices it names. A standing yes names its kind of action and its source.
 Name what a D confirms in its words: the frame, the jobs, a direction, the remaining risk, a test, items.md. -->
+- D1 · the frame confirmed (Q0 yes): scope, start and reach, extensions, the 5-agent council (PO assistant Opus, user Sonnet, tech lead Opus, effects researcher Opus, refuter Fable 5.1) · the PO · 2026-11-03 · this session, AskUserQuestion Q0 · options: as written, TRIO only, change the scope
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
