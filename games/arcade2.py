@@ -4,16 +4,109 @@ import random
 
 import pictures
 
+from fast import native
 from gfx import ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
+from motion import Bodies, Spring
 
 W, H = WIDTH, HEIGHT
 
 
+@native
+def pile_under(pile, i):
+    """The pile rule (P582): the floor that floor i of the pile rests on, or -1 for the street. It is the highest of
+    the floors that stood under it in the tower, were released (a standing floor holds nothing up: it is still to
+    fall) and overlap it by pile.overlap px or more. A floor's top is its rest_y less a floor's height: where it
+    rests, or where a falling one will stop, so floors falling together land on each other. The tower's order is
+    kept, so two floors never rest on each other and the street floor always reaches the street. It reads the pile
+    and changes nothing."""
+    b, w, h, overlap = pile.bodies, pile.w, pile.h, pile.overlap
+    x, rest_y, live, released = b.x, b.rest_y, b.live, pile.released
+    left, right = x[i], x[i] + w[i]
+    plane, under = pile.street, -1
+    for j in range(i):
+        if live[j] and released[j] and rest_y[j] - h < plane and min(right, x[j] + w[j]) - max(left, x[j]) >= overlap:
+            plane, under = rest_y[j] - h, j
+    return under
+
+
+class Pile:
+    """The falling tower (P582): its floors as bodies, standing (asleep) where they were drawn until release() lets
+    one go with a push. step() moves them and keeps the pile rule each frame: a falling floor aims at the top of
+    what is under it now (pile_under), and a resting floor wakes when the floor it rests on moves or slides from
+    under it. A floor that is never released (the basement) only stands."""
+
+    def __init__(self, n, h, street, overlap=8):
+        self.bodies, self.h, self.street, self.overlap = Bodies(n), h, street, overlap
+        self.w, self.art, self.slide = [0] * n, [0] * n, [0.0] * n
+        self.under, self.released = [-1] * n, [0] * n
+        self.count = 0
+
+    def add(self, x, y, w, art):
+        """One more floor, standing at (x, y): asleep on its own plane until it is released."""
+        j, b = self.count, self.bodies
+        b.spawn(j, x, y, 0, 0, y)
+        b.asleep[j] = 1
+        self.w[j], self.art[j], self.slide[j], self.under[j], self.released[j] = w, art, 0.0, -1, 0
+        self.count += 1
+
+    def release(self, j, vx):
+        self.released[j] = 1
+        self.wake(j, vx)
+
+    def wake(self, j, vx):
+        b = self.bodies
+        b.asleep[j], b.vx[j], b.vy[j] = 0, float(vx), 0.0
+        self.settle(j)
+
+    def settle(self, j):
+        """Floor j's plane from the pile rule; one already past it is set on it. Answers whether the plane moved."""
+        b = self.bodies
+        u = self.under[j] = pile_under(self, j)
+        plane = b.rest_y[u] - self.h if u >= 0 else self.street
+        if plane == b.rest_y[j]:
+            return False
+        b.rest_y[j] = plane
+        if b.y[j] > plane:  # a floor of the tower landed under it: up onto that one
+            b.y[j] = plane
+        return True
+
+    def step(self, dt, gravity, restitution, friction, drag):
+        """Fall, bounce and slide for dt s; a slide loses drag times itself per second and stops under 8 px/s. The
+        pile rule runs once a frame for every released floor, bottom up, so a floor sees the plane of the one under it
+        as it is this frame; a resting floor whose plane moves wakes, and one that slides on keeps its slide."""
+        b = self.bodies
+        b.step(dt, gravity, restitution, friction)
+        x, w, live, asleep, slide, released = b.x, self.w, b.live, b.asleep, self.slide, self.released
+        for j in range(self.count):
+            if not live[j] or not released[j]:
+                continue
+            if not asleep[j]:
+                slide[j] = b.vx[j]
+            elif slide[j]:  # it slides on what it rests on
+                x[j] += slide[j] * dt
+                slide[j] -= slide[j] * drag * dt
+                if -8.0 < slide[j] < 8.0:
+                    slide[j] = 0.0
+            if x[j] + w[j] < 0 or x[j] > W:
+                b.free(j)
+            elif self.settle(j) and asleep[j]:
+                self.wake(j, slide[j])  # what it rests on moved, or it slid off
+
+    def still(self):
+        """Every floor at rest and no slide left: the collapse is over."""
+        b = self.bodies
+        for j in range(self.count):
+            if b.live[j] and (not b.asleep[j] or self.slide[j]):
+                return False
+        return True
+
+
 class Stack(Game):
     """RENT (P568): you build a tower of flats nobody will live in. The next floor hangs from a hook on a cable and
-    slides straight across (a swing was tried; the PO found it unpredictable, 2026-11-02). Each drop kicks the tower
-    into a sway; a perfect drop holds the world still for a beat; a miss shakes the tower, and it leans and falls.
-    Watercolour noir at noon: ink, bone and one accent."""
+    slides straight across (a swing was tried; the PO found it unpredictable, 2026-11-02). A tap lets it go: it falls,
+    and its landing presses the tower down and kicks it into a sway (P582); a perfect drop holds the world still for a
+    beat; a miss falls past the top, the tower shakes, and its floors fall from the top down into a pile. Watercolour
+    noir at noon: ink, bone and one accent."""
 
     INK, BONE = c565(24, 20, 30), c565(236, 230, 214)  # art/sets/stack.py's pair
     name = "stack"
@@ -22,10 +115,19 @@ class Stack(Game):
     accent = HUD_BEST = ACCENT
     HUD_SCORE = BONE
     LEVEL_H, BASE = 14, 220
-    SHOWN = 14  # floors drawn at most: the 12 the view keeps, and two sinking under the street
+    KEPT = 9  # floors the view keeps: 12 before P582; 9 keeps the floor hanging HANG px up under the score bar
+    SHOWN = KEPT + 2  # floors drawn at most: those the view keeps, and two sinking under the street
+    HANG, G = 40, 2000.0  # the hanging floor's height over its landing row, and gravity: a 200 ms fall, at 400 px/s
+    PRESS_K, PRESS_DAMP, PRESS_KICK = 150.0, 9.0, 0.5  # a landing's press: half its speed sinks the top about 7 px
     SPRING, DAMP, KICK = 250.0, 11.0, 7.0  # the tower's sway: about 2.5 Hz, settled in about 0.6 s
+    MAX_SLABS, SLAB_VX = 4, 40.0  # cut-offs falling at once (a fifth frees the oldest); each drifts 40 px/s off the tower
+    SLAB_BOUNCE, SLAB_FRICTION = 0.35, 0.6  # a slab keeps 35 % of its fall speed and 60 % of its drift at each bounce
+    TURN = 3.0  # the cot on a slab turns 3 degrees per px the slab travels: a quarter turn every 30 px
     SHAKE = (3, -2, 2, -1)  # the death shake, one offset per 40 ms frame
-    SHAKE_MS, FALL_MS, CARD_MS = 160, 250, 500  # the lean starts after the shake, the floors fall, then the card
+    SHAKE_MS, CARD_MS = 160, 500  # the shake, then the floors fall; the card from 500 ms
+    RELEASE_MS, PUSH = 40, 300.0  # top down, a floor every 40 ms, thrown lean * 300 * k px/s (k: its share of height)
+    WRECK_BOUNCE, WRECK_FRICTION, WRECK_DRAG = 0.25, 0.5, 4.0  # a floor's bounce, its drift kept at a bounce, its slide
+    HIT_MS, HIT_MIN = 80, 150  # at most one collapse_hit every 80 ms, for an impact of 150 px/s or more
     RENT, RENT_PER_FLOOR = 900, 140  # what the billboard asks: every floor raises it
     PLATE_RIGHT, PLATE_TOP, DIGIT_W = 301, 38, 8  # the billboard's empty plate in stack_noon; the digits are 8 x 12
     SOLD_X, SOLD_Y = 248, 36  # stack_sold over that plate when the tower falls
@@ -44,67 +146,202 @@ class Stack(Game):
         self.covers = pictures.load()  # the painted noon covers the screen, so no fill goes under it
         self.floors = [(90, 140)]  # (x, width) of each placed floor, x without the sway
         self.x, self.w, self.dir, self.speed = 0.0, 140, 1, 120.0
-        self.sway, self.sway_v = 0.0, 0.0  # the tower top's offset and speed
-        self.hold, self.lean, self.dusted = 0, 1, False  # hitstop frames left; the side the tower falls to
-        self.slabs = []  # the cut-offs that fell: [x, y, width, speed, colour]
+        self.sway = Spring(self.SPRING, self.DAMP)  # the tower top's offset
+        self.press = Spring(self.PRESS_K, self.PRESS_DAMP)  # how far the tower top is pressed down by a landing
+        self.falling = Bodies(1)  # the released floor as it falls, body 0
+        self.drop = None  # the tap's result while its floor falls, built once: see release()
+        self.hold, self.lean = 0, 1  # hitstop frames left; the side the tower falls to
+        self.wreck = Pile(self.SHOWN, self.LEVEL_H, self.BASE)  # the tower once it falls: see collapse_start()
+        self.basement, self.released, self.hit_ms = 0, 0, -self.HIT_MS  # floors in the wreck that only stand
+        self.slabs = Bodies(self.MAX_SLABS)  # the cut-offs, falling and bouncing on the street
+        n = self.MAX_SLABS  # and what a body does not keep: width, colour, the cot's turn in degrees, its cut order
+        self.slab_w, self.slab_art, self.slab_turn, self.slab_cut_order = [0] * n, [0] * n, [0.0] * n, [0] * n
+        self.cut_count = 0  # slabs cut this round; slab_cut_order[j] is slab j's number in that count
 
     def level_y(self, i):
-        return self.BASE - (i - max(0, len(self.floors) - 12) + 1) * self.LEVEL_H
+        return self.BASE - (i - max(0, len(self.floors) - self.KEPT) + 1) * self.LEVEL_H
 
     def floor_x(self, i):
         """Floor i's drawn x: its own, plus the sway, more of it the higher it sits in the visible window, so the
         floor at the street stays put. The hit test reads this too; paint works it out the same way."""
         first = max(0, len(self.floors) - self.SHOWN)
-        return int(self.floors[i][0] + self.sway / (len(self.floors) - first) * (i - first))
+        return int(self.floors[i][0] + self.sway.value / (len(self.floors) - first) * (i - first))
 
     def hanging_x(self):
         """The hanging floor's drawn x: the straight slide, as before RENT."""
         return int(self.x)
+
+    def step(self, now_ms, pressed, held):
+        """Game.step; over, the collapse runs on: the wreck, the missed floor and the slabs. Not on the frame the round
+        ends, whose age is still the round's."""
+        was = self.state
+        Game.step(self, now_ms, pressed, held)
+        if self.state == OVER:
+            if was == OVER:
+                self.collapse(self.dt)
+            else:
+                self.age = 0  # the round's age, else draw_over shows the card for this one frame
 
     def play(self, pressed, held):
         if self.hold:  # the hitstop after a perfect drop: the tower and the hanging floor stand still for two frames
             self.hold -= 1
             return
         dt = self.dt
-        for c in self.slabs:
-            c[3] += 700 * dt
-            c[1] += c[3] * dt
-            if c[1] >= self.BASE:  # the cot on it breaks on the street
-                self.fx.burst(c[0] + c[2] // 2, self.BASE + 8, GREY, 8, 70.0, 0.5, 200.0)
-        self.slabs = [c for c in self.slabs if c[1] < self.BASE]
-        self.sway_v -= (self.SPRING * self.sway + self.DAMP * self.sway_v) * dt
-        self.sway += self.sway_v * dt
+        self.move_slabs(dt)
+        self.sway.step(dt)
+        self.press.step(dt)
+        if self.drop:  # a floor is falling: no tap counts and the slide waits
+            return self.fall(dt)
         self.x += self.dir * self.speed * dt
         if self.x < 0:
             self.x, self.dir = 0.0, 1
         elif self.x > W - self.w:
             self.x, self.dir = float(W - self.w), -1
-        if not pressed:
-            return
+        if pressed:
+            self.release()
+
+    def release(self):
+        """The tap lets the floor go where it hangs. Its overlap, its cut and the perfect test are decided now, so the
+        tap alone decides what the fall ends in; fall() carries it out at the first impact."""
         n = len(self.floors)
         tx, tw = self.floor_x(n - 1), self.floors[-1][1]
         x, y = self.hanging_x(), self.level_y(n)
         left, right = max(x, tx), min(x + self.w, tx + tw)
-        if right - left < 4:
+        miss = right - left < 4
+        perfect = not miss and abs(x - tx) < 4  # a perfect drop keeps the whole width
+        if miss:
             self.lean = 1 if x > tx else -1
-            return self.die(x + self.w // 2, y, (ACCENT, self.INK))
-        i = n % 8
-        if abs(x - tx) < 4:  # a perfect drop keeps the whole width, glows, and holds the world still
+        elif perfect:
             left, right = tx, tx + tw
+        first = max(0, n + 1 - self.SHOWN)  # the window once this floor is in it
+        stored = left - self.sway.value / (n + 1 - first) * (n - first)  # without the sway, as floors keeps x
+        push = max(-24, min(24, x - tx))  # how far off the floor under it it lands: the sway's kick
+        self.drop = (x, left, right, stored, push, miss, perfect)
+        self.falling.spawn(0, x, y - self.HANG, 0, 0, H if miss else y)  # a miss has no plane on screen
+
+    def fall(self, dt):
+        """The released floor falls as body 0. At its first impact it joins the tower with what the tap decided; a
+        miss falls on, and the round ends as it passes the tower top."""
+        b = self.falling
+        b.step(dt, self.G, 0.0, 1.0)
+        x, left, right, stored, push, miss, perfect = self.drop
+        n = len(self.floors)
+        y = self.level_y(n)
+        if miss:
+            if b.y[0] >= y:
+                self.collapse_start()
+            return
+        if not (b.hit[0] or b.asleep[0]):
+            return
+        speed = b.hit[0]
+        b.free(0)
+        self.drop = None
+        i = n % 8
+        if perfect:  # it glows and holds the world still
             self.hold = 2
             self.fx.burst(left + (right - left) // 2, y, self.BONE, 10, 120.0, 0.5, 100.0)
             self.fx.burst(left + (right - left) // 2, y, ACCENT, 14, 160.0, 0.6, -60.0)
-        elif x < left:
-            self.slabs.append([x, y, left - x, 0.0, i])
+        elif x < left:  # the cut-off drifts away from the tower, falling at the landing's speed
+            self.cut_off(x, y, left - x, i, -self.SLAB_VX, speed)
         elif x + self.w > right:
-            self.slabs.append([right, y, x + self.w - right, 0.0, i])
-        first = max(0, n + 1 - self.SHOWN)  # the window once this floor is in it
-        self.floors.append((left - self.sway / (n + 1 - first) * (n - first), right - left))  # stored without the sway
-        self.sway_v += max(-24, min(24, x - tx)) * self.KICK  # the tower leans the way the floor landed
+            self.cut_off(right, y, x + self.w - right, i, self.SLAB_VX, speed)
+        self.floors.append((stored, right - left))
+        self.sway.kick(push * self.KICK)  # the tower leans the way the floor landed
         self.w = right - left
+        self.landing(left + self.w // 2, y + self.LEVEL_H, speed)
         self.score += 1
         self.pop(left + self.w // 2, y, self.INK)
         self.speed = min(330.0, 120 + self.score * 8)
+
+    def cut_off(self, x, y, w, i, vx, vy):
+        """A slab w px wide falls from (x, y) with its cot, in a free body, or else in the oldest one's."""
+        s, order = self.slabs, self.slab_cut_order
+        j = 0
+        for k in range(self.MAX_SLABS):
+            if not s.live[k]:
+                j = k
+                break
+            if order[k] < order[j]:
+                j = k
+        s.spawn(j, x, y, vx, vy, self.BASE)
+        self.cut_count += 1
+        self.slab_w[j], self.slab_art[j], self.slab_turn[j], order[j] = w, i, 0.0, self.cut_count
+
+    def move_slabs(self, dt):
+        """The slabs fall and bounce on the street, each bounce a slab_hit; their cots turn with the distance they
+        travel. One that drifts off the screen is freed; one at rest sleeps on the street."""
+        s = self.slabs
+        s.step(dt, self.G, self.SLAB_BOUNCE, self.SLAB_FRICTION)
+        for j in range(self.MAX_SLABS):
+            if not s.live[j]:
+                continue
+            w = self.slab_w[j]
+            if s.x[j] + w < 0 or s.x[j] > W:
+                s.free(j)
+                continue
+            if s.hit[j]:
+                self.slab_hit(int(s.x[j]) + w // 2, self.BASE + 8, s.hit[j])
+            if not s.asleep[j]:
+                self.slab_turn[j] += (abs(s.vx[j]) + abs(s.vy[j])) * dt * self.TURN
+
+    # The four moments P583 hangs its effects on; each fires a burst today, and the callers stay.
+
+    def landing(self, x, y, speed):
+        """A floor lands at speed px/s: the tower takes half of it as a press, so it sinks a few px and springs back
+        once; a puff of dust where the floors meet at (x, y)."""
+        self.press.kick(self.PRESS_KICK * speed)
+        self.fx.burst(x, y, self.BONE, 8, 60.0, 0.35, 120.0)
+
+    def slab_hit(self, x, y, speed):
+        """A cut-off slab meets the street at speed px/s, at each bounce: the cot on it rattles."""
+        self.fx.burst(x, y, GREY, 8, 70.0, 0.5, 200.0)
+
+    def collapse_start(self):
+        """The missed floor has passed the tower top: the round ends, the tower shakes, and its floors fall from the
+        top down. The wreck starts as the tower is drawn now, pressed and swaying; a floor that reaches below the
+        street is the basement: it stays where it stands."""
+        n = len(self.floors)
+        first = max(0, n - self.SHOWN)
+        sink = 0.0 if self.press.settled() else self.press.value / (n - first)
+        self.wreck.count, self.basement, self.released = 0, 0, 0
+        for i in range(first, n):
+            y = self.level_y(i) + min(self.LEVEL_H - 2, int(sink * (i - first)))
+            if y < H:
+                self.wreck.add(self.floor_x(i), y, self.floors[i][1], i)
+                if y + self.LEVEL_H > self.BASE:
+                    self.basement += 1
+        self.die(int(self.falling.x[0]) + self.w // 2, self.level_y(len(self.floors)), (ACCENT, self.INK))
+
+    def collapse(self, dt):
+        """After the shake, one floor every RELEASE_MS from the top, thrown the way the tower leans as a tipping tower
+        throws it, faster the higher it stood; the street floor goes last, the basement never. A hard impact is a
+        collapse_hit, one at most every HIT_MS."""
+        wreck, n, low = self.wreck, self.wreck.count, self.basement
+        while self.released < n - low and self.age >= self.SHAKE_MS + self.released * self.RELEASE_MS:
+            j = n - 1 - self.released
+            wreck.release(j, self.lean * self.PUSH * (j - low) / max(1, n - 1 - low))
+            self.released += 1
+        wreck.step(dt, self.G, self.WRECK_BOUNCE, self.WRECK_FRICTION, self.WRECK_DRAG)
+        b, top = wreck.bodies, -1
+        for j in range(n):
+            if b.hit[j] >= self.HIT_MIN and (top < 0 or b.hit[j] > b.hit[top]):
+                top = j
+        if top >= 0 and self.age - self.hit_ms >= self.HIT_MS:
+            self.hit_ms = self.age
+            self.collapse_hit(int(b.x[top]) + wreck.w[top] // 2, int(b.y[top]) + self.LEVEL_H, b.hit[top])
+        if self.falling.live[0]:  # the missed floor falls on, out of the picture, and is let go there
+            self.falling.step(dt, self.G, 0.0, 1.0)
+            if self.falling.asleep[0]:
+                self.falling.free(0)
+        self.move_slabs(dt)
+
+    def collapsed(self):
+        """Every floor that falls has fallen and come to rest."""
+        return self.released == self.wreck.count - self.basement and self.wreck.still()
+
+    def collapse_hit(self, x, y, speed):
+        """A falling floor meets the pile or the street at speed px/s: one cloud of dust."""
+        self.fx.burst(x, y, GREY, 10, 90.0, 0.8, -40.0)
 
     def block(self, cv, x, y, w, i, lit):
         """Floor i, w px wide: painted lit or dark, else a flat grey on the Mac."""
@@ -155,43 +392,59 @@ class Stack(Game):
         cv.fill(0, self.BASE + 14, W, H - self.BASE - 14, c565(58, 54, 66))
 
     def paint(self, cv):
-        """The tower, the hanging floor and the slabs. Over, the tower shakes, then leans and falls, from self.age."""
-        n, shake, lean, drop, over = len(self.floors), 0, 0.0, 0.0, self.state == OVER
+        """The tower, pressed down by its last landing, the hanging or falling floor and the slabs. Over, the wreck in
+        its place: it shakes, then its floors fall."""
+        n, shake, over = len(self.floors), 0, self.state == OVER
         if over:
-            t = self.age
-            if t < self.SHAKE_MS:
-                shake = self.SHAKE[t // 40]
-            lean = self.lean * 600.0 * (max(0, t - self.SHAKE_MS) / 1000) ** 2  # px at the top; (i / n)^2 below
-            drop = 450.0 * (max(0, t - self.FALL_MS) / 1000) ** 2
-            if drop and not self.dusted:  # the street takes the first floor: one cloud of dust
-                self.dusted = True
-                self.fx.burst(self.floor_x(0) + self.floors[0][1] // 2, self.BASE + 10, GREY, 20, 90.0, 0.8, -40.0)
-        first = max(0, n - self.SHOWN)
-        span, top = n - first, n - 1
-        step = self.sway / span  # the sway per floor up the visible window, as floor_x works it out
+            if 0 <= self.age < self.SHAKE_MS:
+                shake = self.SHAKE[self.age // 40]
+            self.paint_wreck(cv, shake)
+        first = n if over else max(0, n - self.SHOWN)  # over, no floor stands
+        span, top = max(1, n - first), n - 1
+        step = self.sway.value / span  # the sway per floor up the visible window, as floor_x works it out
+        sink = 0.0 if self.press.settled() else self.press.value / span  # the press, the same way: none at the street
+        most = self.LEVEL_H - 2  # a deeper press would draw a floor's pencil line over the one under it
         for i in range(first, n):
             x, w = self.floors[i]
             x, y = int(x + step * (i - first)), self.level_y(i)
-            if over:  # the lean and the fall, more of them the higher the floor; only here, so play makes few floats
-                k = (i - first) / span
-                x += shake + int(lean * k * k)
-                y += int(drop * (0.3 + 0.7 * k))
-                if y >= H:
-                    continue
+            if sink:
+                y += min(most, int(sink * (i - first)))
             self.block(cv, x, y, w, i, i == top)  # only the top floor is the show flat, lit
             if self.hold == 2 and i == top:  # the perfect drop's one white frame
                 cv.fill(x, y, w, self.LEVEL_H, WHITE)
-        x, y = self.hanging_x() + shake + int(lean), self.level_y(n) + int(drop)
+        hang = self.level_y(n) - self.HANG
+        if self.drop:  # the floor falls, the empty hook stays where the tap let it go
+            x = self.drop[0]
+            self.hook(cv, x + self.w // 2, hang, x + self.w // 2)
+            x, y = x + shake, int(self.falling.y[0])
+        else:
+            x, y = self.hanging_x() + shake, hang
+            if y < H:
+                self.hook(cv, x + self.w // 2, y, int(self.x) + self.w // 2)
         if y < H:
-            self.hook(cv, x + self.w // 2, y, int(self.x) + self.w // 2)
             self.block(cv, x, y, self.w, n, True)
-        for x, y, w, _, i in self.slabs:  # over, they fall with the tower; each carries a cot, tumbling as it falls
-            if y + drop >= H:  # gone below the street: drop grows for as long as the over screen stays, past 2^31 px
+        s = self.slabs
+        for j in range(self.MAX_SLABS):  # each carries a cot, turning as it travels
+            if not s.live[j]:
                 continue
-            self.block(cv, x, int(y + drop), w, i, True)
-            pictures.draw(cv, self.COTS[int(y) // 10 % 4], x + w // 2 - 8, int(y + drop) - 12)
+            x, y, w = int(s.x[j]), int(s.y[j]), self.slab_w[j]
+            if y >= H:  # the guard (c8bda9d): nothing is drawn below the screen
+                continue
+            self.block(cv, x, y, w, self.slab_art[j], True)
+            k = int(self.slab_turn[j] // 90) % 4
+            if s.asleep[j] and not k % 2:  # at rest it lies on a side frame
+                k += 1
+            pictures.draw(cv, self.COTS[k], x + w // 2 - 8, y - 12)
         if not over or not pictures.draw(cv, "stack_sold", self.SOLD_X, self.SOLD_Y):
             self.number(cv, self.RENT + self.RENT_PER_FLOOR * self.score, self.PLATE_RIGHT, self.PLATE_TOP)
+
+    def paint_wreck(self, cv, shake):
+        """The falling tower, bottom floor first so a floor that lands on another is drawn over it; the top one lit."""
+        wreck = self.wreck
+        b, n = wreck.bodies, wreck.count
+        for j in range(n):
+            if b.live[j] and b.y[j] < H:
+                self.block(cv, int(b.x[j]) + shake, int(b.y[j]), wreck.w[j], wreck.art[j], j == n - 1)
 
     def draw_over(self, cv):
         """The collapse plays over the live scene first; then SOLD OUT, 0 RESIDENTS, the floors and the best."""
