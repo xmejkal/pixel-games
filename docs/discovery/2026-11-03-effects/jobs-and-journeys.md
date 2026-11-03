@@ -12,7 +12,7 @@ e.g. `- Team leads who assign work · H Lena's belief, no interview yet` -->
 <!-- One job story per line, each clause tagged: When …, I want to …, so I can ….
 e.g. `- When I assign a task in a meeting [E tickets.csv:6], I want the assignee to see it that day [H Lena], so I can stop chasing people [E tickets.csv:7]` -->
 - When the rain showed the C engine on the board [E #794], I want to see ten more native effects, among them fire, smoke, colliding bodies, bodies on fire and water [E #795], so I can enjoy them and judge which are cool [E #795 "cool effects"]
-- When I try an effect alone [E #795 "just like with the rain, let's just try the effects themselves"], I want to see what it costs on the board [E #795 Done when: "its cost on screen and in bench.md"], so I can tell which ones fit a game later [H the PO assistant's reading, the council checks it]
+- When I try an effect alone [E #795 "just like with the rain, let's just try the effects themselves"], I want to see what it costs on the board [H: the team's "Done when" on #795, "its cost on screen and in bench.md", not his words. Q13 asks him], so I can tell which ones fit a game later [H the PO assistant's reading, the council checks it]
 - When a game needs an effect later [E #795 "later use in the engine"], I want the effect to be a C piece of the engine that Python starts with a few numbers [E p580-finding.md question 4, Q13 yes 2026-11-02], so I can add it to a game without new C [H, from D12 "every feel number comes from Python"] <!-- REQUIRED:jobs -->
 
 ## Today they…
@@ -52,7 +52,7 @@ flowchart LR
 | step | what they do | evidence | friction or harm | today | open question |
 | --- | --- | --- | --- | --- | --- |
 | 1 | powers the board, and the rain starts | E bench.md:280; games/app.py:52, 59-60 | none | works | — |
-| 2 | taps D14 n times to reach effect n | E games/app.py:40, 59-68 (`(index + 1) % len(games)`, no back step) | ten more entries make a ring of 21. One tap too far costs the whole ring again (USER-2) | not yet | how many taps does he accept? (Q-U5) |
+| 2 | taps D14 n times to reach effect n | E games/app.py:40, 59-68 (`(index + 1) % len(games)`, no back step) | ten more entries make a ring of 21. One tap too far costs the whole ring again (USER-2). So far the team put the scene to play first and he tapped nothing (bench.md:264, :280) | not yet | how many taps does he accept? (Q-U5) Does the team put each scene first instead? |
 | 3 | waits while the scene is built | E games/app.py:59-66; bench.md:277 (three games took 16 s instead of 9 s to their first fps line) | — what the panel shows during a switch. The 16 s is time to a log line, not seen on the screen (USER-3) | not yet | — |
 | 4 | tries to tell which effect is on screen | E games/app.py:68 (`print("game", ...)` goes to the console); games/rain.py:160-164 (the rain's HUD replaces the name) | no name on the panel, and no "3 of 10" (USER-13) | not yet | — |
 | 5 | reads what the effect costs | E games/rain.py:35, 151; bench.md:268-274 | the step bar shows 0 px at C costs, and the draw, which is the larger cost, is not on screen (USER-5) | not yet | is "cheap enough" a number he sets, or the fps he sees? (Q-U10) |

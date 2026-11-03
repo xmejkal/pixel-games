@@ -4,13 +4,13 @@ block for more. needed by: the decider's words, quoted. value proven by: a proof
 status: proposed, or filed D<n>.
 e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)` -->
 
-Nothing is filed. P595 is the next free number in xmejkal/spark (the newest issue is P594 #795, read with `gh issue list --repo xmejkal/spark --state all --limit 3` on 2026-11-03). Each card's form follows spark's issue form (.github/ISSUE_TEMPLATE/item.yml: Needed by, Value proven by). Every card is a sub-issue of P594 #795, which sits under the epic P586 #787. The list holds the walking skeleton, the next two groups, the colliding bodies and the cached HUD found on the way. Later slices stay in story-map.md until the PO orders them. Sizes are the synthesis's estimate (H), in working sessions of the AI team: XS is under one session, S is one session, M is more than one. Each feel card stops at "ready to play" until he played it (D21). The cards follow option a1's order as an example: Q2 to Q9 can change them.
+Nothing is filed. P595 is the next free number in xmejkal/spark (the newest issue is P594 #795, read with `gh issue list --repo xmejkal/spark --state all --limit 3` on 2026-11-03). Each card's form follows spark's issue form (.github/ISSUE_TEMPLATE/item.yml: Needed by, Value proven by). Every card is a sub-issue of P594 #795, which sits under the epic P586 #787. The list holds the walking skeleton, the next two groups and the colliding bodies. P599, the cached HUD, is the team's proposal found on the way, outside P594's scope. Later slices stay in story-map.md until the PO orders them. Sizes are the synthesis's estimate (H), in working sessions of the AI team: XS is under one session, S is one session, M is more than one. Each feel card stops at "ready to play" until he played it (D21). The cards follow option a1's order and the team's readings of his words as an example: Q2 to Q14 can change them.
 
 ## P595: the engine draws no pixel and no effect scene exists → one effects scene shows fire from a heat kernel in plain C, drawn by the engine module, with its name and its cost on screen
-- type: story (slice 0, the walking skeleton). It tests A2, the proposed riskiest, with A1, A3, A4 and A9 in the same run <!-- REQUIRED:item-type -->
+- type: story (slice 0, the walking skeleton). It tests A1, the proposed riskiest, with A2, A3, A4 and A9 in the same run <!-- REQUIRED:item-type -->
 - needed by: "let's try to make 10 more effects, something including fire and smoke" and "just like with the rain, let's just try the effects themselves" (the PO, 2026-11-03, #795) <!-- REQUIRED:needed-by -->
-- value proven by: he plays the fire on the board and gives his words. bench.md gets a row from three 5 s report lines: fps, step ms and draw ms of a 160 x 120 field drawn at 2 x 2 to the full screen, opaque, plus the largest free internal block at the scene's start and the same fire at alpha 128 over a painted background. Read against A2's pass line (at most 15 ms and 24 fps, proposed). A Mac test of the kernel (D15) passes <!-- REQUIRED:value-proven-by -->
-- depends on: Q1 (the pass line), Q4 (the path), Q5 (the home), Q6 (the harness), Q9 (black or a picture). The board on USB. Size S to M <!-- REQUIRED:depends-on -->
+- value proven by: he plays the fire on the board, gives his words, and answers A1's fixed question (keep its look, or change it). bench.md gets a row from three 5 s intervals of app.py's `time` and `avg` lines: fps, step plus draw of a 160 x 120 field drawn at 2 x 2 to the full screen, opaque, plus the largest free internal block at the scene's start and the same fire at alpha 128 over a painted background. Read against the proposed lines of A1, A2 (at most 15.3 ms), A3 and A4 <!-- REQUIRED:value-proven-by -->
+- depends on: Q1 (the pass line), Q4 (the path), Q5 (the home), Q6 (the harness), Q9 (black or a picture). The board on USB. Also done when: a Mac test of the kernel passes (D15). Size S to M <!-- REQUIRED:depends-on -->
 - status: proposed <!-- REQUIRED:item-status -->
 - label (the repository's type label): story <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P594 #795 (under P586 #787) <!-- REQUIRED:spark-process:parent -->
@@ -20,7 +20,7 @@ Nothing is filed. P595 is the next free number in xmejkal/spark (the newest issu
 - type: story (the K1 group)
 - needed by: "something including fire and smoke, and maybe some bodies colliding, being on fire" (the PO, 2026-11-03, #795)
 - value proven by: he plays both and says whether they look like different effects from fire (A5). One bench.md row per effect from three 5 s report lines
-- depends on: P595 played (D21), Q2 (the list), Q7 (one turn or two). Bodies on fire use the rain's falling bodies until P598 exists. Size S
+- depends on: P595 played (D21), Q2 (the list), Q7 (one turn or two). Q14 (what "being on fire" means: this card reads it as bodies that trail flames in one heat field, the team's reading). Bodies on fire use the rain's falling bodies until P598 exists. Size S
 - status: proposed
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P594 #795 (under P586 #787)
@@ -36,24 +36,24 @@ Nothing is filed. P595 is the next free number in xmejkal/spark (the newest issu
 - parent (the epic, as a sub-issue): P594 #795 (under P586 #787)
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
 
-## P598: no two bodies in the engine touch → a few hundred circles that collide in a box, on a uniform grid with substeps, and the burning bodies of P596 on them
+## P598: no two bodies in the engine touch → bodies that collide (the team's reading, if Q3 says round bodies: a few hundred circles in a box, on a uniform grid with substeps), and the burning bodies of P596 on them
 - type: story (K5)
 - needed by: "maybe some bodies colliding, being on fire" (the PO, 2026-11-03, #795)
-- value proven by: he plays it and gives his words. A Mac test shows no circle passes through another in a 60 s run at 2,000 px/s² (A7). One bench.md row with the step ms for 300 circles
-- depends on: Q3 (c1, c2 or c3, and so its overlap with P592 and D16), Q11 (port with notice or write from the method). P595 played (D21). Size S to M
+- value proven by: he plays it and gives his words. One bench.md row with the step ms for 300 circles. A Mac test shows no circle passes through another in a 60 s run at 2,000 px/s² (A7, a bar the team sets: his only word on bodies is "colliding")
+- depends on: Q3 (what "bodies colliding" means, then c1, c2 or c3, and so its overlap with P592 and D16), Q11 (port with notice or write from the method). P595 played (D21). Size S to M
 - status: proposed
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P594 #795 (under P586 #787)
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
 
 ## P599: the HUD's text costs about 11 ms a frame in every game → the text drawn once into a buffer when it changes and blitted each frame, at about 0.4 ms
-- type: story (found on the way, F1: outside P594's scope, filed only on its own yes)
-- needed by: "before we move on, Let's now create other cool effects" (the PO, 2026-11-03, #795): the cached HUD roughly doubles the room of every scene (★C4). Also every game's HUD
+- type: story (found on the way, F1: the team's proposal, outside P594's scope, filed only on the PO's yes to Q10)
+- needed by: no words of the PO. The team's proposal (the tech lead, TL-4, F1): a cached HUD grows an effect's room from about 15.3 to 18.2 ms to about 25.5 to 28.7 ms (★C4 (the room depends on covers and the HUD)) and cuts every game's HUD cost. His words go here only after his yes to Q10
 - value proven by: bench.md rows of the rain and two games before and after: the HUD ms in the report line drops from 10.6 to 10.9 ms to under 1 ms, fps the same or higher, and he sees the same text
 - depends on: Q10 (before P595, after it, or not now). Size S
 - status: proposed
 - label (the repository's type label): story
-- parent (the epic, as a sub-issue): P594 #795 if Q10 puts it first, else ask the decider
+- parent (the epic, as a sub-issue): ask the decider. It is outside P594's scope, so not a sub-issue of #795 by default
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
 
 ## Changes to existing cards (proposals, none applied)
