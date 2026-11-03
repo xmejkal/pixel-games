@@ -29,6 +29,9 @@ class Stack(Game):
     HANG, G = 40, 2000.0  # the hanging floor's height over its landing row, and gravity: a 200 ms fall, at 400 px/s
     PRESS_K, PRESS_DAMP, PRESS_KICK = 150.0, 9.0, 0.5  # a landing's press: half its speed sinks the top about 7 px
     SPRING, DAMP, KICK = 250.0, 11.0, 7.0  # the tower's sway: about 2.5 Hz, settled in about 0.6 s
+    MAX_SLABS, SLAB_VX = 4, 40.0  # cut-offs falling at once (a fifth frees the oldest); each drifts 40 px/s off the tower
+    SLAB_BOUNCE, SLAB_FRICTION = 0.35, 0.6  # a slab keeps 35 % of its fall speed and 60 % of its drift at each bounce
+    TURN = 3.0  # the cot on a slab turns 3 degrees per px the slab travels: a quarter turn every 30 px
     SHAKE = (3, -2, 2, -1)  # the death shake, one offset per 40 ms frame
     SHAKE_MS, FALL_MS, CARD_MS = 160, 250, 500  # the lean starts after the shake, the floors fall, then the card
     RENT, RENT_PER_FLOOR = 900, 140  # what the billboard asks: every floor raises it
@@ -54,7 +57,9 @@ class Stack(Game):
         self.bodies = Bodies(1)  # body 0: the released floor as it falls
         self.drop = None  # the tap's result while its floor falls, built once: see release()
         self.hold, self.lean, self.dusted = 0, 1, False  # hitstop frames left; the side the tower falls to
-        self.slabs = []  # the cut-offs that fell: [x, y, width, speed, colour]
+        self.slabs = Bodies(self.MAX_SLABS)  # the cut-offs, falling and bouncing on the street
+        n = self.MAX_SLABS  # and what a body does not keep: width, colour, the cot's turn in degrees, birth order
+        self.slab_w, self.slab_art, self.slab_turn, self.slab_born, self.born = [0] * n, [0] * n, [0.0] * n, [0] * n, 0
 
     def level_y(self, i):
         return self.BASE - (i - max(0, len(self.floors) - self.KEPT) + 1) * self.LEVEL_H
@@ -74,12 +79,7 @@ class Stack(Game):
             self.hold -= 1
             return
         dt = self.dt
-        for c in self.slabs:
-            c[3] += 700 * dt
-            c[1] += c[3] * dt
-            if c[1] >= self.BASE:  # the cot on it breaks on the street
-                self.slab_hit(c[0] + c[2] // 2, self.BASE + 8, c[3])
-        self.slabs = [c for c in self.slabs if c[1] < self.BASE]
+        self.move_slabs(dt)
         self.sway.step(dt)
         self.press.step(dt)
         if self.drop:  # a floor is falling: no tap counts and the slide waits
@@ -133,10 +133,10 @@ class Stack(Game):
             self.hold = 2
             self.fx.burst(left + (right - left) // 2, y, self.BONE, 10, 120.0, 0.5, 100.0)
             self.fx.burst(left + (right - left) // 2, y, ACCENT, 14, 160.0, 0.6, -60.0)
-        elif x < left:
-            self.slabs.append([x, y, left - x, 0.0, i])
+        elif x < left:  # the cut-off drifts away from the tower, falling at the landing's speed
+            self.cut_off(x, y, left - x, i, -self.SLAB_VX, speed)
         elif x + self.w > right:
-            self.slabs.append([right, y, x + self.w - right, 0.0, i])
+            self.cut_off(right, y, x + self.w - right, i, self.SLAB_VX, speed)
         self.floors.append((stored, right - left))
         self.sway.kick(push * self.KICK)  # the tower leans the way the floor landed
         self.w = right - left
@@ -144,6 +144,37 @@ class Stack(Game):
         self.score += 1
         self.pop(left + self.w // 2, y, self.INK)
         self.speed = min(330.0, 120 + self.score * 8)
+
+    def cut_off(self, x, y, w, i, vx, vy):
+        """A slab w px wide falls from (x, y) with its cot, in a free body, or else in the oldest one's."""
+        s, born = self.slabs, self.slab_born
+        j = 0
+        for k in range(self.MAX_SLABS):
+            if not s.live[k]:
+                j = k
+                break
+            if born[k] < born[j]:
+                j = k
+        s.spawn(j, x, y, vx, vy, self.BASE)
+        self.born += 1
+        self.slab_w[j], self.slab_art[j], self.slab_turn[j], born[j] = w, i, 0.0, self.born
+
+    def move_slabs(self, dt):
+        """The slabs fall and bounce on the street, each bounce a slab_hit; their cots turn with the distance they
+        travel. One that drifts off the screen is freed; one at rest sleeps on the street."""
+        s = self.slabs
+        s.step(dt, self.G, self.SLAB_BOUNCE, self.SLAB_FRICTION)
+        for j in range(self.MAX_SLABS):
+            if not s.live[j]:
+                continue
+            w = self.slab_w[j]
+            if s.x[j] + w < 0 or s.x[j] > W:
+                s.free(j)
+                continue
+            if s.hit[j]:
+                self.slab_hit(int(s.x[j]) + w // 2, self.BASE + 8, s.hit[j])
+            if not s.asleep[j]:
+                self.slab_turn[j] += (abs(s.vx[j]) + abs(s.vy[j])) * dt * self.TURN
 
     # The four moments P583 hangs its effects on; each fires a burst today, and the callers stay.
 
@@ -154,7 +185,7 @@ class Stack(Game):
         self.fx.burst(x, y, self.BONE, 8, 60.0, 0.35, 120.0)
 
     def slab_hit(self, x, y, speed):
-        """A cut-off slab meets the street at speed px/s: the cot on it breaks."""
+        """A cut-off slab meets the street at speed px/s, at each bounce: the cot on it rattles."""
         self.fx.burst(x, y, GREY, 8, 70.0, 0.5, 200.0)
 
     def collapse_start(self):
@@ -256,11 +287,18 @@ class Stack(Game):
                 self.hook(cv, x + self.w // 2, y, int(self.x) + self.w // 2)
         if y < H:
             self.block(cv, x, y, self.w, n, True)
-        for x, y, w, _, i in self.slabs:  # over, they fall with the tower; each carries a cot, tumbling as it falls
-            if y + down >= H:  # gone below the street: down grows for as long as the over screen stays, past 2^31 px
+        s = self.slabs
+        for j in range(self.MAX_SLABS):  # each carries a cot, turning as it travels
+            if not s.live[j]:
                 continue
-            self.block(cv, x, int(y + down), w, i, True)
-            pictures.draw(cv, self.COTS[int(y) // 10 % 4], x + w // 2 - 8, int(y + down) - 12)
+            x, y, w = int(s.x[j]), int(s.y[j] + down), self.slab_w[j]
+            if y >= H:  # gone below the street: down grows for as long as the over screen stays, past 2^31 px
+                continue
+            self.block(cv, x, y, w, self.slab_art[j], True)
+            k = int(self.slab_turn[j] // 90) % 4
+            if s.asleep[j] and not k % 2:  # at rest it lies on a side frame
+                k += 1
+            pictures.draw(cv, self.COTS[k], x + w // 2 - 8, y - 12)
         if not over or not pictures.draw(cv, "stack_sold", self.SOLD_X, self.SOLD_Y):
             self.number(cv, self.RENT + self.RENT_PER_FLOOR * self.score, self.PLATE_RIGHT, self.PLATE_TOP)
 
