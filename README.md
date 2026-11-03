@@ -9,11 +9,13 @@ The repository is also a log of how the games got smooth: every step was measure
 | path | what it holds |
 | --- | --- |
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
+| `art/` | the painted art: one set per game, the brush and the export |
+| `tests/` | the tests that run on a computer, with no board |
 | `s3lcd/` | the C driver: the fork with `frame.c`, a DMA send of one frame and partial updates |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
 | `p537-finding.md` | the options for smooth motion, ranked, with a plan in slices |
-| `docs/discovery/` | the discovery for a public graphics library for small chips (P539) |
+| `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565) |
 
 ## Build and run
 
@@ -29,7 +31,17 @@ If the board stays dark after a long press of its D14 button, hold D14 for 1 to 
 
 ## Status
 
-The games run at 20 to 24 fps (flappy and runner at a 40 ms frame pace). Painting in Python is now the limit. The next step is a measurement of what that paint time is made of (spark issue [P550 #754](https://github.com/xmejkal/spark/issues/754)). The work is planned on the board of the [spark](https://github.com/xmejkal/spark) project.
+Runs now:
+
+- Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
+- The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
+- Measured fps per painted game, from `bench.md`: flappy 20 to 22 and runner 21 to 24 at a 40 ms frame pace, with no play; stack 24.
+
+In progress: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT. The work is on the branch `p582-heavy` and is not merged. Nobody has yet said how it feels.
+
+Next: P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
+
+The work is planned on the board of the [spark](https://github.com/xmejkal/spark) project.
 
 ## Licence
 
