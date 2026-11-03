@@ -1,6 +1,6 @@
-"""RENT (arcade2.Stack) on the Mac: the slabs, the collapse's pile and the bench bot (bench582.Bot). framebuf comes from tests/stubs and time gets the two MicroPython
-ticks functions, so gfx imports here; the paint is recorded on a canvas of plain calls. Run from the repository root:
-python3 -m unittest discover tests."""
+"""RENT (arcade2.Stack) on the Mac: the slabs, the wreck's pool (Pile), the collapse's pile and the bench bot
+(bench582.Bot). framebuf comes from tests/stubs and time gets the two MicroPython ticks functions, so gfx imports here;
+the paint is recorded on a canvas of plain calls. Run from the repository root: python3 -m unittest discover tests."""
 
 import os
 import sys

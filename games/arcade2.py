@@ -105,8 +105,8 @@ class Stack(Game):
     """RENT (P568): you build a tower of flats nobody will live in. The next floor hangs from a hook on a cable and
     slides straight across (a swing was tried; the PO found it unpredictable, 2026-11-02). A tap lets it go: it falls,
     and its landing presses the tower down and kicks it into a sway (P582); a perfect drop holds the world still for a
-    beat; a miss falls past the top, the tower shakes, and its floors fall from the top down into a pile. Watercolour noir at noon: ink, bone and
-    one accent."""
+    beat; a miss falls past the top, the tower shakes, and its floors fall from the top down into a pile. Watercolour
+    noir at noon: ink, bone and one accent."""
 
     INK, BONE = c565(24, 20, 30), c565(236, 230, 214)  # art/sets/stack.py's pair
     name = "stack"
@@ -154,8 +154,9 @@ class Stack(Game):
         self.wreck = Pile(self.SHOWN, self.LEVEL_H, self.BASE)  # the tower once it falls: see collapse_start()
         self.basement, self.released, self.hit_ms = 0, 0, -self.HIT_MS  # floors in the wreck that only stand
         self.slabs = Bodies(self.MAX_SLABS)  # the cut-offs, falling and bouncing on the street
-        n = self.MAX_SLABS  # and what a body does not keep: width, colour, the cot's turn in degrees, birth order
-        self.slab_w, self.slab_art, self.slab_turn, self.slab_born, self.born = [0] * n, [0] * n, [0.0] * n, [0] * n, 0
+        n = self.MAX_SLABS  # and what a body does not keep: width, colour, the cot's turn in degrees, its cut order
+        self.slab_w, self.slab_art, self.slab_turn, self.slab_cut_order = [0] * n, [0] * n, [0.0] * n, [0] * n
+        self.cut_count = 0  # slabs cut this round; slab_cut_order[j] is slab j's number in that count
 
     def level_y(self, i):
         return self.BASE - (i - max(0, len(self.floors) - self.KEPT) + 1) * self.LEVEL_H
@@ -254,17 +255,17 @@ class Stack(Game):
 
     def cut_off(self, x, y, w, i, vx, vy):
         """A slab w px wide falls from (x, y) with its cot, in a free body, or else in the oldest one's."""
-        s, born = self.slabs, self.slab_born
+        s, order = self.slabs, self.slab_cut_order
         j = 0
         for k in range(self.MAX_SLABS):
             if not s.live[k]:
                 j = k
                 break
-            if born[k] < born[j]:
+            if order[k] < order[j]:
                 j = k
         s.spawn(j, x, y, vx, vy, self.BASE)
-        self.born += 1
-        self.slab_w[j], self.slab_art[j], self.slab_turn[j], born[j] = w, i, 0.0, self.born
+        self.cut_count += 1
+        self.slab_w[j], self.slab_art[j], self.slab_turn[j], order[j] = w, i, 0.0, self.cut_count
 
     def move_slabs(self, dt):
         """The slabs fall and bounce on the street, each bounce a slab_hit; their cots turn with the distance they

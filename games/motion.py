@@ -32,7 +32,7 @@ class Spring:
 
 
 @native
-def fall(bodies, dt, gravity, restitution, friction):
+def fall_bodies(bodies, dt, gravity, restitution, friction):
     """One step of every live, awake body; Bodies.step says what it does. It takes the pool, not its lists, so the
     call has five arguments: few enough for any emitter."""
     x, y, vx, vy, rest_y = bodies.x, bodies.y, bodies.vx, bodies.vy, bodies.rest_y
@@ -80,4 +80,4 @@ class Bodies:
         """Fall under gravity for dt s. At the plane a body bounces back up with restitution times its speed and
         friction times its vx, its impact speed written into hit; under 1.5 * gravity * dt it sleeps instead, so a
         body at rest fires no hit. hit is cleared first, so each hit is reported in one step only."""
-        fall(self, dt, gravity, restitution, friction)
+        fall_bodies(self, dt, gravity, restitution, friction)
