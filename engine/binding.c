@@ -198,24 +198,25 @@ static heat_field_obj_t *live(mp_obj_t self_in) {
     return self;
 }
 
-// set_look(decay, cool, sway, spots, spread, fast): see fx_fire_set_look, each number in its range.
+// set_look(decay, cool, sway, spots, spread, fast, embers): see fx_fire_set_look, each number in its range.
 static mp_obj_t heat_field_set_look(size_t n_args, const mp_obj_t *args) {
     heat_field_obj_t *self = live(args[0]);
-    mp_int_t v[6];
-    for (size_t k = 0; k < 6; k++) {
+    mp_int_t v[7];
+    for (size_t k = 0; k < 7; k++) {
         v[k] = mp_obj_get_int(args[k + 1]);
     }
     if (v[0] < 0 || v[0] > 255 || v[1] < 0 || v[1] > 255 || v[2] < 0 || v[2] > 1 || v[3] < 0
-        || v[3] > FX_FIRE_MAX_SPOTS || v[4] < 1 || v[4] > 64 || v[5] < 0 || v[5] > 255) {
+        || v[3] > FX_FIRE_MAX_SPOTS || v[4] < 1 || v[4] > 64 || v[5] < 0 || v[5] > 255
+        || v[6] < 0 || v[6] > 255) {
         mp_raise_msg_varg(&mp_type_ValueError,
-            MP_ERROR_TEXT("decay, cool and fast are 0 to 255, sway 0 or 1, spots 0 to %d, spread 1 to 64"),
+            MP_ERROR_TEXT("decay, cool, fast and embers are 0 to 255, sway 0 or 1, spots 0 to %d, spread 1 to 64"),
             FX_FIRE_MAX_SPOTS);
     }
     fx_fire_set_look(&self->fire, (int32_t)v[0], (int32_t)v[1], (int32_t)v[2], (int32_t)v[3], (int32_t)v[4],
-        (int32_t)v[5]);
+        (int32_t)v[5], (int32_t)v[6]);
     return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(heat_field_set_look_obj, 7, 7, heat_field_set_look);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(heat_field_set_look_obj, 8, 8, heat_field_set_look);
 
 // step(steps, wind): see fx_fire_step. A frame takes at most 2 steps, so more than 64 is a mistake.
 static mp_obj_t heat_field_step(mp_obj_t self_in, mp_obj_t steps_in, mp_obj_t wind_in) {

@@ -17,11 +17,14 @@ static uint32_t xorshift32(uint32_t *state) {
 // - fx_fire_step, per step: with spots 0, the bottom row's cells left to right, one draw each (part 1's row). Else
 //   each spot in turn, one draw (its walk or jump), then the bottom row's cells left to right, one draw each (the
 //   flicker). Then, with sway 1, the rows from the top down, one draw per 16 cells from x = 0, 16, 32 and so on.
-//   With wind not 0, each row takes one draw first, before its sway draws (the wind's).
+//   With wind not 0, each row takes one draw first, before its sway draws (the wind's). Then, with embers not 0,
+//   one draw after the rows (the ember's).
 // A spot's place is r % w. A spot's draw r: when its top 6 bits are 0 (1 in 64) it jumps to (r >> 8) % w, else it
 // walks r % 3 - 1 cells, clamped to the field. The flicker keeps heat * (128 + (r >> 25)) >> 8. The sway's draw gives
 // 2 bits per cell, the lowest first: 00 is -1, 01 and 10 are 0, 11 is +1. The wind's draw r shifts the row's read one
-// column against the wind when r & 255 is under |wind|.
+// column against the wind when r & 255 is under |wind|. The ember's draw r starts one in the first free slot when
+// r & 255 is under embers: at the spot ((r >> 8) & 255) % spots (the column (r >> 8) % w with spots 0), vy
+// -(2 + ((r >> 16) & 3)) rows a step and vx ((r >> 18) & 127) - 64 in 1/256 of a cell, plus wind / 8.
 
 static void place_spots(fx_fire_t *f) {
     for (int32_t i = 0; i < FX_FIRE_MAX_SPOTS; i++) {
@@ -80,18 +83,21 @@ void fx_fire_init(fx_fire_t *f, uint8_t *heat, uint8_t *cooling, int32_t w, int3
     f->spots = 0;
     f->spread = 1;
     f->fast = 0;
+    f->embers = 0;
+    memset(f->ember_heat, 0, sizeof f->ember_heat);
     memset(heat, 0, (size_t)w * (size_t)h);
     make_cooling(f);
     place_spots(f);
 }
 
 void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, int32_t spots, int32_t spread,
-                      int32_t fast) {
+                      int32_t fast, int32_t embers) {
     f->decay = decay;
     f->cool = cool;
     f->sway = sway;
     f->spread = spread;
     f->fast = fast;
+    f->embers = embers;
     if (spots != f->spots) {
         f->spots = spots;
         place_spots(f);
@@ -125,6 +131,40 @@ static void spots_row(fx_fire_t *f, uint8_t *bottom) {
     }
     for (int32_t x = 0; x < w; x++) {
         bottom[x] = (uint8_t)((bottom[x] * (128 + (xorshift32(&f->rng) >> 25))) >> 8);
+    }
+}
+
+// The ember's draw, then each live ember moves, cools, dies or writes its heat into its cell (the larger value kept).
+static void embers_step(fx_fire_t *f, int32_t wind) {
+    int32_t w = f->w, h = f->h;
+    uint32_t r = f->embers > 0 ? xorshift32(&f->rng) : 0;
+    if ((r & 255) < (uint32_t)f->embers) {
+        for (int32_t i = 0; i < FX_FIRE_MAX_EMBERS; i++) {
+            if (f->ember_heat[i] == 0) {
+                int32_t x = f->spots > 0 ? f->spot_x[((r >> 8) & 255) % (uint32_t)f->spots]
+                                         : (int32_t)((r >> 8) % (uint32_t)w);
+                f->ember_x[i] = x * 256;
+                f->ember_y[i] = (h - 2) * 256;
+                f->ember_vx[i] = (int32_t)((r >> 18) & 127) - 64 + wind / 8;
+                f->ember_vy[i] = -(2 + (int32_t)((r >> 16) & 3)) * 256;
+                f->ember_heat[i] = 255;
+                break;
+            }
+        }
+    }
+    for (int32_t i = 0; i < FX_FIRE_MAX_EMBERS; i++) {
+        if (f->ember_heat[i] == 0) {
+            continue;
+        }
+        int32_t x = f->ember_x[i] += f->ember_vx[i];
+        int32_t y = f->ember_y[i] += f->ember_vy[i];
+        int32_t heat = f->ember_heat[i] -= 12;
+        if (heat < 40 || x < 0 || y < 0 || x >= w * 256) {
+            f->ember_heat[i] = 0;
+            continue;
+        }
+        uint8_t *at = f->heat + (y / 256) * w + x / 256;
+        *at = *at > heat ? *at : (uint8_t)heat;
     }
 }
 
@@ -182,6 +222,7 @@ void fx_fire_step(fx_fire_t *f, int32_t steps, int32_t wind) {
                 row[x] = (uint8_t)(sum > loss ? sum - loss : 0);
             }
         }
+        embers_step(f, wind);
         f->scroll = (f->scroll + 1) & (FX_FIRE_MAP_H - 1);
         f->fast_scroll = (f->fast_scroll + 2) & (FX_FIRE_MAP_H - 1);
     }

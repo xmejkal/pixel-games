@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #define FX_FIRE_MAX_SPOTS 16
+#define FX_FIRE_MAX_EMBERS 24
 // The cooling map's width and height, each a power of 2. 256 wide, so it never repeats across a field up to 256 wide
 #define FX_FIRE_MAP_W 256
 #define FX_FIRE_MAP_H 32
@@ -22,8 +23,11 @@ typedef struct {
     uint32_t rng;  // xorshift32 state, never 0
     int32_t scroll;  // 0 to 31, one more each step, so the cold patches rise with the flames
     int32_t fast_scroll;  // 0 to 31, two more each step: the map read again for the fast regions, which climb faster
-    int32_t decay, cool, sway, spots, spread, fast;  // the look, see fx_fire_set_look
+    int32_t decay, cool, sway, spots, spread, fast, embers;  // the look, see fx_fire_set_look
     int32_t spot_x[FX_FIRE_MAX_SPOTS];  // each hot spot's column
+    int32_t ember_x[FX_FIRE_MAX_EMBERS], ember_y[FX_FIRE_MAX_EMBERS];  // in 1/256 of a cell
+    int32_t ember_vx[FX_FIRE_MAX_EMBERS], ember_vy[FX_FIRE_MAX_EMBERS];  // in 1/256 of a cell a step
+    int32_t ember_heat[FX_FIRE_MAX_EMBERS];  // 0 is a free slot
 } fx_fire_t;
 
 // Zero the field, seed the random numbers (a seed of 0 becomes 1), make the cooling map and place the spots. The look
@@ -34,17 +38,19 @@ void fx_fire_init(fx_fire_t *f, uint8_t *heat, uint8_t *cooling, int32_t w, int3
 // no cell grows hotter than the cells it reads. cool 0 to 255: how much the cooling map takes, 0 none. sway 0 or 1:
 // each cell reads the cells below it shifted by -1, 0 or +1 at random. spots 0 to FX_FIRE_MAX_SPOTS: the hot spots at
 // the base, 0 for a random bottom row. spread 1 to 64: a spot's half-width in cells. fast 0 to 255: a cell is fast
-// when the map's cell at column (x + 128) & 255, row (y + fast_scroll) & 31 is at least 256 - fast, so 0 makes none. A
-// change of the spot count places the spots again.
+// when the map's cell at column (x + 128) & 255, row (y + fast_scroll) & 31 is at least 256 - fast, so 0 makes none.
+// embers 0 to 255: an ember starts in embers of 256 steps, 0 none. A change of the spot count places the spots again.
 void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, int32_t spots, int32_t spread,
-                      int32_t fast);
+                      int32_t fast, int32_t embers);
 
 // steps steps with the look. Each one makes the bottom row (random, or the spots), then each cell above, from the top
 // row down, becomes (the three cells below it + the cell two below) * decay >> 7, at most the hottest of those four,
 // less the cooling map's cell * cool >> 8, at least 0. A fast cell reads the same four cells one row further down,
 // so its heat climbs two rows a step, unless that puts its three cells past the bottom. A cell outside the field
 // counts 0. wind -255 to 255: a row reads one column against the wind in |wind| of 256 steps, so positive wind blows
-// the flames toward larger x. 0 takes no draw.
+// the flames toward larger x. 0 takes no draw. After the rows an ember may start one row above the bottom, then each
+// live ember moves, rising 2 to 5 rows a step, loses 12 heat, dies under 40 heat or outside the field, and writes its
+// heat into its cell where that is hotter.
 void fx_fire_step(fx_fire_t *f, int32_t steps, int32_t wind);
 
 // The whole panel, 2h px wide and 2w px high, as palette[heat], in the panel order of lcd.py's TftCanvas.fill at

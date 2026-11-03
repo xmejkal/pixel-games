@@ -39,6 +39,7 @@ SWAY = 1  # 1: each cell reads the cells below it shifted by -1, 0 or +1 at rand
 SPOTS = 12  # 0 to 16 hot spots at the base, each walking and now and then jumping. 0 is part 1's random bottom row
 SPREAD = 16  # 1 to 64: a spot's half-width in cells
 FAST = 128  # 0 to 255: how much of the field rises two rows a step, in patches from the cooling map. 0 is none
+EMBERS = 40  # 0 to 255: an ember starts in EMBERS of 256 kernel steps and rises faster than any flame
 WIND = 60  # 0 to 255: the strongest gust, a row shifts one column with the wind in WIND of 256 steps
 SEED = 595
 # The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, the key
@@ -80,7 +81,7 @@ class Fire(Game):
         if engine is not None:
             print("fire internal largest", engine.largest_free_internal())
             self.field = engine.HeatField(W, H, SEED)
-            self.field.set_look(DECAY, COOL, SWAY, SPOTS, SPREAD, FAST)
+            self.field.set_look(DECAY, COOL, SWAY, SPOTS, SPREAD, FAST, EMBERS)
             print("fire field", self.field.where)
         self.begin()
 

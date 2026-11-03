@@ -150,7 +150,7 @@ class FireTest(unittest.TestCase):
         self.assertRegex(out.getvalue(), REPORT)
         self.assertRegex(game.label, r"^fire B \d+\.\d ms \d+ fps$")
         self.assertEqual({"tft"}, set(fire.engine.targets))
-        look = (fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST)
+        look = (fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST, fire.EMBERS)
         self.assertEqual([look], fire.engine.looks)  # once
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the fire reached the frame
 
@@ -180,7 +180,7 @@ class FireTest(unittest.TestCase):
         for seed in (1, 2, 3, 4, 5, 7, 595):
             with self.subTest(seed=seed):
                 field = fire.engine.HeatField(fire.W, fire.H, seed)
-                field.set_look(fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST)
+                field.set_look(fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST, fire.EMBERS)
                 top = []
                 for k in range(50):
                     field.step(100, fire.WIND if k % 2 == 0 else -fire.WIND)  # the wind one way, then the other
