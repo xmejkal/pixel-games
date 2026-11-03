@@ -1,4 +1,4 @@
-"""RENT (arcade2.Stack) on the Mac: the slabs and the collapse's pile. framebuf comes from tests/stubs and time gets the two MicroPython
+"""RENT (arcade2.Stack) on the Mac: the slabs, the collapse's pile and the bench bot (bench582.Bot). framebuf comes from tests/stubs and time gets the two MicroPython
 ticks functions, so gfx imports here; the paint is recorded on a canvas of plain calls. Run from the repository root:
 python3 -m unittest discover tests."""
 
@@ -15,6 +15,7 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_diff = lambda a, b: a - b
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)
 
+import bench582  # noqa: E402
 from arcade2 import Pile, Stack, pile_plane  # noqa: E402
 from gfx import OVER, PLAY  # noqa: E402
 
@@ -235,6 +236,27 @@ class PileTest(unittest.TestCase):
         game = tower(1)
         for _ in collapse(game, 0.04, 2.0):
             self.assertFalse([y for y in block_tops(game) if y >= H])
+
+
+class BotTest(unittest.TestCase):
+
+    def test_a_long_round_then_a_retry(self):
+        """At the 40 ms pace, with Stack's own speed rule: 20 floors or more, then it taps itself into a new round."""
+        game, now, rounds = playing(bench582.Bot), 0, []
+        self.assertEqual(game.name, "stack")
+        before = game.state
+        for _ in range(8000):
+            now += 40
+            game.step(now, False, False)
+            if before == PLAY and game.state == OVER:
+                rounds.append(game.score)
+            if before == OVER and game.state == PLAY:
+                self.assertEqual(game.score, 0)
+                break
+            before = game.state
+        self.assertEqual(len(rounds), 1)
+        self.assertGreaterEqual(rounds[0], 20)
+        self.assertEqual(game.state, PLAY)
 
 
 if __name__ == "__main__":
