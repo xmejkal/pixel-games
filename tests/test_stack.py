@@ -297,23 +297,52 @@ class CollapseTest(unittest.TestCase):
 
 class BotTest(unittest.TestCase):
 
-    def test_a_long_round_then_a_retry(self):
-        """At the 40 ms pace, with Stack's own speed rule: 20 floors or more, then it taps itself into a new round."""
-        game, now, rounds = playing(bench582.Bot), 0, []
-        self.assertEqual(game.name, "stack")
+    def play(self, game, frames=8000):
+        """Bot at the 40 ms pace until it taps itself into a second round: the scores of the rounds it ended, the
+        slabs it cut as (width, the tap that dropped the floor) and its age on the frame it tapped retry."""
+        now, rounds, cuts, retry_age = 0, [], [], None
+        cut_off = game.cut_off
+        game.cut_off = lambda *a: cuts.append((a[2], game.taps)) or cut_off(*a)
         before = game.state
-        for _ in range(8000):
+        for _ in range(frames):
             now += 40
             game.step(now, False, False)
             if before == PLAY and game.state == OVER:
                 rounds.append(game.score)
             if before == OVER and game.state == PLAY:
+                retry_age = game.age  # the over age it tapped at: restart does not touch age
                 self.assertEqual(game.score, 0)
                 break
             before = game.state
+        return rounds, cuts, retry_age
+
+    def test_a_long_round_with_slabs_then_a_retry(self):
+        """With Stack's own speed rule: 20 floors or more, a slab cut off at the third, sixth and ninth taps, then a
+        new round once the SOLD OUT card is up. Later off-centre taps may land perfect: once the floor is under 16 px
+        wide, a quarter of it is inside the 4 px perfect window."""
+        game = playing(bench582.Bot)
+        self.assertEqual(game.name, "stack")
+        rounds, cuts, retry_age = self.play(game)
         self.assertEqual(len(rounds), 1)
         self.assertGreaterEqual(rounds[0], 20)
+        self.assertLessEqual({3, 6, 9}, {tap for _, tap in cuts})  # floors 140, ~105, ~80 px: a quarter is 20 px+
         self.assertEqual(game.state, PLAY)
+        self.assertGreaterEqual(retry_age, max(game.CARD_MS, game.OVER_MS))
+        # It reads the age of the frame before, whose paint showed the card: it taps one frame after that, no later.
+        self.assertLess(retry_age, max(game.CARD_MS, game.OVER_MS) + 2 * 40)
+
+    def test_the_off_centre_tap_lands_a_quarter_off(self):
+        game = playing(bench582.Bot)
+        width, tap = self.play(game)[1][0]
+        self.assertEqual(tap, 3)
+        self.assertGreaterEqual(width, 140 // 4 - 8)  # the first cut: a quarter of 140 px, less a frame's tolerance
+        self.assertLessEqual(width, 140 // 4 + 8)
+
+    def test_retry_waits_for_the_card(self):
+        game = playing(bench582.Bot)
+        game.CARD_MS = 1500  # a card later than the retry: the bot still waits for it
+        retry_age = self.play(game)[2]
+        self.assertGreaterEqual(retry_age, 1500)
 
 
 if __name__ == "__main__":
