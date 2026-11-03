@@ -157,6 +157,22 @@ class StripTest(unittest.TestCase):
                 scene.draw_hud(lcd.TftCanvas(straight))
                 self.assertEqual(straight.frame, tft.frame)
 
+    def test_another_fire_with_the_same_label_redraws(self):
+        calls = []
+        cv = lcd.TftCanvas(Tft())
+        for name in ("fire", "fire2"):
+            flames = fire.Fire.__new__(fire.Fire)
+            flames.name, flames.label = name, "fire B 11.5 ms 24 fps"
+            flames.draw_hud = lambda c, f=flames: calls.append(1) or fire.Fire.draw_hud(f, c)
+            flames.hud(cv)
+        self.assertEqual(2, len(calls))
+
+    def test_the_bars_keep_their_heights(self):
+        """The rects set the strips' sizes, and the draws read their heights from them: a changed height would move
+        both and no pixel test would see it."""
+        self.assertEqual((0, 0, gfx.WIDTH, 16), gfx.HUD_RECT)
+        self.assertEqual((0, 0, gfx.WIDTH, 14), gfx.LABEL_RECT)
+
 
 class RecordingTest(unittest.TestCase):
     def test_the_recording_canvas_replays_the_same_tuples(self):
