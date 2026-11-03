@@ -133,6 +133,7 @@ class WorldTest(unittest.TestCase):
         self.assertIn(HIT, kinds)
         self.assertIn(SLEEP, kinds)  # the scene reaches both branches, so the test reaches them too
         print("\nbounce scene: smallest landing margin %.4f px" % margin)
+        self.assertGreater(margin, 0.01)  # 0.0160 on 2026-11-03: a tie on a step edge would split float and fixed
 
     def test_fall_scene_stays_in_q16_range(self):
         ys, events, _ = self.check_scene(FALL)

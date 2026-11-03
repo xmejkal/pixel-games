@@ -21,7 +21,7 @@ from motion import Bodies, fall_bodies
 N, RATE, STEPS, BLOCKS, FRAME = 12, 100, 100, 6, 6  # bodies, steps per second, steps per block, blocks, steps a frame
 GRAVITY, RESTITUTION, FRICTION = 2000.0, 0.35, 0.6  # p582-heavy games/arcade2.py: Stack.G, SLAB_BOUNCE, SLAB_FRICTION
 DT = 1 / RATE
-CALLS = STEPS // FRAME  # calls of one frame per block: 16, so 96 steps
+CALLS = STEPS // FRAME  # calls of one frame per block: 16, so a frame_call bracket steps 96 of the block's 100
 
 
 def scene(rest_y):

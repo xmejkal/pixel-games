@@ -229,7 +229,7 @@ Memory after deinit ("double" run; "dma" within 420 B): PSRAM free 6747500.00 B,
 
 ## P589 (#790), 2026-11-03: what a C step costs
 
-`probe589.py` on the engine image (`./build.sh engine`: s3lcd plus the probe module `engine`, sha256 1dd3f2cb714a563b, `-O2` from `CONFIG_COMPILER_OPTIMIZATION_PERF`, 223,120 B left in the app partition). The baseline is `fall_bodies` from p582-heavy 21c0b09 (`games/motion.py`, `@native`). Three runs in one boot at 11:17 CET, `run53-p589.log` (git-ignored, kept on the Mac). Each value is the median of the three runs. The three runs differ by 0.01 µs at most. The scene: g 2000 px/s², a 10 ms step, restitution 0.35, friction 0.6, 12 bodies, 6 blocks of one load and 100 steps. A frame is 6 steps. The pass lines were written before the run, in risks-and-tests.md.
+`probe589.py` on the engine image (`./build.sh engine`: s3lcd plus the probe module `engine`, sha256 1dd3f2cb714a563b before the A8 edit, not rebuilt since, `-O2` from `CONFIG_COMPILER_OPTIMIZATION_PERF`, 223,120 B left in the app partition). The baseline is `fall_bodies` from p582-heavy 21c0b09 (`games/motion.py`, `@native`). Three runs in one boot at 11:17 CET, `run53-p589.log` (git-ignored, kept on the Mac). Each value is the median of the three runs. The timings of the three runs differ by 0.01 µs at most. The alloc lines differ by up to 128 B. The scene: g 2000 px/s², a 10 ms step, restitution 0.35, friction 0.6, 12 bodies, 6 blocks of one load and 100 steps. A frame is 6 steps. The pass lines were written before the run, in risks-and-tests.md.
 
 | what | value | unit | pass line | verdict |
 | --- | --- | --- | --- | --- |
@@ -239,7 +239,7 @@ Memory after deinit ("double" run; "dma" within 420 B): PSRAM free 6747500.00 B,
 | C float step, one frame (0.135 × 72) | 9.7 | µs | A3: under 2 ms | lower bound only |
 | C fixed-point (Q16.16) step, per body-step | 0.211 | µs | D16: a number only | |
 | C fixed-point step, one frame (0.211 × 72) | 15.2 | µs | | |
-| C step, one frame through one Python call (both modes) | about 0.02 | ms | | |
+| C step, one frame through one Python call (both modes; 16 calls of 6 steps) | about 0.02 | ms | | |
 | bounce scene, per awake body-step: Python, float, fixed | 37.60, 0.142, 0.211 | µs | | |
 | drain of 16 events into an `array('i')`, read in Python | 162.5 | µs | | |
 | step plus drain, per frame | about 0.18 | ms | A2: under 0.5 ms | passes |
@@ -247,14 +247,14 @@ Memory after deinit ("double" run; "dma" within 420 B): PSRAM free 6747500.00 B,
 | 12 Python list reads of `bodies.y[i]` | 32.35 | µs | | |
 | `engine.read_y` plus 12 reads of its `array('f')` | 60.03 | µs | | |
 | one Python-to-C call of `engine.nothing()`, loop included | 2.60 | µs | | |
-| one edit-to-import cycle: build 32 s, flash 12 s, first import 4 s | 48 | s | A8: under 5 minutes | passes |
+| one edit-to-import cycle: build 32 s, flash 12 s, first import 4 s (timed by `date` in the shell, no log file) | 48 | s | A8: under 5 minutes from edit to play | passes; play adds the game's start |
 
-- The C float step is about 274 times faster than today's `fall_bodies` per body-step. It moves the same bodies: after 6 and after 100 steps, C (both modes) and `fall_bodies` differ by 0.0001 px at most (the sanity lines).
-- `fall_bodies` allocates 127,600 B in 600 calls, so 213 B per call, or about 31 kB/s at 6 steps a frame and 24 fps. The C step allocates 0 B.
+- The C float step is about 274 times faster than today's `fall_bodies` per body-step. The sanity lines compare y only, in the bounce scene: after 6 and after 100 steps, C (both modes) and `fall_bodies` differ by 0.0001 px at most. The fixed step rounds `v / rate` toward zero, so its work is close to the float step's, not the same.
+- The Python bracket leaves gc on, so a collection inside it counts in the baseline, as it does in a game. `fall_bodies` allocates 127,600 B in 600 calls, so 213 B per call, or about 31 kB/s at 6 steps a frame and 24 fps. The C step allocates 0 B.
 - Fixed-point is about 1.56 times slower than float in scalar C. The S3 has a hardware float unit, and the fixed step pays for int64 products. PIE SIMD was not measured. A PIE path works on integer lanes, so this row is the base it would start from, not its speed.
 - A3 has a lower bound only: this step has no contacts and no rotation, and a rigid step costs more. A3 stays open.
-- The step and the calls are small next to the drain's Python loop: reading 48 ints costs most of the 162.5 µs. Reading 12 values back from C costs more than 12 Python list reads (60.03 against 32.35 µs). So a design that sends every body back to Python each frame pays for the read, not for the step. B draws in C and avoids that read.
+- The step and the calls are small next to the drain: 162.5 µs for one C call and a Python loop over 48 ints. That the loop costs most of it is calculated from the 2.60 µs call, not measured. Reading 12 values back from C costs more than 12 Python list reads (60.03 against 32.35 µs). So a design that sends every body back to Python each frame pays for the read, not for the step. B draws in C and avoids that read.
 - The 5.34 µs C-to-Python call settles the PO-29 disagreement: the 5.5 µs stand-in in TL-14 held, and the 20 to 60 µs estimate was high.
-- Builds: the first `./build.sh engine` took 1 min 34 s (cold build directory). An incremental `./build.sh s3lcd` took 36.9 s. It gave sha256 9c22d6b6f3951c99, not the a4e0beab of 2026-11-02, with the same size (1,806,224 B). The cause was not looked for.
+- Builds: the first `./build.sh engine` took 1 min 34 s (cold build directory). An incremental `./build.sh s3lcd` took 36.9 s. It gave sha256 9c22d6b6f3951c99, not the sha of the image built on 2026-11-02 in the same folder, with the same size (1,806,224 B). The cause was not looked for.
 - The A8 edit was `1.5f` to `1.6f` in `engine/core/world.c:66` (the rest speed), reverted after. The flash was without buttons, as in line 83 above, with the hash verified.
 - Restore: `build-s3lcd/micropython.bin` (9c22d6b6f3951c99) flashed back, hash verified. After the reset, the games started on their own: flappy at 21 fps (`restore-p589.log`).
