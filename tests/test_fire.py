@@ -188,6 +188,16 @@ class FireTest(unittest.TestCase):
         self.assertLess(min(winds), 0)  # the gusts blow both ways
         self.assertGreater(max(winds), 0)
 
+    def test_a_gust_reaches_its_target_both_ways(self):
+        """The wind eases an eighth of the way each frame, rounded away from 0, so it ends on the target from either side."""
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = fire.Fire()
+            now = 0
+            for target in (3, -3, fire.WIND, -fire.WIND):
+                game.wind, game.target, game.gust = 0, target, 10 ** 9  # no new gust during the test
+                _, now = play(game, 100, now, Tft())
+                self.assertEqual(target, game.wind)
+
     def test_the_look_stays_low_at_the_top_for_the_seven_seeds(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
         stays under 48, with the wind +WIND for 100 steps, then -WIND. Part 2's look without the bound reached white at
