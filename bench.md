@@ -278,3 +278,22 @@ The engine image (`./build.sh engine`, sha256 2a519b269b3bb482, 222,576 B left i
 - The first `mpremote run` after an `mpremote cp`, and a `cat` of the port after a reset, printed nothing, as on 2026-11-01 (line 54). A second run works.
 - Free internal RAM at start was not measured: the logs hold only `mem 8029760`, the total with PSRAM. The plan asked for it.
 - The board keeps the engine image. The rain starts at power-on.
+
+## P595 (#796), 2026-11-03: the fire, the first native effect
+
+The engine image (`./build.sh engine`, sha256 389c0020b31b0f86, 220,768 B left in the app partition) with `games/fire.py` first in `GAMES`. The field is 160 x 120 cells, drawn at 2 x 2 px over the whole screen, one kernel step per 40 ms (`DECAY` 31). Each mode ran alone through `mpremote run` for about 40 s, started by a small script in that mode, because a BOOT tap needs a hand. Logs (git-ignored, kept on the Mac): `run57-p595-fire-B.log`, `run57-p595-fire-A.log`, `run57-p595-fire-picture.log`, and `run58-p595-smoke.log` for the games. Step plus draw is brief.md's one formula: the `time` line's step plus the same interval's `avg` paint. A2's line is 15.3 ms (risks-and-tests.md), and each row holds every 5 s interval of its run.
+
+| mode | intervals | fps | step | paint | step + draw | static | hud | unit |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| B: C writes the s3lcd frame | 7 | 24 to 25 | 3.1 to 3.2 | 4.6 | 7.7 to 7.8 | 0.1 | 11.3 to 12.6 | ms |
+| A: C fills a buffer, Python blits it opaque | 6 | 23 to 24 | 3.3 | 11.7 | 15.0 | 0.1 | 11.0 to 11.5 | ms |
+| picture: the buffer at alpha 128 over the sky | 6 | 15 to 17 | 4.2 to 4.5 | 22.5 to 25.5 | 26.7 to 30.0 | 7.1 | 14.8 to 16.9 | ms |
+
+- A2 passes on both paths, B with room (7.7 to 7.8 ms) and A by 0.3 ms (15.0). B is about half of A's cost, so B stays and A's opaque mode is dropped (D7, commit e968acd). The fire swaps B and the sky variant on a BOOT tap.
+- The fire's own lines split B's cost: the kernel step 2.67 to 2.73 ms and the draw into the frame 4.31 to 4.34 ms. The discovery's estimate was 7.6 to 7.7 ms (★C11, H), and the run gives 7.7 to 7.8 ms.
+- A9 passes: the largest free internal block at the scene's start is 31,744 B in every run, and the 19,200 B field went to internal RAM (`fire field internal`).
+- A3, with no pass line: the blended step plus draw is 26.7 to 30.0 ms, 3.8 times B's and 2.0 times A's, plus 7.1 ms of `static` for the sky's keyed blit, which a game pays too. The discovery expected about 33.6 ms (H).
+- The fps print is 24 or 25 in B. A2's room is not the fps limit: the HUD text still costs 11 to 13 ms a frame (P599 #800).
+- Smoke test after the drop: all eleven other entries start and print fps lines, with no error (rain 24, flappy 19 to 22, runner 20 to 23, snake 24, stack 24 to 25, cave 20 to 22, tunnel 19 to 22, road 13 to 21, starfire 20 to 24, cube 22 to 23, gravpong 24). Road's 13 is one interval. P593's smoke run printed 21 for it.
+- The two-mode cycle after the drop was not timed on the board. Its picture path is the one timed above, and a Mac test covers the tap.
+- The board keeps the engine image. The fire starts at power-on, with the rain second.
