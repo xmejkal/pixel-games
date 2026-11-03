@@ -3,7 +3,6 @@ ticks functions, so gfx imports here; the paint is recorded on a canvas of plain
 python3 -m unittest discover tests."""
 
 import os
-import random
 import sys
 import time
 import unittest
@@ -16,7 +15,7 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)
 
 import bench582  # noqa: E402
-from arcade2 import Pile, Stack, pile_plane  # noqa: E402
+from arcade2 import Stack, pile_under  # noqa: E402
 from gfx import OVER, PLAY  # noqa: E402
 
 H = 240
@@ -126,115 +125,104 @@ class SlabTest(unittest.TestCase):
             self.assertFalse([y for y in block_tops(game) if y >= H])
 
 
-def tower(seed, n=14):
-    """A game over with n floors standing as a round leaves them: each lands near the one under it, cut narrower."""
-    rnd = random.Random(seed)
-    game = playing()
-    game.wreck = Pile(n, game.LEVEL_H, game.BASE)
-    x, w = 90.0, 140
-    for i in range(n):
-        game.wreck.add(x, game.BASE - (i + 1) * game.LEVEL_H, w, i)
-        off = rnd.randint(-6, 6)
-        x, w = x + max(0, off), max(30, w - abs(off))
-    game.state, game.age, game.lean = OVER, 0, rnd.choice((-1, 1))
-    return game
+def fallen(n, width, dt, lean=1):
+    """A real round: n floors of width px by perfect drops through Stack's own release() and fall(), the press left to
+    settle, then a miss on the lean side, played until the tower is over."""
+    step = int(dt * 1000)
+    game, now = playing(), 0
+    game.floors, game.w = [(160 - width // 2, width)], width
+    game.step(now, False, False)
+    while len(game.floors) < n:
+        if not game.drop and not game.hold:
+            game.x = float(game.floor_x(len(game.floors) - 1))
+            game.release()
+        now += step
+        game.step(now, False, False)
+    for _ in range(15):
+        now += step
+        game.step(now, False, False)
+    tx = game.floor_x(len(game.floors) - 1)
+    game.x = float(tx + width + 5) if (lean > 0 and tx + 2 * width + 5 <= W) or tx < width + 5 else 0.0
+    game.release()
+    while game.state == PLAY:
+        now += step
+        game.step(now, False, False)
+    return game, now
 
 
-def collapse(game, dt, seconds):
-    """Run the collapse for seconds at dt; after each step, the wreck's bodies and when each floor was released."""
-    released, ms = {}, 0
-    for _ in range(int(round(seconds / dt))):
-        ms += int(dt * 1000)
-        game.age = ms
-        before = game.released
-        game.collapse(dt)
-        for r in range(before, game.released):
-            released[game.wreck.count - 1 - r] = ms
-        yield game.wreck.bodies, released
+W = 320
 
 
-class PileTest(unittest.TestCase):
+class CollapseTest(unittest.TestCase):
+    """The collapse of a real round, 12 floors at 140 and at 60 px, at dt 0.04 and 0.06: every floor above the street
+    comes down (14 px lower or 20 px aside), the basement stays, no two floors of the wreck end inside each other,
+    none below its plane or the street, all at rest within SETTLE_MS (1.44 s measured on the Mac)."""
 
-    def test_the_rule(self):
-        x, y, w = [0.0, 0.0, 100.0, 0.0], [100.0, 50.0, 80.0, 20.0], [50, 50, 50, 50]
-        rest_y, live = [100.0, 50.0, 80.0, 20.0], [1, 1, 1, 1]
-        self.assertEqual(pile_plane(1, x, y, w, rest_y, live, 200, 14, 8), (86.0, 0))  # floor 2 does not overlap
-        rest_y[0] = 150.0  # floor 0 falls: floor 1 lands where floor 0 will stop
-        self.assertEqual(pile_plane(1, x, y, w, rest_y, live, 200, 14, 8), (136.0, 0))
-        x[1] = 43.0  # 7 px over floor 0: too little
-        self.assertEqual(pile_plane(1, x, y, w, rest_y, live, 200, 14, 8), (200, -1))
-        self.assertEqual(pile_plane(0, x, y, w, rest_y, live, 200, 14, 8), (200, -1))  # floor 3 is above it
-        y[1] = 210.0
-        self.assertEqual(pile_plane(1, x, y, w, rest_y, live, 200, 14, 8), (210.0, -1))  # never above where it is
+    SETTLE_MS = 1500
 
-    def test_all_asleep_by_1_4_s(self):
-        for dt in (0.04, 0.06):
-            for seed in range(8):
-                with self.subTest(dt=dt, seed=seed):
-                    game = tower(seed)
-                    for _ in collapse(game, dt, 1.4):
-                        pass
-                    self.assertEqual(game.released, 14)
-                    self.assertTrue(game.wreck.still())
-                    for b, _ in collapse(game, dt, 1.0):  # and it stays at rest
-                        self.assertTrue(game.wreck.still())
+    def each(self):
+        for width in (140, 60):
+            for dt in (0.04, 0.06):
+                for lean in (1, -1):
+                    yield width, dt, lean
 
-    def test_none_below_its_plane(self):
-        for dt in (0.04, 0.06):
-            for seed in range(8):
-                with self.subTest(dt=dt, seed=seed):
-                    game = tower(seed)
-                    for b, _ in collapse(game, dt, 1.4):
-                        for j in range(game.wreck.count):
-                            self.assertLessEqual(b.y[j], b.rest_y[j])
+    def test_the_tower_comes_down(self):
+        for width, dt, lean in self.each():
+            with self.subTest(width=width, dt=dt, lean=lean):
+                game, now = fallen(12, width, dt, lean)
+                wreck, low = game.wreck, game.basement
+                b, n = wreck.bodies, wreck.count
+                self.assertGreater(low, 0)  # 12 floors reach below the street
+                x0, y0 = list(b.x[:n]), list(b.y[:n])
+                still = None
+                for k in range(int(2.0 / dt)):
+                    now += int(dt * 1000)
+                    game.step(now, False, False)
+                    for j in range(n):
+                        self.assertLessEqual(b.y[j], b.rest_y[j])
+                        if j >= low:
                             self.assertLessEqual(b.y[j], game.BASE)
+                    if still is None and game.collapsed():
+                        still = (k + 1) * dt * 1000
+                self.assertIsNotNone(still)
+                self.assertLessEqual(still, self.SETTLE_MS)
+                for j in range(n):
+                    if j < low:
+                        self.assertEqual((b.x[j], b.y[j]), (x0[j], y0[j]))
+                    elif b.live[j]:
+                        self.assertTrue(b.y[j] - y0[j] >= game.LEVEL_H or abs(b.x[j] - x0[j]) >= 20, j)
+                for i in range(low, n):
+                    for j in range(low, i):
+                        if b.live[i] and b.live[j]:
+                            across = min(b.x[i] + wreck.w[i], b.x[j] + wreck.w[j]) - max(b.x[i], b.x[j])
+                            self.assertFalse(across > 0 and abs(b.y[i] - b.y[j]) < game.LEVEL_H, (i, j))
 
-    def test_top_down_and_the_street_floor_last(self):
-        game = tower(0)
-        for _, released in collapse(game, 0.04, 1.4):
-            pass
-        self.assertEqual(len(released), 14)
-        order = sorted(released, key=lambda j: (released[j], -j))
-        self.assertEqual(order, list(range(13, -1, -1)))
-        self.assertGreater(released[0], released[1])
-
-    def test_every_floor_falls(self):
-        """Each floor ends lower than it stood: the street floor drops onto the street, and the rest with it."""
-        for seed in range(8):
-            with self.subTest(seed=seed):
-                game = tower(seed)
-                start = list(game.wreck.bodies.y)
-                for b, _ in collapse(game, 0.04, 1.4):
-                    pass
-                for j in range(14):
-                    self.assertTrue(not b.live[j] or b.y[j] > start[j], j)
-
-    def test_no_floor_ends_inside_another(self):
-        for dt in (0.04, 0.06):
-            for seed in range(8):
-                with self.subTest(dt=dt, seed=seed):
-                    game = tower(seed)
-                    for b, _ in collapse(game, dt, 1.4):
-                        pass
-                    w, h = game.wreck.w, game.LEVEL_H
-                    for i in range(14):
-                        for j in range(i):
-                            if b.live[i] and b.live[j]:
-                                across = min(b.x[i] + w[i], b.x[j] + w[j]) - max(b.x[i], b.x[j])
-                                self.assertFalse(across > 0 and abs(b.y[i] - b.y[j]) < h, (i, j))
+    def test_the_rule_keeps_the_tower_order(self):
+        game, _ = fallen(5, 140, 0.04)
+        wreck = game.wreck
+        self.assertEqual(game.basement, 0)
+        self.assertEqual(pile_under(wreck, 0), -1)  # nothing released: the street
+        wreck.released[0] = wreck.released[3] = 1
+        self.assertEqual(pile_under(wreck, 2), 0)  # floor 3 stood above it, so it holds nothing up
+        self.assertEqual(pile_under(wreck, 0), -1)
+        wreck.bodies.x[0] += 140 - 7  # 7 px of overlap: too little
+        self.assertEqual(pile_under(wreck, 2), -1)
 
     def test_hits_are_throttled(self):
-        game = tower(3)
+        game, now = fallen(12, 60, 0.04)
         hits = []
         game.collapse_hit = lambda x, y, speed: hits.append(game.age)
-        for _ in collapse(game, 0.04, 1.4):
-            pass
+        for _ in range(50):
+            now += 40
+            game.step(now, False, False)
         self.assertTrue(hits)
         self.assertTrue(all(b - a >= game.HIT_MS for a, b in zip(hits, hits[1:])))
 
     def test_the_wreck_draws_nothing_below_the_screen(self):
-        game = tower(1)
-        for _ in collapse(game, 0.04, 2.0):
+        game, now = fallen(12, 140, 0.04)
+        for _ in range(50):
+            now += 40
+            game.step(now, False, False)
             self.assertFalse([y for y in block_tops(game) if y >= H])
 
 
