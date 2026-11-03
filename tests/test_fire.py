@@ -30,7 +30,7 @@ REPORT = re.compile(r"^fire (B|picture) fps \d+ step \d+\.\d\d draw \d+\.\d\d$",
 
 
 sys.path.insert(0, HERE)
-from test_fire_core import Field  # noqa: E402  fx_fire_t
+from test_fire_core import MAP_H, MAP_W, Field  # noqa: E402  fx_fire_t and its map
 
 
 class Tft:
@@ -67,9 +67,9 @@ class Engine:
             where = "internal"
 
             def __init__(self, w, h, seed):
-                self.heat, self.f = bytearray(w * h + 64 * 64), Field()  # the map after the field, as in binding.c
+                self.heat, self.f = bytearray(w * h + MAP_W * MAP_H), Field()  # the map after the field, as binding.c
                 lib.fx_fire_init(ctypes.byref(self.f), (ctypes.c_uint8 * (w * h)).from_buffer(self.heat),
-                                 (ctypes.c_uint8 * (64 * 64)).from_buffer(self.heat, w * h), w, h, seed)
+                                 (ctypes.c_uint8 * (MAP_W * MAP_H)).from_buffer(self.heat, w * h), w, h, seed)
 
             def set_look(self, *look):
                 engine.looks.append(look)
@@ -173,7 +173,7 @@ class FireTest(unittest.TestCase):
         ], seen)
         self.assertIn("fire mode picture\nfire mode B\n", out.getvalue())
 
-    @unittest.expectedFailure  # the lead changes the look: with the bound, seeds 4 and 7 reach 85.9 and 95.2
+    @unittest.expectedFailure  # the lead changes the look: on the 256 x 32 map seed 4 still reaches 63.1
     def test_the_look_stays_low_at_the_top_for_any_seed(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
         stays under 48. Part 2's look without the bound reached white at the top with seed 7."""

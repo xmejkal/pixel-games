@@ -3,7 +3,6 @@ draw: clang builds it into a temporary folder and ctypes calls it. The panel cor
 the repository root: python3 -m unittest discover tests. --- MVP (P595) ---"""
 
 import ctypes
-import hashlib
 import os
 import shutil
 import subprocess
@@ -21,13 +20,10 @@ FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
 W, H = 160, 120  # games/fire.py's field: the panel is 240 x 320
 SEED, STEPS = 595, 50
 SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps the run short
-MAP, MAX_SPOTS = 64, 16  # FX_FIRE_MAP and FX_FIRE_MAX_SPOTS
+MAP_W, MAP_H, MAX_SPOTS = 256, 32, 16  # FX_FIRE_MAP_W, FX_FIRE_MAP_H and FX_FIRE_MAX_SPOTS
 PART1 = (31, 0, 0, 0, 1, 0)  # the look at init: decay, cool, sway, spots, spread, fast
 ALL_ON = (33, 90, 1, 5, 4, 120)  # decay 33 lifts sums past the hottest cell read, so the bound is reached too
-# Part 2's look at decay 31 (the bound does nothing there): the small field's sha256 after STEPS steps with commit
-# c4e232f's kernel, recorded from that commit's fx_fire.c before part 3 changed it
-GOLDEN_LOOK = (31, 24, 1, 12, 16, 0)
-GOLDEN = "e68a78bfe9ed3a12129f40964e4779a13813d6e79c6788022da14b0b79d32677"
+PART2_AT_31 = (31, 24, 1, 12, 16, 0)  # part 2's look at decay 31, where the bound does nothing
 
 
 class Field(ctypes.Structure):
@@ -51,13 +47,14 @@ class Reference:
     def __init__(self, w, h, seed):
         self.w, self.h, self.rng, self.scroll, self.fast_scroll = w, h, seed or 1, 0, 0
         self.decay, self.cool, self.sway, self.spots, self.spread, self.fast = PART1
+        self.bound = True  # part 3's bound: False for the step without it
         self.heat = [0] * (w * h)
-        self.cooling = [255 if self.draw() >> 28 == 0 else 0 for _ in range(MAP * MAP)]
+        self.cooling = [255 if self.draw() >> 28 == 0 else 0 for _ in range(MAP_W * MAP_H)]
         for _ in range(2):
-            for k in range(MAP):
-                self.blur_ring(k * MAP, 1)
-            for k in range(MAP):
-                self.blur_ring(k, MAP)
+            for k in range(MAP_H):
+                self.blur_ring(k * MAP_W, MAP_W, 1)
+            for k in range(MAP_W):
+                self.blur_ring(k, MAP_H, MAP_W)
         lo, hi = min(self.cooling), max(self.cooling)
         self.cooling = [(v - lo) * 255 // (hi - lo) if hi > lo else 0 for v in self.cooling]
         self.place_spots()
@@ -66,11 +63,11 @@ class Reference:
         self.rng = xorshift32(self.rng)
         return self.rng
 
-    def blur_ring(self, start, stride):
-        cells = [start + i * stride for i in range(MAP)]
+    def blur_ring(self, start, n, stride):
+        cells = [start + i * stride for i in range(n)]
         old = [self.cooling[i] for i in cells]
         for i, at in enumerate(cells):
-            self.cooling[at] = (old[i - 1] + old[i] + old[(i + 1) % MAP]) // 3
+            self.cooling[at] = (old[i - 1] + old[i] + old[(i + 1) % n]) // 3
 
     def place_spots(self):
         self.spot_x = [self.draw() % self.w for _ in range(MAX_SPOTS)]
@@ -114,14 +111,15 @@ class Reference:
                         c += (bits >> 1 & 1) + (bits & 1) - 1
                         bits >>= 2
                     d = 1  # a fast cell reads one row further down, unless its three cells would be past the bottom
-                    fast = self.cooling[(y + self.fast_scroll) % MAP * MAP + (x + 32) % MAP] >= 256 - self.fast
+                    fast = self.cooling[(y + self.fast_scroll) % MAP_H * MAP_W + (x + 128) % MAP_W] >= 256 - self.fast
                     if fast and y + 2 < h:
                         d = 2
                     read = (at(c - 1, y + d), at(c, y + d), at(c + 1, y + d), at(c, y + d + 1))
-                    loss = self.cooling[(y + self.scroll) % MAP * MAP + x % MAP] * self.cool >> 8
-                    heat[y * w + x] = max(0, min(max(read), sum(read) * self.decay >> 7) - loss)
-            self.scroll = (self.scroll + 1) % MAP
-            self.fast_scroll = (self.fast_scroll + 2) % MAP
+                    loss = self.cooling[(y + self.scroll) % MAP_H * MAP_W + x % MAP_W] * self.cool >> 8
+                    top = max(read) if self.bound else 255
+                    heat[y * w + x] = max(0, min(top, sum(read) * self.decay >> 7) - loss)
+            self.scroll = (self.scroll + 1) % MAP_H
+            self.fast_scroll = (self.fast_scroll + 2) % MAP_H
 
 
 def part1_step(heat, w, h, rng, steps, decay, bound=True):
@@ -173,7 +171,7 @@ class FireCoreTest(unittest.TestCase):
 
     def field(self, w, h, seed=SEED, look=None):
         heat = (ctypes.c_uint8 * (w * h))(*([7] * (w * h)))  # init must zero it
-        cooling = (ctypes.c_uint8 * (MAP * MAP))()
+        cooling = (ctypes.c_uint8 * (MAP_W * MAP_H))()
         f = Field()
         self.lib.fx_fire_init(ctypes.byref(f), heat, cooling, w, h, seed)
         f.keep = cooling  # the map lives as long as the field
@@ -194,7 +192,7 @@ class FireCoreTest(unittest.TestCase):
     def test_init_makes_the_map_and_the_spots_of_the_reference(self):
         f, _ = self.field(SMALL_W, SMALL_H)
         ref = Reference(SMALL_W, SMALL_H, SEED)
-        self.assertEqual(ref.cooling, list(f.cooling[:MAP * MAP]))
+        self.assertEqual(ref.cooling, list(f.cooling[:MAP_W * MAP_H]))
         self.assertEqual((0, 255), (min(ref.cooling), max(ref.cooling)))  # stretched
         self.assertEqual(ref.spot_x, list(f.spot_x))
         self.assertEqual((ref.rng, PART1), (f.rng, (f.decay, f.cool, f.sway, f.spots, f.spread, f.fast)))
@@ -220,10 +218,17 @@ class FireCoreTest(unittest.TestCase):
                     slow.step(STEPS)
                     self.assertNotEqual(slow.heat, ref.heat)  # fast cells took part
 
-    def test_part_2s_look_at_decay_31_is_part_2s_field(self):
-        f, heat = self.field(SMALL_W, SMALL_H, look=GOLDEN_LOOK)
+    def test_at_decay_31_the_bound_does_nothing(self):
+        """Part 2's look at decay 31 gives the field of the step without the bound. Part 3's 256 x 32 map (the PO's
+        three columns: the 64-wide map repeated at x, x + 64 and x + 128) ended byte equality with part 2's kernel."""
+        f, heat = self.field(SMALL_W, SMALL_H, look=PART2_AT_31)
         self.lib.fx_fire_step(ctypes.byref(f), STEPS)
-        self.assertEqual(GOLDEN, hashlib.sha256(bytes(heat)).hexdigest())
+        ref = Reference(SMALL_W, SMALL_H, SEED)
+        ref.set_look(*PART2_AT_31)
+        ref.bound = False
+        ref.step(STEPS)
+        self.assertEqual(ref.heat, list(heat))
+        self.assertNotEqual([0] * (SMALL_W * SMALL_H), ref.heat)
 
     def test_part_1s_look_is_part_1s_step(self):
         for decay in (31, 40):  # 40 lifts the sum past the hottest cell read, so the bound is reached too

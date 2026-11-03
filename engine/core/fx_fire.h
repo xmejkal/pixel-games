@@ -9,17 +9,19 @@
 #include <stdint.h>
 
 #define FX_FIRE_MAX_SPOTS 16
-#define FX_FIRE_MAP 64  // the cooling map's side, a power of 2: the map is FX_FIRE_MAP x FX_FIRE_MAP bytes
+// The cooling map's width and height, each a power of 2. 256 wide, so it never repeats across a field up to 256 wide
+#define FX_FIRE_MAP_W 256
+#define FX_FIRE_MAP_H 32
 
 // The caller owns heat (w x h bytes, row-major in game orientation, row h - 1 at the bottom) and cooling
-// (FX_FIRE_MAP x FX_FIRE_MAP bytes). No static state.
+// (FX_FIRE_MAP_W x FX_FIRE_MAP_H bytes, row-major). No static state.
 typedef struct {
     int32_t w, h;
     uint8_t *heat;
-    uint8_t *cooling;  // tiled over the field, its row (y + scroll) & 63 under field row y
+    uint8_t *cooling;  // tiled over the field, its row (y + scroll) & 31 under field row y
     uint32_t rng;  // xorshift32 state, never 0
-    int32_t scroll;  // 0 to 63, one more each step, so the cold patches rise with the flames
-    int32_t fast_scroll;  // 0 to 63, two more each step: the map read again for the fast regions, which climb faster
+    int32_t scroll;  // 0 to 31, one more each step, so the cold patches rise with the flames
+    int32_t fast_scroll;  // 0 to 31, two more each step: the map read again for the fast regions, which climb faster
     int32_t decay, cool, sway, spots, spread, fast;  // the look, see fx_fire_set_look
     int32_t spot_x[FX_FIRE_MAX_SPOTS];  // each hot spot's column
 } fx_fire_t;
@@ -32,7 +34,7 @@ void fx_fire_init(fx_fire_t *f, uint8_t *heat, uint8_t *cooling, int32_t w, int3
 // no cell grows hotter than the cells it reads. cool 0 to 255: how much the cooling map takes, 0 none. sway 0 or 1:
 // each cell reads the cells below it shifted by -1, 0 or +1 at random. spots 0 to FX_FIRE_MAX_SPOTS: the hot spots at
 // the base, 0 for a random bottom row. spread 1 to 64: a spot's half-width in cells. fast 0 to 255: a cell is fast
-// when the map's cell at column (x + 32) & 63, row (y + fast_scroll) & 63 is at least 256 - fast, so 0 makes none. A
+// when the map's cell at column (x + 128) & 255, row (y + fast_scroll) & 31 is at least 256 - fast, so 0 makes none. A
 // change of the spot count places the spots again.
 void fx_fire_set_look(fx_fire_t *f, int32_t decay, int32_t cool, int32_t sway, int32_t spots, int32_t spread,
                       int32_t fast);

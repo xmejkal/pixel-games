@@ -12,7 +12,7 @@ static uint32_t xorshift32(uint32_t *state) {
 }
 
 // The random draws, in this order, so a reference can repeat them byte for byte. Each draw is one xorshift32 call.
-// - fx_fire_init: the map's 4096 cells row by row, one draw each, then the FX_FIRE_MAX_SPOTS spots, one draw each.
+// - fx_fire_init: the map's 8192 cells row by row, one draw each, then the FX_FIRE_MAX_SPOTS spots, one draw each.
 // - fx_fire_set_look, when the spot count changes: the FX_FIRE_MAX_SPOTS spots again, one draw each.
 // - fx_fire_step, per step: with spots 0, the bottom row's cells left to right, one draw each (part 1's row). Else
 //   each spot in turn, one draw (its walk or jump), then the bottom row's cells left to right, one draw each (the
@@ -27,12 +27,12 @@ static void place_spots(fx_fire_t *f) {
     }
 }
 
-// 64 cells stride apart, each the mean of itself and its two neighbours, in place, wrapping around the ends.
-static void blur_ring(uint8_t *p, int32_t stride) {
-    uint32_t first = p[0], prev = p[(FX_FIRE_MAP - 1) * stride];
-    for (int32_t i = 0; i < FX_FIRE_MAP; i++) {
+// n cells stride apart, each the mean of itself and its two neighbours, in place, wrapping around the ends.
+static void blur_ring(uint8_t *p, int32_t n, int32_t stride) {
+    uint32_t first = p[0], prev = p[(n - 1) * stride];
+    for (int32_t i = 0; i < n; i++) {
         uint32_t cur = p[i * stride];
-        uint32_t next = i + 1 < FX_FIRE_MAP ? p[(i + 1) * stride] : first;
+        uint32_t next = i + 1 < n ? p[(i + 1) * stride] : first;
         p[i * stride] = (uint8_t)((prev + cur + next) / 3);
         prev = cur;
     }
@@ -42,16 +42,16 @@ static void blur_ring(uint8_t *p, int32_t stride) {
 // column pass), so the tile has no seam, then its min to max stretched onto 0 to 255.
 static void make_cooling(fx_fire_t *f) {
     uint8_t *map = f->cooling;
-    int32_t n = FX_FIRE_MAP * FX_FIRE_MAP;
+    int32_t n = FX_FIRE_MAP_W * FX_FIRE_MAP_H;
     for (int32_t i = 0; i < n; i++) {
         map[i] = xorshift32(&f->rng) >> 28 == 0 ? 255 : 0;
     }
     for (int32_t pass = 0; pass < 2; pass++) {
-        for (int32_t k = 0; k < FX_FIRE_MAP; k++) {
-            blur_ring(map + k * FX_FIRE_MAP, 1);
+        for (int32_t k = 0; k < FX_FIRE_MAP_H; k++) {
+            blur_ring(map + k * FX_FIRE_MAP_W, FX_FIRE_MAP_W, 1);
         }
-        for (int32_t k = 0; k < FX_FIRE_MAP; k++) {
-            blur_ring(map + k, FX_FIRE_MAP);
+        for (int32_t k = 0; k < FX_FIRE_MAP_W; k++) {
+            blur_ring(map + k, FX_FIRE_MAP_H, FX_FIRE_MAP_W);
         }
     }
     uint32_t lo = 255, hi = 0;
@@ -148,8 +148,9 @@ void fx_fire_step(fx_fire_t *f, int32_t steps) {
             const uint8_t *below = row + w;
             const uint8_t *below2 = y + 2 < h ? below + w : NULL;
             const uint8_t *below3 = y + 3 < h ? below2 + w : NULL;
-            const uint8_t *cooling = f->cooling + ((y + f->scroll) & (FX_FIRE_MAP - 1)) * FX_FIRE_MAP;
-            const uint8_t *fast = below2 ? f->cooling + ((y + f->fast_scroll) & (FX_FIRE_MAP - 1)) * FX_FIRE_MAP : NULL;
+            const uint8_t *cooling = f->cooling + ((y + f->scroll) & (FX_FIRE_MAP_H - 1)) * FX_FIRE_MAP_W;
+            const uint8_t *fast = below2 ? f->cooling + ((y + f->fast_scroll) & (FX_FIRE_MAP_H - 1)) * FX_FIRE_MAP_W
+                                         : NULL;
             uint32_t bits = 0;
             for (int32_t x = 0; x < w; x++) {
                 int32_t c = x;  // the column read below, shifted by the sway
@@ -161,7 +162,7 @@ void fx_fire_step(fx_fire_t *f, int32_t steps) {
                     bits >>= 2;
                 }
                 const uint8_t *near = below, *far = below2;  // a fast cell reads one row further down
-                if (fast && fast[(x + 32) & (FX_FIRE_MAP - 1)] >= fast_at) {
+                if (fast && fast[(x + FX_FIRE_MAP_W / 2) & (FX_FIRE_MAP_W - 1)] >= fast_at) {
                     near = below2;
                     far = below3;
                 }
@@ -172,12 +173,12 @@ void fx_fire_step(fx_fire_t *f, int32_t steps) {
                 hot = two > hot ? two : hot;
                 uint32_t sum = ((left + mid + right + two) * decay) >> 7;
                 sum = sum > hot ? hot : sum;  // never hotter than its source, so no decay runs away
-                uint32_t loss = (cooling[x & (FX_FIRE_MAP - 1)] * cool) >> 8;
+                uint32_t loss = (cooling[x & (FX_FIRE_MAP_W - 1)] * cool) >> 8;
                 row[x] = (uint8_t)(sum > loss ? sum - loss : 0);
             }
         }
-        f->scroll = (f->scroll + 1) & (FX_FIRE_MAP - 1);
-        f->fast_scroll = (f->fast_scroll + 2) & (FX_FIRE_MAP - 1);
+        f->scroll = (f->scroll + 1) & (FX_FIRE_MAP_H - 1);
+        f->fast_scroll = (f->fast_scroll + 2) & (FX_FIRE_MAP_H - 1);
     }
 }
 

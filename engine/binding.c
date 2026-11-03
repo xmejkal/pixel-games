@@ -170,7 +170,7 @@ static mp_obj_t heat_field_make_new(const mp_obj_type_t *type, size_t n_args, si
     uint32_t seed = (uint32_t)mp_obj_get_int_truncated(args[2]);  // before the block, so a wrong type leaks nothing
     heat_field_obj_t *self = mp_obj_malloc_with_finaliser(heat_field_obj_t, type);
     self->fire.heat = NULL;  // the object first: a failed allocation then leaks nothing
-    size_t n = (size_t)w * (size_t)h + FX_FIRE_MAP * FX_FIRE_MAP;
+    size_t n = (size_t)w * (size_t)h + FX_FIRE_MAP_W * FX_FIRE_MAP_H;
     uint8_t *heat = heap_caps_malloc(n, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     self->psram = heat == NULL;
     if (heat == NULL) {
