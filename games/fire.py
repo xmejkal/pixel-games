@@ -23,7 +23,7 @@ import time
 from array import array
 
 import pictures
-from gfx import BLACK, DARK, HEIGHT, WHITE, WIDTH, Game, c565
+from gfx import BLACK, DARK, HEIGHT, LABEL_RECT, WHITE, WIDTH, Game, c565
 from lcd import PANEL_H, PANEL_W
 
 try:
@@ -159,6 +159,9 @@ class Fire(Game):
             self.us, self.frames, self.mark = [0, 0], 0, now
 
     def hud(self, cv):
-        """One short line, drawn every frame: TftCanvas keeps nothing to reuse."""
+        """One short line, drawn again only when it changes (P599)."""
+        cv.keep((self.name, self.label), LABEL_RECT, self.draw_hud)
+
+    def draw_hud(self, cv):
         cv.fill(0, 0, WIDTH, 14, DARK)
         cv.text(self.label, 4, 2, WHITE)
