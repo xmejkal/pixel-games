@@ -281,6 +281,7 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 - D5 · importance: all four groups of assumptions are high (feel and value A1 A5, speed A2 A3, build and tests A4 A6 A8, later and licence A7 A9 A10) · the PO · 2026-11-03 · this session, AskUserQuestion Q1a (multi-select) · options: the four groups
 - D6 · the riskiest is A1, and its test is the desk table P588: his own RENT rules from #783 sorted as C mechanism, C fact or Python reaction or number, and he marks the sorts he disagrees with; pass line: no number of his has to live in C, no rule needs a fifth fact, and he disagrees with at most 1 sort · the PO · 2026-11-03 · this session, AskUserQuestion Q1b · options: A1 desk table, A2 and A3 board probe P589, A5 split of the worst frames · confirms a test, not an option
 - D7 · P588's test and pass line replace D6's: P588: list every dated feel note of the PO on RENT first (#774, #783, bench.md) and fix the count before any sort. Then sort each note, assuming the engine's rigid C mechanism exists (rigid boxes, contacts, the tip at the centre of weight), as "Python number or reaction" or "new C mechanism". A note that needs a fact the draft API lacks (for example a lean or overhang fact) counts as new C. He reads the table and marks each sort he disagrees with. Desk only, no board. Pass: at most 1 in 4 notes needs a new C mechanism, and he disagrees with at most 1 sort · the PO · 2026-11-03 · this session, AskUserQuestion Q1c, asked again because the refuter's second pass showed D6's line let a table pass with every rule in C · options: sort feel notes, rules plus a bound, skip to the probe P589 · D6's choice of A1 as the riskiest stands
+- D8 · the understanding confirmed (the jobs, the findings, options A, B and C open, P588 first); yes to file P588 to P592 under #787 (Slice pixel-games), open the PR for this folder, comment on #787, and run P588 with him now · the PO · 2026-11-03 · this session, AskUserQuestion handoff · options: file all and PR and run P588, file spikes only, PR only, understanding off · confirms the frame, the jobs and items.md; not a direction among A, B and C
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
@@ -292,17 +293,17 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 ## Board actions <!-- REQUIRED:spark-process:board-actions -->
 <!-- Each action on the board or the issue (stage, waiting flag, comment, filing): taken, with its D, or pending.
 None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
-- comment on #787 with the brief's link, the options and the queue · pending: needs the PO's yes
-- set Waiting on "the PO" and Waiting since 2026-11-03 on #787 while Q1 waits · pending: needs the PO's yes
-- file P588 to P592 (items.md) as sub-issues of #787 · pending: after the PO's yes to items.md
-- apply the proposed changes to #785, #788, #783, #786, #784 (items.md) · pending: after the PO's yes
+- comment on #787 with the brief's link, the options and the queue · taken after the PR opens, D8
+- set Waiting on the PO on #787 · not taken: Q1 is answered, and P588 runs with him in this session (D8)
+- file P588 to P592 (items.md) as sub-issues of #787 · taken: #789 to #793, Idea, Slice pixel-games, D8
+- apply the proposed changes to #785, #788, #783, #786, #784 (items.md) · pending: D8 named filing only
 <!-- EXTEND:brief-sections -->
 
 ## Hand-off
 <!-- Written only after the decider confirms the understanding (a D); copies only confirmed constraints. Holds: outcome ·
 who · success and its proof · constraints (appetite, confirmed no-gos, rabbit holes) · what they said (D) against what
 we assume (H) · links to the journeys and the map · riskiest assumptions and their tests · options considered. -->
-not yet: the PO confirmed the frame (D1). The jobs, a direction (D3 and D4 are wishes, not choices), the remaining risk and items.md are unconfirmed <!-- REQUIRED:handoff -->
+Outcome: an engine that every game shares, grown from gfx.Game and app.App, with RENT's rigid physics as its first user and Python reacting to C events (D1, D8). Who: the PO as game writer and player, n = 1 (his sister n = 0). Success and proof: the Outcome line in the Frame, with Q11 still open on the metric. Constraints: networking is a seam only now (D2), a C core with a readable binding is a wish (D3), chip fast paths are a wish (D4), no GPL code (A10, proposed). Said (D): D1 to D8. Assumed (H): A1 to A10, all high (D5). Riskiest: A1, tested first by P588 #789 with D7's pass line. Options considered: A, B and C, all open (Q2), with Q3 to Q12 queued. Journeys: jobs-and-journeys.md. Map: story-map.md, proposed, not applied <!-- REQUIRED:handoff -->
 
 ## Files
 [Jobs and journeys](jobs-and-journeys.md) · [Story map](story-map.md) · [Risks and tests](risks-and-tests.md) · [Verification](verification.md) · [Items](items.md) · council/
