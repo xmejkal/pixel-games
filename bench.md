@@ -261,19 +261,20 @@ Memory after deinit ("double" run; "dma" within 420 B): PSRAM free 6747500.00 B,
 
 ## P593 (#794), 2026-11-03: the rain, the C engine on screen
 
-The engine image (`./build.sh engine`, sha256 2a519b269b3bb482, 222,576 B left in the app partition) with `games/rain.py` first in `GAMES`. Each mode ran through `mpremote run` with `app.run()`; the Python mode with `rain.engine = None`. Logs (git-ignored, kept on the Mac): `run54-p593-rain-c.log` and `run54-p593-rain-py.log` at N = 192, `run55-p593-rain-c160.log` and `run55-p593-rain-py160.log` at N = 160, `run56-p593-smoke.log` for the games. The values are per frame, from the `rain` lines (5 s intervals).
+The engine image (`./build.sh engine`, sha256 2a519b269b3bb482, 222,576 B left in the app partition) with `games/rain.py` first in `GAMES`. Each mode ran through `mpremote run` with `app.run()`. The Python mode ran with `rain.engine = None`: the same `PythonStepper` a BOOT tap reaches, but its HUD label "python, no C" is 6 glyphs longer, so its fps is slightly low. Logs (git-ignored, kept on the Mac): `run54-p593-rain-c.log` and `run54-p593-rain-py.log` at N = 192, `run55-p593-rain-c160.log` and `run55-p593-rain-py160.log` at N = 160, `run56-p593-smoke.log` for the games. The values are per frame, from the `rain` lines (5 s intervals).
 
 | N | stepper | fps | step | read | draw | unit |
 | --- | --- | --- | --- | --- | --- | --- |
-| 192 | C | 23 | 0.18 to 0.19 | 1.28 to 1.33 | 16.11 to 16.68 | ms |
-| 192 | Python | 6 to 7 | 34.39 to 35.64 | 7.28 to 9.13 | 29.92 to 56.39 | ms |
-| 160 | C | 24 | 0.16 to 0.17 | 1.06 to 1.10 | 13.65 to 14.01 | ms |
-| 160 | Python | 7 to 8 | 28.89 to 29.83 | 5.78 to 6.86 | 25.04 to 44.74 | ms |
+| 192 | C | 23 | 0.18 to 0.19 | 1.28 to 1.34 | 16.11 to 16.68 | ms |
+| 192 | Python | 6 to 7 | 34.39 to 35.64 | 7.28 to 9.44 | 29.92 to 56.41 | ms |
+| 160 | C | 24 | 0.16 to 0.17 | 1.06 to 1.14 | 13.47 to 14.01 | ms |
+| 160 | Python | 7 to 8 | 28.89 to 29.83 | 5.78 to 6.86 | 25.04 to 44.83 | ms |
 
 - N is 160: the most of the two tried that keeps C at 24 fps. At 192, C ran at 23 fps.
-- The HUD text costs 10.7 to 10.8 ms a frame in C mode (`avg rain ... hud`), more than the plan's guess of 3 to 8 ms. That is why 192 missed 24 fps.
-- At 160 boxes, the C step is about 175 times shorter than the Python step (0.17 against 29.8 ms). The fps differs about 3 times, because the drawing costs the same in both modes. In Python mode the draw grows from 25 to 45 ms during the first 20 s. The cause was not looked for.
+- The HUD text costs 10.6 to 10.9 ms a frame in C mode at 160 (9.7 to 10.7 at 192) (`avg rain ... hud`), more than the plan's guess of 3 to 8 ms. That is why 192 missed 24 fps.
+- At 160 boxes, the C step is about 175 times shorter than the Python step (0.17 against 29.8 ms). The fps differs about 3 times. Python mode also draws 2 to 4 times slower (draw 25 to 45 ms against 14, HUD 43 to 47 ms against 11), and its draw grows during the first 20 s. Its heap allocation is 200 to 487 kB against 99 kB, which points at gc, but the cause was not looked for.
 - Defect found on the board: the C world outlives a soft reset, so a run at 192 left 192 bodies, and the run at 160 raised `ValueError: an array('h') of 3n ints is needed`. Fixed in 5b72b20 (the rain loads exactly N bodies first), with a Mac test.
-- Smoke test on the engine image: all ten games start and print fps lines, with no error (snake 24, cave 22, tunnel 22, road 21, starfire 24, cube 24, gravpong 24, runner 20 to 23, stack 25, flappy 18 on its game-over screen). Three needed 16 s instead of 9 s to print their first fps line.
+- Smoke test on the engine image: all ten games start and print fps lines, with no error (snake 24, cave 22, tunnel 22, road 21, starfire 24, cube 24, gravpong 24, runner 20 to 23, stack 25, flappy 21 then 18, on its game-over screen). Three needed 16 s instead of 9 s to print their first fps line.
 - The first `mpremote run` after an `mpremote cp`, and a `cat` of the port after a reset, printed nothing, as on 2026-11-01 (line 54). A second run works.
+- Free internal RAM at start was not measured: the logs hold only `mem 8029760`, the total with PSRAM. The plan asked for it.
 - The board keeps the engine image. The rain starts at power-on.

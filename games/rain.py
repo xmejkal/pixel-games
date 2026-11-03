@@ -56,7 +56,7 @@ class CStepper:
         engine.read(out)
         for i in range(N):
             if out[3 * i + 2]:
-                drop(i)
+                drop(i)  # out still holds its resting place, so paint shows it there one more frame (C mode only)
 
     def paint(self, cv, colours):
         out, fill = self.out, cv.fill
@@ -106,7 +106,7 @@ class Rain(Game):
             self.drop(i)
         self.acc, self.us, self.frames, self.mark = 0, [0, 0, 0], 0, self.last  # us: step, read, draw
         self.hud_step, self.hud_frames, self.hud_mark = 0, 0, self.last  # self.last: None before the first step
-        self.shown = self.stepper.name if engine else "python, no C"
+        self.shown = "python, no C" if engine is None else self.stepper.name
         self.label, self.bar = self.shown, 0
         print("stepper", self.stepper.name)
 
