@@ -26,7 +26,7 @@ import fire  # noqa: E402
 
 FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
 FRAME_MS = 40  # app.py's FRAME_MS
-REPORT = re.compile(r"^fire (B|A|picture) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
+REPORT = re.compile(r"^fire (B|picture) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 
 
 class Field(ctypes.Structure):
@@ -154,18 +154,17 @@ class FireTest(unittest.TestCase):
             tft = Tft()
             _, now = play(game, 5, 0, tft)
             seen = []
-            for _ in range(3):
+            for _ in range(2):
                 tft.blits, fire.engine.targets = [], []
                 cv, now = play(game, 1, now, tft, pressed=True)
                 cv, now = play(game, 1, now, tft)
                 seen.append((fire.MODES[game.mode], fire.engine.targets, tft.blits, cv.fills))
         whole = (0, 0, fire.PANEL_W, fire.PANEL_H)
         self.assertEqual([
-            ("A", ["buffer", "buffer"], [whole, whole], []),
             ("picture", ["buffer", "buffer"], [whole + (128, 0)] * 2, [(0, 0, fire.WIDTH, fire.HEIGHT)]),  # no sky here
             ("B", ["tft", "tft"], [], []),
         ], seen)
-        self.assertIn("fire mode A\nfire mode picture\nfire mode B\n", out.getvalue())
+        self.assertIn("fire mode picture\nfire mode B\n", out.getvalue())
 
 
 if __name__ == "__main__":

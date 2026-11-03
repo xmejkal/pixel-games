@@ -201,7 +201,8 @@ static mp_obj_t heat_field_step(mp_obj_t self_in, mp_obj_t steps_in, mp_obj_t de
 static MP_DEFINE_CONST_FUN_OBJ_3(heat_field_step_obj, heat_field_step);
 
 // draw(target, palette): the whole panel as palette[heat], palette an array('H') of 256. target is an s3lcd ESPLCD
-// (into its frame, all of it marked to send: path B) or a writable buffer of 2h x 2w pixels (path A).
+// (into its frame, all of it marked to send: path B) or a writable buffer of 2h x 2w pixels, which the picture mode
+// blends over the sky (path A blitted it opaque and was dropped, P595).
 static mp_obj_t heat_field_draw(mp_obj_t self_in, mp_obj_t target, mp_obj_t palette_in) {
     heat_field_obj_t *self = live(self_in);
     int32_t pw = 2 * self->fire.h, ph = 2 * self->fire.w;

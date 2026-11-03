@@ -2,8 +2,9 @@
 The fire (P595): the first native effect. A heat field in C (engine/core/fx_fire.c, through engine.HeatField) rises
 and cools, drawn as 2 x 2 px cells over the whole screen. A BOOT tap moves to the next mode:
     B        C writes the s3lcd frame itself
-    A        C fills a buffer, and Python blits it
-    picture  the A buffer at alpha 128 over the painted sky, its black skipped
+    picture  C fills a buffer, and Python blits it at alpha 128 over the painted sky, its black skipped
+Path A, the same buffer blitted opaque, was timed and dropped: 15.0 ms of step + draw against B's 7.8 (bench.md,
+P595, D7).
 The HUD says the mode, the step + draw ms and the fps.
 
 Every REPORT_MS it prints, for the bench log, the average ms per frame:
@@ -34,8 +35,8 @@ SEED = 595
 # The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, the key
 # of the picture mode.
 STOPS = ((0, 0, 0, 0), (48, 140, 10, 0), (96, 240, 60, 0), (144, 255, 160, 20), (192, 255, 230, 80), (255, 255, 255, 255))
-B, A, PICTURE = 0, 1, 2
-MODES = ("B", "A", "picture")
+B, PICTURE = 0, 1
+MODES = ("B", "picture")
 REPORT_MS = 5000  # app.py's FPS_EVERY_MS, so a fire line comes with each of its time lines
 HUD_MS = 500
 
@@ -59,8 +60,8 @@ class Fire(Game):
 
     def __init__(self):
         self.mode = B
-        self.covers = engine is not None  # every mode paints every pixel: the fire in B and A, the sky in picture
-        self.buf = bytearray(PANEL_W * PANEL_H * 2)  # path A's buffer, made once (gc heap, PSRAM)
+        self.covers = engine is not None  # every mode paints every pixel: the fire in B, the sky in picture
+        self.buf = bytearray(PANEL_W * PANEL_H * 2)  # the picture mode's buffer, made once (gc heap, PSRAM)
         super().__init__()
 
     def setup(self):
@@ -111,10 +112,7 @@ class Fire(Game):
             self.field.draw(cv.tft, PALETTE)
         else:
             self.field.draw(self.buf, PALETTE)
-            if self.mode == A:
-                cv.tft.blit_buffer(self.buf, 0, 0, PANEL_W, PANEL_H)
-            else:
-                cv.tft.blit_buffer(self.buf, 0, 0, PANEL_W, PANEL_H, 128, 0)
+            cv.tft.blit_buffer(self.buf, 0, 0, PANEL_W, PANEL_H, 128, 0)
         self.add(1, t)
         self.count(self.last)
 
