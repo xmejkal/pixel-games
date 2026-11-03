@@ -1,6 +1,8 @@
 """
 The fire (P595): the first native effect. A heat field in C (engine/core/fx_fire.c, through engine.HeatField) rises
-and cools, drawn as 2 x 2 px cells over the whole screen. A BOOT tap moves to the next mode:
+and cools, drawn as 2 x 2 px cells over the whole screen. Its look (part 2): hot spots that wander at the base, a
+cooling map that rises with the flames and cuts them into tongues, and a sideways sway. The fire assumes ORIENTATION 0
+(lcd.py), as the pictures do. A BOOT tap moves to the next mode:
     B        C writes the s3lcd frame itself
     picture  C fills a buffer, and Python blits it at alpha 128 over the painted sky, its black skipped
 Path A, the same buffer blitted opaque, was timed and dropped: 15.0 ms of step + draw against B's 7.8 (bench.md,
@@ -30,7 +32,12 @@ except ImportError:  # the Mac, or the image with s3lcd only
 W, H = WIDTH // 2, HEIGHT // 2  # cells of 2 x 2 px: 160 x 120
 RATE = 25  # kernel steps a second, one per 40 ms. Game.step caps dt at 60 ms, so a frame takes at most 2
 STEP_MS = 1000 // RATE
-DECAY = 31  # 32 keeps the heat up to the top. 31 lets the flames die out about halfway up (Lode's 32 / 129)
+# The look's feel numbers, a first guess until the lead sets them from frames on the Mac (fx_fire_set_look)
+DECAY = 32  # 32 keeps the heat, less cools every cell (part 1's 31 let the flames die out about halfway up)
+COOL = 48  # 0 to 255: how much the rising cooling map takes, so the flames break into tongues
+SWAY = 1  # 1: each cell reads the cells below it shifted by -1, 0 or +1 at random, the sideways flicker
+SPOTS = 6  # 0 to 16 hot spots at the base, each walking and now and then jumping. 0 is part 1's random bottom row
+SPREAD = 10  # 1 to 64: a spot's half-width in cells
 SEED = 595
 # The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, the key
 # of the picture mode.
@@ -70,6 +77,7 @@ class Fire(Game):
         if engine is not None:
             print("fire internal largest", engine.largest_free_internal())
             self.field = engine.HeatField(W, H, SEED)
+            self.field.set_look(DECAY, COOL, SWAY, SPOTS, SPREAD)
             print("fire field", self.field.where)
         self.begin()
 
@@ -90,7 +98,7 @@ class Fire(Game):
         self.acc -= steps * STEP_MS
         if self.field is not None and steps:
             t = time.ticks_us()
-            self.field.step(steps, DECAY)
+            self.field.step(steps)
             self.add(0, t)
 
     def add(self, i, t):

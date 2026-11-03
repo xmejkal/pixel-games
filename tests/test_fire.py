@@ -29,9 +29,11 @@ FRAME_MS = 40  # app.py's FRAME_MS
 REPORT = re.compile(r"^fire (B|picture) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 
 
-class Field(ctypes.Structure):
+class Field(ctypes.Structure):  # fx_fire_t
     _fields_ = [("w", ctypes.c_int32), ("h", ctypes.c_int32), ("heat", ctypes.POINTER(ctypes.c_uint8)),
-                ("rng", ctypes.c_uint32)]
+                ("cooling", ctypes.POINTER(ctypes.c_uint8)), ("rng", ctypes.c_uint32), ("scroll", ctypes.c_int32),
+                ("decay", ctypes.c_int32), ("cool", ctypes.c_int32), ("sway", ctypes.c_int32),
+                ("spots", ctypes.c_int32), ("spread", ctypes.c_int32), ("spot_x", ctypes.c_int32 * 16)]
 
 
 class Tft:
@@ -58,7 +60,8 @@ class Recorder:
 
 
 class Engine:
-    """The engine module's HeatField and largest_free_internal (engine/binding.c), on fx_fire.c through ctypes."""
+    """The engine module's HeatField and largest_free_internal (engine/binding.c), on fx_fire.c through ctypes. looks
+    keeps each set_look's numbers."""
 
     def __init__(self, lib):
         engine = self
@@ -67,11 +70,16 @@ class Engine:
             where = "internal"
 
             def __init__(self, w, h, seed):
-                self.heat, self.f = bytearray(w * h), Field()
-                lib.fx_fire_init(ctypes.byref(self.f), (ctypes.c_uint8 * (w * h)).from_buffer(self.heat), w, h, seed)
+                self.heat, self.f = bytearray(w * h + 64 * 64), Field()  # the map after the field, as in binding.c
+                lib.fx_fire_init(ctypes.byref(self.f), (ctypes.c_uint8 * (w * h)).from_buffer(self.heat),
+                                 (ctypes.c_uint8 * (64 * 64)).from_buffer(self.heat, w * h), w, h, seed)
 
-            def step(self, steps, decay):
-                lib.fx_fire_step(ctypes.byref(self.f), steps, decay)
+            def set_look(self, *look):
+                engine.looks.append(look)
+                lib.fx_fire_set_look(ctypes.byref(self.f), *look)
+
+            def step(self, steps):
+                lib.fx_fire_step(ctypes.byref(self.f), steps)
 
             def draw(self, target, palette):
                 engine.targets.append("tft" if isinstance(target, Tft) else "buffer")
@@ -79,7 +87,7 @@ class Engine:
                 lib.fx_fire_draw(ctypes.byref(self.f), (ctypes.c_uint16 * (len(out) // 2)).from_buffer(out),
                                  (ctypes.c_uint16 * 256).from_buffer(palette))
 
-        self.HeatField, self.targets = HeatField, []
+        self.HeatField, self.targets, self.looks = HeatField, [], []
 
     def largest_free_internal(self):
         return 123456
@@ -145,6 +153,7 @@ class FireTest(unittest.TestCase):
         self.assertRegex(out.getvalue(), REPORT)
         self.assertRegex(game.label, r"^fire B \d+\.\d ms \d+ fps$")
         self.assertEqual({"tft"}, set(fire.engine.targets))
+        self.assertEqual([(fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD)], fire.engine.looks)  # once
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the fire reached the frame
 
     def test_a_tap_moves_to_the_next_mode(self):
