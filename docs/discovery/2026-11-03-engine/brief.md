@@ -70,6 +70,7 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 
 - D1 · the frame confirmed (Q0 yes): scope, start and reach, extensions, 6-agent council · the PO · 2026-11-03 · this session, AskUserQuestion · options: as written, FULL, change scope
 - D2 · networking and multiplayer later (ESP-NOW, plain UDP, others), possibly first as a separate MVP that the engine absorbs; the architecture leaves a seam for it, nothing is built now · the PO · 2026-11-03 · this session, his message during the frame
+- D3 · direction wish: the engine's core and its parts in C, highly optimized, with a MicroPython binding that lets the games use it easily, clearly and readably, and that is easy to extend; the PO's words: "Actually, it might make sense for the core of the engine and the various parts of it to be in C and higly optimised but the micropython have great binding and access to it, so the games really can interact with it easily and clearly and readably and its nicely extendable, etc" · the PO · 2026-11-03 · this session · the council tests it as the leading option beside others; it is not yet a chosen design
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
