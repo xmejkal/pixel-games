@@ -78,3 +78,43 @@ items.md, each card against the findings and against small and testable:
 ## Searches
 
 Web searches: none of the 6. Fetches, not searches: https://developer.espressif.com/blog/2025/10/cores_with_fpu/ and https://box2d.org/documentation/md_simulation.html (first 100,000 characters). Raw files from GitHub at the named commits (TGE engine_physics.c and README at 64b5f0d, lv_binding_micropython gen_mpy.py at 032dda4b, box2d core.h and math_functions.h at dd8bd3f, picosystem.cpp, 32blit engine.cpp and engine.hpp, esp-dsp dsps_dotprod_platform.h, Chipmunk2D chipmunk_types.h, Physac physac.h) and two shallow clones (box2d, Chipmunk2D) for line counts, all in the session scratchpad.
+
+## Second pass (2026-11-03)
+
+Seat: refuter, Fable 5.1, about 20 minutes, after commits 842d5ef, 6574c7b and 43e0993. Read only, except this file. I re-read the changed sections against their sources: the six diagrams against tech-lead.md part 1b by a line diff, the #783 comments through `gh api` with their UTC times, bench.md:116 and :185-190, the run 42 and run 44 log headers, `run52-p582-bot.log`, `discovery.py check`, and the Espressif FPU blog once more. I decide nothing. "Could not open" is never "holds".
+
+### 2. The changed sections against their detail
+
+- Carried over faithfully: ★C5, ★C6, ★C8, ★C9, ★C10, ★C14, ★C16, ★C17, ★C20, ★C24 now say what part 1 asked. The six diagrams are the tech lead's: five are identical line for line, and the B sequence adds only an `alt` poll branch, which tech-lead.md:130 ("or by one poll") supports. verification.md's ★C6 "each with `gc 9`" holds: the five slowest frames with a step of 14 to 16 ms (log lines 33, 68, 98, 158, 183) all carry `gc 9`, and no other slowest frame carries gc at all. "Stands on: 10 H, 10 of which" matches `discovery.py check`.
+- One correction to my own part 1: the blog does define SUM ("add 10 to the given number", 10,000 times, cycles per call), so "an add takes 25 cycles" was right. The brief's new "cosine test 121 and 1619" matches the COS float and double columns, as the fetch tool mapped them from a flattened table.
+- The Frame's new sentence is wrong (commit 6574c7b): "without the pace, run 42 gave 14 to 20 fps, bench.md:187". bench.md:187 says "no play, steady interval" and nothing about the pace. The 40 ms pace has been in app.py since run 22 (bench.md:116 "`FRAME_MS = 40`: flappy 21 to 24 fps"). The run 42 log header shows `'windows': 40`, run 44's shows `'windows': 4`. So the two runs differ by the window count (bench.md:188 picked 4 in run 43), by play against no play, and by review fixes, not by the pace. jobs-and-journeys.md says it right ("run 42 gave 14 to 20 in "double" with no play"). Fix: "run 42, with 40 windows and no play, gave 14 to 20 fps, bench.md:187".
+- A caveat dropped from ★C20, A1 and Q12: the PO himself ordered the AI to go on. #783 comment 2026-11-02T23:11Z (00:11 Prague) quotes him: "go on Automatically until you're done with this ... have the PO assistant and the tech lead together decide for me". "Built without his words" holds for his feel words, but "the work went on anyway" (USER-4) and Q12's premise that he wanted a wait are read against his standing order. The rival in the Riskiest line leans on USER-4 without this.
+- The restated A1 and its pass line do not meet. A1 says a later feel note of his "needs no C change". D6's three clauses are: no number of his in C, no fifth fact, at most 1 disagreed sort. None bounds the number of rules sorted "C mechanism". A table where every rule of his is "C mechanism" and he agrees with every sort passes. PO-28's original line ("if two or more need a C change, the split is wrong") held that bound, and the restatement dropped it. Smallest fix: add "and at most N of his rules sort as C mechanism", with N and the row count fixed before the sort.
+- The first clause is near empty. His two decision comments hold two numbers, "1 or 2 px" (the screen drop) and "three lives", both plainly Python. Gravity, restitution, friction, pivot speed and the lean threshold are the team's numbers, not his, and the clause is silent on them. The clause cannot fail against this population.
+- The row count is the team's. "One row per rule" has no definition of a rule, so the denominator of "at most 1 sort" is set by whoever drafts the table. The brief (part 3 of my first pass) said the team grades its own API, and that stands.
+- Stale lines after D5 and D6: brief.md:12 "Decision needed: Q1 first: the PO rates A1 to A10, picks the riskiest ... and sets its pass line" while Q1 is answered (brief.md:259). risks-and-tests.md A1 "the proposed riskiest, pending Q1" and its pass line "proposed 2026-11-03" against the brief's "set by the PO at Q1 ... D6". items.md P588 "pending Q1" and "depends on: Q1". The brief's Q1 line still ends "So Q1 also asks whether A1, A5 or A2 and A3 is the riskiest" after saying it is answered.
+- The test presupposes Q3. P588's API is "fixed to the four facts of ★C23's wording", which the brief itself marks as the tech lead's proposal, and Q3 is still queued. If he disagrees with sorts, the folder cannot tell a wrong split (A1 fails) from a wrong wording (Q3's answer). The test line should say so.
+- Outcome pointer: "pixel-games bench.md, P582 section" is on origin/p582-heavy only, not on master. Add the branch, as ★C6 does.
+- jobs-and-journeys.md job 3 quotes "heavy, natural movement and bigger effects" as E from a #774 comment. That comment (2026-11-02T21:17Z) is the team's paraphrase ("his next words asked for heavy, natural movement and bigger effects"), not his words in quotation marks. Tag it as a paraphrase.
+
+### 3. Rival explanations the changed interpretations do not rule out
+
+- A1 and P588: his one real feel note on record (08:30 Prague, "it doesn't really seem like the real physics for the weight and material") asked for a mechanism change (spring and snapping slabs to rigid whole floors), which is C under any of the three options. P588 excludes that note and sorts only the structured answers he gave after the team asked. The rival: his feel notes are about what the material does (C), and only consequences (lives, score) are Python. Under that rival A1 fails on the single sample that exists, and P588 is built on a population chosen to be sortable.
+- His rules already hint at a fifth fact: "the tower leans from its weakest floor" and "when the floors above lean too far" need a lean angle or an overhang per floor, and neither is one of contact, impact speed, rest or tip. The team can pass "no fifth fact" by calling lean a body state read by Python (option A's `x(i)`, B's `Body.angle`) instead of an event. P588 does not say where a state ends and a fact begins.
+- "He disagrees with at most 1 sort" has a rival reading: agreement measures his trust in the team on a C-against-Python question he has not asked to judge, not the split's fitness.
+- ★C6 and ★C20 as restated: both now carry the rivals from part 1. The gc rival gains one fact: gc 9 appears only in the five frames with a step of 14 to 16 ms, so the long step and the long gc come together, and a collapse that allocates (the wreck pool, boxed floats) explains both without any integrator cost at all.
+- The Frame's run 42 against run 44: the rival to "the pace" is the window count and the fixes between the runs, and it is the one the sources support (part 2).
+
+### 4. Numbers that lack a unit, population, period or provenance
+
+- "at most 1 sort" (D6): no row count, no definition of a rule, no rule for who splits his sentences into rows.
+- "the four facts" (D6, P588): a proposal (Q3), treated as fixed.
+- "14 to 20 fps, run 42" in the Frame: population wrong ("without the pace"), should read "40 windows, no play".
+- "20 to 22 fps, run 44": one run, 4 windows, play or no play unstated at bench.md:189.
+- "121 and 1619" (★C14): cycles per call over 10,000 calls, a column mapping inferred from a flattened table, said nowhere in the brief.
+- "08:35 and 08:36 Prague time": the 08:35 comment also holds a refuter re-check and an open question, so "his two decision comments" is two bullets plus one comment, not two comments of his.
+- "about 9 ms of gc" (★C6, Budgets): exactly 9 in all five frames, from the log's integer field, not "about".
+
+### Searches
+
+Web searches: none. One fetch, https://developer.espressif.com/blog/2025/10/cores_with_fpu/ (the column headers and the test definitions). Everything else came from the pixel-games tree, `origin/p582-heavy`, the local logs, `gh api` on #783 and #774, and `discovery.py check`.
