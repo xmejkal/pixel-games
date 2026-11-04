@@ -35,11 +35,14 @@ If the board stays dark after a long press of its D14 button, hold D14 for 1 to 
 Runs now:
 
 - The fire (P595, `games/fire.py`), first at power-on: a heat field in C (`engine.HeatField`) burns over the whole
-  screen, and a BOOT tap swaps B (C writes the screen's frame) and the fire over the painted sky. It needs the engine
-  image. The flames rise from wandering hot spots, break into tongues, rise at two speeds, lean in gusts of wind and
+  screen. A BOOT tap moves through three modes: linear (C writes the screen's frame), picture (the fire over the painted
+  sky) and nearest. It needs the engine image. The flames rise from wandering hot spots, break into tongues, rise at two speeds, lean in gusts of wind and
   throw embers. On the board, B runs at 24 fps with 11.5 to 11.8 ms of step + draw, and the sky variant at 15 to
   16 fps (bench.md, P595). In the picture mode C blends the fire in C at an alpha that follows the heat, full from heat 96
   (P603). The blend swaps the bytes of each colour in and out (`s3lcd/src/blend565.h`), so the colours are right.
+  Since P608 the fire draws with bilinear filtering (`HeatField.set_filter(engine.LINEAR)`, OpenGL's `GL_LINEAR`): each
+  cell's 2 x 2 px mix its heat with its neighbours', so no blocks show. The nearest mode draws the blocks as before.
+  Linear costs 6.4 ms a frame to draw against 4.3 ms for nearest, at the same 24 to 25 fps (bench.md, P608).
 - The bodies on fire (P596, P607, `games/burning.py`), second: eight falling bodies from the rain's stepper each carry
   an `effects.FireTrail`, which burns heat into the fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
   burn. A hit at 600 px/s or faster flares up at the body's plane: C reports the hit with its speed as an event, and
@@ -69,9 +72,9 @@ Runs now:
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 20 to 22 and runner 21 to 24 at a 40 ms frame pace, with no play; stack 24.
 
-In progress: P607 ([#809](https://github.com/xmejkal/spark/issues/809)), effects on bodies. The PO chose "Full MVP, 4 slices" on 2026-11-04 to close the effects epic P594 ([#795](https://github.com/xmejkal/spark/issues/795)). Paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
+In progress: P608 ([#810](https://github.com/xmejkal/spark/issues/810)), the smooth fire (bilinear filtering). The PO chose "Full MVP, 4 slices" on 2026-11-04 to close the effects epic P594 ([#795](https://github.com/xmejkal/spark/issues/795)). Paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
 
-Next: P608 ([#810](https://github.com/xmejkal/spark/issues/810)), a slight blur, the second effect. Then P602 ([#803](https://github.com/xmejkal/spark/issues/803)), the flappy bird trails fire, the first effect inside a game, and P598 ([#799](https://github.com/xmejkal/spark/issues/799)), colliding bodies. Later: P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
+Next: P602 ([#803](https://github.com/xmejkal/spark/issues/803)), the flappy bird trails fire, the first effect inside a game, and P598 ([#799](https://github.com/xmejkal/spark/issues/799)), colliding bodies. In Idea: P610 ([#814](https://github.com/xmejkal/spark/issues/814)), a Blur effect on a screen region, and P611 ([#815](https://github.com/xmejkal/spark/issues/815)), a motion blur behind a fast body, combined with its FireTrail. Later: P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
 
 The work is planned on the board of the [spark](https://github.com/xmejkal/spark) project.
 
