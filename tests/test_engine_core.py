@@ -27,7 +27,7 @@ def scene(rest_y, n=N):
 
 
 BOUNCE = scene(lambda i: 220 - 14 * (i % 3))
-CROWD = scene(lambda i: 220 - 14 * (i % 3), MAX_BODIES)  # the cap, full: past 64 events a step, some are dropped
+CROWD = scene(lambda i: 220 - 14 * (i % 3), MAX_BODIES)  # n at its cap, full (under 64 events a call: no drop)
 
 
 def spawned(make, bodies):

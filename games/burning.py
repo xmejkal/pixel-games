@@ -1,6 +1,6 @@
 """
 Bodies on fire (P596): the fire of fire.py on objects, the proof of concept for effects in the games. A few of the
-rain's falling bodies (rain.CStepper on engine/core/world.c, or rain.PythonStepper without the engine) each burn heat
+rain's falling bodies (rain.Stepper, on engine.Bodies or without the engine on motion.Bodies) each burn heat
 into one screen-wide fire field (HeatField.burn, fx_fire_burn). The heat goes in a little behind each body, LAG
 frames of its motion, along the path from the last frame's point, so a body at rest burns straight up and a moving
 body's flames stream back against its motion (the PO's yes, 2026-11-03). The field's base is off, so only the bodies
@@ -17,6 +17,7 @@ import time
 import rain
 from fire import FAST, H, SWAY, W, Fire
 from gfx import HEIGHT, WIDTH, c565
+from motion import StepClock
 
 N = 8  # bodies on fire
 BODY = 8  # px, a body's side
@@ -40,8 +41,8 @@ class BurningBodies(Fire):
 
     def setup(self):
         random.seed(SEED)
-        self.bodies = rain.CStepper(N) if rain.engine is not None else rain.PythonStepper(N)
-        self.clock, self.body_acc = 0, 0  # ms played, and the ms the bodies' 10 ms steps have not taken yet
+        self.bodies = rain.Stepper(N, rain.engine is not None)
+        self.clock, self.step_clock = 0, StepClock(rain.STEP_MS, rain.STEP_CAP)  # ms played, and the bodies' steps
         self.slept = [None] * N  # the clock when each body fell asleep, None while it moves
         self.prev = [None] * N  # each body's centre in cells last frame, None after a drop
         self.trail = [None] * N  # each body's last burn point in cells
@@ -68,11 +69,8 @@ class BurningBodies(Fire):
         if not pressed:
             ms = int(self.dt * 1000 + 0.5)
             self.clock += ms
-            self.body_acc += ms
-            steps = self.body_acc // rain.STEP_MS
-            self.body_acc -= steps * rain.STEP_MS
             t = time.ticks_us()
-            self.bodies.step(steps)
+            self.bodies.step(self.step_clock.take(ms))  # every frame, also with 0 steps (rain.Stepper.step)
             self.bodies.read(self.sleep)
             self.burn()
             self.add(0, t)
