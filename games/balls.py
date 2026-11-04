@@ -12,6 +12,7 @@ Without the engine module the HUD says "balls: no C" and nothing else is drawn.
 --- MVP (P598) ---
 """
 
+import math
 import random
 import time
 from array import array
@@ -29,7 +30,8 @@ if not hasattr(engine, "Balls"):
     engine = None
 
 POUR = 25  # balls a tap
-MAX = 300  # balls in the pit (engine.Balls takes up to 320)
+MAX = 100  # balls in the pit, the most that keep about 24 fps on the board (run99d: 100 at 23 fps, 150 at 19, 300 at 7;
+# the PO's "Fewer balls now", 2026-11-04). engine.Balls takes up to 320; P614 #820 makes the solver faster
 R_MIN, R_MAX = 2, 5  # a ball's radius, random per ball (fx_balls.h's FX_BALLS_R_MIN and FX_BALLS_R_MAX)
 DROP = 40  # a poured ball starts up to this far above the top
 RATE = 100  # steps a second, so a step is STEP_MS (D18)
@@ -41,7 +43,12 @@ GRAVITY = 2000.0  # px/s2 (A7)
 DAMPING = 0.98  # the part of its speed a ball keeps over one step: the settled pile's jitter fell from 5 to under 1 px/s
 HIT_MIN = 60.0  # px/s: a hit counts from here, a fall of 1 px; a resting pile's loudest contact is 5 px/s, 0 hits at rest
 SEED = 598
-# Twelve colours, one per pour, so twelve pours fill the pit in layers; engine.Balls' palette holds 16, the rest black
+# --- MVP (P598): the shake, the PO 2026-11-04: "as long as I hold the button pressed the stronger the bump would be" ---
+HOLD_MS = 300  # a press held this long or longer shakes on its release; a shorter one is a tap and pours
+SHAKE_FULL_MS = 1500  # held this long, the bump is at full strength
+SHAKE_MIN, SHAKE_MAX = 200.0, 600.0  # px/s; fx_balls' move cap (1.5 px a substep, 4 substeps of 2.5 ms) is 600
+SHAKE_SPREAD = 1.0  # rad: the bump points up, up to this far to either side
+# Twelve colours, one per pour in turn, so the heap shows layers; engine.Balls' palette holds 16, the rest black
 POUR_COLOURS = (c565(230, 40, 40), c565(250, 140, 30), c565(250, 220, 40), c565(120, 220, 40), c565(40, 210, 70),
                 c565(40, 220, 230), c565(50, 150, 240), c565(50, 90, 240), c565(130, 70, 230), c565(230, 60, 220),
                 c565(240, 120, 160), c565(235, 235, 235))
@@ -64,6 +71,7 @@ class BallPit(Game):
         self.balls = engine.Balls(MAX) if engine is not None else None
         self.clock = StepClock(STEP_MS, STEP_CAP)
         self.drained = array("i", [0] * (3 * MAX_EVENTS))  # made once: a frame drains into it and makes no list
+        self.pressed_at = None  # the frame's start in ms when the button went down, until its release
         self.pours, self.hits = 0, 0  # pours so far; hits since the last report
         self.us, self.frames, self.mark = [0, 0], 0, self.last  # us: step, draw
         self.hud_us, self.hud_frames, self.hud_hits, self.hud_mark = [0, 0], 0, 0, self.last  # self.last: None before step
@@ -84,7 +92,14 @@ class BallPit(Game):
 
     def play(self, pressed, held):
         if pressed:
-            self.pour()
+            self.pressed_at = self.last
+        if self.pressed_at is not None and not held:  # the release, also in the press's frame: a tap pours, a hold shakes
+            ms = time.ticks_diff(self.last, self.pressed_at)
+            self.pressed_at = None
+            if ms < HOLD_MS:
+                self.pour()
+            elif self.balls is not None:
+                self.shake(ms)
         steps = self.clock.take(int(self.dt * 1000 + 0.5))
         if self.balls is None:
             return
@@ -94,6 +109,12 @@ class BallPit(Game):
         hits = self.balls.drain(self.drained) + self.balls.dropped  # Python counts the hits (D12): its decision
         self.hits += hits
         self.hud_hits += hits
+
+    def shake(self, ms):
+        """Bump the box: every ball up and to a random side, faster the longer the button was held."""
+        speed = SHAKE_MIN + (SHAKE_MAX - SHAKE_MIN) * min(ms, SHAKE_FULL_MS) / SHAKE_FULL_MS
+        a = random.uniform(-SHAKE_SPREAD, SHAKE_SPREAD)
+        self.balls.kick(speed * math.sin(a), -speed * math.cos(a))
 
     def add(self, i, t):
         """The time since t into the report's sum i and the HUD's."""

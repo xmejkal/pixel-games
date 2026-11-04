@@ -80,7 +80,28 @@ class BallPitTest(unittest.TestCase):
             _, now = play(game, 1, now, Tft(), pressed=True)
         self.assertEqual(balls.POUR, game.balls.count)
         spawns = game.balls.spawns
-        self.assertEqual((11, 0), (spawns[-balls.POUR - 1][5], spawns[-1][5]))  # the 12th pour's colour, then round again
+        pours = balls.MAX // balls.POUR
+        self.assertEqual((pours - 1, pours % len(balls.POUR_COLOURS)), (spawns[-balls.POUR - 1][5], spawns[-1][5]))
+
+    def test_a_hold_shakes_the_pit_harder_the_longer_it_is_held_and_pours_nothing(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = balls.BallPit()
+            _, now = play(game, 60, 0, Tft())  # the first pour lands and rests
+            pit = game.balls
+            kicks = []
+            pit.kick = lambda vx, vy: kicks.append((vx, vy))
+            for hold in (8, 30):  # frames of 40 ms: 0.32 s, then 1.2 s
+                for k in range(hold):
+                    now += 40
+                    game.step(now, k == 0, True)
+                now += 40
+                game.step(now, False, False)  # the release
+        self.assertEqual(balls.POUR, pit.count)  # a hold pours nothing
+        self.assertEqual(2, len(kicks))
+        speeds = [(vx * vx + vy * vy) ** 0.5 for vx, vy in kicks]
+        self.assertLess(speeds[0], speeds[1])
+        self.assertTrue(all(vy < 0 for _, vy in kicks))  # up
+        self.assertLessEqual(speeds[1], balls.SHAKE_MAX + 1e-3)
 
     def test_the_pit_draws_reports_and_counts_hits(self):
         out = io.StringIO()
