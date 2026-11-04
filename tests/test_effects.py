@@ -162,5 +162,30 @@ class EffectsTest(unittest.TestCase):
         self.assertEqual(1, len(self.field.burns))
 
 
+    # --- MVP (P602) ---
+    def test_a_scroll_moves_the_path_with_the_world(self):
+        """The world moves 3 cells left under a bird that stays at x: its last place and the last burn point move with
+        it, so the next segment starts where the old heat went and the flames stream back."""
+        trail = self.trail()
+        self.effects.bodies[0].effect = trail
+        self.stepper.places[0] = (100, 100)
+        self.effects.update()
+        trail.scroll(-3)
+        c, y = cell(100, 100, SIZE)
+        self.assertEqual((c - 3, c - 3), (trail.prev_x, trail.trail_x))  # the sign: left is negative
+        self.effects.update()
+        self.assertEqual((c - 3, y, c - int(3 * LAG), y, RADIUS, HEAT), self.field.burns[-1])
+
+    def test_a_scroll_before_the_first_frame_or_on_another_effect_does_nothing(self):
+        trail, counter = self.trail(), Counter()
+        trail.scroll(-3)
+        counter.scroll(-3)
+        self.effects.bodies[0].effect = trail
+        self.stepper.places[0] = (100, 100)
+        self.effects.update()
+        c, y = cell(100, 100, SIZE)
+        self.assertEqual([(c, y, c, y, RADIUS, HEAT)], self.field.burns)
+        self.assertEqual(([], 0), (counter.places, counter.forgot))
+
 if __name__ == "__main__":
     unittest.main()
