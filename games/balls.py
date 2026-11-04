@@ -29,9 +29,10 @@ except ImportError:  # the image with s3lcd only
 if not hasattr(engine, "Balls"):
     engine = None
 
-POUR = 25  # balls a tap
-MAX = 320  # balls in the pit, engine.Balls' most, so the PO sees where it gets too slow ("dont empty it", 2026-11-04).
-# On the board 100 keep about 24 fps, 185 run at 20, 320 at 8 (run99d, run100); P614 #820 makes the solver faster
+POUR = 10  # balls a tap (the PO: "you don't need to release so many at once")
+MAX = 2000  # balls in the pit, engine.Balls' most: the PO adds as many as he wants and sees where it gets too slow ("dont
+# empty it", "don't stop the amount at 320", 2026-11-04). About 1,800 fill the screen. On the board 100 keep about 24 fps,
+# 185 run at 20, 320 at 8 (run99d, run100); P614 #820 makes the solver faster
 R_MIN, R_MAX = 2, 5  # a ball's radius, random per ball (fx_balls.h's FX_BALLS_R_MIN and FX_BALLS_R_MAX)
 DROP = 40  # a poured ball starts up to this far above the top
 RATE = 100  # steps a second, so a step is STEP_MS (D18)
