@@ -16,6 +16,9 @@ Every REPORT_MS it prints, for the bench log, the average ms per frame:
 A tap prints `fire mode <mode>` and starts a new interval, so each line holds one mode. Before the field opens it prints
 `fire internal largest <bytes>` (A9), then `fire field <internal|psram>`. Without the engine module the HUD says
 "fire: no C" and nothing else is drawn.
+
+FireLayer (P602) puts the same field into another game as one more layer of its picture: heat burned at a body, moved
+with the world and blended over the game's frame, as flappy's bird trails fire.
 --- MVP (P595) ---
 """
 
@@ -25,10 +28,14 @@ from array import array
 
 import pictures
 from gfx import BLACK, DARK, HEIGHT, LABEL_RECT, WHITE, WIDTH, Game, c565
+from motion import StepClock
 
 try:
     import engine
-except ImportError:  # the Mac, or the image with s3lcd only
+except ImportError:  # the image with s3lcd only
+    engine = None
+# --- MVP (P602) --- on the Mac `import engine` finds the repository's engine/ folder, an empty package
+if not hasattr(engine, "HeatField"):
     engine = None
 
 W, H = WIDTH // 2, HEIGHT // 2  # cells of 2 x 2 px: 160 x 120
@@ -51,14 +58,16 @@ SEED = 595
 # alpha is 0, so the picture mode leaves the sky there.
 STOPS = ((0, 0, 0, 0), (48, 140, 10, 0), (96, 240, 60, 0), (144, 255, 160, 20), (192, 255, 230, 80), (255, 255, 255, 255))
 # --- MVP (P608) ---
-# The filters of HeatField.set_filter, OpenGL's GL_NEAREST and GL_LINEAR. 0 and 1 without the C engine: on the Mac
-# `import engine` finds the repository's engine/ folder, an empty package
+# The filters of HeatField.set_filter, OpenGL's GL_NEAREST and GL_LINEAR. 0 and 1 without the C engine
 NEAREST, LINEAR = getattr(engine, "NEAREST", 0), getattr(engine, "LINEAR", 1)
 # Each mode as (name, filter, blend): blend True paints the sky and blends the fire over it. A name is one word, as the
 # report line has one token for it
 MODES = (("linear", LINEAR, False), ("picture", LINEAR, True), ("nearest", NEAREST, False))
 REPORT_MS = 5000  # app.py's FPS_EVERY_MS, so a fire line comes with each of its time lines
 HUD_MS = 500
+# --- MVP (P602) ---
+CELL_PX_MS = 2000  # px/s times ms of one cell of 2 px, so FireLayer counts the world's motion in ints
+LAYER_STEP_CAP = 2  # a FireLayer's steps a frame at most: Game.step caps dt at 60 ms, which holds one or two
 
 
 def ramp(stops):
@@ -184,3 +193,44 @@ class Fire(Game):
     def draw_hud(self, cv):
         cv.fill(0, 0, WIDTH, LABEL_RECT[3], DARK)
         cv.text(self.label, 4, 2, WHITE)
+
+
+# --- MVP (P602) ---
+class FireLayer:
+    """The fire field as one more layer of a game's picture, at the world's speed, as a parallax layer is (Godot's
+    CanvasLayer): only burns put heat in, the base is off. update moves the heat with the world and steps it, draw
+    blends it over the frame. Without the engine, field is None and draw does nothing. Made once, so a frame makes
+    nothing."""
+
+    def __init__(self, look, seed):
+        self.field, self.clock, self.acc = None, StepClock(STEP_MS, LAYER_STEP_CAP), 0  # acc: px/s times ms
+        if engine is not None:
+            self.field = engine.HeatField(W, H, seed)
+            self.field.set_look(*look)
+            self.field.set_base(False)
+            self.field.set_filter(LINEAR)
+
+    def update(self, ms, speed):
+        """ms of a world moving left at speed px/s, an int: the field scrolls the whole cells it moved, the rest waits,
+        then it steps by its clock. The cells it scrolled."""
+        self.acc += speed * ms
+        cells = self.acc // CELL_PX_MS
+        self.acc -= cells * CELL_PX_MS
+        steps = self.clock.take(ms)
+        if self.field is not None:
+            if cells:
+                self.field.scroll(-cells)
+            if steps:
+                self.field.step(steps, 0)
+        return cells
+
+    def clear(self):
+        """An empty field and no part of a cell carried over, for a new round."""
+        self.acc = 0
+        if self.field is not None:
+            self.field.scroll(-W)
+
+    def draw(self, cv):
+        """The heat blended over what the frame holds, at its alpha. Only a canvas with an s3lcd tft has a frame."""
+        if self.field is not None and hasattr(cv, "tft"):
+            self.field.draw(cv.tft, PALETTE, ALPHA)
