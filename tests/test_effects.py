@@ -120,9 +120,12 @@ class EffectsTest(unittest.TestCase):
             self.stepper.places[0] = (x, y)
             self.effects.apply()
         self.assertEqual([], self.field.burns)
-        self.stepper.places[0] = (100, 2 * H - SIZE // 2 - 2)  # its cell at y H - 1: the last row burns
-        self.effects.apply()
-        self.assertEqual(1, len(self.field.burns))
+        for x, y in ((100, 2 * H - SIZE // 2 - 2), (4 * W - SIZE // 2 - 2, 100), (-2 * W - SIZE // 2 + 2, 100)):
+            body = self.effects.bodies[0]  # cell y H - 1, x 2W - 1, x -W + 1: its flames can reach the screen
+            body.forget()
+            self.stepper.places[0] = (x, y)
+            self.effects.apply()
+        self.assertEqual(3, len(self.field.burns))
 
     def test_a_hit_can_start_an_effect(self):
         def catch_fire(body, speed):
