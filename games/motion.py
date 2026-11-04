@@ -35,7 +35,7 @@ class Spring:
 
 
 HIT, SLEEP = 1, 2  # the kinds of event, engine.HIT and engine.SLEEP: a bounce, and a body come to rest
-MAX_EVENTS = 64  # world.h's WORLD_MAX_EVENTS: a step call keeps its first 64 events, the rest only count in dropped
+MAX_EVENTS = 64  # events.h's EVENTS_MAX: a step call keeps its first 64 events, the rest only count in dropped
 MAX_BODIES, MAX_STEPS = 256, 64  # binding.c's limits on n and on the steps of one call
 
 
