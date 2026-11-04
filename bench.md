@@ -457,7 +457,7 @@ The engine image 5206b1c9bed42b4d (217,312 B left in the app partition), built f
 
 ## P598 (#799), 2026-11-04: the ball pit
 
-The board runs `engine.Balls` (`fx_balls.c` on the uniform grid of `grid.c`). The last image is 74f1d9d27d6003c6 (211,312 B left in the app partition), built from the C at c952675 (`build-engine-p598g.log`, which holds no commit), with `games/*.py` at 9cb3cba. A step is 4 substeps of 2.5 ms and 2 relaxation passes.
+The board runs `engine.Balls` (`fx_balls.c` on the uniform grid of `grid.c`). The last image is 481959b8587c1502, built from 862e32e (`build-engine-p598h.log`, which holds no commit), with `games/*.py` at 862e32e. Runs 104 to 107 ran on image 74f1d9d27d6003c6 (211,312 B left in the app partition), built from the C at c952675, with `games/*.py` at 9cb3cba. Run 108 repeats run 106 on the last image with the same numbers, and the pit starts at 24 fps (`run108b-p598-smoke-balls.log`). A step is 4 substeps of 2.5 ms and 2 relaxation passes.
 
 | run | what | result |
 | --- | --- | --- |
