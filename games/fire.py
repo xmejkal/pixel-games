@@ -4,8 +4,9 @@ and cools, drawn as 2 x 2 px cells over the whole screen. Its look (part 2): hot
 cooling map that rises with the flames and cuts them into tongues, and a sideways sway. Part 3 adds patches that rise
 two rows a step, gusts of wind and embers. The fire assumes ORIENTATION 0
 (lcd.py), as the pictures do. A BOOT tap moves to the next mode:
-    B        C writes the s3lcd frame itself
-    picture  C blends the fire over the painted sky in the s3lcd frame, each pixel at its heat's alpha (P603)
+    linear   C writes the s3lcd frame itself, each cell smoothed over its 2 x 2 px by bilinear filtering (P608)
+    picture  C blends the linear fire over the painted sky in the s3lcd frame, each pixel at its heat's alpha (P603)
+    nearest  C writes the frame with each cell as one 2 x 2 px block, the draw before P608 (path B)
 Path A, a buffer blitted opaque, was timed and dropped: 15.0 ms of step + draw against B's 7.8 (bench.md,
 P595, D7).
 The HUD says the mode, the step + draw ms and the fps.
@@ -49,8 +50,13 @@ SEED = 595
 # The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, and its
 # alpha is 0, so the picture mode leaves the sky there.
 STOPS = ((0, 0, 0, 0), (48, 140, 10, 0), (96, 240, 60, 0), (144, 255, 160, 20), (192, 255, 230, 80), (255, 255, 255, 255))
-B, PICTURE = 0, 1
-MODES = ("B", "picture")
+# --- MVP (P608) ---
+# The filters of HeatField.set_filter, OpenGL's GL_NEAREST and GL_LINEAR. 0 and 1 without the C engine: on the Mac
+# `import engine` finds the repository's engine/ folder, an empty package
+NEAREST, LINEAR = getattr(engine, "NEAREST", 0), getattr(engine, "LINEAR", 1)
+# Each mode as (name, filter, blend): blend True paints the sky and blends the fire over it. A name is one word, as the
+# report line has one token for it
+MODES = (("linear", LINEAR, False), ("picture", LINEAR, True), ("nearest", NEAREST, False))
 REPORT_MS = 5000  # app.py's FPS_EVERY_MS, so a fire line comes with each of its time lines
 HUD_MS = 500
 
@@ -81,8 +87,8 @@ class Fire(Game):
     MODES = MODES
 
     def __init__(self):
-        self.mode = B
-        self.covers = engine is not None  # every mode paints every pixel: the fire in B, the sky in picture
+        self.mode = 0
+        self.covers = engine is not None  # every mode paints every pixel: the fire opaque, or the sky under it
         self.wind, self.target, self.gust = 0, 0, 0  # the gust model: the wind now, where it goes, ms to the next
         super().__init__()
 
@@ -94,18 +100,26 @@ class Fire(Game):
             self.field = engine.HeatField(W, H, SEED)
             self.field.set_look(*self.LOOK)
             print(self.name, "field", self.field.where)
+        self.set_mode(self.mode)
         self.begin()
+
+    def set_mode(self, mode):
+        """Mode number mode: its name, whether it blends, and its filter on the field. --- MVP (P608) ---"""
+        self.mode = mode
+        self.mode_name, mag_filter, self.blend = self.MODES[mode]
+        if self.field is not None:
+            self.field.set_filter(mag_filter)
 
     def begin(self):
         """A new interval for the report and the HUD."""
         self.acc, self.us, self.frames, self.mark = 0, [0, 0], 0, self.last  # us: step, draw
         self.hud_us, self.hud_frames, self.hud_mark = 0, 0, self.last  # self.last: None before the first step
-        self.label = self.name + (": no C" if self.field is None else " " + self.MODES[self.mode])
+        self.label = self.name + (": no C" if self.field is None else " " + self.mode_name)
 
     def play(self, pressed, held):
         if pressed:
-            self.mode = (self.mode + 1) % len(self.MODES)
-            print(self.name, "mode", self.MODES[self.mode])
+            self.set_mode((self.mode + 1) % len(self.MODES))
+            print(self.name, "mode", self.mode_name)
             self.begin()
             return
         ms = int(self.dt * 1000 + 0.5)
@@ -131,17 +145,17 @@ class Fire(Game):
 
     def paint_static(self, cv):
         """The sky under the picture mode, or black where there is no art, so covers stays true."""
-        if self.field is not None and self.mode == PICTURE and not pictures.draw(cv, "sky", 0, 0):
+        if self.field is not None and self.blend and not pictures.draw(cv, "sky", 0, 0):
             cv.fill(0, 0, WIDTH, HEIGHT, BLACK)
 
     def paint(self, cv):
         if self.field is None:
             return
         t = time.ticks_us()
-        if self.mode == B:
-            self.field.draw(cv.tft, PALETTE)
-        else:
+        if self.blend:
             self.field.draw(cv.tft, PALETTE, ALPHA)
+        else:
+            self.field.draw(cv.tft, PALETTE)
         self.add(1, t)
         self.count(self.last)
 
@@ -151,7 +165,7 @@ class Fire(Game):
             self.mark = self.hud_mark = now
         self.frames += 1
         self.hud_frames += 1
-        mode = self.MODES[self.mode]
+        mode = self.mode_name
         elapsed = time.ticks_diff(now, self.hud_mark)
         if elapsed >= HUD_MS:
             self.label = "%s %s %.1f ms %d fps" % (

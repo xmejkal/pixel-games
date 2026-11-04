@@ -419,3 +419,21 @@ The engine image 063448a95d2c8b92, unchanged: P607 changes Python only. `games/e
 - The step rose by about 0.12 ms: one Python call per body more (`Body.place`, then `Effect.update`). The plan's line was 0.3 ms.
 - The look on the Mac: `tools/render_scene.py burning` at frames 30, 60 and 120 gives byte-identical PNGs on master and on the branch. The refuter replayed 1,500 frames on both: the same 10,749 `HeatField.burn` calls, in the same order.
 - Smoke (`run87-p607-smoke.log`): all thirteen entries start, with no error.
+
+## P608 (#810), 2026-11-04: the smooth fire, bilinear filtering of the heat field
+
+The engine image 167304489f3dbb6a (217,600 B left in the app partition), built from cbbd865 (`build-engine-p608b.log`). `HeatField.set_filter(engine.LINEAR)` draws each cell's 2 x 2 px at centre-sampled bilinear weights (OpenGL's `GL_LINEAR` at 2x), `engine.NEAREST` as the 2 x 2 blocks before. Each mode ran alone through `mpremote run` for 42 s, first in its scene's `MODES`, after one warm-up run. The values are per frame, from seven 5 s lines each. The nearest lines are the before, in the same image.
+
+| run | scene and mode | fps | step | draw |
+| --- | --- | --- | --- | --- |
+| `run89-p608-burning-linear.log` | burning, linear | 24 to 25 | 7.60 to 7.78 ms | 6.41 ms |
+| `run89-p608-burning-nearest.log` | burning, nearest | 24 to 25 | 7.60 to 7.73 ms | 4.26 to 4.27 ms |
+| `run90-p608-fire-linear.log` | fire, linear | 24 to 25 | 6.39 to 6.49 ms | 6.42 to 6.43 ms |
+| `run90-p608-fire-nearest.log` | fire, nearest | 24 to 25 | 6.40 to 6.49 ms | 4.26 to 4.27 ms |
+| `run90-p608-fire-picture.log` | fire, picture (linear blend over the sky) | 23 to 24 | 6.55 to 6.76 ms | 11.51 to 13.32 ms |
+
+- Linear costs about 2.15 ms more a frame to draw than nearest, and the fps holds. The fps cannot show the cost, because FRAME_MS 40 caps it at 25.
+- The first image (36f0629's loop, image c923e0de98a9d90a) worked out each pixel's neighbours, clamps and half its sum again for all 76,800 pixels: 12.69 to 12.70 ms of draw, and the picture mode fell to 21 to 22 fps at 18.7 to 20.4 ms. The Fable refuter found the cause. cbbd865 picks each panel row's two cell columns once and slides down them, with the same bytes (the Mac tests).
+- The picture mode was not timed with nearest in this image. P603 measured it at 23 to 24 fps, the same as linear's now.
+- Args probe (`run90b-p608-args-probe.log`, first image, same binding): `set_filter` takes 0, 1 and True, raises ValueError for 2 and -1 and TypeError for "1" and None, and `engine.NEAREST` is 0, `engine.LINEAR` 1.
+- Smoke (`run91-p608-smoke.log`): all thirteen entries start, with no error.

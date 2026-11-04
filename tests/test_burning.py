@@ -24,7 +24,7 @@ import rain  # noqa: E402
 import world_lib  # noqa: E402
 from motion import HIT, SLEEP  # noqa: E402
 
-REPORT = re.compile(r"^burning B fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
+REPORT = re.compile(r"^burning (linear|nearest) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 
 
 class StepperStandIn:
@@ -88,12 +88,28 @@ class BurningTest(unittest.TestCase):
             tft = Tft()
             play(game, 150, 0, tft)  # 6 s: past REPORT_MS, and the bodies have landed
         self.assertRegex(out.getvalue(), REPORT)
-        self.assertRegex(game.label, r"^burning B \d+\.\d ms \d+ fps$")
+        self.assertRegex(game.label, r"^burning linear \d+\.\d ms \d+ fps$")
         self.assertEqual([burning.BurningBodies.LOOK], fire.engine.looks)
         self.assertEqual(0, game.field.f.base)  # only the bodies burn
         self.assertTrue(fire.engine.burns)
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the flames reached the frame
         self.assertTrue(self.flares(), "a first landing flares")
+
+    # --- MVP (P608) ---
+    def test_both_modes_draw_opaque_with_no_sky(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = burning.BurningBodies()
+            tft = Tft()
+            cv, now = play(game, 5, 0, tft)
+            self.assertEqual("linear", game.mode_name)
+            self.assertEqual(["tft"] * 5, fire.engine.targets)  # linear: opaque
+            self.assertNotIn((0, 0, fire.WIDTH, fire.HEIGHT), cv.fills)  # no sky
+            fire.engine.targets = []
+            cv, now = play(game, 1, now, tft, pressed=True)
+        self.assertEqual(("nearest", fire.NEAREST), (game.MODES[game.mode][0], game.field.f.filter))
+        self.assertEqual([fire.LINEAR, fire.NEAREST], fire.engine.filters)
+        self.assertEqual(["tft"], fire.engine.targets)  # opaque
+        self.assertNotIn((0, 0, fire.WIDTH, fire.HEIGHT), cv.fills)  # no sky
 
     @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
     def test_a_landing_in_c_flares_in_python(self):

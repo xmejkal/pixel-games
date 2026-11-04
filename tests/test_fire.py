@@ -28,7 +28,7 @@ import lcd  # noqa: E402
 FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
 S3LCD_SRC = os.path.join(os.path.dirname(HERE), "s3lcd", "src")  # blend565.h
 FRAME_MS = 40  # app.py's FRAME_MS
-REPORT = re.compile(r"^fire (B|picture) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
+REPORT = re.compile(r"^fire (linear|picture|nearest) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 SEED_WIND = 595  # the gust test's seed for Python's random
 
 
@@ -60,8 +60,10 @@ class Recorder:
 
 
 class Engine:
-    """The engine module's HeatField and largest_free_internal (engine/binding.c), on fx_fire.c through ctypes. looks
-    keeps each set_look's numbers."""
+    """The engine module's HeatField, largest_free_internal, NEAREST and LINEAR (engine/binding.c), on fx_fire.c
+    through ctypes. looks keeps each set_look's numbers, filters each set_filter's."""
+
+    NEAREST, LINEAR = 0, 1  # --- MVP (P608) ---
 
     def __init__(self, lib):
         engine = self
@@ -81,6 +83,10 @@ class Engine:
             def step(self, steps, wind):
                 lib.fx_fire_step(ctypes.byref(self.f), steps, wind)
 
+            def set_filter(self, mag_filter):  # P608
+                engine.filters.append(mag_filter)
+                lib.fx_fire_set_filter(ctypes.byref(self.f), mag_filter)
+
             def set_base(self, on):  # P596
                 lib.fx_fire_set_base(ctypes.byref(self.f), 1 if on else 0)
 
@@ -97,7 +103,7 @@ class Engine:
                     lib.fx_fire_blend(ctypes.byref(self.f), out, (ctypes.c_uint16 * 256).from_buffer(palette),
                                       (ctypes.c_uint8 * 256).from_buffer(alpha))
 
-        self.HeatField, self.targets, self.looks, self.burns = HeatField, [], [], []
+        self.HeatField, self.targets, self.looks, self.burns, self.filters = HeatField, [], [], [], []
 
     def largest_free_internal(self):
         return 123456
@@ -168,7 +174,7 @@ class FireTest(unittest.TestCase):
         self.assertTrue(game.covers)
         self.assertIn("fire internal largest 123456\nfire field internal\n", out.getvalue())
         self.assertRegex(out.getvalue(), REPORT)
-        self.assertRegex(game.label, r"^fire B \d+\.\d ms \d+ fps$")
+        self.assertRegex(game.label, r"^fire linear \d+\.\d ms \d+ fps$")
         self.assertEqual({"tft"}, set(fire.engine.targets))
         look = (fire.DECAY, fire.COOL, fire.SWAY, fire.SPOTS, fire.SPREAD, fire.FAST, fire.EMBERS,
                     fire.FADE)
@@ -176,22 +182,28 @@ class FireTest(unittest.TestCase):
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the fire reached the frame
 
     def test_a_tap_moves_to_the_next_mode(self):
+        """P608: the scene starts linear, and a tap walks the three modes, each setting its filter. Only the picture
+        mode paints the sky (here black: the Mac has no art) and blends."""
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
             game = fire.Fire()
             tft = Tft()
             _, now = play(game, 5, 0, tft)
+            self.assertEqual([fire.LINEAR], fire.engine.filters)  # setup's
             seen = []
-            for _ in range(2):
-                tft.blits, fire.engine.targets = [], []
+            for _ in range(3):
+                tft.blits, fire.engine.targets, fire.engine.filters = [], [], []
                 cv, now = play(game, 1, now, tft, pressed=True)
                 cv, now = play(game, 1, now, tft)
-                seen.append((fire.MODES[game.mode], fire.engine.targets, tft.blits, cv.fills))
+                seen.append((fire.MODES[game.mode][0], fire.engine.filters, game.field.f.filter, fire.engine.targets,
+                             tft.blits, cv.fills))
+        sky = [(0, 0, fire.WIDTH, fire.HEIGHT)]
         self.assertEqual([
-            ("picture", ["tft alpha", "tft alpha"], [], [(0, 0, fire.WIDTH, fire.HEIGHT)]),  # no sky here
-            ("B", ["tft", "tft"], [], []),
+            ("picture", [fire.LINEAR], fire.LINEAR, ["tft alpha", "tft alpha"], [], sky),
+            ("nearest", [fire.NEAREST], fire.NEAREST, ["tft", "tft"], [], []),
+            ("linear", [fire.LINEAR], fire.LINEAR, ["tft", "tft"], [], []),
         ], seen)
-        self.assertIn("fire mode picture\nfire mode B\n", out.getvalue())
+        self.assertIn("fire mode picture\nfire mode nearest\nfire mode linear\n", out.getvalue())
 
     def test_the_wind_stays_within_wind(self):
         fire.random.seed(SEED_WIND)  # the gusts draw from Python's random: seeded, so both signs always show

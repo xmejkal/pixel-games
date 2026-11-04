@@ -10,8 +10,9 @@ A hard landing flares up (P590): C reports each hit with its speed as an event, 
 through effects.EffectSystem.dispatch, decides what it causes (D12). A hit at FLARE_MIN px/s or more burns one disc
 at the body's x and its plane, wider and hotter the faster it hit.
 
-The HUD and the report are the fire's: `burning B fps <fps> step <ms> draw <ms>`, where step holds the bodies' step,
-their read and the burns too.
+The HUD and the report are the fire's: `burning <mode> fps <fps> step <ms> draw <ms>`, where step holds the bodies'
+step, their read and the burns too. A BOOT tap moves between the modes linear (bilinear filtering) and nearest (2 x 2
+px blocks, the draw before P608).
 --- MVP (P607) ---
 """
 
@@ -20,7 +21,7 @@ import time
 
 import rain
 from effects import EffectSystem, FireTrail, cell
-from fire import FAST, SWAY, Fire
+from fire import FAST, LINEAR, NEAREST, SWAY, Fire
 from gfx import HEIGHT, WIDTH, c565
 from motion import HIT, StepClock
 
@@ -55,7 +56,7 @@ def flare_size(speed):
 class BurningBodies(Fire):
     name = "burning"
     LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)  # no spots, no embers: the base is off
-    MODES = ("B",)
+    MODES = (("linear", LINEAR, False), ("nearest", NEAREST, False))  # --- MVP (P608) --- opaque, no sky
 
     def setup(self):
         random.seed(SEED)
