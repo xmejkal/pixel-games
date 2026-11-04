@@ -113,6 +113,12 @@ class PaletteTest(unittest.TestCase):
         self.assertEqual(fire.BLACK, fire.PALETTE[0])
         self.assertEqual(fire.WHITE, fire.PALETTE[255])
 
+    def test_the_alpha_climbs_from_clear_to_half(self):
+        """P603: the cool edges are almost all sky, the hot core half fire. ALPHA_TOP is the PO's "half transparent"."""
+        alpha = list(fire.ALPHA)
+        self.assertEqual((256, 0, 128, 64), (len(alpha), alpha[0], alpha[255], alpha[128]))
+        self.assertEqual(sorted(alpha), alpha)
+
 
 class NoEngineTest(unittest.TestCase):
     def test_no_c_shows_and_nothing_else_is_drawn(self):
