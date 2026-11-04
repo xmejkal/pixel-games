@@ -1,9 +1,12 @@
 """Draw a heat-field scene on the Mac to a PNG, to set a look from frames before the board (P596). It plays the scene
 with tests/test_fire.py's engine stand-in (fx_fire.c through ctypes) and writes the panel frame in the game's view.
 Needs clang and Pillow. From the repository root:
-    python3 -B tools/render_scene.py burning out.png [frames ...]
-The scene is fire or burning; one PNG per frame count, side by side. --- MVP (P596) ---"""
+    python3 -B tools/render_scene.py [--filter nearest|linear] burning out.png [frames ...]
+The scene is fire or burning; one PNG per frame count, side by side. --filter (P608) sets the field's filter after
+setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering; without it the scene's first mode
+draws. --- MVP (P596) ---"""
 
+import argparse
 import contextlib
 import ctypes
 import io
@@ -22,6 +25,7 @@ import rain  # noqa: E402
 from PIL import Image  # noqa: E402
 
 SCENES = {"fire": fire.Fire, "burning": burning.BurningBodies}
+FILTERS = {"nearest": fire.NEAREST, "linear": fire.LINEAR}  # --- MVP (P608) ---
 
 
 def frame_image(tft):
@@ -36,14 +40,23 @@ def frame_image(tft):
 
 
 def main():
-    name, out, counts = sys.argv[1], sys.argv[2], [int(a) for a in sys.argv[3:]] or [100]
+    parser = argparse.ArgumentParser(description="Draw a heat-field scene on the Mac to a PNG.")
+    parser.add_argument("--filter", choices=sorted(FILTERS), help="the field's filter (P608)")
+    parser.add_argument("scene", choices=sorted(SCENES))
+    parser.add_argument("out")
+    parser.add_argument("frames", type=int, nargs="*", default=[100])
+    args = parser.parse_args()
+    name, out, counts = args.scene, args.out, args.frames
     with tempfile.TemporaryDirectory() as tmp:
         lib_path = os.path.join(tmp, "libfire.so")
         subprocess.run(["clang", "-std=c99", "-O2", "-shared", "-fPIC", "-I", S3LCD_SRC, "-o", lib_path, FIRE_C],
                        check=True)
         fire.engine, rain.engine = Engine(ctypes.CDLL(lib_path)), None  # bodies on rain.Stepper over motion.Bodies
+        fire.random.seed(fire.SEED)  # the fire's gusts too, so a render with each filter shows the same flames
         with contextlib.redirect_stdout(io.StringIO()):
             game, tft, now, shots = SCENES[name](), Tft(), 0, []
+            if args.filter:
+                game.field.set_filter(FILTERS[args.filter])
             for n in counts:
                 _, now = play(game, n - (now // 40), now, tft)
                 shots.append(frame_image(tft))
