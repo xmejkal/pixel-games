@@ -93,3 +93,7 @@ Filed on the PO's yes to this list (D18, 2026-11-03): P595 #796, P596 #797, P597
 - file P595 to P598, P600 and P601 as sub-issues of #795, and P599 as a sub-issue of P586 #787 (D17), Slice pixel-games, stage Idea · D18, done 2026-11-03 <!-- REQUIRED:board-actions -->
 - apply the changes to #784, #788, #793 and #795 above · D18, done 2026-11-03
 - comment on #795 with the brief's link · D18, done 2026-11-03. No Waiting on flag: nothing waits on the PO until P595 is ready to play
+
+## P603 #804, filed after this list: the blend over a picture
+
+- filed 2026-11-03, when the PO saw wrong colours in the fire's picture variant (D12). Done: s3lcd's blend swaps the bytes in and out (pixel-games #18), and the fire's alpha follows its heat, full from heat 96, the PO's pick on the panel (#19). Picture paint went from 22.3 to 25.2 ms down to 6.9 to 8.5 ms (bench.md, P603)

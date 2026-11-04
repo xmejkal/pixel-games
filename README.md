@@ -51,9 +51,9 @@ Runs now:
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 20 to 22 and runner 21 to 24 at a 40 ms frame pace, with no play; stack 24.
 
-In progress: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT. The work is on the branch `p582-heavy` and is not merged. Nobody has yet said how it feels.
+In progress: none. The PO paused the effects on 2026-11-04, so spark's refactor goes first: "we can continue on the effects later." Also paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
 
-Next: P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
+Next, when the effects come back: P602 ([#803](https://github.com/xmejkal/spark/issues/803)), the flappy bird trails fire, the first effect inside a game. Then P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
 
 The work is planned on the board of the [spark](https://github.com/xmejkal/spark) project.
 
