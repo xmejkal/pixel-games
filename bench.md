@@ -360,3 +360,17 @@ The fire in picture mode alone (the fire blitted at alpha 128 over the sky), abo
 - Three worst frames of the after run were longer (106, 108 and 132 ms). The cause was not looked for. One run each, so this can be noise.
 - Smoke (`run75-p603-smoke.log`): all twelve entries start and report fps (22 to 25), with no error.
 - Not changed: the indexed `bitmap` path, the PNG loader and the font draws in s3lcd.c build or pass colours in normal order. No game calls them. `bitmap` carries a "Later, not MVP" comment.
+
+### Part 2, 2026-11-04: the alpha follows the heat
+
+The PO saw dark flame sides in part 1: the cool, dark edge cells were blended at the same alpha 128 as the core. Now each heat has its own alpha (`ALPHA` in `games/fire.py`, `heat * 128 // 255`), and a C kernel, `fx_fire_blend`, blends each cell straight into the s3lcd frame. The 153,600 B picture buffer and its blit are gone. Image sha256 cee7185f07870860 (217,728 B left in the app partition), built from the same tree as 78674c4. The run, `run76-p603-alpha-picture.log`, is the same picture script as part 1, 7 intervals of 5 s.
+
+| run | fps | paint (`avg`) | paint (`time`) | worst frame |
+| --- | --- | --- | --- | --- |
+| part 1 | 18 to 19 | 22.3 to 25.2 ms | 33.6 to 36.2 ms | 81 to 132 ms |
+| part 2 | 23 to 24 | 6.9 to 8.5 ms | 17.6 to 19.4 ms | 68 to 84 ms |
+
+- The paint is about 16 ms shorter, because the frame no longer gets a second full-panel pass: the buffer fill and the blit become one blend that skips the clear cells.
+- The binding's argument checks have no Mac test (the binding is not built on the Mac). `run76b-p603-args-probe.log` calls `draw` with five bad arguments, a field of the wrong size and three good forms: all nine give the expected result.
+- Smoke (`run77-p603-alpha-smoke.log`): all twelve entries start and report fps (20 to 25), with no error.
+- The look (2026-11-04): the PO found the half alpha too pale over the light sky. On the panel and on a Mac render of four curves, he picked full alpha from heat 96 up, climbing evenly from clear at heat 0 (`ALPHA_FULL = 96`). The kernel still skips only alpha 0, so the paint cost does not change.

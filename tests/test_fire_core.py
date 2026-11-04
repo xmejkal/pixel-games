@@ -4,6 +4,7 @@ the repository root: python3 -m unittest discover tests. --- MVP (P595) ---"""
 
 import ctypes
 import os
+import random
 import shutil
 import subprocess
 import sys
@@ -13,10 +14,13 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+sys.path.insert(0, HERE)
 
 import lcd  # noqa: E402
+from test_blend import reference as reference_blend  # noqa: E402
 
 FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
+S3LCD_SRC = os.path.join(os.path.dirname(HERE), "s3lcd", "src")  # blend565.h, the blend fx_fire_blend shares
 W, H = 160, 120  # games/fire.py's field: the panel is 240 x 320
 SEED, STEPS = 595, 50
 SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps the run short
@@ -191,8 +195,8 @@ class FireCoreTest(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         lib_path = os.path.join(cls.tmp.name, "libfire.so")
-        subprocess.run(["clang", "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-o", lib_path,
-                        FIRE_C], check=True)
+        subprocess.run(["clang", "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-I", S3LCD_SRC,
+                        "-o", lib_path, FIRE_C], check=True)
         cls.lib = ctypes.CDLL(lib_path)
 
     @classmethod
@@ -213,6 +217,39 @@ class FireCoreTest(unittest.TestCase):
         panel = (ctypes.c_uint16 * (4 * f.w * f.h))(*([0xABCD] * (4 * f.w * f.h)))  # a sentinel no palette holds
         self.lib.fx_fire_draw(ctypes.byref(f), panel, (ctypes.c_uint16 * 256)(*palette))
         return list(panel)
+
+    # --- MVP (P603) ---
+    def blend(self, f, palette, alpha, background):
+        panel = (ctypes.c_uint16 * len(background))(*background)
+        self.lib.fx_fire_blend(ctypes.byref(f), panel, (ctypes.c_uint16 * 256)(*palette),
+                               (ctypes.c_uint8 * 256)(*alpha))
+        return list(panel)
+
+    def random_scene(self, rng):
+        """A field of random heats, a random palette and a random background of panel pixels."""
+        f, heat = self.field(SMALL_W, SMALL_H)
+        for i in range(SMALL_W * SMALL_H):
+            heat[i] = rng.randrange(256)
+        palette = [rng.randrange(1 << 16) for _ in range(256)]
+        background = [rng.randrange(1 << 16) for _ in range(4 * SMALL_W * SMALL_H)]
+        return f, heat, palette, background
+
+    def test_blend_at_alpha_0_leaves_the_background(self):
+        f, _, palette, background = self.random_scene(random.Random(603))
+        self.assertEqual(background, self.blend(f, palette, [0] * 256, background))
+
+    def test_blend_at_alpha_255_gives_the_draw(self):
+        f, _, palette, background = self.random_scene(random.Random(604))
+        self.assertEqual(self.draw(f, palette), self.blend(f, palette, [255] * 256, background))
+
+    def test_blend_mixes_each_pixel_at_its_heats_alpha(self):
+        """Each of a cell's four panel pixels is blended over its own background: rows 2k and 2k + 1 differ."""
+        rng = random.Random(605)
+        f, heat, palette, background = self.random_scene(rng)
+        alpha = [rng.randrange(256) for _ in range(256)]
+        heats = reference_draw(list(heat), SMALL_W, SMALL_H, list(range(256)))  # the heat each panel pixel shows
+        want = [reference_blend(palette[t], bg, alpha[t]) for t, bg in zip(heats, background)]
+        self.assertEqual(want, self.blend(f, palette, alpha, background))
 
     def test_init_zeroes_the_field_and_a_seed_of_0_is_1(self):
         f, heat = self.field(SMALL_W, SMALL_H, seed=0)

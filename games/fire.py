@@ -5,8 +5,8 @@ cooling map that rises with the flames and cuts them into tongues, and a sideway
 two rows a step, gusts of wind and embers. The fire assumes ORIENTATION 0
 (lcd.py), as the pictures do. A BOOT tap moves to the next mode:
     B        C writes the s3lcd frame itself
-    picture  C fills a buffer, and Python blits it at alpha 128 over the painted sky, its black skipped
-Path A, the same buffer blitted opaque, was timed and dropped: 15.0 ms of step + draw against B's 7.8 (bench.md,
+    picture  C blends the fire over the painted sky in the s3lcd frame, each pixel at its heat's alpha (P603)
+Path A, a buffer blitted opaque, was timed and dropped: 15.0 ms of step + draw against B's 7.8 (bench.md,
 P595, D7).
 The HUD says the mode, the step + draw ms and the fps.
 
@@ -24,7 +24,6 @@ from array import array
 
 import pictures
 from gfx import BLACK, DARK, HEIGHT, LABEL_RECT, WHITE, WIDTH, Game, c565
-from lcd import PANEL_H, PANEL_W
 
 try:
     import engine
@@ -47,8 +46,8 @@ FADE = 4  # 0 to 255: a loss every cell pays, FADE sixteenths of a unit a row, s
 WIND = 60  # 0 to 255: the strongest gust, a row shifts one column with the wind in WIND of 256 steps
 GUST_MS = 1500  # a new gust, -WIND to WIND, every GUST_MS to 2 * GUST_MS; the wind eases an eighth of the way a frame
 SEED = 595
-# The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, the key
-# of the picture mode.
+# The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, and its
+# alpha is 0, so the picture mode leaves the sky there.
 STOPS = ((0, 0, 0, 0), (48, 140, 10, 0), (96, 240, 60, 0), (144, 255, 160, 20), (192, 255, 230, 80), (255, 255, 255, 255))
 B, PICTURE = 0, 1
 MODES = ("B", "picture")
@@ -67,6 +66,12 @@ def ramp(stops):
 
 
 PALETTE = ramp(STOPS)
+# --- MVP (P603) ---
+# The picture mode's alpha per heat: clear at heat 0, climbing evenly to full at ALPHA_FULL and full above it, so the
+# fire is solid and only its cooler cells fade into the sky. The PO picked "full from heat 96 (red)" on the panel
+# (2026-11-04). From 48, the dark red edges turn opaque and darken the sky again.
+ALPHA_FULL = 96
+ALPHA = array("B", [min(255, heat * 255 // ALPHA_FULL) for heat in range(256)])
 
 
 class Fire(Game):
@@ -76,7 +81,6 @@ class Fire(Game):
     def __init__(self):
         self.mode = B
         self.covers = engine is not None  # every mode paints every pixel: the fire in B, the sky in picture
-        self.buf = bytearray(PANEL_W * PANEL_H * 2)  # the picture mode's buffer, made once (gc heap, PSRAM)
         self.wind, self.target, self.gust = 0, 0, 0  # the gust model: the wind now, where it goes, ms to the next
         super().__init__()
 
@@ -135,8 +139,7 @@ class Fire(Game):
         if self.mode == B:
             self.field.draw(cv.tft, PALETTE)
         else:
-            self.field.draw(self.buf, PALETTE)
-            cv.tft.blit_buffer(self.buf, 0, 0, PANEL_W, PANEL_H, 128, 0)
+            self.field.draw(cv.tft, PALETTE, ALPHA)
         self.add(1, t)
         self.count(self.last)
 
