@@ -78,6 +78,28 @@ class PythonRainTest(unittest.TestCase):
         self.assertEqual(first, again)
 
 
+class StepperTest(unittest.TestCase):
+    def drains_once(self, c):
+        """A hit in one frame's step, then a frame of 0 steps: the second frame drains nothing (mutation run, P590)."""
+        stepper = rain.Stepper(1, c)
+        stepper.spawn(0, 0.0, 99.5, 0.0, 1000.0, 100.0)
+        stepper.step(1)
+        self.assertEqual(1, stepper.events())
+        stepper.step(0)
+        self.assertEqual(0, stepper.events())
+
+    def test_python_drains_an_event_once(self):
+        self.drains_once(False)
+
+    @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
+    def test_c_drains_an_event_once(self):
+        rain.engine = world_lib.engine()
+        try:
+            self.drains_once(True)
+        finally:
+            rain.engine = None
+
+
 @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
 class CRainTest(unittest.TestCase):
     def setUp(self):
