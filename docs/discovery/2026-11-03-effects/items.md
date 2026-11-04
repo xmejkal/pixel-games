@@ -11,7 +11,7 @@ Filed on the PO's yes to this list (D18, 2026-11-03): P595 #796, P596 #797, P597
 - value proven by: he plays the fire. His words are written down first and sorted into look, variety or HUD (D5). Then the fixed question, as written: "Keep the fire as it looks now, or change its look before the next scenes?" (D2). Only look words, or a change asked to the look, count as a miss of A1. bench.md gets one row per path (D7) from three 5 s intervals of app.py's `time` and `avg` lines. Each row holds the fps and the step plus draw (brief.md's one formula, games/app.py:104-106, :109). The field is 160 x 120, drawn at 2 x 2 to the full screen, opaque on black. The row also holds the largest free internal block at the scene's start (A9). It also holds the blended step plus draw of the picture variant (A3, D12) <!-- REQUIRED:value-proven-by -->
 - done when: a fire entry in `GAMES` like the rain (D9). engine/core/fx_fire.c in plain C passes a Mac test (engine D15). Path A is a C buffer that Python blits. On path B the engine writes into the s3lcd frame through s3lcd.h. Both are built and timed on the same field. Each is read on its own against A2's line, 15.3 ms, which the team keeps (D15). The number picks one path, and the other is dropped (D7). The scene shows its name and its cost in ms (D3, D15). A variant over a painted background exists (D12). Its control is open for the plan, because BOOT swaps two ways of computing (D3, D12). If the scene paints every pixel each frame, it sets `covers` (F6). When the scene is left, its C state is freed (the brief's no-go on static state). Ready to play, then played
 - depends on: the PO's yes to this list. The board on USB. Size M (H) <!-- REQUIRED:depends-on -->
-- status: filed D18 as P595 #796 <!-- REQUIRED:item-status -->
+- status: done, merged with PR #16 (filed D18 as P595 #796) <!-- REQUIRED:item-status -->
 - label (the repository's type label): story <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P594 #795 (under P586 #787) <!-- REQUIRED:spark-process:parent -->
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games <!-- REQUIRED:spark-process:slice -->
@@ -22,7 +22,7 @@ Filed on the PO's yes to this list (D18, 2026-11-03): P595 #796, P596 #797, P597
 - value proven by: bench.md rows of the rain and two games, before and after. The HUD ms in the report line drops from 10.6 to 10.9 ms to under 1 ms. The fps is the same or higher, and he sees the same text
 - done when: each time the HUD text changes, it is drawn into a buffer in panel order. Each frame blits that buffer. The rows above are in bench.md
 - depends on: P595 played (D13). Size S (H)
-- status: filed D18 as P599 #800
+- status: done, merged with PR #17 (filed D18 as P599 #800)
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P586 #787, chosen by the lead under D17 because its gain reaches every game. D13 orders it after P595
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
@@ -33,7 +33,7 @@ Filed on the PO's yes to this list (D18, 2026-11-03): P595 #796, P596 #797, P597
 - value proven by: he plays both, and his words are sorted as in P595 (D5). He says whether they read as effects different from fire (A5). One bench.md row per effect from three 5 s intervals, and the blended row of smoke's picture variant (D12)
 - done when: a smoke entry and a bodies-on-fire entry in `GAMES` (D9), both on engine/core/fx_fire.c. Bodies on fire seed heat into one screen-wide field at each body (D16). Until P598 exists, the bodies are the rain's falling bodies (H, the team's reading). Smoke has a variant over a picture (D12). Cost in ms on screen (D15). Ready to play, then played
 - depends on: P595 played. Size S to M (H)
-- status: filed D18 as P596 #797
+- status: bodies on fire done, merged with PR #20; smoke later, cut by the PO 2026-11-04 (filed D18 as P596 #797)
 - label (the repository's type label): story
 - parent (the epic, as a sub-issue): P594 #795 (under P586 #787)
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games
@@ -93,3 +93,7 @@ Filed on the PO's yes to this list (D18, 2026-11-03): P595 #796, P596 #797, P597
 - file P595 to P598, P600 and P601 as sub-issues of #795, and P599 as a sub-issue of P586 #787 (D17), Slice pixel-games, stage Idea · D18, done 2026-11-03 <!-- REQUIRED:board-actions -->
 - apply the changes to #784, #788, #793 and #795 above · D18, done 2026-11-03
 - comment on #795 with the brief's link · D18, done 2026-11-03. No Waiting on flag: nothing waits on the PO until P595 is ready to play
+
+## P603 #804, filed after this list: the blend over a picture
+
+- filed 2026-11-03, when the PO saw wrong colours in the fire's picture variant (D12). Done: s3lcd's blend swaps the bytes in and out (pixel-games #18), and the fire's alpha follows its heat, full from heat 96, the PO's pick on the panel (#19). Picture paint went from 22.3 to 25.2 ms down to 6.9 to 8.5 ms (bench.md, P603)
