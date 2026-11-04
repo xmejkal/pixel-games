@@ -137,7 +137,7 @@ class BurningTest(unittest.TestCase):
         self.assertEqual([], fire.engine.burns)
 
     def test_a_sleep_does_not_flare(self):
-        game = self.landing(0, SLEEP)
+        game = self.landing(1000, SLEEP)  # a sleep's speed is 0; 1,000 here shows that the kind is checked
         game.flare()
         self.assertEqual([], fire.engine.burns)
 
