@@ -422,7 +422,7 @@ The engine image 063448a95d2c8b92, unchanged: P607 changes Python only. `games/e
 
 ## P608 (#810), 2026-11-04: the smooth fire, bilinear filtering of the heat field
 
-The engine image 167304489f3dbb6a (217,664 B left in the app partition by the first build's size line), built from cbbd865 (`build-engine-p608b.log`). `HeatField.set_filter(engine.LINEAR)` draws each cell's 2 x 2 px at centre-sampled bilinear weights (OpenGL's `GL_LINEAR` at 2x), `engine.NEAREST` as the 2 x 2 blocks before. Each mode ran alone through `mpremote run` for 42 s, first in its scene's `MODES`, after one warm-up run. The values are per frame, from seven 5 s lines each. The nearest lines are the before, in the same image.
+The engine image 167304489f3dbb6a (217,600 B left in the app partition), built from cbbd865 (`build-engine-p608b.log`). `HeatField.set_filter(engine.LINEAR)` draws each cell's 2 x 2 px at centre-sampled bilinear weights (OpenGL's `GL_LINEAR` at 2x), `engine.NEAREST` as the 2 x 2 blocks before. Each mode ran alone through `mpremote run` for 42 s, first in its scene's `MODES`, after one warm-up run. The values are per frame, from seven 5 s lines each. The nearest lines are the before, in the same image.
 
 | run | scene and mode | fps | step | draw |
 | --- | --- | --- | --- | --- |
