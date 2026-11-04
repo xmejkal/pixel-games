@@ -1,17 +1,13 @@
-"""games/rain.py on the Mac (P593): the Python stepper alone, and the C stepper on engine/core/world.c through ctypes (a
-stand-in for the engine module), which must draw the same boxes. framebuf comes from tests/stubs and time gets the
-MicroPython ticks functions, so gfx imports here. Run from the repository root: python3 -m unittest discover tests.
---- probe, throwaway (P593) ---"""
+"""games/rain.py on the Mac (P593, P590): the Python stepper alone, and the C stepper on engine/core/world.c through
+tests/world_lib.py's stand-in for the engine module, which must draw the same boxes. framebuf comes from tests/stubs and
+time gets the MicroPython ticks functions, so gfx imports here. Run from the repository root:
+python3 -m unittest discover tests. --- MVP (P590) ---"""
 
 import contextlib
-import ctypes
 import io
 import os
 import re
-import shutil
-import subprocess
 import sys
-import tempfile
 import time
 import unittest
 
@@ -24,8 +20,9 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import rain  # noqa: E402
+import world_lib  # noqa: E402
 
-WORLD_C = os.path.join(os.path.dirname(HERE), "engine", "core", "world.c")
+rain.engine = None  # the repository's engine/ folder imports as an empty package here: each test sets its engine
 FRAME_MS = 40  # app.py's FRAME_MS
 REPORT = re.compile(r"^rain (c|python) n %d fps \d+ step \d+\.\d\d read \d+\.\d\d draw \d+\.\d\d$" % rain.N, re.M)
 
@@ -41,34 +38,6 @@ class Recorder:
 
     def text(self, *args):
         pass
-
-
-class Engine:
-    """The engine module's FLOAT, spawn, step and read (engine/binding.c), on world.c through ctypes."""
-
-    FLOAT = 0
-
-    def __init__(self, lib):
-        self.lib, self.world = lib, ctypes.create_string_buffer(lib.world_float_size())
-        self.n = 0  # the world's body count, kept by the binding's rules: load sets it, a spawn past it raises it
-
-    def load(self, *columns):
-        self.n = len(columns[0])
-        self.lib.world_load_float(self.world, self.n, *((ctypes.c_float * self.n).from_buffer(c) for c in columns))
-
-    def spawn(self, i, x, y, vx, vy, rest_y):
-        if not self.lib.world_spawn_float(self.world, i, *(ctypes.c_float(v) for v in (x, y, vx, vy, rest_y))):
-            raise IndexError(i)
-        self.n = max(self.n, i + 1)
-
-    def step(self, mode, steps, rate, gravity, restitution, friction):
-        self.lib.world_step_float(self.world, steps, rate,
-                                  *(ctypes.c_float(v) for v in (gravity, restitution, friction)))
-
-    def read(self, out):
-        if len(out) < 3 * self.n:
-            raise ValueError("an array('h') of 3n ints is needed")  # as engine.read does
-        self.lib.world_read_float(self.world, (ctypes.c_int16 * len(out)).from_buffer(out))
 
 
 def play(game, frames, now, pressed=False):
@@ -109,23 +78,32 @@ class PythonRainTest(unittest.TestCase):
         self.assertEqual(first, again)
 
 
-@unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/core/world.c is not built")
+class StepperTest(unittest.TestCase):
+    def drains_once(self, c):
+        """A hit in one frame's step, then a frame of 0 steps: the second frame drains nothing (mutation run, P590)."""
+        stepper = rain.Stepper(1, c)
+        stepper.spawn(0, 0.0, 99.5, 0.0, 1000.0, 100.0)
+        stepper.step(1)
+        self.assertEqual(1, stepper.events())
+        stepper.step(0)
+        self.assertEqual(0, stepper.events())
+
+    def test_python_drains_an_event_once(self):
+        self.drains_once(False)
+
+    @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
+    def test_c_drains_an_event_once(self):
+        rain.engine = world_lib.engine()
+        try:
+            self.drains_once(True)
+        finally:
+            rain.engine = None
+
+
+@unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
 class CRainTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory()
-        lib_path = os.path.join(cls.tmp.name, "libworld.so")
-        subprocess.run(["clang", "-std=c99", "-O2", "-shared", "-fPIC", "-o", lib_path, WORLD_C], check=True)
-        cls.lib = ctypes.CDLL(lib_path)
-        cls.lib.world_float_size.restype = ctypes.c_size_t
-        cls.lib.world_spawn_float.restype = ctypes.c_int32
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.tmp.cleanup()
-
     def setUp(self):
-        rain.engine = Engine(self.lib)
+        rain.engine = world_lib.engine()
 
     def tearDown(self):
         rain.engine = None
@@ -144,12 +122,6 @@ class CRainTest(unittest.TestCase):
         worst = max(abs(a - b) for fc, fp in zip(boxes_c, boxes_py) for a, b in zip(fc, fp))
         self.assertLessEqual(worst, 1, "float32 against Python's float may truncate 1 px apart")
         self.assertNotEqual(boxes_c, play(game_c, 1, 1000)[0])  # and they move
-
-    def test_a_world_left_larger_is_reset(self):
-        rain.engine.spawn(rain.N + 10, 0, 0, 0, 0, 100)  # a run with a larger N before: the C world outlives a soft reset
-        with contextlib.redirect_stdout(io.StringIO()):
-            boxes, _ = play(rain.Rain(), 2, 0)
-        self.assertEqual(rain.N, len(boxes))
 
     def test_a_tap_swaps_the_stepper(self):
         with contextlib.redirect_stdout(io.StringIO()):

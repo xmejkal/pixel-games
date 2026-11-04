@@ -41,7 +41,7 @@ def main():
         lib_path = os.path.join(tmp, "libfire.so")
         subprocess.run(["clang", "-std=c99", "-O2", "-shared", "-fPIC", "-I", S3LCD_SRC, "-o", lib_path, FIRE_C],
                        check=True)
-        fire.engine, rain.engine = Engine(ctypes.CDLL(lib_path)), None  # bodies on rain.PythonStepper
+        fire.engine, rain.engine = Engine(ctypes.CDLL(lib_path)), None  # bodies on rain.Stepper over motion.Bodies
         with contextlib.redirect_stdout(io.StringIO()):
             game, tft, now, shots = SCENES[name](), Tft(), 0, []
             for n in counts:

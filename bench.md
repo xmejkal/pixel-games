@@ -229,7 +229,7 @@ Memory after deinit ("double" run; "dma" within 420 B): PSRAM free 6747500.00 B,
 
 ## P589 (#790), 2026-11-03: what a C step costs
 
-`probe589.py` on the engine image (`./build.sh engine`: s3lcd plus the probe module `engine`, sha256 1dd3f2cb714a563b before the A8 edit, not rebuilt since, `-O2` from `CONFIG_COMPILER_OPTIMIZATION_PERF`, 223,120 B left in the app partition). The baseline is `fall_bodies` from p582-heavy 21c0b09 (`games/motion.py`, `@native`). Three runs in one boot at 11:17 CET, `run53-p589.log` (git-ignored, kept on the Mac). Each value is the median of the three runs. The timings of the three runs differ by 0.01 µs at most. The alloc lines differ by up to 128 B. The scene: g 2000 px/s², a 10 ms step, restitution 0.35, friction 0.6, 12 bodies, 6 blocks of one load and 100 steps. A frame is 6 steps. The pass lines were written before the run, in risks-and-tests.md.
+`probe589.py` (removed in P590; its last version is at c325d40) on the engine image (`./build.sh engine`: s3lcd plus the probe module `engine`, sha256 1dd3f2cb714a563b before the A8 edit, not rebuilt since, `-O2` from `CONFIG_COMPILER_OPTIMIZATION_PERF`, 223,120 B left in the app partition). The baseline is `fall_bodies` from p582-heavy 21c0b09 (`games/motion.py`, `@native`). Three runs in one boot at 11:17 CET, `run53-p589.log` (git-ignored, kept on the Mac). Each value is the median of the three runs. The timings of the three runs differ by 0.01 µs at most. The alloc lines differ by up to 128 B. The scene: g 2000 px/s², a 10 ms step, restitution 0.35, friction 0.6, 12 bodies, 6 blocks of one load and 100 steps. A frame is 6 steps. The pass lines were written before the run, in risks-and-tests.md.
 
 | what | value | unit | pass line | verdict |
 | --- | --- | --- | --- | --- |
@@ -388,3 +388,20 @@ Image sha256 9dcce36eb60720d4 (217,120 B left in the app partition), built from 
 - The draw is the opaque path B (P595: 7.8 ms of step + draw for the fire). The step holds the bodies' 10 ms steps in C, the read-back and 8 burns from Python, and the field's step.
 - The binding's new checks have no Mac test. `run78b-p596-args-probe.log` calls `burn` with two good argument sets and eight bad ones, and `set_base` both ways: all as expected.
 - Smoke (`run79-p596-smoke.log`): all thirteen entries start, with no error.
+
+## P590 (#791), 2026-11-04: the bodies' step in C behind one API, with events back to Python
+
+`engine.Bodies(n)` replaces the P589 probe's two global worlds: one float `world_t` per object, in its own GC block (in PSRAM), stepped by today's `fall_bodies` maths. Its twin `motion.Bodies(n)` takes the same calls. A step writes each hit (with its speed in px/s) and each new rest as an int event, and the game drains them once per frame. The burning scene flares on a hit at 600 px/s or faster. Image sha256 56f2051a13aa9eed (218,448 B left in the app partition), built from ed75e25 (`build-engine-p590.log`). Logs (git-ignored, kept on the Mac): `run80-p590-rain-c.log`, `run80-p590-rain-py.log`, `run81-p590-burning.log`, `run82-p590-alloc.log`, `run83-p590-smoke.log`. Each scene ran alone through `mpremote run` with `app.run(games=(...))` for 42 s.
+
+| scene | fps | step | read | draw | before |
+| --- | --- | --- | --- | --- | --- |
+| rain C, N 160 | 24 to 25 | 0.21 to 0.23 ms | 1.05 to 1.11 ms | 9.86 to 10.21 ms | P593: 24 fps, step 0.16 to 0.17 ms |
+| rain Python, N 160 | 8 to 9 | 27.69 to 28.51 ms | 7.82 to 9.31 ms | 42.78 to 45.55 ms | P593: 7 to 8 fps |
+| burning B | 24 to 25 | 7.48 to 7.60 ms (bodies, flares, field) | | 4.26 to 4.27 ms | P596: 24 to 25 fps, step 7.24 to 7.36 ms |
+
+- Allocation (`run82-p590-alloc.log`): 100 calls each of `step` (4 steps of 160 bodies), `read` and `drain`, in a `gc.mem_alloc()` bracket with gc off: 0 B each, and 0 B for the empty loop. The gate passes.
+- Events on the board (same log): three bodies hit at 900, 1,000 and 1,100 px/s, bounce at about 0.35 of that, and each reports `SLEEP` once at rest.
+- The rain's C step rose by about 0.05 ms. The world moved from static internal RAM (the probe) into the GC heap in PSRAM. The cause is calculated from that move, not measured apart.
+- The draw of the rain fell from 13.5 to 14.0 ms (P593) to 9.9 to 10.2 ms. P599's HUD strip came in between, so this row does not measure P590.
+- The burning step rose by 0.2 to 0.3 ms: the drain and the flares from Python.
+- Smoke (`run83-p590-smoke.log`): all thirteen entries start, with no error. Road dipped to 14 fps in its second interval, as in earlier smoke runs.
