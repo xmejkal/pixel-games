@@ -30,8 +30,8 @@ if not hasattr(engine, "Balls"):
     engine = None
 
 POUR = 25  # balls a tap
-MAX = 100  # balls in the pit, the most that keep about 24 fps on the board (run99d: 100 at 23 fps, 150 at 19, 300 at 7;
-# the PO's "Fewer balls now", 2026-11-04). engine.Balls takes up to 320; P614 #820 makes the solver faster
+MAX = 320  # balls in the pit, engine.Balls' most, so the PO sees where it gets too slow ("dont empty it", 2026-11-04).
+# On the board 100 keep about 24 fps, 185 run at 20, 320 at 8 (run99d, run100); P614 #820 makes the solver faster
 R_MIN, R_MAX = 2, 5  # a ball's radius, random per ball (fx_balls.h's FX_BALLS_R_MIN and FX_BALLS_R_MAX)
 DROP = 40  # a poured ball starts up to this far above the top
 RATE = 100  # steps a second, so a step is STEP_MS (D18)
@@ -79,14 +79,13 @@ class BallPit(Game):
         self.pour()
 
     def pour(self):
-        """One tap's handful from the top, in the next pour's colour. A pit without room for it empties first."""
-        if self.balls is None:
+        """One tap's handful from the top, in the next pour's colour, as many as still fit: a full pit pours nothing, so
+        the PO sees where it gets too slow ("dont empty it", 2026-11-04)."""
+        if self.balls is None or self.balls.count >= MAX:
             return
-        if self.balls.count + POUR > MAX:
-            self.balls.clear()
         colour = self.pours % len(POUR_COLOURS)
         self.pours += 1
-        for _ in range(POUR):
+        for _ in range(min(POUR, MAX - self.balls.count)):
             r = random.randrange(R_MIN, R_MAX + 1)
             self.balls.spawn(random.uniform(r, WIDTH - r), -r - random.uniform(0, DROP), 0.0, 0.0, r, colour)
 

@@ -70,18 +70,17 @@ class BallPitTest(unittest.TestCase):
         self.assertTrue(all(spawn[1] < 0 for spawn in pit.spawns))  # from above the top
         self.assertTrue(game.covers)
 
-    def test_a_full_pit_empties_on_the_next_tap_and_pours_again(self):
+    def test_the_pit_fills_to_max_and_a_full_pit_pours_nothing(self):
         with contextlib.redirect_stdout(io.StringIO()):
             game = balls.BallPit()
             _, now = play(game, 1, 0, Tft())  # the first frame moves the title on; its tap would be eaten
-            for _ in range(balls.MAX // balls.POUR - 1):
+            for _ in range(-(-balls.MAX // balls.POUR)):
                 _, now = play(game, 2, now, Tft(), pressed=True)
             self.assertEqual(balls.MAX, game.balls.count)
-            _, now = play(game, 1, now, Tft(), pressed=True)
-        self.assertEqual(balls.POUR, game.balls.count)
-        spawns = game.balls.spawns
-        pours = balls.MAX // balls.POUR
-        self.assertEqual((pours - 1, pours % len(balls.POUR_COLOURS)), (spawns[-balls.POUR - 1][5], spawns[-1][5]))
+            spawned = len(game.balls.spawns)
+            _, now = play(game, 2, now, Tft(), pressed=True)
+        self.assertEqual(balls.MAX, game.balls.count)
+        self.assertEqual(spawned, len(game.balls.spawns))
 
     def test_a_hold_shakes_the_pit_harder_the_longer_it_is_held_and_pours_nothing(self):
         with contextlib.redirect_stdout(io.StringIO()):
