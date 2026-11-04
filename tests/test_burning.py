@@ -96,11 +96,14 @@ class BurningTest(unittest.TestCase):
         self.assertTrue(self.flares(), "a first landing flares")
 
     # --- MVP (P608) ---
-    def test_a_tap_draws_nearest_opaque_with_no_sky(self):
+    def test_both_modes_draw_opaque_with_no_sky(self):
         with contextlib.redirect_stdout(io.StringIO()):
             game = burning.BurningBodies()
             tft = Tft()
-            _, now = play(game, 5, 0, tft)
+            cv, now = play(game, 5, 0, tft)
+            self.assertEqual("linear", game.mode_name)
+            self.assertEqual(["tft"] * 5, fire.engine.targets)  # linear: opaque
+            self.assertNotIn((0, 0, fire.WIDTH, fire.HEIGHT), cv.fills)  # no sky
             fire.engine.targets = []
             cv, now = play(game, 1, now, tft, pressed=True)
         self.assertEqual(("nearest", fire.NEAREST), (game.MODES[game.mode][0], game.field.f.filter))
