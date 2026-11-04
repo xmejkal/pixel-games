@@ -416,6 +416,6 @@ The engine image 063448a95d2c8b92, unchanged: P607 changes Python only. `games/e
 | `run86-p607-after-burning.log` | branch a1b9cd2, `*body.place()` | 24 to 25 | 7.64 to 7.75 ms | 4.25 to 4.26 ms |
 | `run86b-p607-after-burning.log` | branch, place unpacked first | 24 to 25 | 7.60 to 7.68 ms | 4.25 to 4.26 ms |
 
-- The step rose by about 0.12 ms: one Python call per body more (`Body.place`, then `Effect.apply`). The plan's line was 0.3 ms.
+- The step rose by about 0.12 ms: one Python call per body more (`Body.place`, then `Effect.update`). The plan's line was 0.3 ms.
 - The look on the Mac: `tools/render_scene.py burning` at frames 30, 60 and 120 gives byte-identical PNGs on master and on the branch. The refuter replayed 1,500 frames on both: the same 10,749 `HeatField.burn` calls, in the same order.
 - Smoke (`run87-p607-smoke.log`): all thirteen entries start, with no error.

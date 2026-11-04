@@ -15,7 +15,7 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
-from effects import BodyEffects, Effect, FireTrail, cell  # noqa: E402
+from effects import EffectSystem, Effect, FireTrail, cell  # noqa: E402
 from motion import HIT, SLEEP  # noqa: E402
 
 SIZE, RADIUS, HEAT, LAG = 8, 3, 200, 0.5
@@ -50,17 +50,17 @@ class Counter(Effect):
     def __init__(self):
         self.places, self.forgot = [], 0
 
-    def apply(self, x, y):
+    def update(self, x, y):
         self.places.append((x, y))
 
-    def forget(self):
+    def reset(self):
         self.forgot += 1
 
 
 class EffectsTest(unittest.TestCase):
     def setUp(self):
         self.stepper, self.field = Stepper(3), Field()
-        self.effects = BodyEffects(self.stepper)
+        self.effects = EffectSystem(self.stepper)
 
     def trail(self):
         return FireTrail(self.field, SIZE, RADIUS, HEAT, LAG)
@@ -69,45 +69,45 @@ class EffectsTest(unittest.TestCase):
         self.effects.bodies[1].effect = self.trail()
         self.stepper.places[1] = (100, 100)
         for _ in range(3):
-            self.effects.apply()
+            self.effects.update()
         c = cell(100, 100, SIZE)
         self.assertEqual([(c[0], c[1], c[0], c[1], RADIUS, HEAT)] * 3, self.field.burns)
 
     def test_a_body_without_an_effect_burns_nothing(self):
         self.stepper.places = [(100, 100)] * 3
-        self.effects.apply()
+        self.effects.update()
         self.assertEqual([], self.field.burns)
 
     def test_a_moving_body_burns_behind_itself_along_its_path(self):
         self.effects.bodies[0].effect = self.trail()
         self.stepper.places[0] = (100, 100)
-        self.effects.apply()
+        self.effects.update()
         self.stepper.places[0] = (140, 100)  # 20 cells right in a frame
-        self.effects.apply()
+        self.effects.update()
         c0, c1, y = cell(100, 100, SIZE)[0], cell(140, 100, SIZE)[0], cell(100, 100, SIZE)[1]
         lag = c1 - int((c1 - c0) * LAG)
         self.assertLess(lag, c1)  # behind the body
         self.assertEqual((c0, y, lag, y, RADIUS, HEAT), self.field.burns[-1])
 
-    def test_after_forget_the_first_frame_burns_no_streak(self):
+    def test_after_reset_the_first_frame_burns_no_streak(self):
         body = self.effects.bodies[0]
         body.effect = self.trail()
         self.stepper.places[0] = (100, 200)
-        self.effects.apply()
-        body.forget()  # a respawn
+        self.effects.update()
+        body.reset()  # a respawn
         self.stepper.places[0] = (60, 4)
-        self.effects.apply()
+        self.effects.update()
         c = cell(60, 4, SIZE)
         self.assertEqual((c[0], c[1], c[0], c[1], RADIUS, HEAT), self.field.burns[-1])
 
-    def test_above_the_screen_it_burns_nothing_and_forgets_its_path(self):
+    def test_above_the_screen_it_burns_nothing_and_resets_its_path(self):
         self.effects.bodies[0].effect = self.trail()
         self.stepper.places[0] = (100, 200)
-        self.effects.apply()
+        self.effects.update()
         self.stepper.places[0] = (100, -50)
-        self.effects.apply()
+        self.effects.update()
         self.stepper.places[0] = (60, 4)
-        self.effects.apply()
+        self.effects.update()
         c = cell(60, 4, SIZE)
         self.assertEqual(2, len(self.field.burns))
         self.assertEqual((c[0], c[1], c[0], c[1], RADIUS, HEAT), self.field.burns[-1])
@@ -116,15 +116,16 @@ class EffectsTest(unittest.TestCase):
         from fire import H, W
 
         self.effects.bodies[0].effect = self.trail()
-        for x, y in ((100, 2 * H - SIZE // 2), (4 * W - SIZE // 2, 100), (-2 * W - SIZE // 2, 100)):  # cell y H, x 2W, x -W
+        # its cell at y H, at x 2W and at x -W: off the field, so no burn
+        for x, y in ((100, 2 * H - SIZE // 2), (4 * W - SIZE // 2, 100), (-2 * W - SIZE // 2, 100)):
             self.stepper.places[0] = (x, y)
-            self.effects.apply()
+            self.effects.update()
         self.assertEqual([], self.field.burns)
         for x, y in ((100, 2 * H - SIZE // 2 - 2), (4 * W - SIZE // 2 - 2, 100), (-2 * W - SIZE // 2 + 2, 100)):
             body = self.effects.bodies[0]  # cell y H - 1, x 2W - 1, x -W + 1: its flames can reach the screen
-            body.forget()
+            body.reset()
             self.stepper.places[0] = (x, y)
-            self.effects.apply()
+            self.effects.update()
         self.assertEqual(3, len(self.field.burns))
 
     def test_a_hit_can_start_an_effect(self):
@@ -133,30 +134,30 @@ class EffectsTest(unittest.TestCase):
 
         self.stepper.places[2] = (100, 100)
         self.stepper.drained = [2, HIT, 900]
-        self.effects.react({HIT: catch_fire})
+        self.effects.dispatch({HIT: catch_fire})
         self.assertIsInstance(self.effects.bodies[2].effect, FireTrail)
-        self.effects.apply()
+        self.effects.update()
         c = cell(100, 100, SIZE)
         self.assertEqual([(c[0], c[1], c[0], c[1], RADIUS, HEAT)], self.field.burns)
 
-    def test_a_reaction_gets_the_body_and_the_speed_of_each_event(self):
+    def test_a_handler_gets_the_body_and_the_speed_of_each_event(self):
         got = []
         self.stepper.drained = [2, HIT, 900, 0, HIT, 700]
-        self.effects.react({HIT: lambda body, speed: got.append((body.i, speed))})
+        self.effects.dispatch({HIT: lambda body, speed: got.append((body.i, speed))})
         self.assertEqual([(2, 900), (0, 700)], got)
 
-    def test_an_event_kind_without_a_reaction_calls_nothing(self):
+    def test_an_event_kind_without_a_handler_calls_nothing(self):
         got = []
         self.stepper.drained = [1, SLEEP, 0]
-        self.effects.react({HIT: lambda body, speed: got.append(body.i)})
+        self.effects.dispatch({HIT: lambda body, speed: got.append(body.i)})
         self.assertEqual([], got)
 
     def test_a_second_effect_runs_with_no_change_to_its_callers(self):
         counter = Counter()
         self.effects.bodies[0].effect, self.effects.bodies[1].effect = counter, self.trail()
         self.stepper.places[0], self.stepper.places[1] = (10, 20), (100, 100)
-        self.effects.apply()
-        self.effects.bodies[0].forget()
+        self.effects.update()
+        self.effects.bodies[0].reset()
         self.assertEqual(([(10, 20)], 1), (counter.places, counter.forgot))
         self.assertEqual(1, len(self.field.burns))
 

@@ -77,7 +77,7 @@ class BurningTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             game = burning.BurningBodies()
         game.stepper = StepperStandIn([(0, -100)] * burning.N)  # every body above the screen: no burn until a test moves one
-        game.light()  # the effects on the stand-in
+        game.attach_effects()  # the effects on the stand-in
         fire.engine.burns = []
         return game
 
@@ -110,7 +110,7 @@ class BurningTest(unittest.TestCase):
             game = burning.BurningBodies()
             play(game, 150, 0, Tft())  # past the first hard landings, as in test_the_bodies_burn_and_report
         self.assertIsNone(game.field)
-        self.assertEqual({}, game.reactions)
+        self.assertEqual({}, game.handlers)
 
     def flares(self):
         """The burns that are flares: a disc wider than a body's burn."""
@@ -127,7 +127,7 @@ class BurningTest(unittest.TestCase):
 
     def test_a_fast_landing_flares_at_its_plane(self):
         game = self.landing(burning.FLARE_MIN)
-        game.effects.react(game.reactions)
+        game.effects.dispatch(game.handlers)
         c = (100 + burning.BODY // 2) // 2, (200 + burning.BODY // 2) // 2  # its read x, its plane's y
         r, heat = burning.flare_size(burning.FLARE_MIN)
         self.assertEqual([(c[0], c[1], c[0], c[1], r, heat)], fire.engine.burns)
@@ -143,18 +143,18 @@ class BurningTest(unittest.TestCase):
 
     def test_a_slow_landing_does_not_flare(self):
         game = self.landing(burning.FLARE_MIN - 1)
-        game.effects.react(game.reactions)
+        game.effects.dispatch(game.handlers)
         self.assertEqual([], fire.engine.burns)
 
     def test_a_sleep_does_not_flare(self):
         game = self.landing(1000, SLEEP)  # a sleep's speed is 0; 1,000 here shows that the kind is checked
-        game.effects.react(game.reactions)
+        game.effects.dispatch(game.handlers)
         self.assertEqual([], fire.engine.burns)
 
     def test_no_event_no_flare(self):
         game = self.scene()
         game.stepper.step(1)
-        game.effects.react(game.reactions)
+        game.effects.dispatch(game.handlers)
         self.assertEqual([], fire.engine.burns)
 
     def test_a_frame_of_0_steps_does_not_flare_again(self):
@@ -192,10 +192,10 @@ class BurningTest(unittest.TestCase):
     def test_a_drop_burns_no_streak_from_the_last_place(self):
         game = self.scene()
         game.stepper.places[0] = (100, 200)
-        game.effects.apply()
-        game.drop(0)  # a respawn: its trail forgets the path
+        game.effects.update()
+        game.drop(0)  # a respawn: its trail resets its path
         game.stepper.places[0] = (60, 4)
-        game.effects.apply()
+        game.effects.update()
         c = (60 + burning.BODY // 2) // 2, (4 + burning.BODY // 2) // 2
         self.assertEqual((c[0], c[1], c[0], c[1], burning.RADIUS, burning.HEAT), fire.engine.burns[-1])
 

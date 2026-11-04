@@ -53,17 +53,17 @@ Runs now:
   speed (`HIT`) and each body that comes to rest (`SLEEP`) as an event, and the game drains them once per frame.
   `rain.Stepper` holds either one, and `motion.StepClock` turns a frame's ms into 10 ms steps.
 - Effects on bodies (P607, `games/effects.py`): a body of a `rain.Stepper` carries an effect, and an event can start
-  one. A scene makes `BodyEffects(stepper)` once and calls `react` and `apply` each frame, after the step and the read:
+  one. A scene makes `EffectSystem(stepper)` once and calls `dispatch` and `update` each frame, after the step and the read:
 
   ```python
-  effects = BodyEffects(stepper)
+  effects = EffectSystem(stepper)
   effects.bodies[0].effect = FireTrail(field, 8, 3, 200, 0.5)  # size px, radius cells, heat, lag frames
-  reactions = {HIT: lambda body, speed: ...}  # Python decides what a hit causes; it can set body.effect
-  effects.react(reactions)
-  effects.apply()
+  handlers = {HIT: lambda body, speed: ...}  # Python decides what a hit causes; it can set body.effect
+  effects.dispatch(handlers)
+  effects.update()
   ```
 
-  A new effect is one more subclass of `effects.Effect` (`apply(x, y)`, `forget()`), and its callers do not change.
+  A new effect is one more subclass of `effects.Effect` (`update(x, y)`, `reset()`), and its callers do not change.
 - The HUD is drawn once into a strip and blitted each frame (P599).
 - Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
