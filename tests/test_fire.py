@@ -81,6 +81,13 @@ class Engine:
             def step(self, steps, wind):
                 lib.fx_fire_step(ctypes.byref(self.f), steps, wind)
 
+            def set_base(self, on):  # P596
+                lib.fx_fire_set_base(ctypes.byref(self.f), 1 if on else 0)
+
+            def burn(self, *args):  # P596
+                engine.burns.append(args)
+                lib.fx_fire_burn(ctypes.byref(self.f), *args)
+
             def draw(self, tft, palette, alpha=None):
                 engine.targets.append("tft" if alpha is None else "tft alpha")
                 out = (ctypes.c_uint16 * (len(tft.frame) // 2)).from_buffer(tft.frame)  # the display's frame
@@ -90,7 +97,7 @@ class Engine:
                     lib.fx_fire_blend(ctypes.byref(self.f), out, (ctypes.c_uint16 * 256).from_buffer(palette),
                                       (ctypes.c_uint8 * 256).from_buffer(alpha))
 
-        self.HeatField, self.targets, self.looks = HeatField, [], []
+        self.HeatField, self.targets, self.looks, self.burns = HeatField, [], [], []
 
     def largest_free_internal(self):
         return 123456

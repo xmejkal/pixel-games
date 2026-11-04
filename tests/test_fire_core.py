@@ -39,6 +39,7 @@ class Field(ctypes.Structure):
                 ("spot_x", ctypes.c_int32 * MAX_SPOTS)]
     _fields_ += [(name, ctypes.c_int32 * MAX_EMBERS) for name in ("ember_x", "ember_y", "ember_vx", "ember_vy",
                                                                    "ember_heat")]
+    _fields_ += [("base", ctypes.c_int32)]  # --- MVP (P596) ---
 
 
 def xorshift32(x):
@@ -56,6 +57,7 @@ class Reference:
         self.decay, self.cool, self.sway, self.spots, self.spread, self.fast, self.embers, self.fade = PART1
         self.ember = [[0] * 5 for _ in range(MAX_EMBERS)]  # x, y, vx, vy, heat: as fx_fire_t's ember arrays
         self.bound = True  # part 3's bound: False for the step without it
+        self.base = True  # P596: False makes no bottom row and clears it
         self.heat = [0] * (w * h)
         self.cooling = [255 if self.draw() >> 28 == 0 else 0 for _ in range(MAP_W * MAP_H)]
         for _ in range(2):
@@ -109,7 +111,12 @@ class Reference:
             return heat[y * w + x] if 0 <= x < w and 0 <= y < h else 0
 
         for _ in range(steps):
-            heat[(h - 1) * w:] = self.spots_row() if self.spots else [self.draw() >> 24 for _ in range(w)]
+            if not self.base:
+                heat[(h - 1) * w:] = [0] * w
+            elif self.spots:
+                heat[(h - 1) * w:] = self.spots_row()
+            else:
+                heat[(h - 1) * w:] = [self.draw() >> 24 for _ in range(w)]
             for y in range(h - 1):
                 shift = 0
                 if wind and self.draw() & 255 < abs(wind):
@@ -171,6 +178,25 @@ def part1_step(heat, w, h, rng, steps, decay, bound=True):
                 read = (at(x - 1, y + 1), at(x, y + 1), at(x + 1, y + 1), at(x, y + 2))
                 heat[y * w + x] = min(max(read) if bound else 255, sum(read) * decay >> 7)
     return rng
+
+
+def cdiv(a, b):
+    """C's integer division, which truncates toward 0."""
+    q = abs(a) // b
+    return q if a >= 0 else -q
+
+
+def reference_burn(heat, w, h, x0, y0, x1, y1, r, value):
+    """fx_fire_burn in Python: each of the segment's points stamps a disc of radius r, the larger heat kept."""
+    n = max(abs(x1 - x0), abs(y1 - y0))
+    for i in range(n + 1):
+        cx = x0 + (cdiv((x1 - x0) * i, n) if n else 0)
+        cy = y0 + (cdiv((y1 - y0) * i, n) if n else 0)
+        for dy in range(-r, r + 1):
+            for dx in range(-r, r + 1):
+                x, y = cx + dx, cy + dy
+                if dx * dx + dy * dy <= r * r and 0 <= x < w and 0 <= y < h:
+                    heat[y * w + x] = max(heat[y * w + x], value)
 
 
 def reference_draw(heat, w, h, palette):
@@ -250,6 +276,52 @@ class FireCoreTest(unittest.TestCase):
         heats = reference_draw(list(heat), SMALL_W, SMALL_H, list(range(256)))  # the heat each panel pixel shows
         want = [reference_blend(palette[t], bg, alpha[t]) for t, bg in zip(heats, background)]
         self.assertEqual(want, self.blend(f, palette, alpha, background))
+
+    # --- MVP (P596) ---
+    def test_with_the_base_off_the_step_matches_the_reference(self):
+        """No bottom row and no draw for it: the RNG order still matches, and the bottom row is cleared."""
+        f, heat = self.field(SMALL_W, SMALL_H, look=ALL_ON)
+        ref = Reference(SMALL_W, SMALL_H, SEED)
+        ref.set_look(*ALL_ON)
+        self.lib.fx_fire_set_base(ctypes.byref(f), 0)
+        ref.base = False
+        self.lib.fx_fire_burn(ctypes.byref(f), 3, SMALL_H - 1, 20, SMALL_H - 1, 2, 250)  # a burn on the bottom row
+        reference_burn(ref.heat, SMALL_W, SMALL_H, 3, SMALL_H - 1, 20, SMALL_H - 1, 2, 250)
+        for _ in range(STEPS):
+            self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
+            ref.step(1)
+            self.assertEqual((ref.rng, ref.heat), (f.rng, list(heat)))
+        self.assertEqual([0] * SMALL_W, list(heat)[-SMALL_W:])
+
+    def test_a_zero_field_with_the_base_off_stays_zero(self):
+        f, heat = self.field(SMALL_W, SMALL_H, look=PART2_AT_31)
+        self.lib.fx_fire_set_base(ctypes.byref(f), 0)
+        self.lib.fx_fire_step(ctypes.byref(f), 20, 0)
+        self.assertEqual([0] * (SMALL_W * SMALL_H), list(heat))
+
+    def test_init_turns_the_base_on(self):
+        f, _ = self.field(SMALL_W, SMALL_H)
+        self.assertEqual(1, f.base)
+
+    def test_burn_matches_the_reference(self):
+        """Random segments, some past every edge, over random heats: each cell keeps the larger heat."""
+        rng = random.Random(596)
+        for _ in range(300):
+            f, heat = self.field(SMALL_W, SMALL_H)
+            for i in range(SMALL_W * SMALL_H):
+                heat[i] = rng.randrange(256)
+            ref = list(heat)
+            args = [rng.randrange(-8, SMALL_W + 8), rng.randrange(-8, SMALL_H + 8), rng.randrange(-8, SMALL_W + 8),
+                    rng.randrange(-8, SMALL_H + 8), rng.randrange(0, 5), rng.randrange(256)]
+            self.lib.fx_fire_burn(ctypes.byref(f), *args)
+            reference_burn(ref, SMALL_W, SMALL_H, *args)
+            self.assertEqual(ref, list(heat), args)
+
+    def test_a_burn_covers_its_whole_segment(self):
+        f, heat = self.field(SMALL_W, SMALL_H)
+        self.lib.fx_fire_burn(ctypes.byref(f), 2, 5, 20, 5, 0, 200)
+        row = list(heat)[5 * SMALL_W:6 * SMALL_W]
+        self.assertEqual([0, 0] + [200] * 19 + [0] * (SMALL_W - 21), row)
 
     def test_init_zeroes_the_field_and_a_seed_of_0_is_1(self):
         f, heat = self.field(SMALL_W, SMALL_H, seed=0)

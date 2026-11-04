@@ -77,6 +77,8 @@ ALPHA = array("B", [min(255, heat * 255 // ALPHA_FULL) for heat in range(256)])
 class Fire(Game):
     name = "fire"
     TITLE_MS = 0  # straight into the fire, so the first BOOT tap moves to the next mode
+    LOOK = (DECAY, COOL, SWAY, SPOTS, SPREAD, FAST, EMBERS, FADE)  # a scene on the same field sets its own (P596)
+    MODES = MODES
 
     def __init__(self):
         self.mode = B
@@ -88,22 +90,22 @@ class Fire(Game):
         pictures.load()
         self.field = None
         if engine is not None:
-            print("fire internal largest", engine.largest_free_internal())
+            print(self.name, "internal largest", engine.largest_free_internal())
             self.field = engine.HeatField(W, H, SEED)
-            self.field.set_look(DECAY, COOL, SWAY, SPOTS, SPREAD, FAST, EMBERS, FADE)
-            print("fire field", self.field.where)
+            self.field.set_look(*self.LOOK)
+            print(self.name, "field", self.field.where)
         self.begin()
 
     def begin(self):
         """A new interval for the report and the HUD."""
         self.acc, self.us, self.frames, self.mark = 0, [0, 0], 0, self.last  # us: step, draw
         self.hud_us, self.hud_frames, self.hud_mark = 0, 0, self.last  # self.last: None before the first step
-        self.label = "fire: no C" if self.field is None else "fire " + MODES[self.mode]
+        self.label = self.name + (": no C" if self.field is None else " " + self.MODES[self.mode])
 
     def play(self, pressed, held):
         if pressed:
-            self.mode = (self.mode + 1) % len(MODES)
-            print("fire mode", MODES[self.mode])
+            self.mode = (self.mode + 1) % len(self.MODES)
+            print(self.name, "mode", self.MODES[self.mode])
             self.begin()
             return
         ms = int(self.dt * 1000 + 0.5)
@@ -149,16 +151,16 @@ class Fire(Game):
             self.mark = self.hud_mark = now
         self.frames += 1
         self.hud_frames += 1
-        mode = MODES[self.mode]
+        mode = self.MODES[self.mode]
         elapsed = time.ticks_diff(now, self.hud_mark)
         if elapsed >= HUD_MS:
-            self.label = "fire %s %.1f ms %d fps" % (
-                mode, self.hud_us / self.hud_frames / 1000, self.hud_frames * 1000 // elapsed)
+            self.label = "%s %s %.1f ms %d fps" % (
+                self.name, mode, self.hud_us / self.hud_frames / 1000, self.hud_frames * 1000 // elapsed)
             self.hud_us, self.hud_frames, self.hud_mark = 0, 0, now
         elapsed = time.ticks_diff(now, self.mark)
         if elapsed >= REPORT_MS:
             us, n = self.us, 1000 * self.frames
-            print("fire %s fps %d step %.2f draw %.2f" % (mode, self.frames * 1000 // elapsed, us[0] / n, us[1] / n))
+            print("%s %s fps %d step %.2f draw %.2f" % (self.name, mode, self.frames * 1000 // elapsed, us[0] / n, us[1] / n))
             self.us, self.frames, self.mark = [0, 0], 0, now
 
     def hud(self, cv):

@@ -374,3 +374,17 @@ The PO saw dark flame sides in part 1: the cool, dark edge cells were blended at
 - The binding's argument checks have no Mac test (the binding is not built on the Mac). `run76b-p603-args-probe.log` calls `draw` with five bad arguments, a field of the wrong size and three good forms: all nine give the expected result.
 - Smoke (`run77-p603-alpha-smoke.log`): all twelve entries start and report fps (20 to 25), with no error.
 - The look (2026-11-04): the PO found the half alpha too pale over the light sky. On the panel and on a Mac render of four curves, he picked full alpha from heat 96 up, climbing evenly from clear at heat 0 (`ALPHA_FULL = 96`). The kernel still skips only alpha 0, so the paint cost does not change.
+
+## P596 (#797), 2026-11-04: bodies on fire, the fire on objects
+
+The PO cut the card to the fire on objects (2026-11-04): "Now do the fire and use it on objects, that's a good proof of concept." Eight of the rain's falling bodies each burn heat into one screen-wide fire field (`HeatField.burn`, `fx_fire_burn`), half a frame of their motion behind them, along the path since the last frame. The field's base is off (`fx_fire_set_base`), so only the bodies burn. A sleeping body rests 1.5 s and burns straight up, then falls again. The look (decay 32, cool 40, fade 16, heat 200) was set from Mac frames with `tools/render_scene.py`: the fire's own look climbed to the top of the screen.
+
+Image sha256 9dcce36eb60720d4 (217,120 B left in the app partition), built from 4d466cf. `run78-p596-burning.log`, the scene alone, 7 intervals of 5 s.
+
+| scene | fps | step (bodies, burns, field) | draw | worst frame |
+| --- | --- | --- | --- | --- |
+| burning B | 24 to 25 | 7.24 to 7.36 ms | 4.26 to 4.27 ms | 42 to 58 ms |
+
+- The draw is the opaque path B (P595: 7.8 ms of step + draw for the fire). The step holds the bodies' 10 ms steps in C, the read-back and 8 burns from Python, and the field's step.
+- The binding's new checks have no Mac test. `run78b-p596-args-probe.log` calls `burn` with two good argument sets and eight bad ones, and `set_base` both ways: all as expected.
+- Smoke (`run79-p596-smoke.log`): all thirteen entries start, with no error.
