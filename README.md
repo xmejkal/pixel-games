@@ -42,10 +42,16 @@ Runs now:
   (P603). The blend swaps the bytes of each colour in and out (`s3lcd/src/blend565.h`), so the colours are right.
 - The bodies on fire (P596, `games/burning.py`), second: eight falling bodies from the rain's stepper burn heat into the
   fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
-  burn. `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO, 2026-11-04).
+  burn. A hit at 600 px/s or faster flares up at the body's plane: C reports the hit with its speed as an event, and
+  Python decides the flare (P590). `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO,
+  2026-11-04).
 - The rain (P593, `games/rain.py`), third: 160 boxes fall, stepped by the C engine, and a BOOT tap swaps C
-  and Python. On the board, C runs at 24 fps with a 0.17 ms step, and Python at 7 to 8 fps with a 30 ms step
-  (bench.md P593). It needs the engine image (`./build.sh engine`). Without it, the rain runs in Python only.
+  and Python. On the board, C runs at 24 to 25 fps with a 0.22 ms step, and Python at 8 to 9 fps with a 28 ms step
+  (bench.md P590). It needs the engine image (`./build.sh engine`). Without it, the rain runs in Python only.
+- The bodies' API (P590): `engine.Bodies(n)` in C and its twin `motion.Bodies(n)` in Python take the same calls:
+  `spawn`, `step`, `read` into an `array('h')` and `drain` into an `array('i')`. A step reports each hit with its
+  speed (`HIT`) and each body that comes to rest (`SLEEP`) as an event, and the game drains them once per frame.
+  `rain.Stepper` holds either one, and `motion.StepClock` turns a frame's ms into 10 ms steps.
 - The HUD is drawn once into a strip and blitted each frame (P599).
 - Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
