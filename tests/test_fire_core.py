@@ -40,6 +40,10 @@ class Field(ctypes.Structure):
     _fields_ += [(name, ctypes.c_int32 * MAX_EMBERS) for name in ("ember_x", "ember_y", "ember_vx", "ember_vy",
                                                                    "ember_heat")]
     _fields_ += [("base", ctypes.c_int32)]  # --- MVP (P596) ---
+    _fields_ += [("filter", ctypes.c_int32)]  # --- MVP (P608) ---
+
+
+NEAREST, LINEAR = 0, 1  # FX_FIRE_NEAREST and FX_FIRE_LINEAR (P608)
 
 
 def xorshift32(x):
@@ -205,6 +209,30 @@ def reference_draw(heat, w, h, palette):
     return [palette[heat[(px // 2) * w + (2 * w - 1 - py) // 2]] for py in range(ph) for px in range(pw)]
 
 
+# --- MVP (P608) ---
+def linear_heat(heat, w, h, gx, gy):
+    """Game pixel (gx, gy)'s heat with bilinear filtering: GL_LINEAR's weights at 2x. The pixel sits a quarter cell
+    from its cell's centre, toward the neighbour on its side, so it takes 9/16 of its cell, 3/16 of each side
+    neighbour and 1/16 of the diagonal one. A neighbour past the edge is the edge cell (GL_CLAMP_TO_EDGE)."""
+    x, y = gx // 2, gy // 2
+    nx = min(w - 1, max(0, x + (1 if gx & 1 else -1)))
+    ny = min(h - 1, max(0, y + (1 if gy & 1 else -1)))
+    a, b, c, d = heat[y * w + x], heat[y * w + nx], heat[ny * w + x], heat[ny * w + nx]
+    return (9 * a + 3 * b + 3 * c + d + 8) >> 4
+
+
+def reference_draw_linear(heat, w, h, palette):
+    """fx_fire_draw with LINEAR in Python: the game pixels first, then the panel map, panel (px, py) shows game pixel
+    (2w - 1 - py, px)."""
+    game = {(gx, gy): linear_heat(heat, w, h, gx, gy) for gx in range(2 * w) for gy in range(2 * h)}
+    return [palette[game[(2 * w - 1 - py, px)]] for py in range(2 * w) for px in range(2 * h)]
+
+
+def game_pixel(panel, w, h, gx, gy):
+    """What the panel shows at game pixel (gx, gy)."""
+    return panel[(2 * w - 1 - gx) * 2 * h + gy]
+
+
 class PanelRecorder:
     """The s3lcd fill_rect calls TftCanvas makes, as panel rectangles."""
 
@@ -259,6 +287,93 @@ class FireCoreTest(unittest.TestCase):
         palette = [rng.randrange(1 << 16) for _ in range(256)]
         background = [rng.randrange(1 << 16) for _ in range(4 * SMALL_W * SMALL_H)]
         return f, heat, palette, background
+
+    # --- MVP (P608) ---
+    def random_field(self, rng, w, h, flt):
+        f, heat = self.field(w, h)
+        for i in range(w * h):
+            heat[i] = rng.randrange(256)
+        self.lib.fx_fire_set_filter(ctypes.byref(f), flt)
+        return f, heat
+
+    def test_init_sets_nearest(self):
+        f, heat, cooling = Field(), (ctypes.c_uint8 * 4)(), (ctypes.c_uint8 * (MAP_W * MAP_H))()
+        f.filter = LINEAR  # init must set it, not find it 0
+        self.lib.fx_fire_init(ctypes.byref(f), heat, cooling, 2, 2, SEED)
+        self.assertEqual(NEAREST, f.filter)
+
+    def test_linear_draw_and_blend_match_the_reference(self):
+        """Odd and even sizes, one row, one column and 1 x 1: byte for byte, every pixel written."""
+        rng = random.Random(608)
+        for w, h in ((SMALL_W, SMALL_H), (7, 5), (6, 9), (1, 1), (1, 4), (5, 1), (2, 2)):
+            with self.subTest(w=w, h=h):
+                f, heat = self.random_field(rng, w, h, LINEAR)
+                palette = [rng.randrange(1 << 16) for _ in range(256)]
+                palette[rng.randrange(256)] = 0xABCD + 1  # one colour next to the sentinel, so a mix-up shows
+                panel = self.draw(f, palette)
+                self.assertNotIn(0xABCD, panel)
+                self.assertEqual(reference_draw_linear(list(heat), w, h, palette), panel)
+                alpha = [rng.randrange(256) for _ in range(256)]
+                alpha[0] = 0
+                background = [rng.randrange(1 << 16) for _ in range(4 * w * h)]
+                heats = reference_draw_linear(list(heat), w, h, list(range(256)))
+                want = [bg if alpha[t] == 0 else reference_blend(palette[t], bg, alpha[t])
+                        for t, bg in zip(heats, background)]
+                self.assertEqual(want, self.blend(f, palette, alpha, background))
+
+    def test_nearest_after_linear_is_the_old_draw(self):
+        f, heat = self.random_field(random.Random(609), SMALL_W, SMALL_H, LINEAR)
+        self.lib.fx_fire_set_filter(ctypes.byref(f), NEAREST)
+        palette = list(range(1000, 1256))
+        self.assertEqual(reference_draw(list(heat), SMALL_W, SMALL_H, palette), self.draw(f, palette))
+
+    def test_linear_draws_a_field_of_one_heat_flat(self):
+        f, heat = self.field(7, 5)
+        for i in range(7 * 5):
+            heat[i] = 77
+        self.lib.fx_fire_set_filter(ctypes.byref(f), LINEAR)
+        self.assertEqual([77] * (4 * 7 * 5), self.draw(f, list(range(256))))
+
+    def test_linear_clamps_at_the_four_edges(self):
+        """An edge pixel takes the 1-D value (3a + c + 2) >> 2 along its edge, a corner pixel its own cell."""
+        w, h = 7, 5
+        f, heat = self.random_field(random.Random(610), w, h, LINEAR)
+        panel = self.draw(f, list(range(256)))
+        for gx in range(2 * w):
+            for gy in range(2 * h):
+                at_x, at_y = gx in (0, 2 * w - 1), gy in (0, 2 * h - 1)
+                if not (at_x or at_y):
+                    continue
+                x, y = gx // 2, gy // 2
+                a = heat[y * w + x]
+                if at_x and at_y:
+                    want = a
+                elif at_x:
+                    want = (3 * a + heat[(y + (1 if gy & 1 else -1)) * w + x] + 2) >> 2
+                else:
+                    want = (3 * a + heat[y * w + x + (1 if gx & 1 else -1)] + 2) >> 2
+                self.assertEqual(want, game_pixel(panel, w, h, gx, gy), (gx, gy))
+        one, heat = self.field(1, 1)
+        heat[0] = 201
+        self.lib.fx_fire_set_filter(ctypes.byref(one), LINEAR)
+        self.assertEqual([201] * 4, self.draw(one, list(range(256))))
+
+    def test_an_impulse_spreads_to_its_facing_pixels_only(self):
+        """255 in cell (4, 3): 143 on its own four pixels, 48 on each side neighbour's two facing pixels, 16 on each
+        diagonal's facing pixel, 0 elsewhere. A plain mean of the four cells or a half-pixel shift draws otherwise."""
+        w, h = 8, 6
+        f, heat = self.field(w, h)
+        heat[3 * w + 4] = 255
+        self.lib.fx_fire_set_filter(ctypes.byref(f), LINEAR)
+        panel = self.draw(f, list(range(256)))
+        want = {(gx, gy): 0 for gx in range(2 * w) for gy in range(2 * h)}
+        for gx, gy in ((8, 6), (9, 6), (8, 7), (9, 7)):
+            want[(gx, gy)] = 143
+        for gx, gy in ((7, 6), (7, 7), (10, 6), (10, 7), (8, 5), (9, 5), (8, 8), (9, 8)):
+            want[(gx, gy)] = 48
+        for gx, gy in ((7, 5), (10, 5), (7, 8), (10, 8)):
+            want[(gx, gy)] = 16
+        self.assertEqual(want, {(gx, gy): game_pixel(panel, w, h, gx, gy) for gx, gy in want})
 
     def test_blend_at_alpha_0_leaves_the_background(self):
         f, _, palette, background = self.random_scene(random.Random(603))
