@@ -437,3 +437,18 @@ The engine image 167304489f3dbb6a (217,600 B left in the app partition), built f
 - The picture mode was not timed with nearest in this image. P603 measured it at 23 to 24 fps, the same as linear's now.
 - Args probe (`run90b-p608-args-probe.log`, first image, same binding): `set_filter` takes 0, 1 and True, raises ValueError for 2 and -1 and TypeError for "1" and None, and `engine.NEAREST` is 0, `engine.LINEAR` 1.
 - Smoke (`run91-p608-smoke.log`): all thirteen entries start, with no error.
+
+## P602 (#803), 2026-11-04: the flappy bird trails fire
+
+The engine image 5206b1c9bed42b4d (217,312 B left in the app partition), built from 8fc5d44 (`build-engine-p602.log`). It adds `HeatField.scroll(dx)` (`fx_fire_scroll`), which moves the field with the world. Flappy ran alone through `mpremote run` for 45 s under one probe (an autopilot flaps and `die` is off), first with master's `games/*.py` on image 167304489f3dbb6a, then with the branch's on the new image. The values are per frame, from eight 5 s lines each. The probe prints the frames at the 60 ms dt cap and times `FireLayer.update` (the scroll and the field's step) and `FireLayer.draw` (the blend over the picture).
+
+| run | fps | step | paint | send | gc | static | game paint | layer update | layer draw | frames at the cap |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `run92-p602-before-flappy.log` | 24 to 25 | 0.7 to 1.0 ms | 20.7 to 22.0 ms | 3.3 to 3.7 ms | 1.9 to 2.0 ms | 7.2 ms | 8.4 to 13.0 ms | none | none | 0 to 1 of about 125 |
+| `run93-p602-after-flappy.log` | 21 to 23 | 6.4 to 9.9 ms | 27.4 to 29.8 ms | 3.3 to 3.7 ms | 1.9 ms | 7.2 ms | 13.5 to 20.7 ms | 8.19 to 8.51 ms | 7.58 to 7.72 ms | 1 to 5 of about 108 |
+
+- The fire costs about 16 ms a frame: 8.4 ms to scroll and step the field, and 7.6 ms to blend it. Flappy falls from 24 to 21 fps. The plan's estimate was 16 to 17 fps, from P608's picture mode, which blends a full fire (11.5 to 13.3 ms). The trail leaves most cells at heat 0, which the blend skips.
+- The first line of each run holds the title, so it differs from the rest.
+- Flappy's 24 fps before is higher than the P599 rows above (20 fps), which were measured in the game-over state.
+- The step and the blend are the PO's speed spike's first numbers (P612 #817).
+- Smoke (`run94-p602-smoke.log`): all thirteen entries start, with no error. Burning runs at 25 fps.
