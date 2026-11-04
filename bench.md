@@ -373,3 +373,4 @@ The PO saw dark flame sides in part 1: the cool, dark edge cells were blended at
 - The paint is about 16 ms shorter, because the frame no longer gets a second full-panel pass: the buffer fill and the blit become one blend that skips the clear cells.
 - The binding's argument checks have no Mac test (the binding is not built on the Mac). `run76b-p603-args-probe.log` calls `draw` with five bad arguments, a field of the wrong size and three good forms: all nine give the expected result.
 - Smoke (`run77-p603-alpha-smoke.log`): all twelve entries start and report fps (20 to 25), with no error.
+- The look (2026-11-04): the PO found the half alpha too pale over the light sky. On the panel and on a Mac render of four curves, he picked full alpha from heat 96 up, climbing evenly from clear at heat 0 (`ALPHA_FULL = 96`). The kernel still skips only alpha 0, so the paint cost does not change.

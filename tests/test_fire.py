@@ -113,10 +113,10 @@ class PaletteTest(unittest.TestCase):
         self.assertEqual(fire.BLACK, fire.PALETTE[0])
         self.assertEqual(fire.WHITE, fire.PALETTE[255])
 
-    def test_the_alpha_climbs_from_clear_to_half(self):
-        """P603: the cool edges are almost all sky, the hot core half fire. ALPHA_TOP is the PO's "half transparent"."""
+    def test_the_alpha_climbs_from_clear_to_full_at_heat_96(self):
+        """P603: the cool cells fade into the sky, the fire from heat 96 up is solid (the PO's pick, curve B)."""
         alpha = list(fire.ALPHA)
-        self.assertEqual((256, 0, 128, 64), (len(alpha), alpha[0], alpha[255], alpha[128]))
+        self.assertEqual((256, 0, 127, 252, 255, 255), (len(alpha), alpha[0], alpha[48], alpha[95], alpha[96], alpha[255]))
         self.assertEqual(sorted(alpha), alpha)
 
 

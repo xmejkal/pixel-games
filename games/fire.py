@@ -67,10 +67,11 @@ def ramp(stops):
 
 PALETTE = ramp(STOPS)
 # --- MVP (P603) ---
-# The picture mode's alpha per heat: clear at heat 0, ALPHA_TOP at the hottest, so the cool, dark edges are almost all
-# sky and the core is half fire ("half transparent fire color", the PO, 2026-11-03).
-ALPHA_TOP = 128
-ALPHA = array("B", [heat * ALPHA_TOP // 255 for heat in range(256)])
+# The picture mode's alpha per heat: clear at heat 0, climbing evenly to full at ALPHA_FULL and full above it, so the
+# fire is solid and only its cooler cells fade into the sky. The PO picked "full from heat 96 (red)" on the panel
+# (2026-11-04). From 48, the dark red edges turn opaque and darken the sky again.
+ALPHA_FULL = 96
+ALPHA = array("B", [min(255, heat * 255 // ALPHA_FULL) for heat in range(256)])
 
 
 class Fire(Game):
