@@ -34,7 +34,8 @@ try:
     import engine
 except ImportError:  # the image with s3lcd only
     engine = None
-# --- MVP (P602) --- on the Mac `import engine` finds the repository's engine/ folder, an empty package
+# --- MVP (P602) --- the import above succeeds on the Mac too: it finds the repository's engine/ folder, an empty
+# package. Only the C engine has HeatField
 if not hasattr(engine, "HeatField"):
     engine = None
 
@@ -199,8 +200,8 @@ class Fire(Game):
 class FireLayer:
     """The fire field as one more layer of a game's picture, at the world's speed, as a parallax layer is (Godot's
     CanvasLayer): only burns put heat in, the base is off. update moves the heat with the world and steps it, draw
-    blends it over the frame. Without the engine, field is None and draw does nothing. Made once, so a frame makes
-    nothing."""
+    blends it over the frame. Without the engine, field is None and draw does nothing. Made once: update and draw use
+    int math only, so they make nothing a frame."""
 
     def __init__(self, look, seed):
         self.field, self.clock, self.acc = None, StepClock(STEP_MS, LAYER_STEP_CAP), 0  # acc: px/s times ms
@@ -212,7 +213,7 @@ class FireLayer:
 
     def update(self, ms, speed):
         """ms of a world moving left at speed px/s, an int: the field scrolls the whole cells it moved, the rest waits,
-        then it steps by its clock. The cells it scrolled."""
+        then it steps by its clock. Its dx, the cells the field scrolled: negative, to the left, as Effect.scroll takes it."""
         self.acc += speed * ms
         cells = self.acc // CELL_PX_MS
         self.acc -= cells * CELL_PX_MS
@@ -222,11 +223,12 @@ class FireLayer:
                 self.field.scroll(-cells)
             if steps:
                 self.field.step(steps, 0)
-        return cells
+        return -cells
 
     def clear(self):
-        """An empty field and no part of a cell carried over, for a new round."""
-        self.acc = 0
+        """An empty field, and no part of a cell or a step carried over, for a new round. A scroll by the whole width
+        empties the field (fx_fire_scroll)."""
+        self.acc = self.clock.ms = 0
         if self.field is not None:
             self.field.scroll(-W)
 

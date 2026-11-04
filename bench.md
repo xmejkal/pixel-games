@@ -440,7 +440,7 @@ The engine image 167304489f3dbb6a (217,600 B left in the app partition), built f
 
 ## P602 (#803), 2026-11-04: the flappy bird trails fire
 
-The engine image 5206b1c9bed42b4d (217,312 B left in the app partition), built from 8fc5d44 (`build-engine-p602.log`). It adds `HeatField.scroll(dx)` (`fx_fire_scroll`), which moves the field with the world. Flappy ran alone through `mpremote run` for 45 s under one probe (an autopilot flaps and `die` is off), first with master's `games/*.py` on image 167304489f3dbb6a, then with the branch's on the new image. The values are per frame, from eight 5 s lines each. The probe prints the frames at the 60 ms dt cap and times `FireLayer.update` (the scroll and the field's step) and `FireLayer.draw` (the blend over the picture).
+The engine image 5206b1c9bed42b4d (217,312 B left in the app partition), built from the tree at 8fc5d44 (`build-engine-p602.log`, which holds no commit). It adds `HeatField.scroll(dx)` (`fx_fire_scroll`), which moves the field with the world. Flappy ran alone through `mpremote run` for about 45 s with the title (40 s of play measured) under one probe (an autopilot flaps and `die` is off), first with master's `games/*.py` on image 167304489f3dbb6a, then with the branch's on the new image. The values are per frame, from eight 5 s lines each. The probe prints the frames at the 60 ms dt cap and times `FireLayer.update` (the scroll and the field's step) and `FireLayer.draw` (the blend over the picture).
 
 | run | fps | step | paint | send | gc | static | game paint | layer update | layer draw | frames at the cap |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -451,4 +451,5 @@ The engine image 5206b1c9bed42b4d (217,312 B left in the app partition), built f
 - The first line of each run holds the title, so it differs from the rest.
 - Flappy's 24 fps before is higher than the P599 rows above (20 fps), which were measured in the game-over state.
 - The step and the blend are the PO's speed spike's first numbers (P612 #817).
+- Allocation (`run95-p602-alloc.log`, after the review fixes): `gc.mem_alloc()` read around every 50th call shows 0 B for `FireLayer.update` (9 samples) and `FireLayer.draw` (10 samples). The heap line of run 93 rises from 124,192 to 131,888 B over its intervals, while run 92's stays at 120.8 to 121.9 kB. The `FireTrail` lag and Flappy's float physics make floats a frame, as on master, so the rise is likely the gc's timing under longer frames.
 - Smoke (`run94-p602-smoke.log`): all thirteen entries start, with no error. Burning runs at 25 fps.

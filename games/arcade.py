@@ -66,9 +66,9 @@ class Flappy(Game):
         self.y += self.vy * dt
         speed = 95 + min(self.score, 20) * 3
         self.dist += speed * dt
-        cells = self.layer.update(int(dt * 1000 + 0.5), speed)  # --- MVP (P602) --- the fire moves with the world
+        dx = self.layer.update(int(dt * 1000 + 0.5), speed)  # --- MVP (P602) --- the fire moves with the world
         if self.trail is not None:
-            self.trail.scroll(-cells)
+            self.trail.scroll(dx)
             self.trail.update(self.X - BIRD_BOX // 2, int(self.y) - BIRD_BOX // 2)
         for c in self.clouds:
             c[0] -= speed * dt * 0.3

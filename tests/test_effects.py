@@ -176,7 +176,7 @@ class EffectsTest(unittest.TestCase):
         self.effects.update()
         self.assertEqual((c - 3, y, c - int(3 * LAG), y, RADIUS, HEAT), self.field.burns[-1])
 
-    def test_a_scroll_before_the_first_frame_or_on_another_effect_does_nothing(self):
+    def test_a_scroll_before_the_first_frame_or_on_another_effect_leaves_no_streak(self):
         trail, counter = self.trail(), Counter()
         trail.scroll(-3)
         counter.scroll(-3)

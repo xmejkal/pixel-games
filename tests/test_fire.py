@@ -190,7 +190,7 @@ class NoEngineTest(unittest.TestCase):
     def test_a_layer_without_the_engine_has_no_field_and_still_counts_cells(self):
         layer = fire.FireLayer(LAYER_LOOK, 1)
         self.assertIsNone(layer.field)
-        self.assertEqual((1, 2), (layer.update(40, 95), layer.update(40, 95)))  # 3,800 px·ms a frame, 2,000 a cell
+        self.assertEqual((-1, -2), (layer.update(40, 95), layer.update(40, 95)))  # 3,800 px·ms a frame, 2,000 a cell
         layer.clear()
         layer.draw(Recorder(Tft()))  # nothing to draw, and no error
 
@@ -297,7 +297,7 @@ class FireTest(unittest.TestCase):
             with self.subTest(n=n):
                 layer.clear()
                 fire.engine.scrolls = []
-                cells = sum(layer.update(40, 95) for _ in range(n))
+                cells = -sum(layer.update(40, 95) for _ in range(n))  # left
                 self.assertEqual((95 * 40 * n) // 2000, cells)
                 self.assertEqual(-cells, sum(fire.engine.scrolls))
                 self.assertTrue(all(dx < 0 for dx in fire.engine.scrolls))
@@ -306,11 +306,20 @@ class FireTest(unittest.TestCase):
         layer = fire.FireLayer(LAYER_LOOK, 1)
         layer.field.burn(100, 60, 100, 60, 0, 255)
         layer.field.step = lambda n, wind: None  # the scroll alone
-        self.assertEqual(2, layer.update(40, 100))  # 4,000 px·ms: 2 cells
+        self.assertEqual(-2, layer.update(40, 100))  # 4,000 px·ms: 2 cells left
         row = layer.field.heat[60 * fire.W:61 * fire.W]
         self.assertEqual((0, 255), (row[100], row[98]))
         layer.clear()
         self.assertEqual(bytes(fire.W * fire.H), bytes(layer.field.heat[:fire.W * fire.H]))
+
+    def test_clear_carries_no_part_of_a_step_into_the_next_round(self):
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        steps = []
+        layer.field.step = lambda n, wind: steps.append(n)
+        layer.update(30, 95)
+        layer.clear()
+        layer.update(30, 95)
+        self.assertEqual([], steps)  # 30 + 30 ms would make a 40 ms step without the clear
 
     def test_a_layer_steps_by_its_clock_and_blends_over_the_frame(self):
         layer = fire.FireLayer(LAYER_LOOK, 1)
