@@ -1,14 +1,10 @@
-"""Three side-on games for one button: flappy (tap), runner (tap, hold for a high jump), snake (tap turns right).
-Flappy's bird trails fire (P602): a fire.FireLayer moves its heat left with the world, so the flames stay in the air
-behind the bird, rise and fade. Without the C engine, flappy is as before."""
+"""Three side-on games for one button: flappy (tap), runner (tap, hold for a high jump), snake (tap turns right)."""
 
 import random
 from math import exp, sqrt
 
 import pictures
 import track
-from effects import FireTrail
-from fire import FireLayer
 from gfx import (BLACK, GREEN, GREY, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565)
 
 W, H = WIDTH, HEIGHT
@@ -16,13 +12,6 @@ BIRD = ("..kkkk...", ".kyyyywk.", "kyyyyywkk", "kkkyyyyoo", "kwwkyyyok", ".kwwkk
 BIRD_COLOURS = {"k": c565(40, 30, 20), "y": YELLOW, "w": WHITE, "o": ORANGE}
 RUN_TOP = ("..rrrr..", ".rrrrrr.", ".ssskss.", ".ssssss.", "..bbbb..", ".bbbbbb.", "sbbbbbbs", ".bbbbbb.", "..pppp..", "..pppp..")
 RUN_LEGS = (("..p..p..", ".kk..kk."), ("...pp...", "...kk..."))
-# --- MVP (P602) --- the bird's fire: the feel numbers start as burning.py's, and the lead sets them from Mac frames
-FIRE_LOOK = (32, 40, 1, 0, 1, 128, 0, 16)  # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade
-FIRE_RADIUS = 3  # cells: the disc each burn writes
-FIRE_HEAT = 200  # orange-yellow
-FIRE_LAG = 0.5  # the burn trails the bird by this many frames of its motion
-FIRE_SEED = 602
-BIRD_BOX = 14  # px: the box around the bird's centre (X, y) that its trail burns from
 RUN_COLOURS = {"r": RED, "s": c565(250, 200, 160), "k": BLACK, "b": c565(50, 90, 240), "p": c565(40, 40, 120)}
 
 
@@ -36,19 +25,8 @@ class Flappy(Game):
     BACK = ("flappy_clouds", "flappy_far", "flappy_near")  # the layers behind the pipes; the ground goes over them
     BIRDS = tuple(tuple("flappy_bird%d%d" % (tilt, wing) for wing in range(2)) for tilt in range(3))
 
-    def __init__(self):
-        # --- MVP (P602) --- made once, before Game.__init__ runs setup; the trail only when the field exists
-        self.layer = FireLayer(FIRE_LOOK, FIRE_SEED)
-        self.trail = None
-        if self.layer.field is not None:
-            self.trail = FireTrail(self.layer.field, BIRD_BOX, FIRE_RADIUS, FIRE_HEAT, FIRE_LAG)
-        super().__init__()
-
     def setup(self):
         self.covers = pictures.load()  # the painted morning covers the screen, so no fill goes under it
-        self.layer.clear()  # --- MVP (P602) --- each round starts with no fire
-        if self.trail is not None:
-            self.trail.reset()
         self.flapped = -1.0  # when the last tap came (self.t), for the bird's wing
         self.y, self.vy, self.dist = 110.0, 0.0, 0.0
         self.pipes = [[W + 20 + i * self.SPACE, self.gap_y(), False] for i in range(3)]
@@ -66,10 +44,6 @@ class Flappy(Game):
         self.y += self.vy * dt
         speed = 95 + min(self.score, 20) * 3
         self.dist += speed * dt
-        dx = self.layer.update(int(dt * 1000 + 0.5), speed)  # --- MVP (P602) --- the fire moves with the world
-        if self.trail is not None:
-            self.trail.scroll(dx)
-            self.trail.update(self.X - BIRD_BOX // 2, int(self.y) - BIRD_BOX // 2)
         for c in self.clouds:
             c[0] -= speed * dt * 0.3
             if c[0] < -60:
@@ -116,15 +90,13 @@ class Flappy(Game):
                 cv.fill(x - 3, y, self.PW + 6, 2, c565(140, 240, 140))
         for i in range(12):  # the ground slides by
             cv.fill((i * 32 - int(self.dist)) % (W + 32) - 16, self.FLOOR + 10 + (i % 3) * 5, 14, 3, c565(160, 110, 50))
-        self.layer.draw(cv)  # --- MVP (P602) --- the fire over the ground, under the bird
         flap = 0 if self.vy < 0 else 3
         cv.sprite(BIRD, BIRD_COLOURS, self.X - 9, self.y - 7, 2)
         cv.fill(self.X - 12, self.y - 2 + flap, 6, 3, WHITE)
 
     def paint_art(self, cv):
         """The painted flappy (P564): the layers behind, each pipe piece placed so its cap meets the gap (the driver
-        clips the rest), the ground over the pipe feet, the bird's fire (P602), then the bird. False when there is no
-        art."""
+        clips the rest), the ground over the pipe feet, then the bird. False when there is no art."""
         if not pictures.draw_layers(cv, self.dist, True, "flappy", self.BACK):
             return False
         half = self.GAP // 2
@@ -132,7 +104,6 @@ class Flappy(Game):
             pictures.draw(cv, "flappy_pipe_top", x, gap_y - half - 240)
             pictures.draw(cv, "flappy_pipe_bottom", x, gap_y + half)
         pictures.draw_layers(cv, self.dist, True, "flappy", ("flappy_ground",))
-        self.layer.draw(cv)  # --- MVP (P602) --- the fire over the ground, under the bird
         tilt = 0 if self.vy < -60 else 2 if self.vy > 120 else 1
         wing = 0 if self.t - self.flapped < 0.12 else int(self.t * 6) % 2  # up just after a tap, then a slow beat
         pictures.draw(cv, self.BIRDS[tilt][wing], self.X - 9, self.y - 7)

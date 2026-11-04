@@ -18,7 +18,8 @@ A tap prints `fire mode <mode>` and starts a new interval, so each line holds on
 "fire: no C" and nothing else is drawn.
 
 FireLayer (P602) puts the same field into another game as one more layer of its picture: heat burned at a body, moved
-with the world and blended over the game's frame, as flappy's bird trails fire.
+with the world and blended over the game's frame. It was tried as a fire trail behind flappy's bird, and the PO kept
+it for other games (2026-11-04). No game uses it yet.
 --- MVP (P595) ---
 """
 
@@ -66,7 +67,7 @@ NEAREST, LINEAR = getattr(engine, "NEAREST", 0), getattr(engine, "LINEAR", 1)
 MODES = (("linear", LINEAR, False), ("picture", LINEAR, True), ("nearest", NEAREST, False))
 REPORT_MS = 5000  # app.py's FPS_EVERY_MS, so a fire line comes with each of its time lines
 HUD_MS = 500
-# --- MVP (P602) ---
+# --- Later, not MVP: kept for other games, the PO 2026-11-04 (P602) ---
 CELL_PX_MS = 2000  # px/s times ms of one cell of 2 px, so FireLayer counts the world's motion in ints
 LAYER_STEP_CAP = 2  # a FireLayer's steps a frame at most: Game.step caps dt at 60 ms, which holds one or two
 
@@ -196,7 +197,7 @@ class Fire(Game):
         cv.text(self.label, 4, 2, WHITE)
 
 
-# --- MVP (P602) ---
+# --- Later, not MVP: kept for other games, the PO 2026-11-04 (P602) ---
 class FireLayer:
     """The fire field as one more layer of a game's picture, at the world's speed, as a parallax layer is (Godot's
     CanvasLayer): only burns put heat in, the base is off. update moves the heat with the world and steps it, draw
@@ -213,7 +214,8 @@ class FireLayer:
 
     def update(self, ms, speed):
         """ms of a world moving left at speed px/s, an int: the field scrolls the whole cells it moved, the rest waits,
-        then it steps by its clock. Its dx, the cells the field scrolled: negative, to the left, as Effect.scroll takes it."""
+        then it steps by its clock. Its dx, the cells the field scrolled: negative, to the left, as Effect.scroll takes
+        it."""
         self.acc += speed * ms
         cells = self.acc // CELL_PX_MS
         self.acc -= cells * CELL_PX_MS

@@ -11,7 +11,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
 | `art/` | the painted art: one set per game, the brush and the export |
 | `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang) |
-| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene (fire, burning or flappy) on the Mac to a PNG (needs clang and Pillow) |
+| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene on the Mac to a PNG (needs clang and Pillow) |
 | `s3lcd/` | the C driver: the fork with `frame.c`, a DMA send of one frame and partial updates |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
@@ -70,11 +70,11 @@ Runs now:
 - The HUD is drawn once into a strip and blitted each frame (P599).
 - Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
-- Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (21 with its fire trail, P602), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
+- Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (P602), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 
 Done last: P608 ([#810](https://github.com/xmejkal/spark/issues/810)), the smooth fire (bilinear filtering), merged 2026-11-04. The PO chose "Full MVP, 4 slices" on 2026-11-04 to close the effects epic P594 ([#795](https://github.com/xmejkal/spark/issues/795)). Paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
 
-In Review: P602 ([#803](https://github.com/xmejkal/spark/issues/803)), the flappy bird trails fire, the first effect inside a game. The trail drifts left with the world (`HeatField.scroll`). Next: P598 ([#799](https://github.com/xmejkal/spark/issues/799)), colliding bodies. In Idea: P610 ([#814](https://github.com/xmejkal/spark/issues/814)), a Blur effect on a screen region, and P611 ([#815](https://github.com/xmejkal/spark/issues/815)), a motion blur behind a fast body, combined with its FireTrail. Later: P612 ([#817](https://github.com/xmejkal/spark/issues/817)), a spike on where flappy's frame time goes and how to reach 25 fps or more, and P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
+In Review: P602 ([#803](https://github.com/xmejkal/spark/issues/803)), fire that drifts with a scrolling world (`HeatField.scroll`, `FireLayer`). The PO tried it as a trail behind flappy's bird and kept it for other games, not for flappy. Next: P598 ([#799](https://github.com/xmejkal/spark/issues/799)), colliding bodies. In Idea: P610 ([#814](https://github.com/xmejkal/spark/issues/814)), a Blur effect on a screen region, and P611 ([#815](https://github.com/xmejkal/spark/issues/815)), a motion blur behind a fast body, combined with its FireTrail. Later: P612 ([#817](https://github.com/xmejkal/spark/issues/817)), a spike on where a game's frame time goes and how to reach 25 fps or more, and P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
 
 The work is planned on the board of the [spark](https://github.com/xmejkal/spark) project.
 

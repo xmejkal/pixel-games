@@ -4,7 +4,7 @@ Effects on bodies (P607): a body of a rain.Stepper carries an effect, and an eng
 EffectSystem.update() for the effects. Python decides what an event causes (engine D12): handlers maps an event kind
 (motion.HIT or SLEEP) to a call of (body, speed), which can set body.effect or burn a flare. A new effect is one more
 Effect, and its callers do not change. A scene whose world moves under the screen calls effect.scroll(dx) each frame,
-so a path moves with the world (P602).
+so a path moves with the world (P602, no scene does yet).
 --- MVP (P607) ---
 """
 
@@ -25,7 +25,7 @@ class Effect:
     def reset(self):
         """The body jumped, for example a respawn: no path from its last place."""
 
-    # --- MVP (P602) ---
+    # --- Later, not MVP: kept for other games, the PO 2026-11-04 (P602) ---
     def scroll(self, dx):
         """The world moved under the screen by dx fire cells, negative to the left: move what the effect holds."""
 
@@ -59,7 +59,7 @@ class FireTrail(Effect):
         self.has_path = False  # then prev, the body's centre in cells last frame, and trail, the last burn point
         self.prev_x = self.prev_y = self.trail_x = self.trail_y = 0
 
-    def scroll(self, dx):  # --- MVP (P602) ---
+    def scroll(self, dx):  # --- Later, not MVP: kept for other games, the PO 2026-11-04 (P602) ---
         self.prev_x += dx
         self.trail_x += dx
 

@@ -13,7 +13,6 @@ import sys
 import tempfile
 import time
 import unittest
-from array import array
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
@@ -23,7 +22,6 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
-import arcade  # noqa: E402
 import fire  # noqa: E402
 import lcd  # noqa: E402
 
@@ -47,13 +45,6 @@ class Tft:
 
     def blit_buffer(self, buf, *args):
         self.blits.append(args)
-
-    def fill_rect(self, x, y, w, h, c):  # --- MVP (P602) --- into the frame in panel order, clipped, for lcd.TftCanvas
-        x0, y0, x1, y1 = max(x, 0), max(y, 0), min(x + w, lcd.PANEL_W), min(y + h, lcd.PANEL_H)
-        if x1 > x0:
-            px, line = memoryview(self.frame).cast("H"), array("H", [c]) * (x1 - x0)
-            for row in range(y0, y1):
-                px[row * lcd.PANEL_W + x0:row * lcd.PANEL_W + x1] = line
 
 
 class Recorder:
@@ -135,23 +126,6 @@ def play(game, frames, now, tft, pressed=False):
         game.paint_static(cv)
         game.paint(cv)
     return cv, now
-
-
-def fly(game, frames, now, tft):
-    """frames frames 40 ms apart, a tap whenever the bird sinks below y 120, each drawn on the real lcd.TftCanvas over
-    the plain sky (no art on the Mac): now. --- MVP (P602) ---"""
-    for _ in range(frames):
-        now += FRAME_MS
-        game.step(now, game.y > 120, False)
-        cv = lcd.TftCanvas(tft)
-        game.paint_static(cv)
-        game.paint(cv)
-    return now
-
-
-def leftmost_heat(field):
-    """The leftmost column of the field that holds heat."""
-    return min(i % fire.W for i, v in enumerate(field.heat[:fire.W * fire.H]) if v)
 
 
 class PaletteTest(unittest.TestCase):
@@ -309,8 +283,20 @@ class FireTest(unittest.TestCase):
         self.assertEqual(-2, layer.update(40, 100))  # 4,000 px·ms: 2 cells left
         row = layer.field.heat[60 * fire.W:61 * fire.W]
         self.assertEqual((0, 255), (row[100], row[98]))
+        layer.field.burn(fire.W - 1, 0, fire.W - 1, 0, 0, 255)  # the last column, which a scroll one short keeps
         layer.clear()
         self.assertEqual(bytes(fire.W * fire.H), bytes(layer.field.heat[:fire.W * fire.H]))
+
+    def test_a_scroll_one_column_short_of_the_width_keeps_the_edge_column(self):
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        for dx, start, end in ((-(fire.W - 1), fire.W - 1, 0), (fire.W - 1, 0, fire.W - 1)):
+            with self.subTest(dx=dx):
+                layer.clear()
+                layer.field.burn(start, 60, start, 60, 0, 255)
+                layer.field.scroll(dx)
+                heat = bytes(layer.field.heat[:fire.W * fire.H])
+                self.assertEqual(255, heat[60 * fire.W + end])
+                self.assertEqual(255, sum(heat))  # no other cell holds heat
 
     def test_clear_carries_no_part_of_a_step_into_the_next_round(self):
         layer = fire.FireLayer(LAYER_LOOK, 1)
@@ -334,44 +320,6 @@ class FireTest(unittest.TestCase):
         layer.draw(object())  # a canvas without tft draws nothing
         self.assertEqual(["tft alpha"], fire.engine.targets)
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))
-
-    def test_the_flappy_bird_trails_fire_that_drifts_left_and_rises(self):
-        with contextlib.redirect_stdout(io.StringIO()):
-            game, tft = arcade.Flappy(), Tft()
-        game.die = lambda *args: None  # the bird lives through the pipes
-        now = fly(game, game.TITLE_MS // FRAME_MS, 0, tft)  # the title: nothing burns
-        self.assertEqual([], fire.engine.burns)
-        lefts = []
-        for _ in range(3):
-            now = fly(game, 8, now, tft)
-            lefts.append(leftmost_heat(game.layer.field))
-        self.assertLess(lefts[0], game.X // 2 - 2 * arcade.FIRE_RADIUS)  # left of the bird's cell, past a burn's disc
-        self.assertGreater(lefts[0], lefts[1])  # the trail drifts left with the world
-        self.assertGreater(lefts[1], lefts[2])
-        self.assertTrue(all(dx < 0 for dx in fire.engine.scrolls))
-        self.assertIn("tft alpha", fire.engine.targets)
-        # in the frame: the same picture without the fire differs left of and above the bird
-        plain = Tft()
-        draw, game.layer.draw = game.layer.draw, lambda cv: None
-        cv = lcd.TftCanvas(plain)
-        game.paint_static(cv)
-        game.paint(cv)
-        game.layer.draw = draw
-        px, plain_px = memoryview(tft.frame).cast("H"), memoryview(plain.frame).cast("H")
-        fired = [(lcd.PANEL_H - 1 - i // lcd.PANEL_W, i % lcd.PANEL_W) for i in range(len(px)) if px[i] != plain_px[i]]
-        self.assertTrue(fired)
-        self.assertLess(sum(x for x, _ in fired) / len(fired), game.X)
-        self.assertLess(sum(y for _, y in fired) / len(fired), game.y + 7)
-
-    def test_a_new_round_of_flappy_starts_with_a_clear_field(self):
-        with contextlib.redirect_stdout(io.StringIO()):
-            game, tft = arcade.Flappy(), Tft()
-        game.die = lambda *args: None
-        fly(game, game.TITLE_MS // FRAME_MS + 20, 0, tft)
-        self.assertNotEqual(bytes(fire.W * fire.H), bytes(game.layer.field.heat[:fire.W * fire.H]))
-        game.restart()
-        self.assertEqual(bytes(fire.W * fire.H), bytes(game.layer.field.heat[:fire.W * fire.H]))
-        self.assertFalse(game.trail.has_path)
 
     def test_the_look_stays_low_at_the_top_for_the_seven_seeds(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat

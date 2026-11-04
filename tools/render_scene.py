@@ -2,10 +2,9 @@
 with tests/test_fire.py's engine stand-in (fx_fire.c through ctypes) and writes the panel frame in the game's view.
 Needs clang and Pillow. From the repository root:
     python3 -B tools/render_scene.py [--filter nearest|linear] burning out.png [frames ...]
-The scene is fire, burning or flappy; one PNG per frame count, side by side. --filter (P608) sets the field's filter
-after setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering; without it the scene's first mode
-draws. Flappy (P602) draws through the real lcd.TftCanvas on its plain sky (no art on the Mac), taps whenever the bird
-sinks below y 120, and never dies, so the frames show its fire trail. --- MVP (P596) ---"""
+The scene is fire or burning; one PNG per frame count, side by side. --filter (P608) sets the field's filter after
+setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering; without it the scene's first mode
+draws. --- MVP (P596) ---"""
 
 import argparse
 import contextlib
@@ -18,16 +17,14 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
-from test_fire import FIRE_C, S3LCD_SRC, Engine, Tft, fly, play  # noqa: E402
+from test_fire import FIRE_C, S3LCD_SRC, Engine, Tft, play  # noqa: E402
 
-import arcade  # noqa: E402
 import burning  # noqa: E402
 import fire  # noqa: E402
 import rain  # noqa: E402
 from PIL import Image  # noqa: E402
 
-SCENES = {"fire": fire.Fire, "burning": burning.BurningBodies, "flappy": arcade.Flappy}
-DRIVERS = {"flappy": fly}  # --- MVP (P602) --- how a scene plays its frames, play (tests/test_fire.py) when not here
+SCENES = {"fire": fire.Fire, "burning": burning.BurningBodies}
 FILTERS = {"nearest": fire.NEAREST, "linear": fire.LINEAR}  # --- MVP (P608) ---
 
 
@@ -58,15 +55,10 @@ def main():
         fire.random.seed(fire.SEED)  # the fire's gusts too, so a render with each filter shows the same flames
         with contextlib.redirect_stdout(io.StringIO()):
             game, tft, now, shots = SCENES[name](), Tft(), 0, []
-            field = game.layer.field if hasattr(game, "layer") else game.field  # P602: flappy's field is its layer's
-            game.die = lambda *args: None  # the bird flies on through the pipes; the fire scenes never die
             if args.filter:
-                field.set_filter(FILTERS[args.filter])
+                game.field.set_filter(FILTERS[args.filter])
             for n in counts:
-                if name in DRIVERS:
-                    now = DRIVERS[name](game, n - (now // 40), now, tft)
-                else:
-                    _, now = play(game, n - (now // 40), now, tft)
+                _, now = play(game, n - (now // 40), now, tft)
                 shots.append(frame_image(tft))
     sheet = Image.new("RGB", (330 * len(shots), 240))
     for k, shot in enumerate(shots):
