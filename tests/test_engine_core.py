@@ -1,23 +1,23 @@
-"""engine/core/world.c (P589 probe) against the maths of p582-heavy's fall_bodies: clang builds it into a temporary
-folder and ctypes steps both modes beside a Python reference. Run from the repository root: python3 -m unittest
-discover tests. --- probe, throwaway (P589) ---"""
+"""engine/core/world.c (P590) against its twin motion.Bodies: tests/world_lib.py builds the C with clang and steps it
+through CBodies, the stand-in for engine.Bodies, beside the twin. Both get the same API tests, and the twin is the one
+source of the maths. Run from the repository root: python3 -m unittest discover tests. --- MVP (P590) ---"""
 
-import ctypes
 import os
-import shutil
-import subprocess
-import tempfile
+import sys
 import unittest
+from array import array
 
-REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-WORLD_C = os.path.join(REPO, "engine", "core", "world.c")
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
 
-N, RATE, STEPS = 12, 100, 100  # the plan's scene: 12 bodies, 100 steps per second, one 1 s block
-GRAVITY, RESTITUTION, FRICTION = 2000.0, 0.35, 0.6  # p582-heavy games/arcade2.py: Stack.G, SLAB_BOUNCE, SLAB_FRICTION
-HIT, SLEEP = 1, 2  # world.h's WORLD_EVENT_HIT and WORLD_EVENT_SLEEP
-MAX_BODIES = 256  # world.h's WORLD_MAX_BODIES (P593)
-Q_MAX = 32768  # Q16.16 holds |value| < 2^15 px
-FLOAT_PX, FIXED_PX = 0.01, 0.1  # the plan's limits against the reference
+import motion  # noqa: E402
+from world_lib import HAVE_CLANG, HIT, MAX_BODIES, MAX_STEPS, SLEEP, CBodies  # noqa: E402
+
+N = 12
+PHYSICS = DT, GRAVITY, RESTITUTION, FRICTION = 0.01, 2000.0, 0.35, 0.6  # the rain's: stack's heavy floors (p582-heavy)
+Y_PX = 0.01  # the C's y against the twin's
+LANDING_PX = 0.01  # each fixture keeps its landings further than this from a step edge
 
 
 def scene(rest_y, n=N):
@@ -26,192 +26,191 @@ def scene(rest_y, n=N):
     return [(10.0 + 20 * i, -10.0 * (i % 12), 5.0 * (i % 12 - 6), 3.0, float(rest_y(i))) for i in range(n)]
 
 
-FALL = scene(lambda i: 30000)  # no body reaches its plane
 BOUNCE = scene(lambda i: 220 - 14 * (i % 3))
-CROWD = scene(lambda i: 220 - 14 * (i % 3), MAX_BODIES)  # the cap, full (P593)
+CROWD = scene(lambda i: 220 - 14 * (i % 3), MAX_BODIES)  # the cap, full: past 64 events a step, some are dropped
 
 
-def reference(bodies):
-    """fall_bodies' maths in Python floats, one step at a time: the y after each step, its events as (id, kind, speed),
-    the awake body-steps, and the smallest distance of an integrated y from its plane (a landing's margin)."""
-    n = len(bodies)
-    x, y, vx, vy, rest_y = (list(c) for c in zip(*bodies))
-    asleep, ys, events, awake, margin = [0] * n, [], [], 0, float("inf")
-    dt = 1.0 / RATE
-    rest_speed = 1.5 * GRAVITY * dt
-    for _ in range(STEPS):
-        step_events = []
-        for i in range(n):
-            if asleep[i]:
-                continue
-            awake += 1
-            vy[i] += GRAVITY * dt
-            x[i] += vx[i] * dt
-            y[i] += vy[i] * dt
-            margin = min(margin, abs(y[i] - rest_y[i]))
-            if y[i] >= rest_y[i]:
-                y[i] = rest_y[i]
-                v = vy[i]
-                if v < rest_speed:
-                    vy[i], vx[i], asleep[i] = 0.0, 0.0, 1
-                    step_events.append((i, SLEEP, 0))
-                else:
-                    step_events.append((i, HIT, int(v)))
-                    vy[i] = -v * RESTITUTION
-                    vx[i] *= FRICTION
-        ys.append(list(y))
-        events.append(step_events)
-    return ys, events, awake, margin
+def spawned(make, bodies):
+    """make(n) with each body spawned in."""
+    world = make(len(bodies))
+    for i, body in enumerate(bodies):
+        world.spawn(i, *body)
+    return world
 
 
-class World:
-    """One world of the library in one mode, stepped one step per call, as the test reads it after each step. spawn:
-    the float world starts empty and world_spawn_float puts each body in, instead of world_load."""
-
-    def __init__(self, lib, mode, bodies, spawn=False):
-        self.lib, self.mode = lib, mode
-        size = getattr(lib, "world_%s_size" % mode)()
-        self.buf = ctypes.create_string_buffer(size + 64)  # room past the end, so a write past the cap hits no heap
-        if spawn:
-            lib.world_load_float(self.buf, 0, None, None, None, None, None)
-            for i, body in enumerate(bodies):
-                self.spawn(i, *body)
-        else:
-            columns = [(ctypes.c_float * len(bodies))(*c) for c in zip(*bodies)]
-            getattr(lib, "world_load_%s" % mode)(self.buf, len(bodies), *columns)
-
-    def n(self):
-        return ctypes.c_int32.from_buffer(self.buf, 0).value  # world_state_t starts with int32 n
-
-    def spawn(self, i, x, y, vx, vy, rest_y):
-        return self.lib.world_spawn_float(self.buf, i, *(ctypes.c_float(v) for v in (x, y, vx, vy, rest_y)))
-
-    def read(self):
-        """world_read_float: (x, y, asleep) per body."""
-        out = (ctypes.c_int16 * (3 * self.n()))()
-        self.lib.world_read_float(self.buf, out)
-        return [tuple(out[3 * i:3 * i + 3]) for i in range(self.n())]
-
-    def step(self):
-        getattr(self.lib, "world_step_%s" % self.mode)(
-            self.buf, 1, RATE, ctypes.c_float(GRAVITY), ctypes.c_float(RESTITUTION), ctypes.c_float(FRICTION))
-
-    def y(self):
-        out = (ctypes.c_float * self.n())()
-        getattr(self.lib, "world_read_y_%s" % self.mode)(self.buf, out)
-        return list(out)
-
-    def events(self):
-        out = (ctypes.c_int32 * (3 * 64))()
-        m = self.lib.world_drain(self.buf, out, 64)  # world_state_t is first in each world
-        return [tuple(out[3 * k:3 * k + 3]) for k in range(m)]
-
-    def awake_steps(self):
-        return ctypes.c_uint32.from_buffer(self.buf, 4).value  # world_state_t: int32 n, then uint32 awake_steps
+def events(world):
+    """The last step call's events as (id, kind, speed)."""
+    out = array("i", [0] * (3 * motion.MAX_EVENTS))
+    return [tuple(out[3 * k:3 * k + 3]) for k in range(world.drain(out))]
 
 
-def run(world, steps=STEPS):
-    ys, events = [], []
+def margin(bodies, steps):
+    """The smallest distance from its plane of a y a step integrates, before the step puts it back on the plane, in
+    float64 on the twin. A landing on a step edge can split float32 (C) from float64 (the twin): one lands, one not."""
+    twin, least = spawned(motion.Bodies, bodies), float("inf")
     for _ in range(steps):
-        world.step()
-        ys.append(world.y())
-        events.append(world.events())
-    return ys, events
+        for i in range(twin.n):
+            if not twin.asleep[i]:  # fall_bodies' vy += g dt, then y += vy dt
+                least = min(least, abs(twin.y[i] + (twin.vy[i] + GRAVITY * DT) * DT - twin.rest_y[i]))
+        twin.step(1, *PHYSICS)
+    return least
 
 
-@unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/core/world.c is not built")
-class WorldTest(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory()
-        lib_path = os.path.join(cls.tmp.name, "libworld.so")
-        subprocess.run(["clang", "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-shared", "-fPIC", "-o", lib_path,
-                        WORLD_C], check=True)
-        cls.lib = ctypes.CDLL(lib_path)
-        cls.lib.world_float_size.restype = cls.lib.world_fixed_size.restype = ctypes.c_size_t
-        cls.lib.world_spawn_float.restype = ctypes.c_int32
+@unittest.skipUnless(HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
+class ParityTest(unittest.TestCase):
+    def same(self, c, twin, when):
+        """The C and the twin hold the same y and the same events: the twin's events."""
+        worst = max(abs(a - b) for a, b in zip(c.ys(), twin.y))
+        self.assertLess(worst, Y_PX, "largest y difference %s" % when)
+        got, want = events(c), events(twin)
+        self.assertEqual([e[:2] for e in want], [e[:2] for e in got], "hits and sleeps %s" % when)
+        for a, b in zip(want, got):  # int() of a float32 and of a float64 speed may truncate 1 px/s apart
+            self.assertLessEqual(abs(a[2] - b[2]), 1, "impact speed %s" % when)
+        self.assertEqual(twin.dropped, c.dropped, "dropped %s" % when)
+        return want
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.tmp.cleanup()
+    def check(self, bodies):
+        """6 steps in one call, then one call per step up to 100: the y and the events after each call."""
+        c, twin = spawned(CBodies, bodies), spawned(motion.Bodies, bodies)
+        c.step(6, *PHYSICS)
+        twin.step(6, *PHYSICS)
+        seen = self.same(c, twin, "after 6 steps")
+        for step in range(7, 101):
+            c.step(1, *PHYSICS)
+            twin.step(1, *PHYSICS)
+            seen += self.same(c, twin, "after %d steps" % step)
+        self.assertGreater(margin(bodies, 100), LANDING_PX)  # 0.0160 on 2026-11-03
+        return seen
 
-    def check_scene(self, bodies):
-        ref_ys, ref_events, ref_awake, margin = reference(bodies)
-        for mode, limit in (("float", FLOAT_PX), ("fixed", FIXED_PX)):
-            world = World(self.lib, mode, bodies)
-            ys, events = run(world)
-            with self.subTest(mode=mode):
-                worst = max(abs(a - b) for ref, got in zip(ref_ys, ys) for a, b in zip(ref, got))
-                self.assertLess(worst, limit, "largest y difference from the reference")
-                for step, (ref, got) in enumerate(zip(ref_events, events)):
-                    self.assertEqual([e[:2] for e in ref], [e[:2] for e in got], "hits and sleeps in step %d" % step)
-                    for a, b in zip(ref, got):  # int(v) of a float32 or Q16.16 speed may truncate 1 px/s apart
-                        self.assertLessEqual(abs(a[2] - b[2]), 1, "impact speed in step %d" % step)
-                self.assertEqual(ref_awake, world.awake_steps(), "awake body-steps")
-        return ref_ys, ref_events, margin
+    def test_the_bounce_scene_matches_the_twin(self):
+        kinds = {e[1] for e in self.check(BOUNCE)}
+        self.assertEqual({HIT, SLEEP}, kinds)  # the scene reaches both branches, so the test reaches them too
 
-    def test_bounce_scene_matches_the_reference(self):
-        _, events, margin = self.check_scene(BOUNCE)
-        kinds = [e[1] for step in events for e in step]
-        self.assertIn(HIT, kinds)
-        self.assertIn(SLEEP, kinds)  # the scene reaches both branches, so the test reaches them too
-        print("\nbounce scene: smallest landing margin %.4f px" % margin)
-        self.assertGreater(margin, 0.01)  # 0.0160 on 2026-11-03: a tie on a step edge would split float and fixed
+    def test_the_full_cap_matches_the_twin(self):
+        self.check(CROWD)
 
-    def test_fall_scene_stays_in_q16_range(self):
-        ys, events, _ = self.check_scene(FALL)
-        self.assertLess(max(b[4] for b in FALL), Q_MAX)  # rest_y 30,000 fits Q16.16
-        self.assertLess(max(max(step) for step in ys), 1100)  # and y in 1 s stays under 1,100 px
-        self.assertEqual([], [e for step in events for e in step])  # no body reaches its plane
 
-    def test_the_full_cap_matches_the_reference_in_y(self):
-        ref_ys = reference(CROWD)[0]
-        for mode, limit in (("float", FLOAT_PX), ("fixed", FIXED_PX)):
-            with self.subTest(mode=mode):
-                ys = run(World(self.lib, mode, CROWD))[0]  # events stay capped at 64 a step, so y only
-                self.assertEqual(MAX_BODIES, len(ys[-1]))
-                worst = max(abs(a - b) for ref, got in zip(ref_ys, ys) for a, b in zip(ref, got))
-                self.assertLess(worst, limit, "largest y difference from the reference")
+class ApiTests:
+    """The API both sides share: make is CBodies or motion.Bodies."""
 
-    def test_spawned_bodies_step_as_loaded_ones(self):
-        ref_ys, ref_events, ref_awake, _ = reference(BOUNCE)
-        world = World(self.lib, "float", BOUNCE, spawn=True)
-        self.assertEqual(N, world.n())  # each spawn past the end grew n
-        ys, events = run(world)
-        worst = max(abs(a - b) for ref, got in zip(ref_ys, ys) for a, b in zip(ref, got))
-        self.assertLess(worst, FLOAT_PX)
-        self.assertEqual([[e[:2] for e in step] for step in ref_events], [[e[:2] for e in step] for step in events])
-        self.assertEqual(ref_awake, world.awake_steps())
+    make = None
+
+    def test_n_outside_1_to_256_is_refused(self):
+        for n in (0, -1, MAX_BODIES + 1):
+            with self.subTest(n=n), self.assertRaises(ValueError):
+                self.make(n)
+        self.assertEqual(MAX_BODIES, self.make(MAX_BODIES).read(array("h", [0] * (3 * MAX_BODIES))))
+
+    def test_a_new_body_sleeps_at_0_0(self):
+        world = self.make(3)
+        world.step(5, *PHYSICS)
+        out = array("h", [9] * 9)
+        self.assertEqual(3, world.read(out))
+        self.assertEqual([0, 0, 1] * 3, list(out))
+        self.assertEqual([], events(world))
+
+    def test_read_truncates_toward_0(self):
+        world = spawned(self.make, [(37.9, -5.5, 0.0, 0.0, 30000.0), (-3.2, 219.9, 0.0, 0.0, 220.0)])
+        out = array("h", [0] * 6)
+        world.read(out)
+        self.assertEqual([37, -5, 0, -3, 219, 0], list(out))
+        world.step(1, *PHYSICS)  # body 1 reaches its plane under the rest speed: it sleeps there
+        world.read(out)
+        self.assertEqual([37, -5, 0, -3, 220, 1], list(out))
+        self.assertEqual([(1, SLEEP, 0)], events(world))
 
     def test_a_spawn_wakes_a_sleeper(self):
-        world = World(self.lib, "float", BOUNCE)
-        run(world)
-        sleeper = next(i for i, body in enumerate(world.read()) if body[2])  # BOUNCE puts bodies to sleep in 1 s
-        again = (50.0, -20.0, 30.0, 0.0, 200.0)
-        self.assertEqual(1, world.spawn(sleeper, *again))
-        self.assertEqual(N, world.n())  # a spawn inside n keeps n
-        ref_ys = reference([again])[0]
-        ys = run(world)[0]
-        worst = max(abs(ref[0] - got[sleeper]) for ref, got in zip(ref_ys, ys))
-        self.assertLess(worst, FLOAT_PX, "the spawned body falls as the reference from its new state")
+        world = self.make(1)
+        world.spawn(0, 5.0, 10.0, 0.0, 0.0, 1000.0)
+        world.step(1, *PHYSICS)
+        out = array("h", [0] * 3)
+        world.read(out)
+        self.assertEqual([5, 10, 0], list(out))  # awake: 0.2 px down, still 10 as an int
 
-    def test_read_gives_truncated_x_y_and_asleep(self):
-        world = World(self.lib, "float", [(37.9, -5.5, 0.0, 0.0, 30000.0), (-3.2, 219.9, 0.0, 0.0, 220.0)])
-        self.assertEqual([(37, -5, 0), (-3, 219, 0)], world.read())  # truncated toward 0, as fall_bodies' int()
-        world.step()  # body 1 reaches its plane at under the rest speed: it sleeps there
-        self.assertEqual([(37, -5, 0), (-3, 220, 1)], world.read())
+    def test_a_spawn_outside_0_to_n_minus_1_is_refused(self):
+        world = self.make(4)
+        for i in (-1, 4):
+            with self.subTest(i=i), self.assertRaises(IndexError):
+                world.spawn(i, 1.0, 2.0, 0.0, 0.0, 300.0)
 
-    def test_a_spawn_past_the_cap_is_refused(self):
-        world = World(self.lib, "float", [])
-        for i in (MAX_BODIES, MAX_BODIES + 1, -1):
-            with self.subTest(i=i):
-                self.assertEqual(0, world.spawn(i, 1.0, 2.0, 0.0, 0.0, 30000.0))
-                self.assertEqual(0, world.n())
-        self.assertEqual(1, world.spawn(MAX_BODIES - 1, 1.0, 2.0, 0.0, 0.0, 30000.0))
-        self.assertEqual(MAX_BODIES, world.n())
-        bodies = world.read()  # the bodies a spawn skipped over sleep at 0, 0, so a step moves none of them
-        self.assertEqual([(0, 0, 1)] * (MAX_BODIES - 1), bodies[:-1])
-        self.assertEqual((1, 2, 0), bodies[-1])
+    def test_steps_outside_0_to_64_are_refused(self):
+        world = self.make(1)
+        for steps in (-1, MAX_STEPS + 1):
+            with self.subTest(steps=steps), self.assertRaises(ValueError):
+                world.step(steps, *PHYSICS)
+
+    def test_a_short_read_array_is_refused(self):
+        with self.assertRaises(ValueError):
+            self.make(2).read(array("h", [0] * 5))
+
+    def hits(self, n):
+        """n bodies 0.5 px over their plane at 1,000 px/s down: one step and each hits at 1,020 px/s."""
+        return spawned(self.make, [(0.0, 99.5, 0.0, 1000.0, 100.0)] * n)
+
+    def test_a_hit_reports_its_speed(self):
+        world = self.hits(1)
+        world.step(1, *PHYSICS)
+        self.assertEqual([(0, HIT, 1020)], events(world))
+
+    def test_a_step_clears_the_events_first(self):
+        world = self.hits(2)
+        world.step(1, *PHYSICS)
+        self.assertEqual([(0, HIT, 1020), (1, HIT, 1020)], events(world))
+        world.step(1, *PHYSICS)  # both rise now
+        self.assertEqual([], events(world))
+
+    def test_a_step_of_0_clears_them_too(self):
+        world = self.hits(2)
+        world.step(1, *PHYSICS)
+        world.step(0, *PHYSICS)
+        self.assertEqual([], events(world))
+
+    def test_drain_into_a_short_buffer_returns_what_fits(self):
+        world = self.hits(2)
+        world.step(1, *PHYSICS)
+        out = array("i", [0] * 5)
+        self.assertEqual(1, world.drain(out))
+        self.assertEqual([0, HIT, 1020], list(out[:3]))
+
+    def test_the_65th_event_only_counts_in_dropped(self):
+        world = self.hits(70)
+        world.step(1, *PHYSICS)
+        self.assertEqual(list(range(motion.MAX_EVENTS)), [e[0] for e in events(world)])
+        self.assertEqual(70 - motion.MAX_EVENTS, world.dropped)
+        world.step(1, *PHYSICS)
+        self.assertEqual(0, world.dropped)
+
+
+@unittest.skipUnless(HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
+class CBodiesTest(ApiTests, unittest.TestCase):
+    make = CBodies
+
+    def test_a_wrong_array_type_is_refused(self):
+        world = self.make(1)
+        with self.assertRaises(ValueError):
+            world.read(array("i", [0] * 3))
+        with self.assertRaises(ValueError):
+            world.drain(array("h", [0] * 3))
+
+
+class TwinTest(ApiTests, unittest.TestCase):
+    make = motion.Bodies
+
+    def test_its_kinds_and_cap_are_the_engines(self):
+        self.assertEqual((HIT, SLEEP, 64), (motion.HIT, motion.SLEEP, motion.MAX_EVENTS))
+
+
+class StepClockTest(unittest.TestCase):
+    def test_whole_steps_and_the_rest_waits(self):
+        clock = motion.StepClock(10, 8)
+        self.assertEqual(4, clock.take(40))
+        self.assertEqual(4, clock.take(45))
+        self.assertEqual(1, clock.take(5))  # 5 ms left over and 5 more
+
+    def test_the_cap_drops_the_rest(self):
+        clock = motion.StepClock(10, 8)
+        self.assertEqual(8, clock.take(200))
+        self.assertEqual(0, clock.take(5))  # the 12 steps over the cap are gone, not owed
 
 
 if __name__ == "__main__":
