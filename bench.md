@@ -454,3 +454,23 @@ The engine image 5206b1c9bed42b4d (217,312 B left in the app partition), built f
 - Allocation (`run95-p602-alloc.log`, after the review fixes): `gc.mem_alloc()` read around every 50th call shows 0 B for `FireLayer.update` (9 samples) and `FireLayer.draw` (10 samples). The heap line of run 93 rises from 124,192 to 131,888 B over its intervals, while run 92's stays at 120.8 to 121.9 kB. The `FireTrail` lag and Flappy's float physics make floats a frame, as on master, so the rise is likely the gc's timing under longer frames.
 - Smoke (`run94-p602-smoke.log`): all thirteen entries start, with no error. Burning runs at 25 fps.
 - The PO played it (2026-11-04): "it looks good, I'm glad we have this effect, but it doesn't really fit the flappy, so we should remove it, this was just a test, but we could definitely use it in other games." The merged branch keeps the scroll and `FireLayer` with no game on them. Flappy is as on master.
+
+## P598 (#799), 2026-11-04: the ball pit
+
+The board runs `engine.Balls` (`fx_balls.c` on the uniform grid of `grid.c`). The last image is 74f1d9d27d6003c6 (211,312 B left in the app partition), built from the C at c952675 (`build-engine-p598g.log`, which holds no commit), with `games/*.py` at 9cb3cba. A step is 4 substeps of 2.5 ms and 2 relaxation passes.
+
+| run | what | result |
+| --- | --- | --- |
+| `run96-p598-balls-s4.log` | 300 balls, the first build | 5 fps, step 165 ms a frame |
+| `run97-p598-substep-probe.log` to `run97d` | one substep, 300 balls of r 2 packed | 7.0 ms, then 4.6 (`view_t`: the arrays once a substep), 4.1 (an int cell division), 4.3 (the contact with no `sqrtf` or division) |
+| `run98-p598-base-scaling.log` | one substep, spread balls, no contact | 42 µs at 0 balls, 2.1 ms at 300: about 7 µs a ball |
+| `run99d-p598-balls-max100.log` | the pit at 100 balls | 23 fps, step 17.9 ms a frame |
+| `run100-p598-stream.log` | the PO pours | 95 balls 24 fps, 185 balls 20, 275 balls 11, 320 balls 8 |
+| `run106-p598-material-cost.log` | one step of a settled pile, material 0 against the game's (friction 0.5, restitution 0.7) | 100 balls 4.02 against 4.21 ms, 300 balls 13.01 against 13.76 ms: the material adds about 5 % |
+
+- The S3 calls a library routine for each float division and `sqrtf`, so the first build paid one `sqrtf` and four divisions per touching pair in each pass. The contact now uses a fast inverse square root (Lomont 2003) and a table of mass shares.
+- The HUD's text rebuild costs about 50 ms twice a second in every scene, which caps a scene near 23 to 24 fps.
+- The pit's own log (`run104-p598-pit-material.log`) showed 124 ms a frame at 320 balls against 90 ms in run 100. The two runs hold different piles at different frame rates, so they do not compare. Run 106 measures the same pile with both materials.
+- Allocation (`run106`): 20 calls of step, read and drain allocate 0 B.
+- Smoke (`run107-p598-smoke.log`, `games/*.py` at 9cb3cba): all fourteen entries start, with no error, at 22 to 25 fps. The pit runs at 24 fps with its first pour.
+- The PO played it (2026-11-04): "Yeah, better. I like it. The bounce could be a bit stronger [...] Let's make it stronger here." Restitution went from 0.5 to 0.7. On the cost: "its ok for a few balls". P614 (#820) makes the solver faster.
