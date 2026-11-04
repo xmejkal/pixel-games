@@ -112,6 +112,18 @@ class EffectsTest(unittest.TestCase):
         self.assertEqual(2, len(self.field.burns))
         self.assertEqual((c[0], c[1], c[0], c[1], RADIUS, HEAT), self.field.burns[-1])
 
+    def test_off_the_screen_below_or_to_the_side_it_burns_nothing(self):
+        from fire import H, W
+
+        self.effects.bodies[0].effect = self.trail()
+        for x, y in ((100, 2 * H - SIZE // 2), (4 * W - SIZE // 2, 100), (-2 * W - SIZE // 2, 100)):  # cell y H, x 2W, x -W
+            self.stepper.places[0] = (x, y)
+            self.effects.apply()
+        self.assertEqual([], self.field.burns)
+        self.stepper.places[0] = (100, 2 * H - SIZE // 2 - 2)  # its cell at y H - 1: the last row burns
+        self.effects.apply()
+        self.assertEqual(1, len(self.field.burns))
+
     def test_a_hit_can_start_an_effect(self):
         def catch_fire(body, speed):
             body.effect = self.trail()

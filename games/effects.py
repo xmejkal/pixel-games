@@ -83,4 +83,5 @@ class BodyEffects:
         """Each body's effect at its place."""
         for body in self.bodies:
             if body.effect is not None:
-                body.effect.apply(*body.place())
+                x, y = body.place()
+                body.effect.apply(x, y)

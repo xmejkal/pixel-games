@@ -180,6 +180,15 @@ class BurningTest(unittest.TestCase):
         game.stepper.read(game.sleep)
         self.assertEqual([3], game.stepper.spawned)
 
+    def test_a_frame_flares_then_burns_each_trail_once(self):
+        game = self.scene()
+        game.rest_y[0], game.stepper.places[0] = 200, (100, 100)
+        game.stepper.next = [(0, HIT, 1000)]
+        game.play(False, False)
+        x, plane, y = (100 + burning.BODY // 2) // 2, (200 + burning.BODY // 2) // 2, (100 + burning.BODY // 2) // 2
+        r, heat = burning.flare_size(1000)
+        self.assertEqual([(x, plane, x, plane, r, heat), (x, y, x, y, burning.RADIUS, burning.HEAT)], fire.engine.burns)
+
     def test_a_drop_burns_no_streak_from_the_last_place(self):
         game = self.scene()
         game.stepper.places[0] = (100, 200)
