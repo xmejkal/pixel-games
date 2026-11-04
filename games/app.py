@@ -17,6 +17,7 @@ import gfx
 import pins
 from arcade import Flappy, Runner, Snake
 from arcade2 import Cave, GravityPong, Stack
+from burning import BurningBodies
 from fire import Fire
 from lcd import open_tft
 from rain import Rain
@@ -38,7 +39,7 @@ FRAME_MODE = "auto"
 # "s3lcd" is russhughes' C driver (smooth on the bench); "st7789" is our driver with dirty boxes. s3lcd falls back to
 # st7789 when the image has no such module.
 BACKEND = "s3lcd"
-GAMES = (Fire, Rain, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
+GAMES = (Fire, BurningBodies, Rain, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
 
 
 class App:

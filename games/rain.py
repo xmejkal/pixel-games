@@ -36,16 +36,17 @@ BAR_US_PER_PX = 200  # the step bar: 1 px for each 0.2 ms of step in a frame, so
 
 
 class CStepper:
-    """The engine's float world: one C call steps every body, and read() copies x, y and asleep out as ints."""
+    """The engine's float world: one C call steps every body, and read() copies x, y and asleep out as ints. n bodies,
+    the rain's N unless a scene asks fewer (P596's burning bodies)."""
 
     name = "c"
 
-    def __init__(self):
-        self.out = array("h", [0] * (3 * N))
+    def __init__(self, n=N):
+        self.n, self.out = n, array("h", [0] * (3 * n))
         self.spawn = engine.spawn
-        zero = array("f", [0.0] * N)
-        engine.load(zero, zero, zero, zero, zero)  # exactly N bodies: the C world outlives a soft reset, so a run before
-        # with a larger N would leave more bodies than self.out holds
+        zero = array("f", [0.0] * n)
+        engine.load(zero, zero, zero, zero, zero)  # exactly n bodies: the C world outlives a soft reset, so a run before
+        # with a larger n would leave more bodies than self.out holds
 
     def step(self, steps):
         engine.step(engine.FLOAT, steps, RATE, GRAVITY, RESTITUTION, FRICTION)
@@ -54,13 +55,17 @@ class CStepper:
         """The bodies out of C, then drop(i) for each one asleep."""
         out = self.out
         engine.read(out)
-        for i in range(N):
+        for i in range(self.n):
             if out[3 * i + 2]:
                 drop(i)  # out still holds its resting place, so paint shows it there one more frame (C mode only)
 
+    def place(self, i):
+        """Body i's top left corner in px, as read."""
+        return self.out[3 * i], self.out[3 * i + 1]
+
     def paint(self, cv, colours):
         out, fill = self.out, cv.fill
-        for i in range(N):
+        for i in range(self.n):
             j = 3 * i
             fill(out[j], out[j + 1], SIZE, SIZE, colours[i])
 
@@ -70,8 +75,8 @@ class PythonStepper:
 
     name = "python"
 
-    def __init__(self):
-        self.bodies = Bodies(N)
+    def __init__(self, n=N):
+        self.n, self.bodies = n, Bodies(n)
         self.spawn = self.bodies.spawn
 
     def step(self, steps):
@@ -80,13 +85,16 @@ class PythonStepper:
 
     def read(self, drop):
         asleep = self.bodies.asleep
-        for i in range(N):
+        for i in range(self.n):
             if asleep[i]:
                 drop(i)
 
+    def place(self, i):
+        return int(self.bodies.x[i]), int(self.bodies.y[i])
+
     def paint(self, cv, colours):
         x, y, fill = self.bodies.x, self.bodies.y, cv.fill
-        for i in range(N):
+        for i in range(self.n):
             fill(x[i], y[i], SIZE, SIZE, colours[i])
 
 
