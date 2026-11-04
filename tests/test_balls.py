@@ -113,7 +113,8 @@ class BallPitTest(unittest.TestCase):
         self.assertTrue(report, out.getvalue())
         self.assertEqual(balls.POUR, int(report.group(1)))
         self.assertGreater(int(report.group(2)), 0)  # the handful landed: hits in the first 5 s
-        self.assertRegex(game.label, r"^balls \d+ step \d+\.\d draw \d+\.\d ms \d+ fps \d+/s$")
+        self.assertRegex(game.label, r"^\d+ fps \d+ balls \d+\+\d+ ms \d+ hit/s$")
+        self.assertLessEqual(len("8 fps 320 balls 165+6 ms 1188 hit/s"), (320 - 4) // 8)  # the worst seen fits
         self.assertEqual([], cv.fills)  # C paints the whole panel: no Python fill
         self.assertNotEqual(bytearray(len(tft.frame)), tft.frame)
         self.assertIs(drained, game.drained)  # made at setup, drained into each frame

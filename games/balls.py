@@ -139,8 +139,9 @@ class BallPit(Game):
         elapsed = time.ticks_diff(now, self.hud_mark)
         if elapsed >= HUD_MS:
             us, n = self.hud_us, 1000 * self.hud_frames
-            self.label = "%s %d step %.1f draw %.1f ms %d fps %d/s" % (
-                self.name, self.balls.count, us[0] / n, us[1] / n, self.hud_frames * 1000 // elapsed,
+            # fps first and whole ms, so the line fits the 39 glyphs of the screen (the PO, 2026-11-04): step+draw
+            self.label = "%d fps %d balls %d+%d ms %d hit/s" % (
+                self.hud_frames * 1000 // elapsed, self.balls.count, round(us[0] / n), round(us[1] / n),
                 self.hud_hits * 1000 // elapsed)
             self.hud_us, self.hud_frames, self.hud_hits, self.hud_mark = [0, 0], 0, 0, now
         elapsed = time.ticks_diff(now, self.mark)
