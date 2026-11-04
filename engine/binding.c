@@ -13,6 +13,8 @@
 #include "s3lcd.h"
 #include "world.h"
 
+_Static_assert(sizeof(int) == sizeof(int32_t), "an array('i') holds int32 events");
+
 extern const mp_obj_type_t s3lcd_type;  // s3lcd.c's ESPLCD, so s3lcd stays unchanged
 
 // --- MVP (P590): engine.Bodies ---
@@ -96,7 +98,7 @@ static mp_obj_t bodies_drain(mp_obj_t self_in, mp_obj_t out_in) {
     world_t *w = bodies_world(self_in);
     mp_buffer_info_t info;
     mp_get_buffer_raise(out_in, &info, MP_BUFFER_WRITE);
-    if (info.typecode != 'i' || sizeof(int) != sizeof(int32_t)) {
+    if (info.typecode != 'i') {
         mp_raise_ValueError(MP_ERROR_TEXT("an array('i') is needed"));
     }
     return MP_OBJ_NEW_SMALL_INT(world_drain(w, info.buf, (int32_t)(info.len / (3 * sizeof(int32_t)))));

@@ -40,8 +40,8 @@ int32_t world_spawn(world_t *w, int32_t i, float x, float y, float vx, float vy,
 // there instead, an event (i, SLEEP, 0), and a resting body moves no more until a spawn.
 void world_step(world_t *w, int32_t steps, float dt, float gravity, float restitution, float friction);
 
-// Each body's x, y and asleep into out as 3 int16 (x and y truncated toward 0, and inside +-32,767 px), so Python
-// makes no float. Return cap.
+// Each body's x, y and asleep into out as 3 int16 (x and y truncated toward 0), so Python makes no float. The caller
+// keeps x and y inside +-32,767 px: nothing here clamps them. Return cap.
 int32_t world_read(const world_t *w, int16_t *out);
 
 // Copy up to room of the last step call's events into out as id, kind, speed (3 int32 each); return how many.

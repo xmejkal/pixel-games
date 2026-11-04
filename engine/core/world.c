@@ -11,7 +11,7 @@
 #define REST_Y(w) (VY(w) + (w)->cap)
 #define ASLEEP(w) ((uint8_t *)(REST_Y(w) + (w)->cap))
 
-size_t world_bytes(int32_t cap) {
+size_t world_bytes(int32_t cap) {  // cap is 1 to WORLD_MAX_BODIES: the binding checks it
     return sizeof(world_t) + (5 * sizeof(float) + sizeof(uint8_t)) * (size_t)cap;
 }
 

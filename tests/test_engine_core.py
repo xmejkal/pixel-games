@@ -152,6 +152,19 @@ class ApiTests:
         world.step(1, *PHYSICS)
         self.assertEqual([(0, HIT, 1020)], events(world))
 
+    def test_the_rest_speed_is_1_5_steps_of_gravity(self):
+        # 30 px/s here: at the plane, body 0 has 35 px/s and bounces, body 1 has 25 px/s and rests (refuter, P590)
+        world = spawned(self.make, [(0.0, 99.7, 0.0, 15.0, 100.0), (0.0, 99.8, 0.0, 5.0, 100.0)])
+        world.step(1, *PHYSICS)
+        self.assertEqual([(0, HIT, 35), (1, SLEEP, 0)], events(world))
+
+    def test_a_hit_keeps_friction_times_its_vx(self):
+        world = spawned(self.make, [(0.0, 99.5, 100.0, 1000.0, 100.0)])
+        world.step(2, *PHYSICS)  # 1 px across before the hit, then 0.6 px at 60 px/s: 1.6, not 2
+        out = array("h", [0] * 3)
+        world.read(out)
+        self.assertEqual(1, out[0])
+
     def test_a_step_clears_the_events_first(self):
         world = self.hits(2)
         world.step(1, *PHYSICS)
