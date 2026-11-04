@@ -11,7 +11,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
 | `art/` | the painted art: one set per game, the brush and the export |
 | `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang) |
-| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene on the Mac to a PNG (needs clang and Pillow) |
+| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene (fire, burning or flappy) on the Mac to a PNG (needs clang and Pillow) |
 | `s3lcd/` | the C driver: the fork with `frame.c`, a DMA send of one frame and partial updates |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
