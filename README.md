@@ -40,8 +40,8 @@ Runs now:
   throw embers. On the board, B runs at 24 fps with 11.5 to 11.8 ms of step + draw, and the sky variant at 15 to
   16 fps (bench.md, P595). In the picture mode C blends the fire in C at an alpha that follows the heat, full from heat 96
   (P603). The blend swaps the bytes of each colour in and out (`s3lcd/src/blend565.h`), so the colours are right.
-- The bodies on fire (P596, `games/burning.py`), second: eight falling bodies from the rain's stepper burn heat into the
-  fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
+- The bodies on fire (P596, P607, `games/burning.py`), second: eight falling bodies from the rain's stepper each carry
+  an `effects.FireTrail`, which burns heat into the fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
   burn. A hit at 600 px/s or faster flares up at the body's plane: C reports the hit with its speed as an event, and
   Python decides the flare (P590). `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO,
   2026-11-04).
@@ -52,14 +52,26 @@ Runs now:
   `spawn`, `step`, `read` into an `array('h')` and `drain` into an `array('i')`. A step reports each hit with its
   speed (`HIT`) and each body that comes to rest (`SLEEP`) as an event, and the game drains them once per frame.
   `rain.Stepper` holds either one, and `motion.StepClock` turns a frame's ms into 10 ms steps.
+- Effects on bodies (P607, `games/effects.py`): a body of a `rain.Stepper` carries an effect, and an event can start
+  one. A scene makes `BodyEffects(stepper)` once and calls `react` and `apply` each frame, after the step and the read:
+
+  ```python
+  effects = BodyEffects(stepper)
+  effects.bodies[0].effect = FireTrail(field, 8, 3, 200, 0.5)  # size px, radius cells, heat, lag frames
+  reactions = {HIT: lambda body, speed: ...}  # Python decides what a hit causes; it can set body.effect
+  effects.react(reactions)
+  effects.apply()
+  ```
+
+  A new effect is one more subclass of `effects.Effect` (`apply(x, y)`, `forget()`), and its callers do not change.
 - The HUD is drawn once into a strip and blitted each frame (P599).
 - Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 20 to 22 and runner 21 to 24 at a 40 ms frame pace, with no play; stack 24.
 
-In progress: none. The PO paused the effects on 2026-11-04, so spark's refactor goes first: "we can continue on the effects later." Also paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
+In progress: P607 ([#809](https://github.com/xmejkal/spark/issues/809)), effects on bodies. The PO chose "Full MVP, 4 slices" on 2026-11-04 to close the effects epic P594 ([#795](https://github.com/xmejkal/spark/issues/795)). Paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
 
-Next, when the effects come back: P602 ([#803](https://github.com/xmejkal/spark/issues/803)), the flappy bird trails fire, the first effect inside a game. Then P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
+Next: P608 ([#810](https://github.com/xmejkal/spark/issues/810)), a slight blur, the second effect. Then P602 ([#803](https://github.com/xmejkal/spark/issues/803)), the flappy bird trails fire, the first effect inside a game, and P598 ([#799](https://github.com/xmejkal/spark/issues/799)), colliding bodies. Later: P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
 
 The work is planned on the board of the [spark](https://github.com/xmejkal/spark) project.
 
