@@ -83,9 +83,9 @@ class Engine:
             def step(self, steps, wind):
                 lib.fx_fire_step(ctypes.byref(self.f), steps, wind)
 
-            def set_filter(self, filter):  # P608
-                engine.filters.append(filter)
-                lib.fx_fire_set_filter(ctypes.byref(self.f), filter)
+            def set_filter(self, mag_filter):  # P608
+                engine.filters.append(mag_filter)
+                lib.fx_fire_set_filter(ctypes.byref(self.f), mag_filter)
 
             def set_base(self, on):  # P596
                 lib.fx_fire_set_base(ctypes.byref(self.f), 1 if on else 0)

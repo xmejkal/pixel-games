@@ -87,7 +87,7 @@ def scenes():
     drops = rain.Rain.__new__(rain.Rain)  # no stepper: draw_hud reads only the label and the bar
     drops.label, drops.bar = "c step 0.2 ms 24 fps", 37
     flames = fire.Fire.__new__(fire.Fire)  # no pictures and no field: draw_hud reads only the label
-    flames.label = "fire B 11.5 ms 24 fps"
+    flames.label = "fire linear 11.5 ms 24 fps"
     return game, drops, flames
 
 
@@ -162,7 +162,7 @@ class StripTest(unittest.TestCase):
         cv = lcd.TftCanvas(Tft())
         for name in ("fire", "fire2"):
             flames = fire.Fire.__new__(fire.Fire)
-            flames.name, flames.label = name, "fire B 11.5 ms 24 fps"
+            flames.name, flames.label = name, "fire linear 11.5 ms 24 fps"
             flames.draw_hud = lambda c, f=flames: calls.append(1) or fire.Fire.draw_hud(f, c)
             flames.hud(cv)
         self.assertEqual(2, len(calls))

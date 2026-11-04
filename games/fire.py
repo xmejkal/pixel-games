@@ -99,23 +99,27 @@ class Fire(Game):
             print(self.name, "internal largest", engine.largest_free_internal())
             self.field = engine.HeatField(W, H, SEED)
             self.field.set_look(*self.LOOK)
-            self.field.set_filter(self.MODES[self.mode][1])  # P608
             print(self.name, "field", self.field.where)
+        self.set_mode(self.mode)
         self.begin()
+
+    def set_mode(self, mode):
+        """Mode number mode: its name, whether it blends, and its filter on the field. --- MVP (P608) ---"""
+        self.mode = mode
+        self.mode_name, mag_filter, self.blend = self.MODES[mode]
+        if self.field is not None:
+            self.field.set_filter(mag_filter)
 
     def begin(self):
         """A new interval for the report and the HUD."""
         self.acc, self.us, self.frames, self.mark = 0, [0, 0], 0, self.last  # us: step, draw
         self.hud_us, self.hud_frames, self.hud_mark = 0, 0, self.last  # self.last: None before the first step
-        self.label = self.name + (": no C" if self.field is None else " " + self.MODES[self.mode][0])
+        self.label = self.name + (": no C" if self.field is None else " " + self.mode_name)
 
     def play(self, pressed, held):
         if pressed:
-            self.mode = (self.mode + 1) % len(self.MODES)
-            name, filter, _ = self.MODES[self.mode]
-            print(self.name, "mode", name)
-            if self.field is not None:
-                self.field.set_filter(filter)  # P608
+            self.set_mode((self.mode + 1) % len(self.MODES))
+            print(self.name, "mode", self.mode_name)
             self.begin()
             return
         ms = int(self.dt * 1000 + 0.5)
@@ -141,14 +145,14 @@ class Fire(Game):
 
     def paint_static(self, cv):
         """The sky under the picture mode, or black where there is no art, so covers stays true."""
-        if self.field is not None and self.MODES[self.mode][2] and not pictures.draw(cv, "sky", 0, 0):
+        if self.field is not None and self.blend and not pictures.draw(cv, "sky", 0, 0):
             cv.fill(0, 0, WIDTH, HEIGHT, BLACK)
 
     def paint(self, cv):
         if self.field is None:
             return
         t = time.ticks_us()
-        if self.MODES[self.mode][2]:
+        if self.blend:
             self.field.draw(cv.tft, PALETTE, ALPHA)
         else:
             self.field.draw(cv.tft, PALETTE)
@@ -161,7 +165,7 @@ class Fire(Game):
             self.mark = self.hud_mark = now
         self.frames += 1
         self.hud_frames += 1
-        mode = self.MODES[self.mode][0]
+        mode = self.mode_name
         elapsed = time.ticks_diff(now, self.hud_mark)
         if elapsed >= HUD_MS:
             self.label = "%s %s %.1f ms %d fps" % (
