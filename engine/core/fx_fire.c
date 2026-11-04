@@ -259,7 +259,7 @@ void fx_fire_blend(const fx_fire_t *f, uint16_t *panel, const uint16_t *palette,
                 continue;  // the four pixels keep what they hold
             }
             uint16_t c = palette[*col], *p = out + 2 * y;
-            // each pixel over its own background: row 2k + 1 is no copy of row 2k, as in fx_fire_draw
+            // each pixel over its own background: row 2k + 1 is no copy of row 2k, unlike fx_fire_draw's memcpy
             p[0] = alpha_blend_565(c, p[0], a);
             p[1] = alpha_blend_565(c, p[1], a);
             p[pw] = alpha_blend_565(c, p[pw], a);

@@ -46,8 +46,8 @@ FADE = 4  # 0 to 255: a loss every cell pays, FADE sixteenths of a unit a row, s
 WIND = 60  # 0 to 255: the strongest gust, a row shifts one column with the wind in WIND of 256 steps
 GUST_MS = 1500  # a new gust, -WIND to WIND, every GUST_MS to 2 * GUST_MS; the wind eases an eighth of the way a frame
 SEED = 595
-# The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, the key
-# of the picture mode.
+# The palette's stops as (heat, r, g, b): black, dark red, red, orange, yellow, white. Heat 0 is exactly black, and its
+# alpha is 0, so the picture mode leaves the sky there.
 STOPS = ((0, 0, 0, 0), (48, 140, 10, 0), (96, 240, 60, 0), (144, 255, 160, 20), (192, 255, 230, 80), (255, 255, 255, 255))
 B, PICTURE = 0, 1
 MODES = ("B", "picture")

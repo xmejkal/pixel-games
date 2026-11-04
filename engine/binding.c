@@ -2,7 +2,7 @@
 // probe589.py to time a C step, its events and a call back into Python. One float world and one fixed world, loaded
 // together. spawn and read (P593) are the rain demo's, on the float world only. --- probe, throwaway (P589) ---
 // The HeatField part is P595's and is kept (D8): the fire of engine/core/fx_fire.c as a native type, drawn into the
-// s3lcd frame or into a buffer. --- MVP (P595) ---
+// s3lcd frame, opaque or blended (P603). --- MVP (P595) ---
 #include "py/runtime.h"
 
 #include "esp_heap_caps.h"
