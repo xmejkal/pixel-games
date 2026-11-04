@@ -1,24 +1,26 @@
 """
-Bodies on fire (P596): the fire of fire.py on objects, the proof of concept for effects in the games. A few of the
-rain's falling bodies (rain.Stepper, on engine.Bodies or without the engine on motion.Bodies) each burn heat
-into one screen-wide fire field (HeatField.burn, fx_fire_burn). The heat goes in a little behind each body, LAG
-frames of its motion, along the path from the last frame's point, so a body at rest burns straight up and a moving
-body's flames stream back against its motion (the PO's yes, 2026-11-03). The field's base is off, so only the bodies
-burn. A body that falls asleep rests REST_MS on its plane, then falls again from above.
+Bodies on fire (P596, P607): the fire of fire.py on objects, the proof of concept for effects in the games. A few of
+the rain's falling bodies (rain.Stepper, on engine.Bodies or without the engine on motion.Bodies) each carry an
+effects.FireTrail, which burns heat into one screen-wide fire field (HeatField.burn, fx_fire_burn). The heat goes in a
+little behind each body, LAG frames of its motion, so a body at rest burns straight up and a moving body's flames
+stream back against its motion (the PO's yes, 2026-11-03). The field's base is off, so only the bodies burn. A body
+that falls asleep rests REST_MS on its plane, then falls again from above.
 
-A hard landing flares up (P590): C reports each hit with its speed as an event, and this scene decides what it causes
-(D12). A hit at FLARE_MIN px/s or more burns one disc at the body's x and its plane, wider and hotter the faster it hit.
+A hard landing flares up (P590): C reports each hit with its speed as an event, and this scene's reaction to it,
+through effects.BodyEffects.react, decides what it causes (D12). A hit at FLARE_MIN px/s or more burns one disc at the
+body's x and its plane, wider and hotter the faster it hit.
 
 The HUD and the report are the fire's: `burning B fps <fps> step <ms> draw <ms>`, where step holds the bodies' step,
 their read and the burns too.
---- MVP (P590) ---
+--- MVP (P607) ---
 """
 
 import random
 import time
 
 import rain
-from fire import FAST, H, SWAY, W, Fire
+from effects import BodyEffects, FireTrail, cell
+from fire import FAST, SWAY, Fire
 from gfx import HEIGHT, WIDTH, c565
 from motion import HIT, StepClock
 
@@ -50,11 +52,6 @@ def flare_size(speed):
     return radius, min(255, HEAT + max(0, speed - FLARE_MIN) // FLARE_SPEED_PER_HEAT)
 
 
-def cell(x, y):
-    """The fire cell under the centre of a body with its top left corner at x, y in px."""
-    return (x + BODY // 2) // 2, (y + BODY // 2) // 2
-
-
 class BurningBodies(Fire):
     name = "burning"
     LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)  # no spots, no embers: the base is off
@@ -62,24 +59,32 @@ class BurningBodies(Fire):
 
     def setup(self):
         random.seed(SEED)
-        self.bodies = rain.Stepper(N, rain.engine is not None)
+        self.stepper = rain.Stepper(N, rain.engine is not None)
         self.clock, self.step_clock = 0, StepClock(rain.STEP_MS, rain.STEP_CAP)  # ms played, and the bodies' steps
         self.slept = [None] * N  # the clock when each body fell asleep, None while it moves
         self.rest_y = [0] * N  # each body's plane: the y its top rests at, where it flares
-        self.prev = [None] * N  # each body's centre in cells last frame, None after a drop
-        self.trail = [None] * N  # each body's last burn point in cells
-        for i in range(N):
-            self.drop(i)
-        super().setup()
+        super().setup()  # the field first: Fire.setup draws no random number, so the drops below get today's
         if self.field is not None:
             self.field.set_base(False)
+        self.light()
+        for i in range(N):
+            self.drop(i)
+
+    def light(self):
+        """Each body carries a FireTrail, and a hit flares, when the field exists; without it, nothing reacts."""
+        self.effects, self.reactions = BodyEffects(self.stepper), {}  # both made once, so a frame makes none
+        if self.field is not None:
+            for body in self.effects.bodies:
+                body.effect = FireTrail(self.field, BODY, RADIUS, HEAT, LAG)
+            self.reactions[HIT] = self.flare
 
     def drop(self, i):
         """Body i, anew above the screen with a sideways drift and its plane (D12: Python decides the respawn)."""
         x, y, vx = random.randrange(WIDTH - BODY), -BODY - random.randrange(HEIGHT), random.randrange(-DRIFT, DRIFT + 1)
         self.rest_y[i] = HEIGHT - BODY - random.randrange(40)
-        self.bodies.spawn(i, x, y, vx, 0, self.rest_y[i])
-        self.slept[i] = self.prev[i] = self.trail[i] = None
+        self.stepper.spawn(i, x, y, vx, 0, self.rest_y[i])
+        self.slept[i] = None
+        self.effects.bodies[i].forget()
 
     def sleep(self, i):
         """Body i is asleep: it rests REST_MS, then drops."""
@@ -93,42 +98,23 @@ class BurningBodies(Fire):
             ms = int(self.dt * 1000 + 0.5)
             self.clock += ms
             t = time.ticks_us()
-            self.bodies.step(self.step_clock.take(ms))  # every frame, also with 0 steps (rain.Stepper.step)
-            self.bodies.read(self.sleep)
-            self.flare()
-            self.burn()
+            self.stepper.step(self.step_clock.take(ms))  # every frame, also with 0 steps (rain.Stepper.step)
+            self.stepper.read(self.sleep)
+            self.effects.react(self.reactions)
+            self.effects.apply()
             self.add(0, t)
         super().play(pressed, held)
 
-    def flare(self):
-        """Each hit of the frame's step at FLARE_MIN or faster burns a disc at the body's x, as read, and its plane: it
-        has bounced up since, so its read y is not where it landed."""
-        if self.field is None:
-            return
-        k, events = self.bodies.events(), self.bodies.drained
-        for j in range(0, 3 * k, 3):
-            i, speed = events[j], events[j + 2]
-            if events[j + 1] == HIT and speed >= FLARE_MIN:
-                cx, cy = cell(self.bodies.place(i)[0], self.rest_y[i])
-                radius, heat = flare_size(speed)
-                self.field.burn(cx, cy, cx, cy, radius, heat)
-
-    def burn(self):
-        """Each body on the screen burns from its last point to its point now, LAG frames of motion behind it."""
-        for i in range(N):
-            cx, cy = cell(*self.bodies.place(i))
-            if not (0 <= cy < H and -W < cx < 2 * W):  # above the screen after a drop: no streak from there
-                self.prev[i] = self.trail[i] = None
-                continue
-            p = self.prev[i] or (cx, cy)
-            lx, ly = cx - int((cx - p[0]) * LAG), cy - int((cy - p[1]) * LAG)
-            t = self.trail[i] or (lx, ly)
-            if self.field is not None:
-                self.field.burn(t[0], t[1], lx, ly, RADIUS, HEAT)
-            self.prev[i], self.trail[i] = (cx, cy), (lx, ly)
+    def flare(self, body, speed):
+        """A hit at FLARE_MIN or faster burns a disc at the body's x, as read, and its plane: it has bounced up since,
+        so its read y is not where it landed. Only a scene with a field reacts with it."""
+        if speed >= FLARE_MIN:
+            cx, cy = cell(body.place()[0], self.rest_y[body.i], BODY)
+            radius, heat = flare_size(speed)
+            self.field.burn(cx, cy, cx, cy, radius, heat)
 
     def paint(self, cv):
         super().paint(cv)
         for i in range(N):
-            x, y = self.bodies.place(i)
+            x, y = self.stepper.place(i)
             cv.fill(x, y, BODY, BODY, COAL)
