@@ -43,6 +43,10 @@ GRAVITY = 2000.0  # px/s2 (A7)
 # The feel numbers, set from Mac runs (tests/test_balls_core.py's fixtures hold the same)
 DAMPING = 0.98  # the part of its speed a ball keeps over one step: the settled pile's jitter fell from 5 to under 1 px/s
 HIT_MIN = 60.0  # px/s: a hit counts from here, a fall of 1 px; a resting pile's loudest contact is 5 px/s, 0 hits at rest
+# --- MVP (P598): the material, the PO 2026-11-04: "doesn't feel very realistic", "the balls really don't bounce" ---
+FRICTION = 0.5  # the grip: the heap of 100 balls stands 43 px high, 22 px at 0 (tests/test_balls_core.py, Mac 11-04)
+RESTITUTION = 0.5  # a hit gives back this part of its closing speed: 0.43 after the step's damping, off a ball or the floor
+RESTITUTION_THRESHOLD = 100.0  # px/s: a slower hit bounces not, so a resting pile keeps still (a 1 px drop is 60 px/s)
 SEED = 598
 # --- MVP (P598): the shake, the PO 2026-11-04: "as long as I hold the button pressed the stronger the bump would be" ---
 HOLD_MS = 300  # a press held this long or longer shakes on its release; a shorter one is a tap and pours
@@ -70,6 +74,8 @@ class BallPit(Game):
     def setup(self):
         random.seed(SEED)
         self.balls = engine.Balls(MAX) if engine is not None else None
+        if self.balls is not None:
+            self.balls.set_material(FRICTION, RESTITUTION, RESTITUTION_THRESHOLD)
         self.clock = StepClock(STEP_MS, STEP_CAP)
         self.drained = array("i", [0] * (3 * MAX_EVENTS))  # made once: a frame drains into it and makes no list
         self.pressed_at = None  # the frame's start in ms when the button went down, until its release

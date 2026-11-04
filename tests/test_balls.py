@@ -22,11 +22,15 @@ REPORT = re.compile(r"^balls n (\d+) fps \d+ step \d+\.\d\d draw \d+\.\d\d hits 
 
 
 class RecordingBalls(balls_lib.CBalls):
-    """CBalls that keeps each spawn's arguments."""
+    """CBalls that keeps each spawn's arguments and the material it was given."""
 
     def __init__(self, n):
         super().__init__(n)
-        self.spawns = []
+        self.spawns, self.material = [], None
+
+    def set_material(self, *args):
+        self.material = args
+        return super().set_material(*args)
 
     def spawn(self, *args):
         self.spawns.append(args)
@@ -69,6 +73,7 @@ class BallPitTest(unittest.TestCase):
         self.assertTrue(radii <= set(range(balls.R_MIN, balls.R_MAX + 1)) and len(radii) > 1, radii)
         self.assertTrue(all(spawn[1] < 0 for spawn in pit.spawns))  # from above the top
         self.assertTrue(game.covers)
+        self.assertEqual((balls.FRICTION, balls.RESTITUTION, balls.RESTITUTION_THRESHOLD), pit.material)
 
     def test_the_pit_fills_to_max_and_a_full_pit_pours_nothing(self):
         with contextlib.redirect_stdout(io.StringIO()):
