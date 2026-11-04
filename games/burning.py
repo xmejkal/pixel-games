@@ -34,7 +34,7 @@ HEAT = 200  # orange-yellow: 255 left white columns behind a fall
 # tongues over a resting body and fading streaks behind a falling one.
 BURN_DECAY, BURN_COOL, BURN_FADE = 32, 40, 16
 REST_MS = 1500  # a sleeping body burns on its plane this long before it falls again
-# The flare's feel numbers, which the PO saw on the panel on 2026-11-04 ("flames look good"). A drop of 200 to
+# The flare's feel numbers, which the PO saw on the panel on 2026-11-04 ("Oh, nice!!!"). A drop of 200 to
 # 480 px under the rain's GRAVITY lands at about 900 to 1,400 px/s, and each bounce keeps 0.35 of that, so FLARE_MIN
 # lets first landings flare and no bounce after them.
 FLARE_MIN = 600  # px/s: a hit this fast or faster flares
