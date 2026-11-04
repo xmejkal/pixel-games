@@ -94,6 +94,11 @@ class Engine:
                 engine.burns.append(args)
                 lib.fx_fire_burn(ctypes.byref(self.f), *args)
 
+            def scroll(self, dx):  # --- MVP (P602) --- with the binding's check
+                if not -1024 <= dx <= 1024:
+                    raise ValueError("dx is -1024 to 1024")
+                lib.fx_fire_scroll(ctypes.byref(self.f), dx)
+
             def draw(self, tft, palette, alpha=None):
                 engine.targets.append("tft" if alpha is None else "tft alpha")
                 out = (ctypes.c_uint16 * (len(tft.frame) // 2)).from_buffer(tft.frame)  # the display's frame
@@ -227,6 +232,17 @@ class FireTest(unittest.TestCase):
                 game.wind, game.target, game.gust = 0, target, 10 ** 9  # no new gust during the test
                 _, now = play(game, 100, now, Tft())
                 self.assertEqual(target, game.wind)
+
+    # --- MVP (P602) ---
+    def test_scroll_moves_the_field_within_the_bindings_range(self):
+        field = fire.engine.HeatField(4, 2, 1)
+        field.heat[:8] = bytes(range(1, 9))
+        field.scroll(-1)
+        self.assertEqual(bytes([2, 3, 4, 0, 6, 7, 8, 0]), bytes(field.heat[:8]))
+        field.scroll(-1024)
+        self.assertEqual(bytes(8), bytes(field.heat[:8]))
+        with self.assertRaises(ValueError):
+            field.scroll(1025)
 
     def test_the_look_stays_low_at_the_top_for_the_seven_seeds(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
