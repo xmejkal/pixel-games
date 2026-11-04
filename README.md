@@ -43,12 +43,19 @@ Runs now:
   Since P608 the fire draws with bilinear filtering (`HeatField.set_filter(engine.LINEAR)`, OpenGL's `GL_LINEAR`): each
   cell's 2 x 2 px mix its heat with its neighbours', so no blocks show. The nearest mode draws the blocks as before.
   Linear costs 6.4 ms a frame to draw against 4.3 ms for nearest, at the same 24 to 25 fps (bench.md, P608).
-- The bodies on fire (P596, P607, `games/burning.py`), second: eight falling bodies from the rain's stepper each carry
+- The ball pit (P598, `games/balls.py`), second: round balls of radius 2 to 5 px fall, knock, bounce and pile in the
+  screen's box. The solver is C (`engine.Balls`): position Verlet with relaxation passes on a uniform grid
+  (`engine/core/grid.c`). A BOOT tap pours 10 balls in the next colour, up to 2,000. A hold of 0.3 s or more shakes the
+  pit when you let go, more strongly the longer you held it. `set_material(friction, restitution,
+  restitution_threshold)` takes Box2D v3's names, and the pit uses 0.5, 0.7 and 100 px/s. Each hit is an event with
+  its speed, and the HUD counts the hits a second. On the board, 100 balls keep about 24 fps and 320 run at 6 to 8 fps.
+  A settled pile's step takes 4.2 ms at 100 balls and 13.8 ms at 300 (bench.md, P598). It needs the engine image.
+- The bodies on fire (P596, P607, `games/burning.py`), third: eight falling bodies from the rain's stepper each carry
   an `effects.FireTrail`, which burns heat into the fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
   burn. A hit at 600 px/s or faster flares up at the body's plane: C reports the hit with its speed as an event, and
   Python decides the flare (P590). `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO,
   2026-11-04).
-- The rain (P593, `games/rain.py`), third: 160 boxes fall, stepped by the C engine, and a BOOT tap swaps C
+- The rain (P593, `games/rain.py`), fourth: 160 boxes fall, stepped by the C engine, and a BOOT tap swaps C
   and Python. On the board, C runs at 24 to 25 fps with a 0.22 ms step, and Python at 8 to 9 fps with a 28 ms step
   (bench.md P590). It needs the engine image (`./build.sh engine`). Without it, the rain runs in Python only.
 - The bodies' API (P590): `engine.Bodies(n)` in C and its twin `motion.Bodies(n)` in Python take the same calls:
@@ -72,9 +79,9 @@ Runs now:
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (P602), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 
-Done last: P608 ([#810](https://github.com/xmejkal/spark/issues/810)), the smooth fire (bilinear filtering), merged 2026-11-04. The PO chose "Full MVP, 4 slices" on 2026-11-04 to close the effects epic P594 ([#795](https://github.com/xmejkal/spark/issues/795)). Paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
+Done last: P602 ([#803](https://github.com/xmejkal/spark/issues/803)), fire that drifts with a scrolling world (`HeatField.scroll`, `FireLayer`), merged 2026-11-04 with no game on it: the PO tried it behind flappy's bird and kept it for other games. The PO chose "Full MVP, 4 slices" on 2026-11-04 to close the effects epic P594 ([#795](https://github.com/xmejkal/spark/issues/795)). Paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
 
-In Review: P602 ([#803](https://github.com/xmejkal/spark/issues/803)), fire that drifts with a scrolling world (`HeatField.scroll`, `FireLayer`). The PO tried it as a trail behind flappy's bird and kept it for other games, not for flappy. Next: P598 ([#799](https://github.com/xmejkal/spark/issues/799)), colliding bodies. In Idea: P610 ([#814](https://github.com/xmejkal/spark/issues/814)), a Blur effect on a screen region, and P611 ([#815](https://github.com/xmejkal/spark/issues/815)), a motion blur behind a fast body, combined with its FireTrail. Later: P612 ([#817](https://github.com/xmejkal/spark/issues/817)), a spike on where a game's frame time goes and how to reach 25 fps or more, and P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
+In Review: P598 ([#799](https://github.com/xmejkal/spark/issues/799)), the ball pit. In Idea, after it: P614 ([#820](https://github.com/xmejkal/spark/issues/820)), a faster ball solver, and P618 ([#824](https://github.com/xmejkal/spark/issues/824)), a soft contact with a damping ratio. Also in Idea: P610 ([#814](https://github.com/xmejkal/spark/issues/814)), a Blur effect on a screen region, and P611 ([#815](https://github.com/xmejkal/spark/issues/815)), a motion blur behind a fast body, combined with its FireTrail. Later: P612 ([#817](https://github.com/xmejkal/spark/issues/817)), a spike on where a game's frame time goes and how to reach 25 fps or more, and P583 ([#784](https://github.com/xmejkal/spark/issues/784)), effects in C on the S3's PIE (its vector instructions).
 
 The work is planned on the board of the [spark](https://github.com/xmejkal/spark) project.
 

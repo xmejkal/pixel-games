@@ -1,5 +1,6 @@
 """
-The game box: the fire effect (P595), the rain demo of the C engine (P593) and ten one-button games on the GDI display.
+The game box: the fire effect (P595), the ball pit (P598), the rain demo of the C engine (P593) and ten one-button games
+on the GDI display.
 The BOOT button plays, the board's own button (D14) moves to the next game from any state.
 
 run() prints `ready` once the display is set up, then `game <name>` at the start and after each D14 press. Its loop
@@ -17,6 +18,7 @@ import gfx
 import pins
 from arcade import Flappy, Runner, Snake
 from arcade2 import Cave, GravityPong, Stack
+from balls import BallPit
 from burning import BurningBodies
 from fire import Fire
 from lcd import open_tft
@@ -39,7 +41,7 @@ FRAME_MODE = "auto"
 # "s3lcd" is russhughes' C driver (smooth on the bench); "st7789" is our driver with dirty boxes. s3lcd falls back to
 # st7789 when the image has no such module.
 BACKEND = "s3lcd"
-GAMES = (Fire, BurningBodies, Rain, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
+GAMES = (Fire, BallPit, BurningBodies, Rain, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
 
 
 class App:
