@@ -32,8 +32,8 @@ PART2_AT_31 = (31, 24, 1, 12, 16, 0, 0, 0)  # part 2's look at decay 31, where t
 
 class Field(ctypes.Structure):
     _fields_ = [("w", ctypes.c_int32), ("h", ctypes.c_int32), ("heat", ctypes.POINTER(ctypes.c_uint8)),
-                ("cooling", ctypes.POINTER(ctypes.c_uint8)), ("rng", ctypes.c_uint32), ("scroll", ctypes.c_int32),
-                ("fast_scroll", ctypes.c_int32), ("decay", ctypes.c_int32), ("cool", ctypes.c_int32),
+                ("cooling", ctypes.POINTER(ctypes.c_uint8)), ("rng", ctypes.c_uint32), ("map_row", ctypes.c_int32),
+                ("fast_map_row", ctypes.c_int32), ("decay", ctypes.c_int32), ("cool", ctypes.c_int32),
                 ("sway", ctypes.c_int32), ("spots", ctypes.c_int32), ("spread", ctypes.c_int32),
                 ("fast", ctypes.c_int32), ("embers", ctypes.c_int32), ("fade", ctypes.c_int32),
                 ("spot_x", ctypes.c_int32 * MAX_SPOTS)]
@@ -57,7 +57,7 @@ class Reference:
     """fx_fire_t and its functions in Python, its random draws in the order fx_fire.c's comment gives."""
 
     def __init__(self, w, h, seed):
-        self.w, self.h, self.rng, self.scroll, self.fast_scroll = w, h, seed or 1, 0, 0
+        self.w, self.h, self.rng, self.map_row, self.fast_map_row = w, h, seed or 1, 0, 0
         self.decay, self.cool, self.sway, self.spots, self.spread, self.fast, self.embers, self.fade = PART1
         self.ember = [[0] * 5 for _ in range(MAX_EMBERS)]  # x, y, vx, vy, heat: as fx_fire_t's ember arrays
         self.bound = True  # part 3's bound: False for the step without it
@@ -134,18 +134,18 @@ class Reference:
                         c += (bits >> 1 & 1) + (bits & 1) - 1
                         bits >>= 2
                     d = 1  # a fast cell reads one row further down, unless its three cells would be past the bottom
-                    fast = self.cooling[(y + self.fast_scroll) % MAP_H * MAP_W + (x + 128) % MAP_W] >= 256 - self.fast
+                    fast = self.cooling[(y + self.fast_map_row) % MAP_H * MAP_W + (x + 128) % MAP_W] >= 256 - self.fast
                     if fast and y + 2 < h:
                         d = 2
                     read = (at(c - 1, y + d), at(c, y + d), at(c + 1, y + d), at(c, y + d + 1))
                     up = h - 1 - y  # the fade: fade sixteenths of a unit a row
-                    loss = self.cooling[(y + self.scroll) % MAP_H * MAP_W + x % MAP_W] * self.cool >> 8
+                    loss = self.cooling[(y + self.map_row) % MAP_H * MAP_W + x % MAP_W] * self.cool >> 8
                     loss += ((up + 1) * self.fade >> 4) - (up * self.fade >> 4)
                     top = max(read) if self.bound else 255
                     heat[y * w + x] = max(0, min(top, sum(read) * self.decay >> 7) - loss)
             self.embers_step(wind)
-            self.scroll = (self.scroll + 1) % MAP_H
-            self.fast_scroll = (self.fast_scroll + 2) % MAP_H
+            self.map_row = (self.map_row + 1) % MAP_H
+            self.fast_map_row = (self.fast_map_row + 2) % MAP_H
 
 
     def embers_step(self, wind):
@@ -438,6 +438,31 @@ class FireCoreTest(unittest.TestCase):
         row = list(heat)[5 * SMALL_W:6 * SMALL_W]
         self.assertEqual([0, 0] + [200] * 19 + [0] * (SMALL_W - 21), row)
 
+    # --- MVP (P602) ---
+    def test_scroll_moves_every_row_and_clears_what_it_uncovers(self):
+        """Exact bytes on a 6 x 3 field of distinct heats: -3 moves left, +2 right, 0 keeps the field."""
+        for dx, row0 in ((-3, [4, 5, 6, 0, 0, 0]), (2, [0, 0, 1, 2, 3, 4]), (0, [1, 2, 3, 4, 5, 6])):
+            with self.subTest(dx=dx):
+                f, heat = self.field(6, 3)
+                heat[:] = list(range(1, 19))
+                self.lib.fx_fire_scroll(ctypes.byref(f), dx)
+                self.assertEqual([v + 6 * y if v else 0 for y in range(3) for v in row0], list(heat))
+
+    def test_a_scroll_of_the_width_or_more_clears_the_field(self):
+        for dx in (-6, -11, 6, 11):
+            with self.subTest(dx=dx):
+                f, heat = self.field(6, 3)
+                heat[:] = list(range(1, 19))
+                self.lib.fx_fire_scroll(ctypes.byref(f), dx)
+                self.assertEqual([0] * 18, list(heat))
+
+    def test_a_scroll_moves_the_live_embers_only(self):
+        f, _ = self.field(SMALL_W, SMALL_H)
+        f.ember_x[0], f.ember_heat[0] = 10 * 256 + 7, 200
+        f.ember_x[1], f.ember_heat[1] = 10 * 256, 0
+        self.lib.fx_fire_scroll(ctypes.byref(f), -4)
+        self.assertEqual((6 * 256 + 7, 10 * 256), (f.ember_x[0], f.ember_x[1]))
+
     def test_init_zeroes_the_field_and_a_seed_of_0_is_1(self):
         f, heat = self.field(SMALL_W, SMALL_H, seed=0)
         self.assertEqual([0] * (SMALL_W * SMALL_H), list(heat))
@@ -470,8 +495,8 @@ class FireCoreTest(unittest.TestCase):
                 ref.set_look(*look)
                 ref.step(STEPS, wind)
                 self.assertEqual(ref.heat, list(heat), "the field byte for byte, edge cells reading 0 outside")
-                self.assertEqual((ref.rng, ref.scroll, ref.fast_scroll, ref.spot_x),
-                                 (f.rng, f.scroll, f.fast_scroll, list(f.spot_x)))
+                self.assertEqual((ref.rng, ref.map_row, ref.fast_map_row, ref.spot_x),
+                                 (f.rng, f.map_row, f.fast_map_row, list(f.spot_x)))
                 self.assertEqual(ref.ember, [[f.ember_x[i], f.ember_y[i], f.ember_vx[i], f.ember_vy[i],
                                               f.ember_heat[i]] for i in range(MAX_EMBERS)])
                 if look == ALL_ON and w == SMALL_W and wind == 0:

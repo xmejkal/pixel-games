@@ -30,6 +30,7 @@ S3LCD_SRC = os.path.join(os.path.dirname(HERE), "s3lcd", "src")  # blend565.h
 FRAME_MS = 40  # app.py's FRAME_MS
 REPORT = re.compile(r"^fire (linear|picture|nearest) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 SEED_WIND = 595  # the gust test's seed for Python's random
+LAYER_LOOK = (32, 40, 1, 0, 1, 128, 0, 16)  # P602: a FireLayer's look in the tests, burning's numbers
 
 
 sys.path.insert(0, HERE)
@@ -94,6 +95,12 @@ class Engine:
                 engine.burns.append(args)
                 lib.fx_fire_burn(ctypes.byref(self.f), *args)
 
+            def scroll(self, dx):  # --- MVP (P602) --- with the binding's check
+                if not -1024 <= dx <= 1024:
+                    raise ValueError("dx is -1024 to 1024")
+                engine.scrolls.append(dx)
+                lib.fx_fire_scroll(ctypes.byref(self.f), dx)
+
             def draw(self, tft, palette, alpha=None):
                 engine.targets.append("tft" if alpha is None else "tft alpha")
                 out = (ctypes.c_uint16 * (len(tft.frame) // 2)).from_buffer(tft.frame)  # the display's frame
@@ -104,6 +111,7 @@ class Engine:
                                       (ctypes.c_uint8 * 256).from_buffer(alpha))
 
         self.HeatField, self.targets, self.looks, self.burns, self.filters = HeatField, [], [], [], []
+        self.scrolls = []  # P602
 
     def largest_free_internal(self):
         return 123456
@@ -144,6 +152,21 @@ class NoEngineTest(unittest.TestCase):
         self.assertEqual([], cv.fills)
         self.assertEqual([], tft.blits)
 
+    # --- MVP (P602) ---
+    def test_alone_the_mac_has_no_engine(self):
+        """On the Mac `import engine` finds the repository's engine/ folder, so fire.engine is None only by its check.
+        Run alone, no other test's tearDown sets it."""
+        root = os.path.dirname(HERE)
+        run = subprocess.run([sys.executable, "-m", "unittest", "tests.test_fire.NoEngineTest.test_no_c_shows_and_"
+                              "nothing_else_is_drawn"], cwd=root, capture_output=True, text=True)
+        self.assertEqual(0, run.returncode, run.stderr)
+
+    def test_a_layer_without_the_engine_has_no_field_and_still_counts_cells(self):
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        self.assertIsNone(layer.field)
+        self.assertEqual((-1, -2), (layer.update(40, 95), layer.update(40, 95)))  # 3,800 px·ms a frame, 2,000 a cell
+        layer.clear()
+        layer.draw(Recorder(Tft()))  # nothing to draw, and no error
 
 @unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/core/fx_fire.c is not built")
 class FireTest(unittest.TestCase):
@@ -227,6 +250,76 @@ class FireTest(unittest.TestCase):
                 game.wind, game.target, game.gust = 0, target, 10 ** 9  # no new gust during the test
                 _, now = play(game, 100, now, Tft())
                 self.assertEqual(target, game.wind)
+
+    # --- MVP (P602) ---
+    def test_scroll_moves_the_field_within_the_bindings_range(self):
+        field = fire.engine.HeatField(4, 2, 1)
+        field.heat[:8] = bytes(range(1, 9))
+        field.scroll(-1)
+        self.assertEqual(bytes([2, 3, 4, 0, 6, 7, 8, 0]), bytes(field.heat[:8]))
+        field.scroll(-1024)
+        self.assertEqual(bytes(8), bytes(field.heat[:8]))
+        with self.assertRaises(ValueError):
+            field.scroll(1025)
+
+    def test_a_layer_scrolls_whole_cells_with_the_world_and_keeps_the_rest(self):
+        """N frames at 95 px/s and 40 ms scroll (95 * 40 * N) // 2000 cells in all, each one to the left."""
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        self.assertEqual(([LAYER_LOOK], [fire.LINEAR]), (fire.engine.looks, fire.engine.filters))
+        self.assertEqual(0, layer.field.f.base)  # only burns put heat in
+        for n in (1, 2, 7, 50):
+            with self.subTest(n=n):
+                layer.clear()
+                fire.engine.scrolls = []
+                cells = -sum(layer.update(40, 95) for _ in range(n))  # left
+                self.assertEqual((95 * 40 * n) // 2000, cells)
+                self.assertEqual(-cells, sum(fire.engine.scrolls))
+                self.assertTrue(all(dx < 0 for dx in fire.engine.scrolls))
+
+    def test_a_layer_moves_its_heat_left_and_clear_empties_it(self):
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        layer.field.burn(100, 60, 100, 60, 0, 255)
+        layer.field.step = lambda n, wind: None  # the scroll alone
+        self.assertEqual(-2, layer.update(40, 100))  # 4,000 px·ms: 2 cells left
+        row = layer.field.heat[60 * fire.W:61 * fire.W]
+        self.assertEqual((0, 255), (row[100], row[98]))
+        layer.field.burn(fire.W - 1, 0, fire.W - 1, 0, 0, 255)  # the last column, which a scroll one short keeps
+        layer.clear()
+        self.assertEqual(bytes(fire.W * fire.H), bytes(layer.field.heat[:fire.W * fire.H]))
+
+    def test_a_scroll_one_column_short_of_the_width_keeps_the_edge_column(self):
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        for dx, start, end in ((-(fire.W - 1), fire.W - 1, 0), (fire.W - 1, 0, fire.W - 1)):
+            with self.subTest(dx=dx):
+                layer.clear()
+                layer.field.burn(start, 60, start, 60, 0, 255)
+                layer.field.scroll(dx)
+                heat = bytes(layer.field.heat[:fire.W * fire.H])
+                self.assertEqual(255, heat[60 * fire.W + end])
+                self.assertEqual(255, sum(heat))  # no other cell holds heat
+
+    def test_clear_carries_no_part_of_a_step_into_the_next_round(self):
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        steps = []
+        layer.field.step = lambda n, wind: steps.append(n)
+        layer.update(30, 95)
+        layer.clear()
+        layer.update(30, 95)
+        self.assertEqual([], steps)  # 30 + 30 ms would make a 40 ms step without the clear
+
+    def test_a_layer_steps_by_its_clock_and_blends_over_the_frame(self):
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        layer.field.burn(80, 100, 80, 100, 3, 255)
+        steps = []
+        layer.field.step = lambda n, wind: steps.append((n, wind))
+        for ms in (40, 20, 60, 60, 60, 200):
+            layer.update(ms, 95)
+        self.assertEqual([(1, 0), (2, 0), (1, 0), (2, 0), (2, 0)], steps)  # StepClock(STEP_MS, 2): at most 2 a frame
+        tft = Tft()
+        layer.draw(Recorder(tft))
+        layer.draw(object())  # a canvas without tft draws nothing
+        self.assertEqual(["tft alpha"], fire.engine.targets)
+        self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))
 
     def test_the_look_stays_low_at_the_top_for_the_seven_seeds(self):
         """The scene's look on its real field, 5,000 steps a seed: at every 100th step the top 10 rows' mean heat
