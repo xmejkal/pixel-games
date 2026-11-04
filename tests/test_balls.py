@@ -107,6 +107,21 @@ class BallPitTest(unittest.TestCase):
         self.assertTrue(all(vy < 0 for _, vy in kicks))  # up
         self.assertLessEqual(speeds[1], balls.SHAKE_MAX + 1e-3)
 
+    def test_a_press_of_hold_ms_shakes_and_a_ms_less_pours(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = balls.BallPit()
+            _, now = play(game, 2, 0, Tft())
+            pit = game.balls
+            kicks = []
+            pit.kick = lambda vx, vy: kicks.append((vx, vy))
+            for ms in (balls.HOLD_MS, balls.HOLD_MS - 1):
+                game.step(now, True, True)
+                now += ms
+                game.step(now, False, False)  # the release
+                now += 40
+        self.assertEqual(1, len(kicks))
+        self.assertEqual(2 * balls.POUR, pit.count)
+
     def test_the_pit_draws_reports_and_counts_hits(self):
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
