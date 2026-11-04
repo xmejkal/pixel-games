@@ -405,3 +405,17 @@ Image sha256 9dcce36eb60720d4 (217,120 B left in the app partition), built from 
 - The draw of the rain fell from 13.5 to 14.0 ms (P593) to 9.9 to 10.2 ms. P599's HUD strip came in between, so this row does not measure P590.
 - The burning step rose by 0.2 to 0.3 ms: the drain and the flares from Python.
 - Smoke (`run83-p590-smoke.log`): all thirteen entries start, with no error. Road dipped to 14 fps in its second interval, as in earlier smoke runs.
+
+## P607 (#809), 2026-11-04: a body carries an effect, and an event can start one
+
+The engine image 063448a95d2c8b92, unchanged: P607 changes Python only. `games/effects.py` gives each body of a `rain.Stepper` an `effect` slot, and the burning scene runs on it: each body carries a `FireTrail`, and its flare is the reaction to a `HIT`. Each run went through `mpremote run` with `app.run((BurningBodies,))`, after one warm-up run (line 54). The values are per frame, from three 5 s `burning` lines.
+
+| run | code | fps | step | draw |
+| --- | --- | --- | --- | --- |
+| `run85-p607-before-burning.log` | master's `burning.py` | 24 to 25 | 7.48 to 7.56 ms | 4.26 to 4.27 ms |
+| `run86-p607-after-burning.log` | branch a1b9cd2, `*body.place()` | 24 to 25 | 7.64 to 7.75 ms | 4.25 to 4.26 ms |
+| `run86b-p607-after-burning.log` | branch, place unpacked first | 24 to 25 | 7.60 to 7.68 ms | 4.25 to 4.26 ms |
+
+- The step rose by about 0.12 ms: one Python call per body more (`Body.place`, then `Effect.update`). The plan's line was 0.3 ms.
+- The look on the Mac: `tools/render_scene.py burning` at frames 30, 60 and 120 gives byte-identical PNGs on master and on the branch. The refuter replayed 1,500 frames on both: the same 10,749 `HeatField.burn` calls, in the same order.
+- Smoke (`run87-p607-smoke.log`): all thirteen entries start, with no error.
