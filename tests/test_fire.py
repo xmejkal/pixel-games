@@ -23,8 +23,10 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import fire  # noqa: E402
+import lcd  # noqa: E402
 
 FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
+S3LCD_SRC = os.path.join(os.path.dirname(HERE), "s3lcd", "src")  # blend565.h
 FRAME_MS = 40  # app.py's FRAME_MS
 REPORT = re.compile(r"^fire (B|picture) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 SEED_WIND = 595  # the gust test's seed for Python's random
@@ -38,7 +40,7 @@ class Tft:
     """The s3lcd display: its frame, and the blits it was asked for."""
 
     def __init__(self):
-        self.frame, self.blits = bytearray(fire.PANEL_W * fire.PANEL_H * 2), []
+        self.frame, self.blits = bytearray(lcd.PANEL_W * lcd.PANEL_H * 2), []
 
     def blit_buffer(self, buf, *args):
         self.blits.append(args)
@@ -79,11 +81,14 @@ class Engine:
             def step(self, steps, wind):
                 lib.fx_fire_step(ctypes.byref(self.f), steps, wind)
 
-            def draw(self, target, palette):
-                engine.targets.append("tft" if isinstance(target, Tft) else "buffer")
-                out = target.frame if isinstance(target, Tft) else target  # path B writes the display's frame
-                lib.fx_fire_draw(ctypes.byref(self.f), (ctypes.c_uint16 * (len(out) // 2)).from_buffer(out),
-                                 (ctypes.c_uint16 * 256).from_buffer(palette))
+            def draw(self, tft, palette, alpha=None):
+                engine.targets.append("tft" if alpha is None else "tft alpha")
+                out = (ctypes.c_uint16 * (len(tft.frame) // 2)).from_buffer(tft.frame)  # the display's frame
+                if alpha is None:
+                    lib.fx_fire_draw(ctypes.byref(self.f), out, (ctypes.c_uint16 * 256).from_buffer(palette))
+                else:
+                    lib.fx_fire_blend(ctypes.byref(self.f), out, (ctypes.c_uint16 * 256).from_buffer(palette),
+                                      (ctypes.c_uint8 * 256).from_buffer(alpha))
 
         self.HeatField, self.targets, self.looks = HeatField, [], []
 
@@ -127,7 +132,8 @@ class FireTest(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.TemporaryDirectory()
         lib_path = os.path.join(cls.tmp.name, "libfire.so")
-        subprocess.run(["clang", "-std=c99", "-O2", "-shared", "-fPIC", "-o", lib_path, FIRE_C], check=True)
+        subprocess.run(["clang", "-std=c99", "-O2", "-shared", "-fPIC", "-I", S3LCD_SRC, "-o", lib_path,
+                        FIRE_C], check=True)
         cls.lib = ctypes.CDLL(lib_path)
 
     @classmethod
@@ -168,9 +174,8 @@ class FireTest(unittest.TestCase):
                 cv, now = play(game, 1, now, tft, pressed=True)
                 cv, now = play(game, 1, now, tft)
                 seen.append((fire.MODES[game.mode], fire.engine.targets, tft.blits, cv.fills))
-        whole = (0, 0, fire.PANEL_W, fire.PANEL_H)
         self.assertEqual([
-            ("picture", ["buffer", "buffer"], [whole + (128, 0)] * 2, [(0, 0, fire.WIDTH, fire.HEIGHT)]),  # no sky here
+            ("picture", ["tft alpha", "tft alpha"], [], [(0, 0, fire.WIDTH, fire.HEIGHT)]),  # no sky here
             ("B", ["tft", "tft"], [], []),
         ], seen)
         self.assertIn("fire mode picture\nfire mode B\n", out.getvalue())

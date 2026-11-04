@@ -5,8 +5,8 @@ cooling map that rises with the flames and cuts them into tongues, and a sideway
 two rows a step, gusts of wind and embers. The fire assumes ORIENTATION 0
 (lcd.py), as the pictures do. A BOOT tap moves to the next mode:
     B        C writes the s3lcd frame itself
-    picture  C fills a buffer, and Python blits it at alpha 128 over the painted sky, its black skipped
-Path A, the same buffer blitted opaque, was timed and dropped: 15.0 ms of step + draw against B's 7.8 (bench.md,
+    picture  C blends the fire over the painted sky in the s3lcd frame, each pixel at its heat's alpha (P603)
+Path A, a buffer blitted opaque, was timed and dropped: 15.0 ms of step + draw against B's 7.8 (bench.md,
 P595, D7).
 The HUD says the mode, the step + draw ms and the fps.
 
@@ -24,7 +24,6 @@ from array import array
 
 import pictures
 from gfx import BLACK, DARK, HEIGHT, LABEL_RECT, WHITE, WIDTH, Game, c565
-from lcd import PANEL_H, PANEL_W
 
 try:
     import engine
@@ -67,6 +66,11 @@ def ramp(stops):
 
 
 PALETTE = ramp(STOPS)
+# --- MVP (P603) ---
+# The picture mode's alpha per heat: clear at heat 0, ALPHA_TOP at the hottest, so the cool, dark edges are almost all
+# sky and the core is half fire ("half transparent fire color", the PO, 2026-11-03).
+ALPHA_TOP = 128
+ALPHA = array("B", [heat * ALPHA_TOP // 255 for heat in range(256)])
 
 
 class Fire(Game):
@@ -76,7 +80,6 @@ class Fire(Game):
     def __init__(self):
         self.mode = B
         self.covers = engine is not None  # every mode paints every pixel: the fire in B, the sky in picture
-        self.buf = bytearray(PANEL_W * PANEL_H * 2)  # the picture mode's buffer, made once (gc heap, PSRAM)
         self.wind, self.target, self.gust = 0, 0, 0  # the gust model: the wind now, where it goes, ms to the next
         super().__init__()
 
@@ -135,8 +138,7 @@ class Fire(Game):
         if self.mode == B:
             self.field.draw(cv.tft, PALETTE)
         else:
-            self.field.draw(self.buf, PALETTE)
-            cv.tft.blit_buffer(self.buf, 0, 0, PANEL_W, PANEL_H, 128, 0)
+            self.field.draw(cv.tft, PALETTE, ALPHA)
         self.add(1, t)
         self.count(self.last)
 
