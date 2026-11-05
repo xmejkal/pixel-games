@@ -504,3 +504,50 @@ after. The P612 probes ran unchanged on the new image:
 | --- | --- | --- | --- | --- | --- |
 | `run114-p632-flappy-nocap.log` | flappy, no pace, as run109 | 28 | 21.5 to 22.6 | 7.9 to 9.1 | run109: 28, 21.5 to 22.6, 7.9 to 9.1 |
 | `run114-p632-rain-redraw.log` | rain, the label redrawn every 500 ms, as run112a | 24 to 25 | 18.4 to 20.1 | 3.6 to 4.1 | run112a: 24 to 25, 17.5 to 19.8, 3.7 to 4.2 |
+
+## P635 (#850) slice 0, 2026-11-05: what jointed silhouette figures cost in the burning scene
+
+`tools/probe635.py` (run with `mpremote run`, nothing copied) plays `BurningBodies` with figures of 10 bones and a
+head disc (a sine walk of 16 baked poses), drawn after the scene's own paint. Each run is 60 s on the image of P632,
+at ORIENTATION 0. The go limit is the plan's: 12 figures add at most 8 ms a frame and the scene keeps 23 fps or more
+([P635 #850](https://github.com/xmejkal/spark/issues/850), the plan comment).
+
+Per call, 500 calls each, and 200 draws of one pose per figure way (`run116-p635-n0.log`):
+
+| call | us |
+| --- | --- |
+| `tft.line` 12 px | 17.7 |
+| `tft.line` 12 px twice (2 px) | 30.0 |
+| `cv.line` 12 px (the canvas wrapper) | 144.4 |
+| `fill_circle` r 3 | 20.6 |
+| `polygon` 5 points | 79.2 |
+| `fill_polygon` 4 points | 18.9 |
+| one figure through `cv.line`, 2 px | 2,860 |
+| one figure through `tft.line`, 2 px | 348 |
+| one figure as 3 open `polygon` chains, 1 px | 119 |
+| one figure as one `fill_polygon` band per bone, 2 to 3 px | 231 |
+
+The scene with figures drawn as `fill_polygon` bands (the App's `time` lines, the first line of each run left out,
+because it holds the per-call bench):
+
+| run | figures | step ms | paint ms | send ms | gc ms | sum ms | fps | worst ms | figures ms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `run116-p635-n0.log` | none | 8.6 to 8.7 | 9.5 to 9.9 | 3.8 to 4.3 | 3.6 to 3.8 | 25.6 to 26.4 | 24 | 54 to 70 | |
+| `run116-p635-n6-way3-burn0.log` | 6 walking | 8.7 to 8.8 | 11.0 to 11.7 | 3.6 to 4.2 | 3.6 to 3.7 | 27.0 to 28.3 | 24 | 55 to 63 | 1.78 |
+| `run116-p635-n12-way3-burn0.log` | 12 walking | 8.8 to 8.9 | 13.1 to 13.5 | 3.7 to 4.3 | 3.7 | 29.4 to 30.3 | 24 | 55 to 76 | 3.40 |
+| `run116-p635-n24-way3-burn0.log` | 24 walking | 9.0 to 9.2 | 16.0 to 16.4 | 3.8 to 3.9 | 3.6 to 3.8 | 32.5 to 33.1 | 23 | 57 to 92 | 6.47 |
+| `run116-p635-n12-way3-burn1.log` | 12 burning (a `FireTrail` each) | 10.0 | 12.8 to 13.1 | 3.7 to 4.3 | 3.8 | 30.4 to 31.0 | 23 to 24 | 55 to 89 | 3.29 |
+
+- Decision: go. 12 figures add about 3.8 ms walking and about 4.7 ms burning, and the scene keeps 23 to 24 fps. The
+  figures stay in Python, drawn as one `fill_polygon` band per bone plus a `fill_circle` head, with the poses baked
+  once as panel offsets. No C painter is needed for the MVP.
+- `fill_polygon` fills only the rows strictly between a polygon's top and bottom (`s3lcd.c:2391-2397`). The probe's
+  band spans -1 to +2 across rows (2 px for a flat bone, 3 px for a slanted one) and 0 to +1 across columns, so the
+  cost errs high. Slice 1's painter uses -1 to +2 only for a flat bone and 0 to +2 otherwise. The first runs (`run115-p635-*`)
+  used 1 px offsets, which drew flat bones not at all, so they are left out.
+- The canvas wrapper costs 8 times the driver's call (144 against 18 us), so the figure painter calls the driver.
+- `polygon` draws an open chain at 119 us a figure, the cheapest, but 1 px only.
+- gc is 3.6 ms here against 2.0 ms in run89, because the probe's own code and baked poses add about 54 KB to the
+  heap (alloc 177,792 bytes). The baseline run shares it, so the differences hold, but the free time in this scene
+  is about 14 ms, not 16 ms. Slice 1 keeps its baked tables small.
+- Not checked: the look. Nobody saw the figures on the panel yet. Slice 1's Mac PNG and board run show them.
