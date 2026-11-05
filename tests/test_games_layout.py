@@ -33,9 +33,17 @@ class Paths(unittest.TestCase):
             self.assertTrue(os.path.isfile(os.path.join(ROOT, path)), path)
 
 
+class Names(unittest.TestCase):
+    def test_no_module_shares_a_name_with_the_engines(self):
+        # engine/tests is on the path of these tests, so a shared name imports the wrong module (P632)
+        ours = {n for n in os.listdir(HERE) if n.endswith(".py")}
+        engines = {n for n in os.listdir(os.path.join(ROOT, "engine", "tests")) if n.endswith(".py")}
+        self.assertEqual(ours & engines, set())
+
+
 class AloneImports(unittest.TestCase):
     def test_each_test_file_imports_alone(self):
-        names = sorted(n[:-3] for n in os.listdir(HERE) if n.startswith("test_") and n != "test_layout.py")
+        names = sorted(n[:-3] for n in os.listdir(HERE) if n.startswith("test_") and n != "test_games_layout.py")
         for name in names:
             with self.subTest(name):
                 run = subprocess.run([sys.executable, "-B", "-c", "import " + name], cwd=HERE, capture_output=True,
