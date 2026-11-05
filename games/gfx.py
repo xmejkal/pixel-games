@@ -299,6 +299,7 @@ class Game:
     accent = GREEN
     HUD_SCORE, HUD_BEST = WHITE, YELLOW  # the score bar's colours; a restyled game sets its own
     covers = False  # True: paint_static covers the whole screen, so no background fill goes under it (TftOut)
+    plugins = ()  # the engine's layers the game turns on (plugins.Plugin), in their stage order; setup lists them
     TITLE_MS = 1500
     OVER_MS = 900
 
@@ -306,7 +307,7 @@ class Game:
         self.reset()
 
     def reset(self):
-        self.state, self.since, self.last, self.age, self.dt = TITLE, None, None, 0, 0.0
+        self.state, self.since, self.last, self.age, self.dt, self.ms = TITLE, None, None, 0, 0.0, 0
         self.restart()
 
     def restart(self):
@@ -338,16 +339,21 @@ class Game:
     def step(self, now_ms, pressed, held):
         if self.since is None:
             self.since = self.last = now_ms
-        self.dt = min(time.ticks_diff(now_ms, self.last), 60) / 1000
+        self.ms = min(time.ticks_diff(now_ms, self.last), 60)  # --- MVP (P633) --- an int, so the plugins get no float
+        self.dt = self.ms / 1000
         self.last = now_ms
         self.fx.update(self.dt)
         self.age = time.ticks_diff(now_ms, self.since)
         if self.state == TITLE:
             if pressed or self.age >= self.TITLE_MS:
                 self.state, self.since = PLAY, now_ms
-        elif self.state == PLAY:
+        elif self.state == PLAY:  # --- MVP (P633) --- the plugins' stages (plugins.py), only while the game plays
             self.t += self.dt
-            self.play(pressed, held)
+            for plugin in self.plugins:  # FixedUpdate
+                plugin.fixed_update(self.ms)
+            self.play(pressed, held)  # Update
+            for plugin in self.plugins:  # LateUpdate: read again, as a restart in play makes new plugins
+                plugin.late_update(self.ms)
         elif pressed and self.age >= self.OVER_MS:
             self.restart()
             self.state, self.since = PLAY, now_ms
