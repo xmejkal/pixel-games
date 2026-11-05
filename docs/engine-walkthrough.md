@@ -1,7 +1,7 @@
 # The effects engine, one lesson at a time (P594 #795)
 
 All paths are relative to the root of this repository. Line numbers are from master on 2026-11-05. Since P632, `engine/`
-is the pixel-engine submodule, and its line numbers are those of pixel-engine `17311a6`.
+is the pixel-engine submodule, and its line numbers are those of pixel-engine `97f2d64`.
 `bench.md` is that repository's bench log. A board number below is a median or a range from one bench run, with its run name.
 The same lessons as step-by-step pictures: [the P594 engine lessons on Miro](https://miro.com/app/board/uXjVEavQ4JQ=/?moveToWidget=3458764689493945034).
 
