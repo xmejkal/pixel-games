@@ -1,4 +1,4 @@
-"""engine/core/world.c (P590) against its twin motion.Bodies: tests/world_lib.py builds the C with clang and steps it
+"""engine/core/world.c (P590) against its twin motion.Bodies: engine/tests/world_lib.py builds the C with clang and steps it
 through CBodies, the stand-in for engine.Bodies, beside the twin. Both get the same API tests, and the twin is the one
 source of the maths. Run from the repository root: python3 -m unittest discover tests. --- MVP (P590) ---"""
 
@@ -10,6 +10,7 @@ from array import array
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: clang_lib
 
 import motion  # noqa: E402
 from world_lib import HAVE_CLANG, HIT, MAX_BODIES, MAX_STEPS, SLEEP, CBodies  # noqa: E402

@@ -14,13 +14,14 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: clang_lib
 sys.path.insert(0, HERE)
 
 import lcd  # noqa: E402
+from clang_lib import S3LCD_SRC  # noqa: E402  blend565.h, the blend fx_fire_blend shares
 from test_blend import reference as reference_blend  # noqa: E402
 
 FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
-S3LCD_SRC = os.path.join(os.path.dirname(HERE), "s3lcd", "src")  # blend565.h, the blend fx_fire_blend shares
 W, H = 160, 120  # games/fire.py's field: the panel is 240 x 320
 SEED, STEPS = 595, 50
 SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps the run short

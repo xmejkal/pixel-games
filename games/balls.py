@@ -38,14 +38,14 @@ DROP = 40  # a poured ball starts up to this far above the top
 RATE = 100  # steps a second, so a step is STEP_MS (D18)
 STEP_MS, DT = 1000 // RATE, 1 / RATE
 STEP_CAP = 8  # steps a frame at most (D18); gfx clamps a frame to 60 ms, so it never acts today
-SUBSTEPS = 4  # solver substeps a step: the overlap bar of tests/test_balls_core.py holds at 4 (the board also ran 3: run96b)
+SUBSTEPS = 4  # solver substeps a step: the overlap bar of engine/tests/test_balls_core.py holds at 4 (the board also ran 3: run96b)
 GRAVITY = 2000.0  # px/s2 (A7)
-# The feel numbers, set from Mac runs (tests/test_balls_core.py's fixtures hold the same)
+# The feel numbers, set from Mac runs (engine/tests/test_balls_core.py's fixtures hold the same)
 DAMPING = 0.98  # the part of its speed a ball keeps over one step: the settled pile's jitter fell from 5 to under 1 px/s
 HIT_MIN = 60.0  # px/s: a hit counts from here, a fall of 1 px. At material 0 a settled pile's loudest contact is 5 px/s;
 # with friction it creeps for about 16 s after it settles, with a hit or two a second (the P598 refuter, Mac 11-04)
 # --- MVP (P598): the material, the PO 2026-11-04: "doesn't feel very realistic", "the balls really don't bounce" ---
-FRICTION = 0.5  # the grip: the heap of 100 balls stands 43 px high, 22 px at 0 (tests/test_balls_core.py, Mac 11-04)
+FRICTION = 0.5  # the grip: the heap of 100 balls stands 43 px high, 22 px at 0 (engine/tests/test_balls_core.py, Mac 11-04)
 RESTITUTION = 0.7  # a hit gives back this part of its closing speed, about 0.6 after the step's damping, off a ball or the
 # floor (the PO at 0.5: "The bounce could be a bit stronger", 2026-11-04)
 RESTITUTION_THRESHOLD = 100.0  # px/s: a slower hit bounces not, so a resting pile keeps still (a 1 px drop is 60 px/s)

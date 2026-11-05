@@ -1,5 +1,5 @@
 """games/rain.py on the Mac (P593, P590): the Python stepper alone, and the C stepper on engine/core/world.c through
-tests/world_lib.py's stand-in for the engine module, which must draw the same boxes. framebuf comes from tests/stubs and
+engine/tests/world_lib.py's stand-in for the engine module, which must draw the same boxes. framebuf comes from tests/stubs and
 time gets the MicroPython ticks functions, so gfx imports here. Run from the repository root:
 python3 -m unittest discover tests. --- MVP (P590) ---"""
 
@@ -14,6 +14,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: clang_lib
 if not hasattr(time, "ticks_diff"):
     time.ticks_diff = lambda a, b: a - b
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)

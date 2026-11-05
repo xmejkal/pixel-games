@@ -14,6 +14,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
+sys.path.insert(0, os.path.join(ROOT, "engine", "tests"))  # pixel-engine: clang_lib
 from clang_lib import S3LCD_SRC, build, core  # noqa: E402
 from test_fire import Engine, Tft, play  # noqa: E402
 
