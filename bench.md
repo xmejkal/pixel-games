@@ -470,7 +470,7 @@ The board runs `engine.Balls` (`fx_balls.c` on the uniform grid of `grid.c`). Th
 
 - The S3 calls a library routine for each float division and `sqrtf`, so the first build paid one `sqrtf` and four divisions per touching pair in each pass. The contact now uses a fast inverse square root (Lomont 2003) and a table of mass shares.
 - The HUD's text rebuild costs about 50 ms twice a second in every scene, which caps a scene near 23 to 24 fps.
-- The pit's own log (`run104-p598-pit-material.log`) showed 124 ms a frame at 320 balls against 90 ms in run 100. The two runs hold different piles at different frame rates, so they do not compare. Run 106 measures the same pile with both materials.
+- The pit's own log (`run104-p598-pit-material.log`) showed 6 fps and 124 ms a frame at 320 balls, against 8 fps and about 97 ms in run 100 (90 ms in its first sample). The two runs hold different piles at different frame rates, so they do not compare. Run 106 measures the same pile with both materials.
 - Allocation (`run106`): 20 calls of step, read and drain allocate 0 B.
 - Smoke (`run107-p598-smoke.log`, `games/*.py` at 9cb3cba): all fourteen entries start, with no error, at 22 to 25 fps. The pit runs at 24 fps with its first pour.
 - The PO played it (2026-11-04): "Yeah, better. I like it. The bounce could be a bit stronger [...] Let's make it stronger here." Restitution went from 0.5 to 0.7. On the cost: "its ok for a few balls". P614 (#820) makes the solver faster.

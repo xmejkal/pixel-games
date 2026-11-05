@@ -48,7 +48,7 @@ Runs now:
   (`engine/core/grid.c`). A BOOT tap pours 10 balls in the next colour, up to 2,000. A hold of 0.3 s or more shakes the
   pit when you let go, more strongly the longer you held it. `set_material(friction, restitution,
   restitution_threshold)` takes Box2D v3's names, and the pit uses 0.5, 0.7 and 100 px/s. Each hit is an event with
-  its speed, and the HUD counts the hits a second. On the board, 100 balls keep about 24 fps and 320 run at 6 to 8 fps.
+  its speed, and the HUD counts the hits a second. On the board, about 100 balls keep 23 to 24 fps (run99d, run100), and 320 run at 6 to 8 fps (run104, run100).
   A settled pile's step takes 4.2 ms at 100 balls and 13.8 ms at 300 (bench.md, P598). It needs the engine image.
 - The bodies on fire (P596, P607, `games/burning.py`), third: eight falling bodies from the rain's stepper each carry
   an `effects.FireTrail`, which burns heat into the fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
