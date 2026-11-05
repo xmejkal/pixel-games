@@ -208,6 +208,8 @@ drain allocate 0 B (`bench.md:402`, P590).
 
 ## Lesson D. How effects combine
 
+The lessons D to G in depth, with code, diagrams and other libraries: [engine-deep-dives.md](engine-deep-dives.md) (P627).
+
 Four pieces work together on one field of heat: a byte per cell, 0 to 255, in `fx_fire_t.heat`.
 1. A body effect puts heat in. `FireTrail.update` finds the cell under the body, picks a point `lag` frames behind it, and calls
    `field.burn` along the path from the last burn point (`effects.py:42-56`). `fx_fire_burn` walks the segment and, for every cell
