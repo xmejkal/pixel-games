@@ -76,9 +76,10 @@ def bake(turned):
 
 
 def quad(a, b, c, d, ox, oy):
-    """A 2 px band along a bone. The driver's fill_polygon fills only the rows strictly between a quad's top and
-    bottom, and each row's span with both ends (s3lcd.c:2391-2397): across rows the band spans -1 to +2, across
-    columns 0 to +1."""
+    """A band along a bone, 2 to 3 px thick. The driver's fill_polygon fills only the rows strictly between a quad's
+    top and bottom, and each row's span with both ends (s3lcd.c:2391-2397): across rows the band spans -1 to +2 (a
+    flat bone 2 px, a slanted one 3 px), across columns 0 to +1 (2 px a row, a steep bone 1 row shorter at each end).
+    The cost measured is the thicker band's, so it errs high."""
     lo, hi = (-1, 2) if oy else (0, 1)
     return [[a + lo * ox, b + lo * oy], [c + lo * ox, d + lo * oy], [c + hi * ox, d + hi * oy],
             [a + hi * ox, b + hi * oy]]

@@ -525,7 +525,7 @@ Per call, 500 calls each, and 200 draws of one pose per figure way (`run116-p635
 | one figure through `cv.line`, 2 px | 2,860 |
 | one figure through `tft.line`, 2 px | 348 |
 | one figure as 3 open `polygon` chains, 1 px | 119 |
-| one figure as one `fill_polygon` band per bone, 2 px | 231 |
+| one figure as one `fill_polygon` band per bone, 2 to 3 px | 231 |
 
 The scene with figures drawn as `fill_polygon` bands (the App's `time` lines, the first line of each run left out,
 because it holds the per-call bench):
@@ -541,8 +541,9 @@ because it holds the per-call bench):
 - Decision: go. 12 figures add about 3.8 ms walking and about 4.7 ms burning, and the scene keeps 23 to 24 fps. The
   figures stay in Python, drawn as one `fill_polygon` band per bone plus a `fill_circle` head, with the poses baked
   once as panel offsets. No C painter is needed for the MVP.
-- `fill_polygon` fills only the rows strictly between a polygon's top and bottom (`s3lcd.c:2391-2397`). So a 2 px
-  band spans 4 rows across a flat bone (-1 to +2) and 2 columns along a steep one. The first runs (`run115-p635-*`)
+- `fill_polygon` fills only the rows strictly between a polygon's top and bottom (`s3lcd.c:2391-2397`). The probe's
+  band spans -1 to +2 across rows (2 px for a flat bone, 3 px for a slanted one) and 0 to +1 across columns, so the
+  cost errs high. Slice 1's painter uses -1 to +2 only for a flat bone and 0 to +2 otherwise. The first runs (`run115-p635-*`)
   used 1 px offsets, which drew flat bones not at all, so they are left out.
 - The canvas wrapper costs 8 times the driver's call (144 against 18 us), so the figure painter calls the driver.
 - `polygon` draws an open chain at 119 us a figure, the cheapest, but 1 px only.
