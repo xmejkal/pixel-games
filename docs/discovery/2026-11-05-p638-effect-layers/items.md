@@ -4,7 +4,7 @@ block for more. needed by: the decider's words, quoted. value proven by: a proof
 status: proposed, or filed D<n>. -->
 
 ## P639 slice 0: the burning scene paints the bodies, then the field blended over them (option A)
-- type: story, a feel slice (proposed: the existing card #854 takes it as its first slice, no new card; not agreed yet) <!-- REQUIRED:item-type -->
+- type: story, a feel slice (the existing card #854 takes it as its first slice, no new card, D14) <!-- REQUIRED:item-type -->
 - needed by: "when somehthing is on fire, it cannot only be around it" (the PO, 2026-11-05, spark #853) <!-- REQUIRED:needed-by -->
 - value proven by: the PO plays it on the board and says it looks on fire; the scene's draw ms at 13.5 or less and the fps at 23 or more (run117: 6.40 to 6.44 ms, 24 to 25 fps, `bench.md:570-571`) <!-- REQUIRED:value-proven-by -->
 - depends on: Q4 (A or A then B), Q2 (one field or two) <!-- REQUIRED:depends-on -->
@@ -35,7 +35,7 @@ status: proposed, or filed D<n>. -->
 ## Fix the card's number: "about 5 ms" per full-panel pass → "4 to 7 ms by what the pass does"
 - type: chore (a comment on spark #853)
 - needed by: the card's own note, "P612 #817 (each full-panel pass through PSRAM costs about 5 ms)" (spark #853 Notes)
-- value proven by: the comment cites `bench.md:429-430`, `:484` and `p580-finding.md:15`
+- value proven by: the #853 body names the numbers and bench.md; the lines are `bench.md:429-430`, `:433`, `:484`
 - depends on: —
 - status: done D14, the #853 body edited 2026-11-05
 
