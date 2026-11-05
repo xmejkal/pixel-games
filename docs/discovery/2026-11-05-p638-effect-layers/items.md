@@ -7,7 +7,7 @@ status: proposed, or filed D<n>. -->
 - type: story, a feel slice (the existing card #854 takes it as its first slice; no new card) <!-- REQUIRED:item-type -->
 - needed by: "when somehthing is on fire, it cannot only be around it" (the PO, 2026-11-05, spark #853) <!-- REQUIRED:needed-by -->
 - value proven by: the PO plays it on the board and says it looks on fire; the `burning linear fps` line at 23 or more (run117: 24 to 25, `bench.md:571`) <!-- REQUIRED:value-proven-by -->
-- depends on: Q2 (A or A then B), Q3 (one field or two) <!-- REQUIRED:depends-on -->
+- depends on: Q4 (A or A then B), Q2 (one field or two) <!-- REQUIRED:depends-on -->
 - status: proposed <!-- REQUIRED:item-status -->
 <!-- EXTEND:item-fields -->
 
@@ -15,21 +15,21 @@ status: proposed, or filed D<n>. -->
 - type: story
 - needed by: "generalize this to adding layers to the effects so that we can intertwine multiple layers" (the PO, 2026-11-05, spark #853)
 - value proven by: fire, burning, balls and rain each list their layers with a `layer` number (Godot's `CanvasLayer.layer`, lower behind); the Mac tests hold; run117's draw ms within 0.1 (`bench.md:562-571`)
-- depends on: Q2 = B, slice 0 merged
+- depends on: Q4 = B, slice 0 merged
 - status: proposed
 
 ## A C layer paints a rect with a blend mode and marks only that rect dirty (option B, slice 2)
 - type: story (the C half P628 named, `docs/discovery/2026-11-05-p628-engine-layers/README.md:82-83`; shared with P610 blur and P616 balls on fire)
 - needed by: "even a python ldrawn layer in between two C layers" (the PO, 2026-11-05, spark #853)
 - value proven by: one scene with balls under a Python layer under fire runs on the board (P616's picture), `fx_balls_draw` without its bg fill, `frame_dirty(rect)` in the binding instead of `frame_dirty_all`
-- depends on: slice 1, A5 (a scene that wants it), Q4
+- depends on: slice 1, A5 (a scene that wants it), Q5
 - status: proposed
 
 ## Each part named and placed: the compositing kernel's home, the API per part, the swap list (slice 3)
 - type: chore (documentation and one file move)
 - needed by: "split it into what belongs where ... industry standards for naming and such" (the PO, 2026-11-05, spark #853 comment)
-- value proven by: lesson D of `docs/engine-deep-dives.md` names driver, core, binding and Python with a source per name and what each swaps for; `blend565.h` lives where Q4 says
-- depends on: Q4
+- value proven by: lesson D of `docs/engine-deep-dives.md` names driver, core, binding and Python with a source per name and what each swaps for; `blend565.h` lives where Q5 says
+- depends on: Q5
 - status: proposed
 
 ## Fix the card's number: "about 5 ms" per full-panel pass → "4 to 7 ms by what the pass does"

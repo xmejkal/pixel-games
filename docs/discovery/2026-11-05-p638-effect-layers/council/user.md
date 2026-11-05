@@ -15,13 +15,13 @@ Written 2026-11-05 by the same Fable agent that wrote the other two lenses (no i
 
 ## What I could not check, and why
 
-- How the PO reads a body under hot flames: he has not seen it (Q2).
+- How the PO reads a body under hot flames: he has not seen it (Q4).
 - Whether the author wants the list on Game (beside plugins) or on a Scene object: no words from him.
 
 ## Questions for the decider
 
-- Q2 · Should the body show through the flames in front? · decides: whether the front layer blends at full heat or at a capped alpha, and so one pass or two.
-- Q4 · Do you want the layer list beside Game.plugins, one tuple per scene? · decides: the Python API's shape.
+- Q4 · Should the body show through the flames in front? · decides: whether the front layer blends at full heat or at a capped alpha, and so one pass or two.
+- Q5 · Do you want the layer list beside Game.plugins, one tuple per scene? · decides: the Python API's shape.
 
 ## Searches
 

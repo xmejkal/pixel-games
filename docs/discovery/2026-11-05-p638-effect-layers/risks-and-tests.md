@@ -13,7 +13,7 @@
 ## Assumptions
 | id | belief | type | evidence now | importance | cheapest test | pass line, dated | result that would change the decision | status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A1 <!-- REQUIRED:assumptions --> | One field blended over the body, after the body, reads as "on fire" to the PO | value | H his words, spark #853; U-5 names the harm | — (decider) | option A on the board, a Mac PNG first (prototype, n = 1) | the PO says it looks on fire, in his words, set 2026-11-05 | "the body is gone" or "still only around it" → Q3's two fields or a second alpha curve | open |
+| A1 <!-- REQUIRED:assumptions --> | One field blended over the body, after the body, reads as "on fire" to the PO | value | H his words, spark #853; U-5 names the harm | — (decider) | option A on the board, a Mac PNG first (prototype, n = 1) | the PO says it looks on fire, in his words, set 2026-11-05 | "the body is gone" or "still only around it" → Q2's two fields or a second alpha curve | open |
 | A2 | The fps stays within 2 with the blend in the burning scene | feasibility | E C12 the fire scene 23 to 24 blended against 24 to 25; the burning scene not run | — (decider) | the same run's `burning linear fps` line | 23 or more over seven 5 s lines, set 2026-11-05 | 22 or less → option A needs the rect kernel (slice 2) before P639 ships | open |
 | A3 | A layer list with an int `layer` is simpler for a scene writer than calls in `paint` | usability | H the agent's; P633's plugin list cost about 30 lines a game (`docs/discovery/2026-11-05-p628-engine-layers/README.md:170-171`, H there) | — (decider) | a branch with the four scenes' lists; count lines | each scene's `paint` shrinks or stays, set 2026-11-05 | a scene grows → option A stays the design | open |
 | A4 | A C kernel that paints a rect and marks `frame_dirty(rect)` costs no more than today's whole-panel draw | feasibility | E C9, C10 the functions exist; H no measurement | — (decider) | the Mac test for the rect and one board run of the fire with a full rect | draw ms within 0.1 of run117 (`bench.md:568-571`), set 2026-11-05 | slower → keep `frame_dirty_all` for a full-panel layer | open |
@@ -23,10 +23,10 @@
 ## Collection plan
 | question | decision it blocks | who can answer | how | when |
 | --- | --- | --- | --- | --- |
-| How does a front blend look on a body? (A1) <!-- REQUIRED:collection --> | Q2, Q3 | the PO, on the board | P639 slice 0 (option A), a Mac PNG through `tools/render_scene.py` first | his next bench time |
-| Does the burning scene hold 23 fps blended? (A2) | Q2 | the agent, with the board | the same run's fps line, seven 5 s lines | the same bench time |
+| How does a front blend look on a body? (A1) <!-- REQUIRED:collection --> | Q4, Q2 | the PO, on the board | P639 slice 0 (option A), a Mac PNG through `tools/render_scene.py` first | his next bench time |
+| Does the burning scene hold 23 fps blended? (A2) | Q4 | the agent, with the board | the same run's fps line, seven 5 s lines | the same bench time |
 | Which scene needs two C layers next? (A5) | slice 2 | the PO | Q6 | his next reply |
-| Where does the blend kernel live? (Q4) | slice 3 | the PO | Q4 | his next reply |
+| Where does the blend kernel live? (Q5) | slice 3 | the PO | Q5 | his next reply |
 
 ## Results
 <!-- Filled on a return; may stay empty until then. -->
