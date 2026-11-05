@@ -84,7 +84,7 @@ def scenes():
     """A Game with a score and a best, the rain and the fire, each with its HUD's text set."""
     game = Game()
     game.score, gfx.BEST[game.name] = 12, 345
-    drops = rain.Rain.__new__(rain.Rain)  # no stepper: draw_hud reads only the label and the bar
+    drops = rain.Rain.__new__(rain.Rain)  # no physics plugin: draw_hud reads only the label and the bar
     drops.label, drops.bar = "c step 0.2 ms 24 fps", 37
     flames = fire.Fire.__new__(fire.Fire)  # no pictures and no field: draw_hud reads only the label
     flames.label = "fire linear 11.5 ms 24 fps"

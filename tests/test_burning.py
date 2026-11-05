@@ -27,20 +27,17 @@ from motion import HIT, SLEEP  # noqa: E402
 REPORT = re.compile(r"^burning (linear|nearest) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 
 
-class PhysicsPluginStandIn:
+class PhysicsPluginStandIn(plugins.Plugin):
     """A stand-in for plugins.PhysicsPlugin: each body's top left corner is set by the test, read() reports the
     sleepers, and a step makes the test's next events the ones events() drains, as Bodies.step clears the last ones
     first. fixed_update steps every frame, also with 0 steps, as the plugin does."""
 
     def __init__(self, places):
         self.n, self.places, self.asleep, self.spawned = len(places), places, set(), []
-        self.next, self.drained, self.step_us = [], [], 0
+        self.next, self.drained = [], []
 
     def fixed_update(self, ms):
         self.step(ms // 10)
-
-    def late_update(self, ms):
-        pass
 
     def spawn(self, i, *args):
         self.spawned.append(i)
@@ -89,6 +86,16 @@ class BurningTest(unittest.TestCase):
         game.attach_effects()  # the effects on the stand-in
         fire.engine.burns = []
         return game
+
+    def test_a_tap_frame_keeps_its_bodies_step_time(self):
+        """Fire.play's tap starts a new interval, so the scene takes it before it counts the bodies' step (P633)."""
+        game = self.scene()
+        game.physics_plugin.step_us = 7
+        game.ms = 40
+        game.play(True, True)
+        self.assertEqual("nearest", game.mode_name)
+        self.assertGreaterEqual(game.us[0], 7)
+        self.assertGreaterEqual(game.hud_us, 7)
 
     def frame(self, game, ms):
         """One frame's FixedUpdate and Update, as Game.step runs them while the game plays (P633)."""
@@ -200,12 +207,12 @@ class BurningTest(unittest.TestCase):
     def test_a_sleeping_body_rests_before_its_drop(self):
         game = self.scene()
         game.physics_plugin.asleep = {3}
-        game.clock = 0
+        game.played_ms = 0
         game.physics_plugin.read(game.sleep)
-        game.clock = burning.REST_MS - 1
+        game.played_ms = burning.REST_MS - 1
         game.physics_plugin.read(game.sleep)
         self.assertEqual([], game.physics_plugin.spawned)
-        game.clock = burning.REST_MS
+        game.played_ms = burning.REST_MS
         game.physics_plugin.read(game.sleep)
         self.assertEqual([3], game.physics_plugin.spawned)
 

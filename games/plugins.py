@@ -43,19 +43,26 @@ class Plugin:
     def late_update(self, ms):
         """LateUpdate: after the game's play in the same frame, with the same ms."""
 
+    step_us = 0  # the µs of the plugin's own steps, summed until the game takes them
+
+    def take_step_us(self):
+        """The µs of the plugin's steps since the last take, and 0 again."""
+        us, self.step_us = self.step_us, 0
+        return us
+
 
 class PhysicsPlugin(Plugin):
     """n bodies, on engine.Bodies when c is true (one C call steps every body), else on its twin motion.Bodies.
     fixed_update steps them every frame, also with 0 steps: that clears the last step's events, so no event is drained
     twice. read() copies x, y and asleep out as ints into one array('h'), and events() the last step's events into
-    one array('i'), drained, so a frame makes no list. step_us sums the steps' µs until the game takes it."""
+    one array('i'), drained, so a frame makes no list."""
 
     def __init__(self, n, c, gravity=GRAVITY, restitution=RESTITUTION, friction=FRICTION):
         self.n, self.name = n, "c" if c else "python"
         self.bodies = engine.Bodies(n) if c else Bodies(n)
         self.spawn = self.bodies.spawn
         self.world = (DT, gravity, restitution, friction)
-        self.clock, self.step_us = StepClock(STEP_MS, STEP_CAP), 0
+        self.clock = StepClock(STEP_MS, STEP_CAP)
         self.out, self.drained = array("h", [0] * (3 * n)), array("i", [0] * (3 * MAX_EVENTS))
 
     def fixed_update(self, ms):
@@ -64,7 +71,7 @@ class PhysicsPlugin(Plugin):
         self.step_us += time.ticks_diff(time.ticks_us(), t)
 
     def step(self, steps):
-        """steps steps of DT."""
+        """The bodies' own call: steps steps of DT. fixed_update calls it each frame; a test can call it alone."""
         dt, gravity, restitution, friction = self.world
         self.bodies.step(steps, dt, gravity, restitution, friction)
 

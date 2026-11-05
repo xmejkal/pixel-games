@@ -551,3 +551,28 @@ because it holds the per-call bench):
   heap (alloc 177,792 bytes). The baseline run shares it, so the differences hold, but the free time in this scene
   is about 14 ms, not 16 ms. Slice 1 keeps its baked tables small.
 - Not checked: the look. Nobody saw the figures on the panel yet. Slice 1's Mac PNG and board run show them.
+
+## P633 (#847), 2026-11-05: the scenes on plugins
+
+Python only, so the image is the one flashed in P632 (`flash-p632.log`). Each scene ran alone through `mpremote run`
+with `app.run(games=(X,))` for 42 s, after one warm-up run, first with master's `games/*.py` (1de2019), then with the
+branch's (143c879). Rain ran a second pair (`run118`) to see whether its draw gap holds. The values are per frame,
+from the scene's 5 s lines (seven each), and paint from the App's `time` lines.
+
+| run | scene | fps | step ms | draw ms | paint ms |
+| --- | --- | --- | --- | --- | --- |
+| `run117-p633-master-rain.log` | rain, C | 24 to 25 | 0.21 | 9.80 to 11.02 | 16.4 to 17.9 |
+| `run117-p633-branch-rain.log` | rain, C | 24 to 25 | 0.26 to 0.27 | 12.00 to 12.36 | 18.3 to 19.3 |
+| `run118-p633-master-rain.log` | rain, C | 24 to 25 | 0.21 | 9.80 to 11.54 | 16.4 to 18.0 |
+| `run118-p633-branch-rain.log` | rain, C | 24 to 25 | 0.26 to 0.27 | 11.03 to 12.08 | 17.5 to 18.9 |
+| `run117-p633-master-fire.log` | fire, linear | 24 to 25 | 6.39 to 6.49 | 6.41 to 6.42 | 9.0 to 9.2 |
+| `run117-p633-branch-fire.log` | fire, linear | 24 to 25 | 6.35 to 6.45 | 6.44 to 6.45 | 8.7 to 9.4 |
+| `run117-p633-master-burning.log` | burning, linear | 24 to 25 | 7.66 to 7.83 | 6.40 to 6.41 | 9.4 to 9.8 |
+| `run117-p633-branch-burning.log` | burning, linear | 24 to 25 | 7.67 to 7.83 | 6.43 to 6.44 | 9.3 to 10.0 |
+
+- The fps is the same in all three scenes. Fire and burning keep their step and draw within 0.05 ms.
+- Rain's step is 0.05 ms higher: `fixed_update` adds a `StepClock.take`, two tick reads and one call a frame.
+- Rain's draw is 0.8 to 1.5 ms higher in both pairs. The cause is not found. The draw loop is the same loop, and the
+  boxes are in the same places (the refuter's 300 frames on the Mac). A row in P633's rows file holds it.
+- The review fixes after 143c879 (`take_step_us`, and the burning scene takes a tap before it counts) were not run
+  on the board. They add one call a frame and move no work.

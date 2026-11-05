@@ -99,7 +99,7 @@ class FirePlugin(Plugin):
     """The heat field as an engine layer (P633): its look, its filter, the gusts of wind and its own StepClock.
     late_update takes the frame's burns, as the game made them in Update, then blows and steps; draw puts the field into
     the s3lcd frame, opaque or blended over what the frame holds. Without the engine, field is None and it draws
-    nothing. step_us sums the steps' µs until the game takes it. --- MVP (P633) ---"""
+    nothing. --- MVP (P633) ---"""
 
     def __init__(self, look, seed):
         self.field, self.blend = None, False
@@ -107,7 +107,7 @@ class FirePlugin(Plugin):
             self.field = engine.HeatField(W, H, seed)
             self.field.set_look(*look)
         self.wind, self.target, self.gust = 0, 0, 0  # the gust model: the wind now, where it goes, ms to the next
-        self.clock, self.step_us = StepClock(STEP_MS, STEP_CAP), 0  # whole 40 ms steps; the rest waits
+        self.clock = StepClock(STEP_MS, STEP_CAP)  # whole 40 ms steps; the rest waits
 
     def set_filter(self, mag_filter):
         if self.field is not None:
@@ -171,14 +171,14 @@ class Fire(Game):
         self.label = self.name + (": no C" if self.fire_plugin.field is None else " " + self.mode_name)
 
     def play(self, pressed, held):
-        """A tap moves to the next mode. The field steps in the plugin's LateUpdate (P633)."""
+        """A tap moves to the next mode. The field steps in the plugin's LateUpdate. --- MVP (P633) ---"""
         if pressed:
             self.set_mode((self.mode + 1) % len(self.MODES))
             print(self.name, "mode", self.mode_name)
             self.begin()
 
     def add(self, i, t):
-        """The time since t into the report's sum i and the HUD's."""
+        """The time since t into the report's sum i and the HUD's: add_us, timed here."""
         self.add_us(i, time.ticks_diff(time.ticks_us(), t))
 
     def add_us(self, i, us):
@@ -195,8 +195,7 @@ class Fire(Game):
         plugin = self.fire_plugin
         if plugin.field is None:
             return
-        self.add_us(0, plugin.step_us)  # this frame's step: LateUpdate ran before the render
-        plugin.step_us = 0
+        self.add_us(0, plugin.take_step_us())  # this frame's step: LateUpdate ran before the render. --- MVP (P633) ---
         t = time.ticks_us()
         plugin.draw(cv)
         self.add(1, t)

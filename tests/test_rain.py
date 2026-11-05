@@ -1,4 +1,4 @@
-"""games/rain.py on the Mac (P593, P590, P633): its PhysicsPlugin on the Python stepper alone, and on the C stepper on
+"""games/rain.py on the Mac (P593, P590, P633): its PhysicsPlugin on Python's bodies alone, and on C's bodies on
 engine/core/world.c through engine/tests/world_lib.py's stand-in for the engine module, which must draw the same boxes.
 framebuf comes from tests/stubs and time gets the MicroPython ticks functions, so gfx imports here. Run from the
 repository root: python3 -m unittest discover tests. --- MVP (P590) ---"""
@@ -127,7 +127,7 @@ class CRainTest(unittest.TestCase):
         self.assertLessEqual(worst, 1, "float32 against Python's float may truncate 1 px apart")
         self.assertNotEqual(boxes_c, play(game_c, 1, 1000)[0])  # and they move
 
-    def test_a_tap_swaps_the_stepper(self):
+    def test_a_tap_swaps_c_and_python(self):
         with contextlib.redirect_stdout(io.StringIO()):
             game = rain.Rain()
             _, now = play(game, 1, 0)

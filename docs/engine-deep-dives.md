@@ -5,8 +5,9 @@ Each lesson starts with its short version, then the steps, a picture, and how ot
 A claim marked H is a hypothesis: I did not read it in the code or in a source.
 The lessons A to C are in `docs/engine-walkthrough.md`. This page starts where it stops.
 Since P633 (#847), `rain.Stepper` and its `StepClock` are `plugins.PhysicsPlugin` (`games/plugins.py`), and the
-fire's field, gusts and step clock (`Fire.acc`) are `fire.FirePlugin`. `Game.step` runs their hooks around the game's
-play. The lessons below keep the old names and lines, which are true at the commit they cite.
+fire's field, gusts and step clock are `fire.FirePlugin`, whose `StepClock` replaces `Fire.acc`. `Game.step` runs
+their hooks around the game's play. The lessons below keep the old names and lines, which are true at the commit
+they cite.
 
 ## Lesson D. How effects combine
 

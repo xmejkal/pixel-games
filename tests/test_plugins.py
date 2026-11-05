@@ -137,7 +137,8 @@ class FieldStandIn:
 
 class FirePluginTest(unittest.TestCase):
     def test_the_clock_takes_whole_steps_as_the_old_sum_did(self):
-        """Fire's acc before P633: whole 40 ms steps, the rest carried. Game.step caps ms at 60, so 2 a frame at most."""
+        """Fire's acc before P633: whole 40 ms steps, the rest carried. Game.step caps ms at 60, so 2 a frame at
+        most."""
         plugin = fire.FirePlugin(fire.Fire.LOOK, 1)
         plugin.field = FieldStandIn()
         acc, old = 0, []
@@ -167,7 +168,8 @@ class ListedLayersTest(unittest.TestCase):
     def test_each_scene_lists_its_layers(self):
         with contextlib.redirect_stdout(io.StringIO()):
             kinds = [tuple(type(p) for p in g().plugins) for g in (rain.Rain, fire.Fire, burning.BurningBodies)]
-        self.assertEqual([(plugins.PhysicsPlugin,), (fire.FirePlugin,), (plugins.PhysicsPlugin, fire.FirePlugin)], kinds)
+        both = (plugins.PhysicsPlugin, fire.FirePlugin)
+        self.assertEqual([(plugins.PhysicsPlugin,), (fire.FirePlugin,), both], kinds)
 
 
 if __name__ == "__main__":

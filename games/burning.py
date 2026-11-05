@@ -67,8 +67,8 @@ class BurningBodies(Fire):
     def setup(self):
         random.seed(SEED)
         self.physics_plugin = PhysicsPlugin(N, plugins.engine is not None)
-        self.clock = 0  # ms played
-        self.slept = [None] * N  # the clock when each body fell asleep, None while it moves
+        self.played_ms = 0
+        self.slept = [None] * N  # played_ms when each body fell asleep, None while it moves
         self.rest_y = [0] * N  # each body's plane: the y its top rests at, where it flares
         super().setup()  # the field first: Fire.setup draws no random number, so the drops below get today's
         self.plugins = (self.physics_plugin, self.fire_plugin)  # --- MVP (P633) ---
@@ -98,23 +98,22 @@ class BurningBodies(Fire):
     def sleep(self, i):
         """Body i is asleep: it rests REST_MS, then drops."""
         if self.slept[i] is None:
-            self.slept[i] = self.clock
-        elif self.clock - self.slept[i] >= REST_MS:
+            self.slept[i] = self.played_ms
+        elif self.played_ms - self.slept[i] >= REST_MS:
             self.drop(i)
 
     def play(self, pressed, held):
-        """The bodies the plugin stepped in FixedUpdate: read, their events handled and their trails burned, also in a
-        tap's frame. Then Fire.play takes the tap."""
-        self.clock += self.ms
+        """Fire.play takes a tap first, as it starts a new interval. Then the bodies the plugin stepped in FixedUpdate
+        are read, their events handled and their trails burned, also in a tap's frame. --- MVP (P633) ---"""
+        super().play(pressed, held)
+        self.played_ms += self.ms
         plugin = self.physics_plugin
-        self.add_us(0, plugin.step_us)
-        plugin.step_us = 0
+        self.add_us(0, plugin.take_step_us())
         t = time.ticks_us()
         plugin.read(self.sleep)
         self.effects.dispatch(self.handlers)
         self.effects.update()
         self.add(0, t)
-        super().play(pressed, held)
 
     def flare(self, body, speed):
         """A hit at FLARE_MIN or faster burns a disc at the body's x, as read, and its plane: it has bounced up since,
