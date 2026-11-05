@@ -500,7 +500,7 @@ The engine moved to `xmejkal/pixel-engine` (submodule `engine/`) and the driver 
 in `s3lcd.c` stores the longer source path. `objdump -d` of all 19 engine and driver objects is the same before and
 after. The P612 probes ran unchanged on the new image:
 
-| run | what | fps | paint ms | send ms | against |
+| run | what | fps | paint ms | send ms | against (the same columns) |
 | --- | --- | --- | --- | --- | --- |
-| `run114-p632-flappy-nocap.log` | flappy, no pace, as run109 | 28 | 21.5 | 9.1 | run109: 28, 21.5, 9.1 |
-| `run114-p632-rain-redraw.log` | rain, the label redrawn every 500 ms, as run112a | 24 to 25 | 18.6 | 3.6 | run112a: 24 to 25, 17.8, 3.8 |
+| `run114-p632-flappy-nocap.log` | flappy, no pace, as run109 | 28 | 21.5 to 22.6 | 7.9 to 9.1 | run109: 28, 21.5 to 22.6, 7.9 to 9.1 |
+| `run114-p632-rain-redraw.log` | rain, the label redrawn every 500 ms, as run112a | 24 to 25 | 18.4 to 20.1 | 3.6 to 4.1 | run112a: 24 to 25, 17.5 to 19.8, 3.7 to 4.2 |
