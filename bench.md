@@ -477,17 +477,18 @@ The board runs `engine.Balls` (`fx_balls.c` on the uniform grid of `grid.c`). Th
 
 ## P612 (#817), 2026-11-05: where flappy's frame time goes, and P604's HUD hitch
 
-The image 481959b8587c1502 and `games/*.py` at 184fa2e: the board's 23 game files match master by sha256. Each probe ran through `mpremote run` for about 47 s. In flappy, an autopilot flaps and `die` is off, as P602's probe did. A `part` line is the average over the play frames, timed around each call in `paint_art`. The finding is `docs/discovery/2026-11-05-p612-frame-time/README.md`.
+The image 481959b8587c1502 and `games/*.py` at 184fa2e: the board's 23 game files match master by sha256. Each probe ran through `mpremote run` for about 47 s. In flappy, an autopilot flaps and `die` is off, as P602's probe did. A `part` line is the average over the play frames, timed around each call in `paint_art`. The finding is `docs/discovery/2026-11-05-p612-frame-time/README.md`. The pace is `FRAME_MS`, and the dt cap is the 60 ms limit on a step's time (`gfx.py:341`).
 
 | run | what | fps | step | paint | send | gc | parts |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| `run109-p612-r1-flappy-nocap.log` | flappy, `FRAME_MS` 0 (a late frame still sleeps 1 ms) | 28 | 1.1 | 22.5 to 22.6 | 7.9 to 8.0 | 2.0 | static 7.3, clouds 2.43, far 2.68, near 2.06, pipes 4.85, ground 1.04, bird 0.27, play 0.44 ms |
-| `run110-p612-r2-flappy-fire-nocap.log` | the same with P602's `FireLayer` and `FireTrail` (from 324c23d) | 21 | 10.1 | 30.3 | 3.3 | 2.1 | fire update 8.85, fire draw 7.78 ms, 32 of 907 frames at the 60 ms cap |
-| `run111-p612-r4-flappy-cap33.log` | flappy, `FRAME_MS` 33 | 28 | 1.2 | 22.3 to 22.5 | 6.5 to 6.6 | 2.0 | 1 of 1,212 frames at the cap |
+| `run109-p612-r1-flappy-nocap.log` | flappy, no pace (`FRAME_MS` 0, a late frame still sleeps 1 ms) | 28 | 1.1 | 22.2 to 22.6 | 7.9 to 8.3 | 2.0 | static 7.3, clouds 2.43, far 2.68, near 2.06, pipes 4.85, ground 1.04, bird 0.27, play 0.44 ms |
+| `run110-p612-r2-flappy-fire-nocap.log` | the same with P602's `FireLayer` and `FireTrail` (from 324c23d) | 21 | 10.1 | 30.1 to 30.4 | 3.3 | 2.1 | the fire's step 8.85, the fire's paint 7.78 ms, 32 of 907 play frames at the 60 ms dt cap |
+| `run111-p612-r4-flappy-cap33.log` | flappy, a 33 ms pace | 28 | 1.2 | 22.3 to 22.5 | 6.2 to 6.6 | 2.0 | 1 of 1,212 play frames at the dt cap |
 | `run112-p612-r3a-rain-redraw.log` | rain, the label redrawn every 500 ms | | | | | | rain paint 12.7 ms over 150 traced frames, strip at 0x3c1dfae0 |
 | `run112-p612-r3b-rain-noredraw.log` | rain, the label drawn once | | | | | | rain paint 9.1 ms, strip at 0x3c1dfae0 |
-| `run112-p612-r3c-rain-format-only.log` | rain, the label formatted every 500 ms, the strip never redrawn | | | | | | rain paint 9.8 ms |
+| `run112-p612-r3c-rain-format-only.log` | rain, the label formatted every 500 ms, the strip never redrawn | | | | | | rain paint 9.8 ms, strip at 0x3c1dfb00 |
+| `run113-p612-r3d-rain-glyphs-warm.log` | rain, no redraw, the glyph cache filled once at the start (24 glyphs) | | | | | | rain paint 14.4 ms, 18.0 ms right after a gc, strip at 0x3c1dfb70 |
 
-- With no cap, the send grows from 3.3 to 3.7 ms (run92) to 7.9 to 8.0 ms. Its cause is not split.
+- With no pace, the send grows from 3.3 to 3.7 ms (run92) to 7.9 to 8.0 ms. Its cause is not split.
 - In all three rain runs, the paint after a timed gc is the slowest of the 5-frame period: 15.5, 13.9, 12.4, 11.5, 9.9 ms with the redraw, and 11.2, 9.3, 8.7, 8.2, 8.0 ms without it.
-- With the redraw, the glyph cache holds 13 glyphs, against 1 without it.
+- With the redraw, the glyph cache holds 13 glyphs, against 1 without it. R3d, with 24 glyphs and no redraw, paints slowest of all, so the redraw path is not P604's cause (the finding's P604 section).

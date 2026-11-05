@@ -1,5 +1,6 @@
 # P612 probe R3 (throwaway, P604): the rain's paint traced per frame, with its HUD label redraw or without it, and
-# where each kept strip's buffer lands. Run: mpremote run p612_rain.py. REDRAW is set by sed before each run.
+# Run: set REDRAW, then `mpremote connect /dev/cu.usbmodem1101 run p612_rain.py > run112-p612-r3a-rain-redraw.log`.
+# R3a: REDRAW 1. R3b: REDRAW 0. p612_rain_format_only.py is R3c, p612_rain_glyphs_warm.py is R3d (run113).
 import time
 
 import uctypes

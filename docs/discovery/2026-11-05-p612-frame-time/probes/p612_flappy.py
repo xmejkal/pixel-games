@@ -1,5 +1,6 @@
 # P612 probe (throwaway): flappy's paint split by part, with no frame cap or a chosen one, optionally with P602's fire.
-# Run: mpremote run p612_flappy.py. FIRE and CAP are set by sed before each run.
+# Run: set FIRE and CAP, then `mpremote connect /dev/cu.usbmodem1101 run p612_flappy.py > run109-p612-r1-flappy-nocap.log`.
+# R1: FIRE 0, CAP 0 (run109). R2: FIRE 1, CAP 0 (run110). R4: FIRE 0, CAP 33 (run111).
 import time
 
 import app
