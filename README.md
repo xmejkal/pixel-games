@@ -48,7 +48,7 @@ Runs now:
   (`engine/core/grid.c`). A BOOT tap pours 10 balls in the next colour, up to 2,000. A hold of 0.3 s or more shakes the
   pit when you let go, more strongly the longer you held it. `set_material(friction, restitution,
   restitution_threshold)` takes Box2D v3's names, and the pit uses 0.5, 0.7 and 100 px/s. Each hit is an event with
-  its speed, and the HUD counts the hits a second. On the board, 100 balls keep about 24 fps and 320 run at 6 to 8 fps.
+  its speed, and the HUD counts the hits a second. On the board, about 100 balls keep 23 to 24 fps (run99d, run100), and 320 run at 6 to 8 fps (run104, run100).
   A settled pile's step takes 4.2 ms at 100 balls and 13.8 ms at 300 (bench.md, P598). It needs the engine image.
 - The bodies on fire (P596, P607, `games/burning.py`), third: eight falling bodies from the rain's stepper each carry
   an `effects.FireTrail`, which burns heat into the fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
@@ -75,9 +75,9 @@ Runs now:
 
   A new effect is one more subclass of `effects.Effect` (`update(x, y)`, `reset()`), and its callers do not change.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
+- Fourteen games. Four are effect scenes: fire, the ball pit, bodies on fire and rain. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
-- Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (P602), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
+- Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 
 Done last: P598 ([#799](https://github.com/xmejkal/spark/issues/799)), the ball pit, merged 2026-11-05. Before it, P602 ([#803](https://github.com/xmejkal/spark/issues/803)), fire that drifts with a scrolling world (`HeatField.scroll`, `FireLayer`), merged with no game on it: the PO tried it behind flappy's bird and kept it for other games. The PO chose "Full MVP, 4 slices" on 2026-11-04 to close the effects epic P594 ([#795](https://github.com/xmejkal/spark/issues/795)). Paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
 
