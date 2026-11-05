@@ -75,9 +75,9 @@ Runs now:
 
   A new effect is one more subclass of `effects.Effect` (`update(x, y)`, `reset()`), and its callers do not change.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Ten games. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
+- Fourteen games. Four are effect scenes: fire, the ball pit, bodies on fire and rain. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
-- Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (P602), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
+- Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 
 Done last: P598 ([#799](https://github.com/xmejkal/spark/issues/799)), the ball pit, merged 2026-11-05. Before it, P602 ([#803](https://github.com/xmejkal/spark/issues/803)), fire that drifts with a scrolling world (`HeatField.scroll`, `FireLayer`), merged with no game on it: the PO tried it behind flappy's bird and kept it for other games. The PO chose "Full MVP, 4 slices" on 2026-11-04 to close the effects epic P594 ([#795](https://github.com/xmejkal/spark/issues/795)). Paused: P582 ([#783](https://github.com/xmejkal/spark/issues/783)), heavy floors for RENT, on the branch `p582-heavy`, not merged.
 
