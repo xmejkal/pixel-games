@@ -2,6 +2,7 @@
 
 All paths are relative to the root of this repository. Line numbers are from master on 2026-11-05.
 `bench.md` is that repository's bench log. A board number below is a median or a range from one bench run, with its run name.
+The same lessons as step-by-step pictures: [the P594 engine lessons on Miro](https://miro.com/app/board/uXjVEavQ4JQ=/?moveToWidget=3458764689493945034).
 
 ## 0. The short version
 
@@ -179,7 +180,7 @@ events go out as `array('i')` (`binding.c:19`). `Balls.step` rejects a `dt` that
 (`:413`), and `set_material` rejects NaN in the same way (`:494`). `HeatField` checks that the object is not freed (`live`,
 `:180-186`), and `draw` checks that the display is an s3lcd of the right size and that the palette is an `array('H')` of 256
 (`:283-299`). A wrong call stops at the border, so the C core can trust its input.
-The module is registered at `binding.c:540-558`, and the build lists the five C files in `engine/micropython.cmake:5-11`.
+The module is registered at `binding.c:542-560`, and the build lists the five C files in `engine/micropython.cmake:5-11`.
 Data crosses in bulk, not one value at a time. `read` writes all bodies into one array, so Python makes no float (`world.h:37-38`).
 A call itself is cheap: 2.60 µs one way (`bench.md:249`, P589). Reading 12 values back one by one from C costs 60.03 µs, against 32.35 µs for 12 Python list reads (`bench.md:247-248`),
 which is why the games read in bulk and C paints.
@@ -187,7 +188,7 @@ which is why the games read in bulk and C paints.
 ## Lesson C. Events: how a hit gets to Python
 
 An event is three ints: `id`, `kind`, `speed` (`events.h:14-16`). The kinds are `EVENT_HIT = 1` and `EVENT_SLEEP = 2`
-(`events.h:12`), exported as `engine.HIT` and `engine.SLEEP` (`binding.c:543-544`) and mirrored as `motion.HIT` and `motion.SLEEP`
+(`events.h:12`), exported as `engine.HIT` and `engine.SLEEP` (`binding.c:545-546`) and mirrored as `motion.HIT` and `motion.SLEEP`
 (`motion.py:37`). The buffer holds 64 events (`events.h:10`). A step call keeps the first 64 and counts the rest in `dropped`
 (`events.h:29-33`).
 The path of one hit in the burning scene:
@@ -202,7 +203,7 @@ The path of one hit in the burning scene:
 The rule shows clearly here. C does not know what a flare is. The same event in the ball pit does something else: `BallPit`
 only counts the hits for its HUD (`balls.py:117-119`). The ball events differ in one more way. They come from the first pass of
 the solver only, and only above `hit_min` (`fx_balls.h:75-81`, `fx_balls.c:155-160`, `:207-209`).
-Board number: the step plus the drain of 16 events costs about 0.18 ms a frame (`bench.md:245`, P589), and a step, a read and a
+Board number: the step plus the drain costs about 0.18 ms a frame (`bench.md:245`, P589, a drain of 16 events alone 162.5 µs at `:244`), and a step, a read and a
 drain allocate 0 B (`bench.md:402`, P590).
 
 ## Lesson D. How effects combine
@@ -213,7 +214,7 @@ Four pieces work together on one field of heat: a byte per cell, 0 to 255, in `f
    inside radius `r`, writes the larger of the old heat and the new heat (`fx_fire.c:334-352`, the test at `:347`). The rule is
    "keep the max", not "add". So two bodies close together never overflow a byte, and the order of burns does not matter.
    Embers and the spots at the base use the same rule (`fx_fire.c:172`, `:133`).
-2. The field's own step moves the heat. Each cell becomes the weighted mean of the three cells below it and the cell two below,
+2. The field's own step moves the heat. Each cell becomes the sum of the three cells below it and the cell two below, times the decay, shifted right by 7,
    at most the hottest of those four, less the cooling map and the fade (`fx_fire.h:54-62`, `fx_fire.c:180-238`).
    The scene sets `set_base(False)`, so the base row is cleared and only the burns feed the fire (`burning.py:69`,
    `fx_fire.c:188-189`). The look is data: `LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)` (`burning.py:58`).
@@ -239,7 +240,7 @@ A new effect is one more `Effect` subclass with `update(x, y)` and `reset()` (`e
 | --- | --- | --- |
 | Shape | a point that falls onto its own plane `rest_y` | a disc of radius 2 to 5 (`fx_balls.h:19-20`) |
 | Contacts | none between bodies | every overlapping pair, plus the walls |
-| Integration | gravity into `vy`, then `x`, `y` move (`world.c:47-49`) | the same, then positions are pushed apart, then velocity becomes the move over `dt` (`fx_balls.c:265-270`, `:301-302`) |
+| Integration | gravity into `vy`, then `x`, `y` move (`world.c:47-49`) | the same, then positions are pushed apart, then velocity becomes the move over `dt` (`fx_balls.c:266-271`, `:302-303`) |
 | Floor | bounce by `restitution`, `vx` times `friction`, or sleep under `1.5 * gravity * dt` (`world.c:50-62`) | the solver, see below |
 | Twin in Python | `motion.fall_bodies` (`motion.py:42-74`) | none |
 | Board | 0.21 to 0.23 ms for 160 bodies (`bench.md:398`) | 4.2 ms at 100 settled balls, 13.8 ms at 300 (`README.md`, `bench.md:469`) |
@@ -254,8 +255,8 @@ The balls are the large case. `substep` (`fx_balls.c:259-305`) does this, four t
    is the radius squared, so the lighter ball moves further (`:123-143`, `share` at `:99-101`). This is Jakobsen's position
    Verlet, named in `fx_balls.h:3-4`.
 4. Friction. If `friction > 0`, the sliding part of the pair's move is taken back, up to `friction` times the push. That is
-   Coulomb friction on positions (`held`, `:117-119`, used at `:144-154`). The walls do the same in one dimension
-   (`wall_friction`, `:169-172`).
+   Coulomb friction on positions (`held`, `:118-120`, used at `:144-154`). The walls do the same in one dimension
+   (`wall_friction`, `:170-172`).
 5. Walls. `walls` puts the ball back inside the box and removes its move into the wall (`:184-210`).
 6. Velocity and the cap. A ball may move at most `FX_BALLS_MOVE_MAX = 1.5` px in a substep, so no touching pair can swap
    sides. Then `v = move / dt` times the damping (`:291-303`, `fx_balls.h:26`).
