@@ -11,6 +11,7 @@ import sys
 import time
 import types
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
@@ -133,6 +134,61 @@ class FieldStandIn:
 
     def step(self, n, wind):
         self.steps.append(n)
+
+    def draw(self, tft, palette, alpha=None):
+        pass
+
+
+class Clock:
+    """A stand-in for time.ticks_us that moves step µs at each read, so every timed sum has an exact value."""
+
+    def __init__(self, step):
+        self.now, self.step = 0, step
+
+    def __call__(self):
+        self.now += self.step
+        return self.now
+
+
+class StepTimeTest(unittest.TestCase):
+    """Each plugin sums its own steps' µs, and the game takes them once, into its report and its HUD (P633)."""
+
+    def test_the_physics_plugin_sums_its_steps_until_taken(self):
+        plugin = plugins.PhysicsPlugin(1, False)
+        with mock.patch.object(time, "ticks_us", Clock(5)):
+            plugin.fixed_update(10)
+            plugin.fixed_update(10)
+        self.assertEqual(10, plugin.take_step_us())
+        self.assertEqual(0, plugin.take_step_us())
+
+    def test_the_fire_plugin_sums_its_steps(self):
+        plugin = fire.FirePlugin(fire.Fire.LOOK, 1)
+        plugin.field = FieldStandIn()
+        with mock.patch.object(time, "ticks_us", Clock(5)):
+            plugin.late_update(40)
+            plugin.late_update(40)
+        self.assertEqual([1, 1], plugin.field.steps)
+        self.assertEqual(10, plugin.take_step_us())
+
+    def test_the_fire_counts_its_fields_step_once(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = fire.Fire()
+        game.fire_plugin.field, game.last = FieldStandIn(), 0
+        cv = types.SimpleNamespace(tft=None)
+        with mock.patch.object(time, "ticks_us", Clock(0)):
+            game.fire_plugin.step_us = 7
+            game.paint(cv)
+            game.paint(cv)
+        self.assertEqual((7, 7, 0), (game.us[0], game.hud_us, game.fire_plugin.step_us))
+
+    def test_the_rain_counts_its_bodies_step_once(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = rain.Rain()
+        with mock.patch.object(time, "ticks_us", Clock(0)):
+            game.physics_plugin.step_us = 9
+            game.play(False, False)
+            game.play(False, False)
+        self.assertEqual((9, 9), (game.us[0], game.hud_step))
 
 
 class FirePluginTest(unittest.TestCase):

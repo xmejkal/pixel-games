@@ -12,7 +12,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -92,10 +94,17 @@ class BurningTest(unittest.TestCase):
         game = self.scene()
         game.physics_plugin.step_us = 7
         game.ms = 40
-        game.play(True, True)
+        with mock.patch.object(time, "ticks_us", lambda: 0):  # the read's own time is 0, so the sums are exact
+            game.play(True, True)
         self.assertEqual("nearest", game.mode_name)
-        self.assertGreaterEqual(game.us[0], 7)
-        self.assertGreaterEqual(game.hud_us, 7)
+        self.assertEqual((7, 7), (game.us[0], game.hud_us))
+
+    def test_the_scene_counts_the_ms_it_played(self):
+        """A body rests REST_MS of played time before it drops, so played_ms grows by each frame's ms."""
+        game = self.scene()
+        for _ in range(3):
+            self.frame(game, 20)
+        self.assertEqual(60, game.played_ms)
 
     def frame(self, game, ms):
         """One frame's FixedUpdate and Update, as Game.step runs them while the game plays (P633)."""
