@@ -50,8 +50,8 @@ class Rain(Game):
 
     def drop(self, i):
         """Box i, anew above the screen: a random column, height, drift and plane (D12: Python decides the respawn)."""
-        self.physics_plugin.spawn(i, random.randrange(W - SIZE), -SIZE - random.randrange(H), random.randrange(-40, 41), 0,
-                           H - SIZE - random.randrange(40))
+        self.physics_plugin.spawn(i, random.randrange(W - SIZE), -SIZE - random.randrange(H), random.randrange(-40, 41),
+                                  0, H - SIZE - random.randrange(40))
 
     def play(self, pressed, held):
         """A tap swaps the stepper and starts again. Else the bodies the plugin stepped in FixedUpdate are read."""

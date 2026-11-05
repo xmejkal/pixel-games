@@ -22,7 +22,7 @@ import balls  # noqa: E402
 import balls_lib  # noqa: E402
 import burning  # noqa: E402
 import fire  # noqa: E402
-import rain  # noqa: E402
+import plugins  # noqa: E402
 from PIL import Image  # noqa: E402
 
 SCENES = {"fire": fire.Fire, "burning": burning.BurningBodies, "balls": balls.BallPit}
@@ -50,12 +50,12 @@ def main():
     args = parser.parse_args()
     name, out, counts = args.scene, args.out, args.frames
     fire.engine = Engine(build(core("fx_fire"), ("-I", S3LCD_SRC)))
-    balls.engine, rain.engine = balls_lib.engine(), None  # bodies on rain.Stepper over motion.Bodies
+    balls.engine, plugins.engine = balls_lib.engine(), None  # bodies on a PhysicsPlugin over motion.Bodies
     fire.random.seed(fire.SEED)  # the fire's gusts too, so a render with each filter shows the same flames
     with contextlib.redirect_stdout(io.StringIO()):
         game, tft, now, shots = SCENES[name](), Tft(), 0, []
         if args.filter:
-            game.field.set_filter(FILTERS[args.filter])
+            game.fire_plugin.set_filter(FILTERS[args.filter])
         for n in counts:
             while now // 40 < n:
                 _, now = play(game, 1, now, tft)

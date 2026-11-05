@@ -52,7 +52,7 @@ Runs now:
   restitution_threshold)` takes Box2D v3's names, and the pit uses 0.5, 0.7 and 100 px/s. Each hit is an event with
   its speed, and the HUD counts the hits a second. On the board, about 100 balls keep 23 to 24 fps (run99d, run100), and 320 run at 6 to 8 fps (run104, run100).
   A settled pile's step takes 4.2 ms at 100 balls and 13.8 ms at 300 (bench.md, P598). It needs the engine image.
-- The bodies on fire (P596, P607, `games/burning.py`), third: eight falling bodies from the rain's stepper each carry
+- The bodies on fire (P596, P607, `games/burning.py`), third: eight falling bodies on the rain's physics each carry
   an `effects.FireTrail`, which burns heat into the fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
   burn. A hit at 600 px/s or faster flares up at the body's plane: C reports the hit with its speed as an event, and
   Python decides the flare (P590). `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO,
@@ -63,12 +63,22 @@ Runs now:
 - The bodies' API (P590): `engine.Bodies(n)` in C and its twin `motion.Bodies(n)` in Python take the same calls:
   `spawn`, `step`, `read` into an `array('h')` and `drain` into an `array('i')`. A step reports each hit with its
   speed (`HIT`) and each body that comes to rest (`SLEEP`) as an event, and the game drains them once per frame.
-  `rain.Stepper` holds either one, and `motion.StepClock` turns a frame's ms into 10 ms steps.
-- Effects on bodies (P607, `games/effects.py`): a body of a `rain.Stepper` carries an effect, and an event can start
-  one. A scene makes `EffectSystem(stepper)` once and calls `dispatch` and `update` each frame, after the step and the read:
+  `plugins.PhysicsPlugin` holds either one, and its `motion.StepClock` turns a frame's ms into 10 ms steps.
+- Plugins (P633, `games/plugins.py`): a scene turns on an engine layer by listing it in one line, and leaves a layer
+  off by not making it. The rain lists `(physics_plugin,)`, the fire `(fire_plugin,)` and the bodies on fire both:
 
   ```python
-  effects = EffectSystem(stepper)
+  self.plugins = (self.physics_plugin, self.fire_plugin)  # in BurningBodies.setup
+  ```
+
+  While the game plays, `Game.step` runs each plugin's `fixed_update(ms)` (the bodies step by their clock), then the
+  game's `play` (reads, events, burns), then each plugin's `late_update(ms)` (the field takes the burns, blows and
+  steps), in Unity's order. The game's `paint` calls each plugin's `draw` where it wants that layer.
+- Effects on bodies (P607, `games/effects.py`): a body of a `PhysicsPlugin` carries an effect, and an event can start
+  one. A scene makes `EffectSystem(physics_plugin)` once and calls `dispatch` and `update` each frame, after the read:
+
+  ```python
+  effects = EffectSystem(physics_plugin)
   effects.bodies[0].effect = FireTrail(field, 8, 3, 200, 0.5)  # size px, radius cells, heat, lag frames
   handlers = {HIT: lambda body, speed: ...}  # Python decides what a hit causes; it can set body.effect
   effects.dispatch(handlers)

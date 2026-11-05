@@ -220,8 +220,8 @@ class FireTest(unittest.TestCase):
                 tft.blits, fire.engine.targets, fire.engine.filters = [], [], []
                 cv, now = play(game, 1, now, tft, pressed=True)
                 cv, now = play(game, 1, now, tft)
-                seen.append((fire.MODES[game.mode][0], fire.engine.filters, game.fire_plugin.field.f.filter, fire.engine.targets,
-                             tft.blits, cv.fills))
+                seen.append((fire.MODES[game.mode][0], fire.engine.filters, game.fire_plugin.field.f.filter,
+                             fire.engine.targets, tft.blits, cv.fills))
         sky = [(0, 0, fire.WIDTH, fire.HEIGHT)]
         self.assertEqual([
             ("picture", [fire.LINEAR], fire.LINEAR, ["tft alpha", "tft alpha"], [], sky),

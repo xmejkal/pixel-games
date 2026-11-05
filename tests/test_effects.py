@@ -1,6 +1,6 @@
 """games/effects.py on the Mac (P607): a body carries an effect, the effect runs once a frame at its place, and an
-event of the step can start one. The physics plugin and the field are stand-ins, so no C is built. Run from the repository
-root: python3 -m unittest discover tests. --- MVP (P607) ---"""
+event of the step can start one. The physics plugin and the field are stand-ins, so no C is built. Run from the
+repository root: python3 -m unittest discover tests. --- MVP (P607) ---"""
 
 import os
 import sys
@@ -22,7 +22,8 @@ SIZE, RADIUS, HEAT, LAG = 8, 3, 200, 0.5
 
 
 class PhysicsPluginStandIn:
-    """A stand-in for plugins.PhysicsPlugin: the test sets each body's top left corner and the events that events() drains."""
+    """A stand-in for plugins.PhysicsPlugin: the test sets each body's top left corner and the events that events()
+    drains."""
 
     def __init__(self, n):
         self.n, self.places, self.drained = n, [(0, -100)] * n, []

@@ -81,8 +81,8 @@ class Body:
 
 class EffectSystem:
     """A system, as in the entity-component-system pattern: the bodies of one physics plugin with their effects, made
-    once, so a frame makes no list. dispatch sends the step's events to their handlers (the observer pattern), and update runs
-    each effect once a frame (the update method pattern)."""
+    once, so a frame makes no list. dispatch sends the step's events to their handlers (the observer pattern), and
+    update runs each effect once a frame (the update method pattern)."""
 
     def __init__(self, physics_plugin):
         self.physics_plugin = physics_plugin

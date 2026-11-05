@@ -1,8 +1,8 @@
 """
 Bodies on fire (P596, P607): the fire of fire.py on objects, the proof of concept for effects in the games. A few of
 the rain's falling bodies (plugins.PhysicsPlugin, on engine.Bodies or without the engine on motion.Bodies) each carry
-an effects.FireTrail, which burns heat into one screen-wide fire field (HeatField.burn, fx_fire_burn). The heat goes in a
-little behind each body, LAG frames of its motion, so a body at rest burns straight up and a moving body's flames
+an effects.FireTrail, which burns heat into one screen-wide fire field (HeatField.burn, fx_fire_burn). The heat goes in
+a little behind each body, LAG frames of its motion, so a body at rest burns straight up and a moving body's flames
 stream back against its motion (the PO's yes, 2026-11-03). The field's base is off, so only the bodies burn. A body
 that falls asleep rests REST_MS on its plane, then falls again from above.
 
