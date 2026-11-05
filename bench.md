@@ -574,7 +574,8 @@ from the scene's 5 s lines (seven each), and paint from the App's `time` lines.
 - Rain's mean step is 0.05 to 0.06 ms higher: `fixed_update` adds a `StepClock.take`, two tick reads and one call a
   frame.
 - Rain's mean draw is 1.0 to 1.7 ms higher (run118 10.55 to 11.52 ms, run117 10.50 to 12.18 ms). The cause is not
-  found. run118's master run is a second run: its first five lines equal run117's, and its later lines differ. The draw loop is the same loop, and the
+  found. run118's master run is a second run: its first five lines equal run117's, and its later
+  lines differ. The draw loop is the same loop, and the
   boxes are in the same places (the refuter's 300 frames on the Mac). A row in P633's rows file holds it.
 - The review fixes after 143c879 (`take_step_us`, and the burning scene takes a tap before it counts) were not run
   on the board. They add one call a frame and move no work.
