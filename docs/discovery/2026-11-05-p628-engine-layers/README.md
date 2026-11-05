@@ -74,18 +74,18 @@ sequenceDiagram
     A->>X: draw(cv): bg, discs from P arrays, fire blend, HUD, then tft.show()
 ```
 
-- **Python.** One `Subsystem` interface with `step`, `draw`, `events`. `App.frame` calls only the subsystems a game
+- Python. One `Subsystem` interface with `step`, `draw`, `events`. `App.frame` calls only the subsystems a game
   names in `uses`. `Game.play` shrinks to decisions. The clocks move out of the games (P622's wish).
-- **C.** The split that matters: `fx_balls_draw` leaves `fx_balls.c` for a painter `fx_discs.c` that takes
+- C. The split that matters: `fx_balls_draw` leaves `fx_balls.c` for a painter `fx_discs.c` that takes
   `(x, y, r, colour, n)` (`fx_balls.c:332-353`). Then "physics only" works with a Python painter, and "graphics
   only" draws discs from any arrays. `binding.c` splits into one file per subsystem.
-- **Driver and loop.** The driver is unchanged at first. Later each painter takes a rect and a blend mode instead of
+- Driver and loop. The driver is unchanged at first. Later each painter takes a rect and a blend mode instead of
   `frame_dirty_all` (`binding.c:307`, `:470`), so two C painters stack. `App.frame` runs the subsystems in a fixed order.
-- **Cost.** Medium. Two new Python classes, one C file moved, binding split in two or three. Every game changes once.
-- **First stage.** Move `fx_balls_draw` into `fx_discs.c` with the same body, called from `Balls.draw` with its own
+- Cost. Medium. Two new Python classes, one C file moved, binding split in two or three. Every game changes once.
+- First stage. Move `fx_balls_draw` into `fx_discs.c` with the same body, called from `Balls.draw` with its own
   arrays. No behaviour changes, the Mac tests hold, and `BallPit` runs as before.
 
-## Option B. Entity-component-system, as Unity DOTS and Bevy
+## Option B. Entity-component-system
 
 Nystrom's Component splits one entity into `InputComponent`, `PhysicsComponent` and `GraphicsComponent`, and the
 container holds the shared state, "like position and velocity". Source: https://gameprogrammingpatterns.com/component.html
@@ -115,14 +115,14 @@ sequenceDiagram
     A->>S: DiscPainter.run(World, cv), FireDraw.run(World, cv), then tft.show()
 ```
 
-- **Python.** `World.add_system(BallSolver())` turns a layer on. A game adds components to entities instead of
+- Python. `World.add_system(BallSolver())` turns a layer on. A game adds components to entities instead of
   owning a `Balls` and a `Stepper`. `EffectSystem` already names this pattern (`effects.py:82-85`).
-- **C.** The biggest rewrite. `fx_balls_t` and `world_t` each own their arrays (`fx_balls.h:38-40`, `world.h:14-16`).
+- C. The biggest rewrite. `fx_balls_t` and `world_t` each own their arrays (`fx_balls.h:38-40`, `world.h:14-16`).
   An ECS puts the arrays in one `World` block, and each solver takes pointers. To keep the "no pointer in a block" rule,
   the systems must find the arrays from `cap`, as today's macros do.
-- **Driver and loop.** Same as option A. Order bugs live in the registration order, as Nystrom warns for shared state.
-- **Cost.** High. Every C type changes its layout, and every test fixture with it (`tests/world_lib.py`, `balls_lib.py`).
-- **First stage.** Keep the C as is. In Python, make `Body` a list of components and let `EffectSystem.update` run every
+- Driver and loop. Same as option A. Order bugs live in the registration order, as Nystrom warns for shared state.
+- Cost. High. Every C type changes its layout, and every test fixture with it (`tests/world_lib.py`, `balls_lib.py`).
+- First stage. Keep the C as is. In Python, make `Body` a list of components and let `EffectSystem.update` run every
   component (`effects.py:99-104`). That alone gives P611's second effect. The rest waits. Where it pays: P616 "balls
   on fire" becomes "a HeatEmitter on a few ball entities".
 
@@ -160,16 +160,16 @@ sequenceDiagram
     A->>RE: FirePlugin.draw, Game.paint, HudPlugin.draw, then Present: tft.show()
 ```
 
-- **Python.** `App` gets five stage lists and `add_plugin`. A game lists its plugins in one line:
+- Python. `App` gets five stage lists and `add_plugin`. A game lists its plugins in one line:
   `plugins = (PhysicsPlugin(Balls, ...), FirePlugin(LOOK))`. `BurningBodies.play` (`burning.py:97-107`) and
   `Fire.play` (`fire.py:130-149`) become plugin callbacks. `Game.play` keeps the decisions only.
-- **C.** Nothing in stage one. The `fx_discs.c` split of option A comes as stage two, so `PhysicsPlugin(Balls)` runs
+- C. Nothing in stage one. The `fx_discs.c` split of option A comes as stage two, so `PhysicsPlugin(Balls)` runs
   without its painter.
-- **Driver and loop.** Nothing in the driver at first. The Render stage already is `TftOut.draw` plus `Game.draw`
+- Driver and loop. Nothing in the driver at first. The Render stage already is `TftOut.draw` plus `Game.draw`
   (`lcd.py:176-190`, `gfx.py:369-388`). `App.frame` runs the stages in order (`app.py:80-117`), one time sum per stage.
-- **Cost.** Low to medium, Python only. The three games with glue lose about 30 lines each (H, from `balls.py:76-119`,
+- Cost. Low to medium, Python only. The three games with glue lose about 30 lines each (H, from `balls.py:76-119`,
   `burning.py:61-107`, `rain.py:87-116`).
-- **First stage.** Make `PhysicsPlugin` from `rain.Stepper` plus its `StepClock`, and let `Rain` and `BurningBodies`
+- First stage. Make `PhysicsPlugin` from `rain.Stepper` plus its `StepClock`, and let `Rain` and `BurningBodies`
   use it. Both games run as before, and `tests/test_rain.py` and `test_burning.py` hold.
 
 ## How the options answer the PO's asks
@@ -190,7 +190,7 @@ Start with option C, then take option A's C split as its stage two. Reasons:
    numbers stay comparable to run89 and run99.
 2. The PO's asks are answered by one line per game, the plugin list. Graphics only and physics only work after stage
    one for the rain and the fire. The ball pit needs the `fx_discs.c` split, which is option A's first stage.
-3. Nystrom's Game Loop and Update Method are already in the code. The stage names are Unity's and Bevy's.
+3. Nystrom's Game Loop and Update Method are already in the code. The stage names are Unity's. Bevy's names are H.
 4. Option B is the right end state for many effects on many bodies, but it rewrites every C block and every test
    fixture. Its first stage, components as a list on `Body`, fits into option C unchanged.
 5. Open for the council (H): the sound driver, the rect per painter in s3lcd, and one `StepClock` per plugin or in `App`.
