@@ -1,6 +1,6 @@
 # P612: where flappy's frame time goes, and the way to 25 to 30 fps (spike finding, 2026-11-05)
 
-Spark issue [#817](https://github.com/xmejkal/spark/issues/817), with P604 [#805](https://github.com/xmejkal/spark/issues/805) folded in. The bench rows are in `bench.md`, section P612. Tags: E evidence with a pointer, H a hypothesis and where it comes from. Image 481959b8587c1502, `games/*.py` at 184fa2e (the board's files match master byte for byte). Probes are throwaway scripts run with `mpremote run`. Each run is about 47 s with an autopilot that flaps, and `die` off.
+Spark issue [#817](https://github.com/xmejkal/spark/issues/817), with P604 [#805](https://github.com/xmejkal/spark/issues/805) folded in. The bench rows are in `bench.md`, section P612. Tags: E evidence with a pointer, H a hypothesis and where it comes from. Image 481959b8587c1502, `games/*.py` at 184fa2e (the board's files match master byte for byte). The probes are in `probes/`, run with `mpremote run`, with FIRE, CAP or REDRAW set per run. Each run is about 47 s with an autopilot that flaps, and `die` off.
 
 ## Short version
 
