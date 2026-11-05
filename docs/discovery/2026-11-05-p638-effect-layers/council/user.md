@@ -21,7 +21,7 @@ Written 2026-11-05 by the same Fable agent that wrote the other two lenses (no i
 ## Questions for the decider
 
 - Q2 · Should the body show through the flames in front? · decides: whether the front layer blends at full heat or at a capped alpha, and so one pass or two.
-- Q3 (part of it) · Do you want the layer list beside Game.plugins, one tuple per scene? · decides: the Python API's shape.
+- Q8 (part of it) · Do you want the layer list beside Game.plugins, one tuple per scene? · decides: the Python API's shape.
 
 ## Searches
 

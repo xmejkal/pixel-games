@@ -6,7 +6,7 @@ status: proposed, or filed D<n>. -->
 ## P639 slice 0: the burning scene paints the bodies, then the field blended over them (option A)
 - type: story, a feel slice (the existing card #854 takes it as its first slice; no new card) <!-- REQUIRED:item-type -->
 - needed by: "when somehthing is on fire, it cannot only be around it" (the PO, 2026-11-05, spark #853) <!-- REQUIRED:needed-by -->
-- value proven by: the PO plays it on the board and says it looks on fire; the `burning linear fps` line at 23 or more (run117: 24 to 25, `bench.md:571`) <!-- REQUIRED:value-proven-by -->
+- value proven by: the PO plays it on the board and says it looks on fire; the scene's draw ms at 13.5 or less and the fps at 23 or more (run117: 6.40 to 6.44 ms, 24 to 25 fps, `bench.md:570-571`) <!-- REQUIRED:value-proven-by -->
 - depends on: Q4 (A or A then B), Q2 (one field or two) <!-- REQUIRED:depends-on -->
 - status: proposed <!-- REQUIRED:item-status -->
 <!-- EXTEND:item-fields -->

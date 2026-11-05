@@ -26,8 +26,8 @@ Written 2026-11-05 by the same Fable agent that wrote the other two lenses (no i
 
 ## Questions for the decider
 
-- Q2 · Must the body stay visible through the front flames? · decides: one pass or two, and so A3's cost.
-- Q3 · Is the layer list part of pixel-engine's Python side, or of pixel-games? · decides: where the list lives and who tests it.
+- Q2 · Must the body stay visible through the front flames? · decides: one pass or two, and so A2's cost.
+- Q8 · Is the layer list part of pixel-engine's Python side, or of pixel-games? · decides: where the list lives and who tests it.
 
 ## Searches
 
