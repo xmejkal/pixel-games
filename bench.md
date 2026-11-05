@@ -504,3 +504,39 @@ after. The P612 probes ran unchanged on the new image:
 | --- | --- | --- | --- | --- | --- |
 | `run114-p632-flappy-nocap.log` | flappy, no pace, as run109 | 28 | 21.5 to 22.6 | 7.9 to 9.1 | run109: 28, 21.5 to 22.6, 7.9 to 9.1 |
 | `run114-p632-rain-redraw.log` | rain, the label redrawn every 500 ms, as run112a | 24 to 25 | 18.4 to 20.1 | 3.6 to 4.1 | run112a: 24 to 25, 17.5 to 19.8, 3.7 to 4.2 |
+
+## P635 (#850) slice 0, 2026-11-05: what jointed silhouette figures cost in the burning scene
+
+`tools/probe635.py` (run with `mpremote run`, nothing copied) plays `BurningBodies` with figures of 10 bones and a
+head disc (a sine walk of 16 baked poses), drawn after the scene's own paint. Each run is 60 s on the image of P632.
+
+Per call, the first figure ever drawn (`run115-p635-n0.log`):
+
+| call | us |
+| --- | --- |
+| `tft.line` 12 px | 17.7 |
+| `tft.line` 12 px twice (2 px) | 30.0 |
+| `cv.line` 12 px (the canvas wrapper) | 147.4 |
+| `fill_circle` r 3 | 20.6 |
+| `polygon` 5 points | 79.2 |
+| `fill_polygon` 4 points | 18.9 |
+| one figure through `cv.line`, 2 px | 2,779 |
+| one figure through `tft.line`, 2 px | 294 |
+| one figure as 3 `polygon` chains, 1 px | 117 |
+| one figure as one `fill_polygon` quad per bone, 2 px | 189 |
+
+The scene with figures drawn as quads (the App's `time` lines, the first line of each run left out):
+
+| run | figures | step ms | paint ms | send ms | gc ms | sum ms | fps | worst ms | figures ms |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `run115-p635-n0.log` | none | 8.7 | 9.5 to 9.9 | 3.8 to 4.3 | 3.6 | 25.6 to 26.4 | 24 | 54 to 74 | |
+| `run115-p635-n6-way3-burn0.log` | 6 walking | 8.7 to 8.8 | 10.6 to 11.0 | 3.7 to 4.0 | 3.6 | 26.6 to 27.3 | 24 | 53 to 62 | 1.48 |
+| `run115-p635-n12-way3-burn0.log` | 12 walking | 8.8 to 8.9 | 12.3 to 12.6 | 3.8 to 4.1 | 3.6 to 3.7 | 28.8 to 29.3 | 24 | 53 to 69 | 2.80 |
+| `run115-p635-n24-way3-burn0.log` | 24 walking | 9.1 | 15.0 to 15.2 | 3.7 to 4.0 | 3.6 to 3.7 | 31.5 to 31.9 | 23 to 24 | 55 to 88 | 5.36 |
+| `run115-p635-n12-way3-burn1.log` | 12 burning (a `FireTrail` each) | 10.0 to 10.1 | 12.2 to 12.6 | 3.8 to 3.9 | 3.7 | 29.8 to 30.2 | 24 | 57 to 62 | 2.78 |
+
+- Decision: go. 12 figures add about 2.9 ms walking and about 3.9 ms burning (the plan's limit: 8 ms), and the scene
+  keeps 24 fps. The figures stay in Python, drawn as one `fill_polygon` quad per bone plus a `fill_circle` head,
+  with the poses baked once as panel offsets. No C painter is needed for the MVP.
+- The canvas wrapper costs 8 times the driver's call (147 against 18 us), so the figure painter calls the driver.
+- `polygon` closes each chain, so a chain draws a line from foot to foot: it is the cheapest, but 1 px and wrong.
