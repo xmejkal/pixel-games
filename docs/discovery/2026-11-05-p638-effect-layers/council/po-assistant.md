@@ -22,12 +22,12 @@ Written 2026-11-05 by the same Fable agent that wrote the other two lenses (no i
 
 - Unity's "2D rendering order" page with the full priority list: not fetched, budget.
 - Whether a second full-panel blend keeps the burning scene within 2 fps: no board run in a discovery.
-- What the PO sees as "on fire": only he can say (Q4).
+- What the PO sees as "on fire": only he can say (Q2).
 
 ## Questions for the decider
 
-- Q4 · Must the body stay visible through the front flames? · decides: one pass or two, and so A3's cost.
-- Q2 · Is the layer list part of pixel-engine's Python side, or of pixel-games? · decides: where the list lives and who tests it.
+- Q2 · Must the body stay visible through the front flames? · decides: one pass or two, and so A3's cost.
+- Q3 · Is the layer list part of pixel-engine's Python side, or of pixel-games? · decides: where the list lives and who tests it.
 
 ## Searches
 

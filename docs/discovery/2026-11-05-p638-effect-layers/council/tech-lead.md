@@ -25,7 +25,7 @@ Written 2026-11-05 by the same Fable agent that wrote the other two lenses (no i
 
 ## Questions for the decider
 
-- Q2 · Does the layer list belong to pixel-engine's Python side (a module beside plugins.py that the engine ships), or to pixel-games? · decides: which repository holds it and tests it.
+- Q3 · Does the layer list belong to pixel-engine's Python side (a module beside plugins.py that the engine ships), or to pixel-games? · decides: which repository holds it and tests it.
 - Q5 · Does fx_fire.c keep including the driver's blend565.h, or does the blend move into the core with the driver including it? · decides: the dependency direction between core and driver.
 
 ## Searches
