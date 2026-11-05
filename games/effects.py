@@ -1,10 +1,10 @@
 """
-Effects on bodies (P607): a body of a rain.Stepper carries an effect, and an engine event can start one. A scene writes
-`body.effect = FireTrail(field, ...)`, then each frame calls EffectSystem.dispatch(handlers) for the step's events and
-EffectSystem.update() for the effects. Python decides what an event causes (engine D12): handlers maps an event kind
-(motion.HIT or SLEEP) to a call of (body, speed), which can set body.effect or burn a flare. A new effect is one more
-Effect, and its callers do not change. A scene whose world moves under the screen calls effect.scroll(dx) each frame,
-so a path moves with the world (P602, no scene does yet).
+Effects on bodies (P607): a body of a plugins.PhysicsPlugin carries an effect, and an engine event can start one. A
+scene writes `body.effect = FireTrail(field, ...)`, then each frame calls EffectSystem.dispatch(handlers) for the
+step's events and EffectSystem.update() for the effects. Python decides what an event causes (engine D12): handlers
+maps an event kind (motion.HIT or SLEEP) to a call of (body, speed), which can set body.effect or burn a flare. A new
+effect is one more Effect, and its callers do not change. A scene whose world moves under the screen calls
+effect.scroll(dx) each frame, so a path moves with the world (P602, no scene does yet).
 --- MVP (P607) ---
 """
 
@@ -65,14 +65,14 @@ class FireTrail(Effect):
 
 
 class Body:
-    """Body i of a stepper, with the effect it carries (None for none)."""
+    """Body i of a physics plugin, with the effect it carries (None for none)."""
 
-    def __init__(self, stepper, i):
-        self.stepper, self.i, self.effect = stepper, i, None
+    def __init__(self, physics_plugin, i):
+        self.physics_plugin, self.i, self.effect = physics_plugin, i, None
 
     def place(self):
         """The top left corner in px, as read."""
-        return self.stepper.place(self.i)
+        return self.physics_plugin.place(self.i)
 
     def reset(self):
         if self.effect is not None:
@@ -80,17 +80,17 @@ class Body:
 
 
 class EffectSystem:
-    """A system, as in the entity-component-system pattern: the bodies of one stepper with their effects, made once, so
-    a frame makes no list. dispatch sends the step's events to their handlers (the observer pattern), and update runs
+    """A system, as in the entity-component-system pattern: the bodies of one physics plugin with their effects, made
+    once, so a frame makes no list. dispatch sends the step's events to their handlers (the observer pattern), and update runs
     each effect once a frame (the update method pattern)."""
 
-    def __init__(self, stepper):
-        self.stepper = stepper
-        self.bodies = [Body(stepper, i) for i in range(stepper.n)]
+    def __init__(self, physics_plugin):
+        self.physics_plugin = physics_plugin
+        self.bodies = [Body(physics_plugin, i) for i in range(physics_plugin.n)]
 
     def dispatch(self, handlers):
         """Each event of the last step call to handlers[kind](body, speed), for the kinds handlers holds."""
-        k, events = self.stepper.events(), self.stepper.drained
+        k, events = self.physics_plugin.events(), self.physics_plugin.drained
         for j in range(0, 3 * k, 3):
             handler = handlers.get(events[j + 1])
             if handler is not None:

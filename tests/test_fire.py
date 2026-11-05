@@ -220,7 +220,7 @@ class FireTest(unittest.TestCase):
                 tft.blits, fire.engine.targets, fire.engine.filters = [], [], []
                 cv, now = play(game, 1, now, tft, pressed=True)
                 cv, now = play(game, 1, now, tft)
-                seen.append((fire.MODES[game.mode][0], fire.engine.filters, game.field.f.filter, fire.engine.targets,
+                seen.append((fire.MODES[game.mode][0], fire.engine.filters, game.fire_plugin.field.f.filter, fire.engine.targets,
                              tft.blits, cv.fills))
         sky = [(0, 0, fire.WIDTH, fire.HEIGHT)]
         self.assertEqual([
@@ -237,7 +237,7 @@ class FireTest(unittest.TestCase):
             winds, now = [], 0
             for _ in range(1000):
                 _, now = play(game, 1, now, Tft())
-                winds.append(game.wind)
+                winds.append(game.fire_plugin.wind)
         self.assertLessEqual(-fire.WIND, min(winds))
         self.assertLessEqual(max(winds), fire.WIND)
         self.assertLess(min(winds), 0)  # the gusts blow both ways
@@ -249,9 +249,10 @@ class FireTest(unittest.TestCase):
             game = fire.Fire()
             now = 0
             for target in (3, -3, fire.WIND, -fire.WIND):
-                game.wind, game.target, game.gust = 0, target, 10 ** 9  # no new gust during the test
+                plugin = game.fire_plugin
+                plugin.wind, plugin.target, plugin.gust = 0, target, 10 ** 9  # no new gust during the test
                 _, now = play(game, 100, now, Tft())
-                self.assertEqual(target, game.wind)
+                self.assertEqual(target, plugin.wind)
 
     # --- MVP (P602) ---
     def test_scroll_moves_the_field_within_the_bindings_range(self):

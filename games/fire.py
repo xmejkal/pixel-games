@@ -17,6 +17,9 @@ A tap prints `fire mode <mode>` and starts a new interval, so each line holds on
 `fire internal largest <bytes>` (A9), then `fire field <internal|psram>`. Without the engine module the HUD says
 "fire: no C" and nothing else is drawn.
 
+FirePlugin (P633) holds the field, its gusts and its step clock as an engine layer a scene lists in Game.plugins: the
+fire scene lists it alone, the burning scene after its PhysicsPlugin. The scene only picks the mode and draws.
+
 FireLayer (P602) puts the same field into another game as one more layer of its picture: heat burned at a body, moved
 with the world and blended over the game's frame. It was tried as a fire trail behind flappy's bird, and the PO kept
 it for other games (2026-11-04). No game uses it yet.
@@ -30,6 +33,7 @@ from array import array
 import pictures
 from gfx import BLACK, DARK, HEIGHT, LABEL_RECT, WHITE, WIDTH, Game, c565
 from motion import StepClock
+from plugins import Plugin
 
 try:
     import engine
@@ -43,6 +47,7 @@ if not hasattr(engine, "HeatField"):
 W, H = WIDTH // 2, HEIGHT // 2  # cells of 2 x 2 px: 160 x 120
 RATE = 25  # kernel steps a second, one per 40 ms. Game.step caps dt at 60 ms, so a frame takes at most 2
 STEP_MS = 1000 // RATE
+STEP_CAP = 2  # steps a frame at most: Game.step caps a frame at 60 ms, which holds one or two
 # The look's feel numbers, set by the lead from frames on the Mac (fx_fire_set_look)
 DECAY = 33  # 32 keeps the heat, 33 adds a little each row, never past the hottest cell read, and the map brakes it
 COOL = 24  # 0 to 255: how much the rising cooling map takes, so the flames break into tongues; 64 keeps them low
@@ -69,7 +74,6 @@ REPORT_MS = 5000  # app.py's FPS_EVERY_MS, so a fire line comes with each of its
 HUD_MS = 500
 # --- Later, not MVP: kept for other games, the PO 2026-11-04 (P602) ---
 CELL_PX_MS = 2000  # px/s times ms of one cell of 2 px, so FireLayer counts the world's motion in ints
-LAYER_STEP_CAP = 2  # a FireLayer's steps a frame at most: Game.step caps dt at 60 ms, which holds one or two
 
 
 def ramp(stops):
@@ -91,6 +95,47 @@ ALPHA_FULL = 96
 ALPHA = array("B", [min(255, heat * 255 // ALPHA_FULL) for heat in range(256)])
 
 
+class FirePlugin(Plugin):
+    """The heat field as an engine layer (P633): its look, its filter, the gusts of wind and its own StepClock.
+    late_update takes the frame's burns, as the game made them in Update, then blows and steps; draw puts the field into
+    the s3lcd frame, opaque or blended over what the frame holds. Without the engine, field is None and it draws
+    nothing. step_us sums the steps' µs until the game takes it. --- MVP (P633) ---"""
+
+    def __init__(self, look, seed):
+        self.field, self.blend = None, False
+        if engine is not None:
+            self.field = engine.HeatField(W, H, seed)
+            self.field.set_look(*look)
+        self.wind, self.target, self.gust = 0, 0, 0  # the gust model: the wind now, where it goes, ms to the next
+        self.clock, self.step_us = StepClock(STEP_MS, STEP_CAP), 0  # whole 40 ms steps; the rest waits
+
+    def set_filter(self, mag_filter):
+        if self.field is not None:
+            self.field.set_filter(mag_filter)
+
+    def late_update(self, ms):
+        self.gust -= ms
+        if self.gust <= 0:
+            self.target = random.randrange(-WIND, WIND + 1)
+            self.gust = GUST_MS + random.randrange(GUST_MS)
+        d = self.target - self.wind
+        self.wind += d // 8 if d < 0 else (d + 7) // 8  # rounded away from 0, so a gust reaches its target both ways
+        steps = self.clock.take(ms)
+        if self.field is not None and steps:
+            t = time.ticks_us()
+            self.field.step(steps, self.wind)
+            self.step_us += time.ticks_diff(time.ticks_us(), t)
+
+    def draw(self, cv):
+        """The field into the frame: blended at its heat's alpha over what the frame holds, or opaque."""
+        if self.field is None:
+            return
+        if self.blend:
+            self.field.draw(cv.tft, PALETTE, ALPHA)
+        else:
+            self.field.draw(cv.tft, PALETTE)
+
+
 class Fire(Game):
     name = "fire"
     TITLE_MS = 0  # straight into the fire, so the first BOOT tap moves to the next mode
@@ -100,73 +145,60 @@ class Fire(Game):
     def __init__(self):
         self.mode = 0
         self.covers = engine is not None  # every mode paints every pixel: the fire opaque, or the sky under it
-        self.wind, self.target, self.gust = 0, 0, 0  # the gust model: the wind now, where it goes, ms to the next
         super().__init__()
 
     def setup(self):
         pictures.load()
-        self.field = None
         if engine is not None:
             print(self.name, "internal largest", engine.largest_free_internal())
-            self.field = engine.HeatField(W, H, SEED)
-            self.field.set_look(*self.LOOK)
-            print(self.name, "field", self.field.where)
+        self.fire_plugin = FirePlugin(self.LOOK, SEED)
+        if self.fire_plugin.field is not None:
+            print(self.name, "field", self.fire_plugin.field.where)
+        self.plugins = (self.fire_plugin,)  # --- MVP (P633) ---
         self.set_mode(self.mode)
         self.begin()
 
     def set_mode(self, mode):
         """Mode number mode: its name, whether it blends, and its filter on the field. --- MVP (P608) ---"""
         self.mode = mode
-        self.mode_name, mag_filter, self.blend = self.MODES[mode]
-        if self.field is not None:
-            self.field.set_filter(mag_filter)
+        self.mode_name, mag_filter, self.fire_plugin.blend = self.MODES[mode]
+        self.fire_plugin.set_filter(mag_filter)
 
     def begin(self):
         """A new interval for the report and the HUD."""
-        self.acc, self.us, self.frames, self.mark = 0, [0, 0], 0, self.last  # us: step, draw
+        self.us, self.frames, self.mark = [0, 0], 0, self.last  # us: step, draw
         self.hud_us, self.hud_frames, self.hud_mark = 0, 0, self.last  # self.last: None before the first step
-        self.label = self.name + (": no C" if self.field is None else " " + self.mode_name)
+        self.label = self.name + (": no C" if self.fire_plugin.field is None else " " + self.mode_name)
 
     def play(self, pressed, held):
+        """A tap moves to the next mode. The field steps in the plugin's LateUpdate (P633)."""
         if pressed:
             self.set_mode((self.mode + 1) % len(self.MODES))
             print(self.name, "mode", self.mode_name)
             self.begin()
-            return
-        ms = int(self.dt * 1000 + 0.5)
-        self.gust -= ms
-        if self.gust <= 0:
-            self.target = random.randrange(-WIND, WIND + 1)
-            self.gust = GUST_MS + random.randrange(GUST_MS)
-        d = self.target - self.wind
-        self.wind += d // 8 if d < 0 else (d + 7) // 8  # rounded away from 0, so a gust reaches its target both ways
-        self.acc += ms  # whole 40 ms steps; the rest waits for the next frame
-        steps = self.acc // STEP_MS
-        self.acc -= steps * STEP_MS
-        if self.field is not None and steps:
-            t = time.ticks_us()
-            self.field.step(steps, self.wind)
-            self.add(0, t)
 
     def add(self, i, t):
         """The time since t into the report's sum i and the HUD's."""
-        us = time.ticks_diff(time.ticks_us(), t)
+        self.add_us(i, time.ticks_diff(time.ticks_us(), t))
+
+    def add_us(self, i, us):
+        """us µs into the report's sum i and the HUD's."""
         self.us[i] += us
         self.hud_us += us
 
     def paint_static(self, cv):
         """The sky under the picture mode, or black where there is no art, so covers stays true."""
-        if self.field is not None and self.blend and not pictures.draw(cv, "sky", 0, 0):
+        if self.fire_plugin.field is not None and self.fire_plugin.blend and not pictures.draw(cv, "sky", 0, 0):
             cv.fill(0, 0, WIDTH, HEIGHT, BLACK)
 
     def paint(self, cv):
-        if self.field is None:
+        plugin = self.fire_plugin
+        if plugin.field is None:
             return
+        self.add_us(0, plugin.step_us)  # this frame's step: LateUpdate ran before the render
+        plugin.step_us = 0
         t = time.ticks_us()
-        if self.blend:
-            self.field.draw(cv.tft, PALETTE, ALPHA)
-        else:
-            self.field.draw(cv.tft, PALETTE)
+        plugin.draw(cv)
         self.add(1, t)
         self.count(self.last)
 
@@ -205,7 +237,7 @@ class FireLayer:
     int math only, so they make nothing a frame."""
 
     def __init__(self, look, seed):
-        self.field, self.clock, self.acc = None, StepClock(STEP_MS, LAYER_STEP_CAP), 0  # acc: px/s times ms
+        self.field, self.clock, self.acc = None, StepClock(STEP_MS, STEP_CAP), 0  # acc: px/s times ms
         if engine is not None:
             self.field = engine.HeatField(W, H, seed)
             self.field.set_look(*look)

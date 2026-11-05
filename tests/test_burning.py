@@ -1,6 +1,6 @@
 """The bodies on fire (P596, P607) and their flares (P590) on the Mac: the scene on fx_fire.c through test_fire's engine
-stand-in, its bodies on rain.Stepper over motion.Bodies or over world.c (engine/tests/world_lib.py), and its burns. The trail
-itself is tested in test_effects.py. Run from the repository root: python3 -m unittest discover tests.
+stand-in, its bodies on a PhysicsPlugin over motion.Bodies or over world.c (engine/tests/world_lib.py), and its burns.
+The trail itself is tested in test_effects.py. Run from the repository root: python3 -m unittest discover tests.
 --- MVP (P607) ---"""
 
 import contextlib
@@ -20,20 +20,27 @@ from test_fire import FIRE_C, S3LCD_SRC, Engine, Tft, play  # noqa: E402  (also 
 
 import burning  # noqa: E402
 import fire  # noqa: E402
-import rain  # noqa: E402
+import plugins  # noqa: E402
 import world_lib  # noqa: E402
 from motion import HIT, SLEEP  # noqa: E402
 
 REPORT = re.compile(r"^burning (linear|nearest) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 
 
-class StepperStandIn:
-    """A stand-in for rain.Stepper: each body's top left corner is set by the test, read() reports the sleepers, and
-    a step makes the test's next events the ones events() drains, as Bodies.step clears the last ones first."""
+class PhysicsPluginStandIn:
+    """A stand-in for plugins.PhysicsPlugin: each body's top left corner is set by the test, read() reports the
+    sleepers, and a step makes the test's next events the ones events() drains, as Bodies.step clears the last ones
+    first. fixed_update steps every frame, also with 0 steps, as the plugin does."""
 
     def __init__(self, places):
         self.n, self.places, self.asleep, self.spawned = len(places), places, set(), []
-        self.next, self.drained = [], []
+        self.next, self.drained, self.step_us = [], [], 0
+
+    def fixed_update(self, ms):
+        self.step(ms // 10)
+
+    def late_update(self, ms):
+        pass
 
     def spawn(self, i, *args):
         self.spawned.append(i)
@@ -68,18 +75,26 @@ class BurningTest(unittest.TestCase):
 
     def setUp(self):
         fire.engine = Engine(self.lib)
-        self.world, rain.engine = rain.engine, None  # the repository's engine/ folder imports as an empty package here
+        self.world, plugins.engine = plugins.engine, None
 
     def tearDown(self):
-        fire.engine, rain.engine = None, self.world
+        fire.engine, plugins.engine = None, self.world
 
     def scene(self):
         with contextlib.redirect_stdout(io.StringIO()):
             game = burning.BurningBodies()
-        game.stepper = StepperStandIn([(0, -100)] * burning.N)  # every body above the screen: no burn until a test moves one
+        # every body above the screen: no burn until a test moves one
+        game.physics_plugin = PhysicsPluginStandIn([(0, -100)] * burning.N)
+        game.plugins = (game.physics_plugin, game.fire_plugin)
         game.attach_effects()  # the effects on the stand-in
         fire.engine.burns = []
         return game
+
+    def frame(self, game, ms):
+        """One frame's FixedUpdate and Update, as Game.step runs them while the game plays (P633)."""
+        game.ms = ms
+        game.physics_plugin.fixed_update(ms)
+        game.play(False, False)
 
     def test_the_bodies_burn_and_report(self):
         out = io.StringIO()
@@ -90,7 +105,7 @@ class BurningTest(unittest.TestCase):
         self.assertRegex(out.getvalue(), REPORT)
         self.assertRegex(game.label, r"^burning linear \d+\.\d ms \d+ fps$")
         self.assertEqual([burning.BurningBodies.LOOK], fire.engine.looks)
-        self.assertEqual(0, game.field.f.base)  # only the bodies burn
+        self.assertEqual(0, game.fire_plugin.field.f.base)  # only the bodies burn
         self.assertTrue(fire.engine.burns)
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the flames reached the frame
         self.assertTrue(self.flares(), "a first landing flares")
@@ -106,18 +121,18 @@ class BurningTest(unittest.TestCase):
             self.assertNotIn((0, 0, fire.WIDTH, fire.HEIGHT), cv.fills)  # no sky
             fire.engine.targets = []
             cv, now = play(game, 1, now, tft, pressed=True)
-        self.assertEqual(("nearest", fire.NEAREST), (game.MODES[game.mode][0], game.field.f.filter))
+        self.assertEqual(("nearest", fire.NEAREST), (game.MODES[game.mode][0], game.fire_plugin.field.f.filter))
         self.assertEqual([fire.LINEAR, fire.NEAREST], fire.engine.filters)
         self.assertEqual(["tft"], fire.engine.targets)  # opaque
         self.assertNotIn((0, 0, fire.WIDTH, fire.HEIGHT), cv.fills)  # no sky
 
     @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
     def test_a_landing_in_c_flares_in_python(self):
-        rain.engine = world_lib.engine()
+        plugins.engine = world_lib.engine()
         with contextlib.redirect_stdout(io.StringIO()):
             game = burning.BurningBodies()
             play(game, 150, 0, Tft())
-        self.assertEqual("c", game.stepper.name)
+        self.assertEqual("c", game.physics_plugin.name)
         self.assertTrue(self.flares())
 
     def test_without_the_engine_the_bodies_land_with_no_error(self):
@@ -125,7 +140,7 @@ class BurningTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             game = burning.BurningBodies()
             play(game, 150, 0, Tft())  # past the first hard landings, as in test_the_bodies_burn_and_report
-        self.assertIsNone(game.field)
+        self.assertIsNone(game.fire_plugin.field)
         self.assertEqual({}, game.handlers)
 
     def flares(self):
@@ -136,9 +151,9 @@ class BurningTest(unittest.TestCase):
         """A scene whose body 0 rests on its plane at y 200 and has bounced back up to y 190 since its event."""
         game = self.scene()
         game.rest_y[0] = 200
-        game.stepper.places[0] = (100, 190)
-        game.stepper.next = [(0, kind, speed)]
-        game.stepper.step(1)
+        game.physics_plugin.places[0] = (100, 190)
+        game.physics_plugin.next = [(0, kind, speed)]
+        game.physics_plugin.step(1)
         return game
 
     def test_a_fast_landing_flares_at_its_plane(self):
@@ -169,48 +184,46 @@ class BurningTest(unittest.TestCase):
 
     def test_no_event_no_flare(self):
         game = self.scene()
-        game.stepper.step(1)
+        game.physics_plugin.step(1)
         game.effects.dispatch(game.handlers)
         self.assertEqual([], fire.engine.burns)
 
     def test_a_frame_of_0_steps_does_not_flare_again(self):
         game = self.scene()
-        game.rest_y[0], game.stepper.places[0] = 200, (100, -100)  # above the screen, so only its flare burns
-        game.stepper.next = [(0, HIT, 1000)]
-        game.dt = 0.04  # 4 steps
-        game.play(False, False)
+        game.rest_y[0], game.physics_plugin.places[0] = 200, (100, -100)  # above the screen, so only its flare burns
+        game.physics_plugin.next = [(0, HIT, 1000)]
+        self.frame(game, 40)  # 4 steps
         self.assertEqual(1, len(fire.engine.burns))
-        game.dt = 0.004  # under a step: 0 steps, and still a step call, which clears the events
-        game.play(False, False)
+        self.frame(game, 4)  # under a step: 0 steps, and still a step call, which clears the events
         self.assertEqual(1, len(fire.engine.burns))
 
     def test_a_sleeping_body_rests_before_its_drop(self):
         game = self.scene()
-        game.stepper.asleep = {3}
+        game.physics_plugin.asleep = {3}
         game.clock = 0
-        game.stepper.read(game.sleep)
+        game.physics_plugin.read(game.sleep)
         game.clock = burning.REST_MS - 1
-        game.stepper.read(game.sleep)
-        self.assertEqual([], game.stepper.spawned)
+        game.physics_plugin.read(game.sleep)
+        self.assertEqual([], game.physics_plugin.spawned)
         game.clock = burning.REST_MS
-        game.stepper.read(game.sleep)
-        self.assertEqual([3], game.stepper.spawned)
+        game.physics_plugin.read(game.sleep)
+        self.assertEqual([3], game.physics_plugin.spawned)
 
     def test_a_frame_flares_then_burns_each_trail_once(self):
         game = self.scene()
-        game.rest_y[0], game.stepper.places[0] = 200, (100, 100)
-        game.stepper.next = [(0, HIT, 1000)]
-        game.play(False, False)
+        game.rest_y[0], game.physics_plugin.places[0] = 200, (100, 100)
+        game.physics_plugin.next = [(0, HIT, 1000)]
+        self.frame(game, 40)
         x, plane, y = (100 + burning.BODY // 2) // 2, (200 + burning.BODY // 2) // 2, (100 + burning.BODY // 2) // 2
         r, heat = burning.flare_size(1000)
         self.assertEqual([(x, plane, x, plane, r, heat), (x, y, x, y, burning.RADIUS, burning.HEAT)], fire.engine.burns)
 
     def test_a_drop_burns_no_streak_from_the_last_place(self):
         game = self.scene()
-        game.stepper.places[0] = (100, 200)
+        game.physics_plugin.places[0] = (100, 200)
         game.effects.update()
         game.drop(0)  # a respawn: its trail resets its path
-        game.stepper.places[0] = (60, 4)
+        game.physics_plugin.places[0] = (60, 4)
         game.effects.update()
         c = (60 + burning.BODY // 2) // 2, (4 + burning.BODY // 2) // 2
         self.assertEqual((c[0], c[1], c[0], c[1], burning.RADIUS, burning.HEAT), fire.engine.burns[-1])

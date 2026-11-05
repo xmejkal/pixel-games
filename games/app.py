@@ -78,22 +78,24 @@ class App:
         self.us[3] += time.ticks_diff(time.ticks_us(), t)
 
     def frame(self):
+        """One frame in its stages (P633), Unity's order plus Present: Input here; FixedUpdate, Update and LateUpdate in
+        Game.step (the game's plugins and its play, only while it plays); Render and Present in out.draw."""
         us, t0 = self.us, time.ticks_us()
         self.worst, self.last = max(self.worst, time.ticks_diff(t0, self.last)), t0
         before = us[:]
         now = time.ticks_ms()
-        pressed, switched = self.fire.update(now), self.boot.update(now)
+        pressed, switched = self.fire.update(now), self.boot.update(now)  # Input
         if switched:
             self.switch()
         else:
-            self.game.step(now, pressed, self.fire.held)
+            self.game.step(now, pressed, self.fire.held)  # FixedUpdate, Update, LateUpdate
         game = self.game
         if game.state != self.state:  # the title and the game over are quiet: collect there
             self.state = game.state
             if self.gc_floor and self.state != 1:
                 self.collect()
         us[0] += time.ticks_diff(time.ticks_us(), t0)
-        self.out.draw(game, us)
+        self.out.draw(game, us)  # Render, then Present: one show()
         self.frames += 1
         took = time.ticks_diff(time.ticks_us(), t0)
         if took > self.slow[0]:  # the slowest frame of the interval, and where its time went
