@@ -1,13 +1,14 @@
 # The effects engine, one lesson at a time (P594 #795)
 
-All paths are relative to the root of this repository. Line numbers are from master on 2026-11-05.
+All paths are relative to the root of this repository. Line numbers are from master on 2026-11-05. Since P632, `engine/`
+is the pixel-engine submodule, and its line numbers are those of pixel-engine `97f2d64`.
 `bench.md` is that repository's bench log. A board number below is a median or a range from one bench run, with its run name.
 The same lessons as step-by-step pictures: [the P594 engine lessons on Miro](https://miro.com/app/board/uXjVEavQ4JQ=/?moveToWidget=3458764689493945034).
 
 ## 0. The short version
 
 The engine has three layers. The first is the C core in `engine/core/`. It has no MicroPython header and no ESP-IDF header,
-so a Mac test builds it with clang (`tests/clang_lib.py`) and the board build compiles the same files. The second is the
+so a Mac test builds it with clang (`engine/tests/clang_lib.py`) and the board build compiles the same files. The second is the
 binding, `engine/binding.c`. It turns a Python call into a C call and checks every argument on the way. The third is the games
 in `games/`. They own the clock, the buttons, the pictures and every decision.
 The rule is "C steps and paints, Python decides" (D12 in the code comments). C moves the bodies and the heat, then paints the
@@ -160,7 +161,7 @@ A small case against this rule is the fire. `fx_fire_t` does store two pointers,
 because its field can be 1,024 by 1,024 cells and may sit in internal RAM or in PSRAM (`binding.c:160-168`). So the binding
 adds a finaliser, `__del__`, which frees the block once (`binding.c:310-318`).
 Every core file says the same in its first lines: "Plain C99 with no MicroPython or IDF header" (`world.h:3`, `fx_fire.h:3`,
-`fx_balls.h:6`, `grid.h:3`, `events.h:3`). One file reaches outside: `fx_fire.c:3` includes `blend565.h` from `s3lcd/src`, and its
+`fx_balls.h:6`, `grid.h:3`, `events.h:3`). One file reaches outside: `fx_fire.c:3` includes `blend565.h` from `engine/driver/src`, and its
 own comment calls that header "plain C".
 The gain is speed that Python cannot reach. A body-step in C takes 0.135 µs and today's `fall_bodies` in Python takes 36.95 µs
 (`bench.md:236` and `:238`, P589). That is about 270 times.
@@ -305,7 +306,7 @@ Beside them stay these cards:
 ## Not checked
 
 - The reason why the 4.3 ms substep is slower than the 4.1 ms one is not in the log.
-- The claim "a Mac test builds the core with clang" rests on `tests/clang_lib.py:1-30`. I did not run the tests.
+- The claim "a Mac test builds the core with clang" rests on `engine/tests/clang_lib.py:1-30`. I did not run the tests.
 - I did not check the D-numbers (D12 and others) against their decision pages.
 - The 50 ms HUD figure and the 24 to 28 ms figure come from two different bench sections and I did not reconcile them.
 - I did not open the issues for the cards in lesson G. Their titles come from the brief and `README.md:84`.

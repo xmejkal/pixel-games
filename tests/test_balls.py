@@ -1,4 +1,4 @@
-"""games/balls.py on the Mac (P598): the ball pit with tests/balls_lib.py's stand-in for engine.Balls (fx_balls.c
+"""games/balls.py on the Mac (P598): the ball pit with engine/tests/balls_lib.py's stand-in for engine.Balls (fx_balls.c
 through ctypes) and a recording canvas, and the scene without the engine. framebuf comes from tests/stubs and time gets
 the MicroPython ticks functions, so gfx imports here. Run from the repository root: python3 -m unittest discover tests.
 --- MVP (P598) ---"""

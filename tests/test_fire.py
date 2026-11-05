@@ -17,6 +17,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: clang_lib
 if not hasattr(time, "ticks_diff"):
     time.ticks_diff = lambda a, b: a - b
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)
@@ -25,8 +26,9 @@ if not hasattr(time, "ticks_diff"):
 import fire  # noqa: E402
 import lcd  # noqa: E402
 
+from clang_lib import S3LCD_SRC  # noqa: E402  blend565.h
+
 FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
-S3LCD_SRC = os.path.join(os.path.dirname(HERE), "s3lcd", "src")  # blend565.h
 FRAME_MS = 40  # app.py's FRAME_MS
 REPORT = re.compile(r"^fire (linear|picture|nearest) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 SEED_WIND = 595  # the gust test's seed for Python's random

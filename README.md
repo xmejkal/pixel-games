@@ -10,9 +10,9 @@ The repository is also a log of how the games got smooth: every step was measure
 | --- | --- |
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
 | `art/` | the painted art: one set per game, the brush and the export |
-| `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang) |
+| `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
+| `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang). The engine's own tests run with the same command in `engine/` |
 | `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene on the Mac to a PNG (needs clang and Pillow) |
-| `s3lcd/` | the C driver: the fork with `frame.c`, a DMA send of one frame and partial updates |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
 | `p537-finding.md` | the options for smooth motion, ranked, with a plan in slices |
@@ -22,11 +22,13 @@ The repository is also a log of how the games got smooth: every step was measure
 
 You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython v1.29.0 into `~/esp` if it is not there.
 
-1. Build the firmware with the driver: `./build.sh s3lcd`.
-2. Put the board in download mode: `mpremote bootloader`.
-3. Write the image: `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
-4. Copy the games: `mpremote cp games/*.py :`.
-5. Reset the board. `main.py` starts the games.
+1. Clone with the submodules: `git clone --recurse-submodules https://github.com/xmejkal/pixel-games.git`. If you cloned
+   without them, `build.sh` fetches them.
+2. Build the firmware with the driver and the engine: `./build.sh engine`.
+3. Put the board in download mode: `mpremote bootloader`.
+4. Write the image: `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
+5. Copy the games: `mpremote cp games/*.py :`.
+6. Reset the board. `main.py` starts the games.
 
 If the board stays dark after a long press of its D14 button, hold D14 for 1 to 2 seconds. That button also switches the board's power off.
 
@@ -39,7 +41,7 @@ Runs now:
   sky) and nearest. It needs the engine image. The flames rise from wandering hot spots, break into tongues, rise at two speeds, lean in gusts of wind and
   throw embers. On the board, B runs at 24 fps with 11.5 to 11.8 ms of step + draw, and the sky variant at 15 to
   16 fps (bench.md, P595). In the picture mode C blends the fire in C at an alpha that follows the heat, full from heat 96
-  (P603). The blend swaps the bytes of each colour in and out (`s3lcd/src/blend565.h`), so the colours are right.
+  (P603). The blend swaps the bytes of each colour in and out (`engine/driver/src/blend565.h`), so the colours are right.
   Since P608 the fire draws with bilinear filtering (`HeatField.set_filter(engine.LINEAR)`, OpenGL's `GL_LINEAR`): each
   cell's 2 x 2 px mix its heat with its neighbours', so no blocks show. The nearest mode draws the blocks as before.
   Linear costs 6.4 ms a frame to draw against 4.3 ms for nearest, at the same 24 to 25 fps (bench.md, P608).
@@ -87,4 +89,4 @@ The work is planned on the board of the [spark](https://github.com/xmejkal/spark
 
 ## Licence
 
-MIT, see `LICENSE`. The files under `s3lcd/` keep their own terms.
+MIT, see `LICENSE`. The files under `engine/driver/` keep their own terms.

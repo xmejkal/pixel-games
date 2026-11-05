@@ -492,3 +492,15 @@ The image 481959b8587c1502 and `games/*.py` at 184fa2e: the board's 23 game file
 - With no pace, the send grows from 3.3 to 3.7 ms (run92) to 7.9 to 8.3 ms. Its cause is not split.
 - In all three rain runs, the paint after a timed gc is the slowest of the 5-frame period: 15.5, 13.9, 12.4, 11.5, 9.9 ms with the redraw, and 11.2, 9.3, 8.7, 8.2, 8.0 ms without it.
 - With the redraw, the glyph cache holds 13 glyphs, against 1 without it. R3d, with 24 glyphs and no redraw, paints slowest of all, so the redraw path is not P604's cause (the finding's P604 section).
+
+## P632 (#846), 2026-11-05: the engine and the driver in their own repositories
+
+The engine moved to `xmejkal/pixel-engine` (submodule `engine/`) and the driver fork to `xmejkal/s3lcd` (submodule
+`engine/driver/`). No C line changed. The image grew by 32 bytes (1,820,320 to 1,820,352), because `ESP_ERROR_CHECK`
+in `s3lcd.c` stores the longer source path. `objdump -d` of all 19 engine and driver objects is the same before and
+after. The P612 probes ran unchanged on the new image:
+
+| run | what | fps | paint ms | send ms | against (the same columns) |
+| --- | --- | --- | --- | --- | --- |
+| `run114-p632-flappy-nocap.log` | flappy, no pace, as run109 | 28 | 21.5 to 22.6 | 7.9 to 9.1 | run109: 28, 21.5 to 22.6, 7.9 to 9.1 |
+| `run114-p632-rain-redraw.log` | rain, the label redrawn every 500 ms, as run112a | 24 to 25 | 18.4 to 20.1 | 3.6 to 4.1 | run112a: 24 to 25, 17.5 to 19.8, 3.7 to 4.2 |

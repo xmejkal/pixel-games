@@ -1,6 +1,6 @@
 """s3lcd's blend (P603) against a Python reference: the games keep colours in the panel's byte order (gfx.c565), so the
 blend swaps the bytes in, mixes red, green and blue, and swaps the result back. clang builds a shim around
-s3lcd/src/blend565.h into a temporary folder and ctypes calls it. Run from the repository root:
+engine/driver/src/blend565.h into a temporary folder and ctypes calls it. Run from the repository root:
 python3 -m unittest discover tests. --- MVP (P603) ---"""
 
 import ctypes
@@ -16,6 +16,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: clang_lib
 if not hasattr(time, "ticks_diff"):
     time.ticks_diff = lambda a, b: a - b
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)
@@ -23,7 +24,7 @@ if not hasattr(time, "ticks_diff"):
 
 import gfx  # noqa: E402
 
-S3LCD_SRC = os.path.join(os.path.dirname(HERE), "s3lcd", "src")
+from clang_lib import S3LCD_SRC  # noqa: E402
 SHIM = """#include <stdint.h>
 #include "blend565.h"
 uint16_t blend(uint16_t fg, uint16_t bg, uint8_t alpha) { return alpha_blend_565(fg, bg, alpha); }
@@ -50,7 +51,7 @@ def reference(fg, bg, alpha):
     return swap((mixed[0] << 11) | (mixed[1] << 5) | mixed[2])
 
 
-@unittest.skipUnless(shutil.which("clang"), "clang is missing: s3lcd/src/blend565.h is not built")
+@unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/driver/src/blend565.h is not built")
 class BlendTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

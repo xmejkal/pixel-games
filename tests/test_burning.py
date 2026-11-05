@@ -1,5 +1,5 @@
 """The bodies on fire (P596, P607) and their flares (P590) on the Mac: the scene on fx_fire.c through test_fire's engine
-stand-in, its bodies on rain.Stepper over motion.Bodies or over world.c (tests/world_lib.py), and its burns. The trail
+stand-in, its bodies on rain.Stepper over motion.Bodies or over world.c (engine/tests/world_lib.py), and its burns. The trail
 itself is tested in test_effects.py. Run from the repository root: python3 -m unittest discover tests.
 --- MVP (P607) ---"""
 
