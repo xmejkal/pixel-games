@@ -5,7 +5,7 @@
 <!-- One line per persona: who · evidence status (E pointer | H source).
 e.g. `- Team leads who assign work · H Lena's belief, no interview yet` -->
 - Petr, the PO: he writes the scenes and plays them on the board, n = 1 · E spark #853 (the request), bench.md:555-580 (he judges each run) <!-- REQUIRED:who -->
-- The scene author: today the PO and the agent that writes a scene from his words; the one who lists a scene's layers · E games/burning.py:62-75 (a scene lists its plugins in setup)
+- The scene author: today the PO and the agent that writes a scene from his words. This is who lists a scene's layers · E games/burning.py:62-75 (a scene lists its plugins in setup)
 - A later pixel-engine user who imports the engine without pixel-games · H engine/README.md:1-5 says the engine is a library, but no second user exists
 
 ## Jobs
