@@ -102,7 +102,7 @@ Three ideas they share that fit us: Python decides and C paints, send only what 
 - In the traces, the frames that hold a redraw are no slower than the others (12.8 against 12.6 ms in R3a). The slowdown sits in every frame, and it is largest right after each timed gc.
 - The label's formatting adds at most 0.7 ms (R3c against R3b, one run each, noise not measured).
 - Ruled out: where the strip lands. All four buffers lie at 0x3C1D_xxxx, in PSRAM (H: the S3's external memory map starts at 0x3C00_0000, TRM page not read).
-- The mechanism is H: MicroPython's allocator searches for a free block from where its last search ended, and a gc starts that search over (H: `py/gc.c`, not read in this spike). More small live objects make each search longer. The rain's paint allocates every frame. The proof is the card's probe: a paint with no allocation, with the strip still redrawn.
+- The mechanism is H: MicroPython's allocator searches for a free block from where its last search ended, and a gc starts that search over (H: `py/gc.c`, not read in this spike). More small live objects make each search longer. Whether the rain's paint allocates at all is not measured (H). `TftCanvas.fill` and `Stepper.paint` were written to allocate nothing (`lcd.py:77-98`, `rain.py:71-75`). So P631 first reads `gc.mem_alloc()` around the paint. Then a paint with no allocation, with the strip still redrawn, is the proof.
 
 ## Proposed cards (Idea, under P609 #812)
 

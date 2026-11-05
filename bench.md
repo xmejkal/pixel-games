@@ -489,6 +489,6 @@ The image 481959b8587c1502 and `games/*.py` at 184fa2e: the board's 23 game file
 | `run112-p612-r3c-rain-format-only.log` | rain, the label formatted every 500 ms, the strip never redrawn | | | | | | rain paint 9.8 ms, strip at 0x3c1dfb00 |
 | `run113-p612-r3d-rain-glyphs-warm.log` | rain, no redraw, the glyph cache filled once at the start (24 glyphs) | | | | | | rain paint 14.4 ms, 18.0 ms right after a gc, strip at 0x3c1dfb70 |
 
-- With no pace, the send grows from 3.3 to 3.7 ms (run92) to 7.9 to 8.0 ms. Its cause is not split.
+- With no pace, the send grows from 3.3 to 3.7 ms (run92) to 7.9 to 8.3 ms. Its cause is not split.
 - In all three rain runs, the paint after a timed gc is the slowest of the 5-frame period: 15.5, 13.9, 12.4, 11.5, 9.9 ms with the redraw, and 11.2, 9.3, 8.7, 8.2, 8.0 ms without it.
 - With the redraw, the glyph cache holds 13 glyphs, against 1 without it. R3d, with 24 glyphs and no redraw, paints slowest of all, so the redraw path is not P604's cause (the finding's P604 section).
