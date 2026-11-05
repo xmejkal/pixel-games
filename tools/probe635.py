@@ -70,9 +70,18 @@ def bake(turned):
             ends = (lines[f1][2:4], lines[f1][0:2], lines[b1][0:2], lines[b2][2:4], lines[f2][2:4])
             chains.append([[px, py] for px, py in ends])
         chains.append([[lines[0][0], lines[0][1]], [lines[0][2], lines[0][3]], [lines[9][2], lines[9][3]]])
-        quads = [[[a, b], [c, d], [c + ox, d + oy], [a + ox, b + oy]] for a, b, c, d, ox, oy in lines]
+        quads = [quad(a, b, c, d, ox, oy) for a, b, c, d, ox, oy in lines]
         poses.append((lines, (int(hx), int(hy)), chains, quads))
     return poses
+
+
+def quad(a, b, c, d, ox, oy):
+    """A 2 px band along a bone. The driver's fill_polygon fills only the rows strictly between a quad's top and
+    bottom, and each row's span with both ends (s3lcd.c:2391-2397): across rows the band spans -1 to +2, across
+    columns 0 to +1."""
+    lo, hi = (-1, 2) if oy else (0, 1)
+    return [[a + lo * ox, b + lo * oy], [c + lo * ox, d + lo * oy], [c + hi * ox, d + hi * oy],
+            [a + hi * ox, b + hi * oy]]
 
 
 def origin(x, turned):
@@ -118,20 +127,24 @@ class Probe(burning.BurningBodies):
 def draw(cv, way, baked, x):
     lines, head, chains, quads = baked
     tft, turned = cv.tft, cv.turned
-    ox0, oy0 = origin(x, turned)
     if way == 0:  # through the canvas, in game coordinates: the wrapper's cost per call
         gy = burning.HEIGHT - 1
         for a, b, c, d, ox, oy in lines:
-            ga, gb = (b, -a) if turned else (-b, a)  # the panel offset back to a game offset
+            ga, gb = (b, -a) if turned else (-b, a)  # a panel offset back to a game offset
             gc, gd = (d, -c) if turned else (-d, c)
+            sx, sy = (oy, -ox) if turned else (-oy, ox)  # the 2 px pair's offset, the same way back
             cv.line(x + ga, gy + gb, x + gc, gy + gd, BLACK)
-            cv.line(x + ga + oy, gy + gb + ox, x + gc + oy, gy + gd + ox, BLACK)
-    elif way == 1:  # the driver's line, twice for 2 px, with the map done once per figure
+            cv.line(x + ga + sx, gy + gb + sy, x + gc + sx, gy + gd + sy, BLACK)
+        hx, hy = (head[1], -head[0]) if turned else (-head[1], head[0])
+        cv.fill(x + hx - HEAD, gy + hy - HEAD, 2 * HEAD + 1, 2 * HEAD + 1, BLACK)
+        return
+    ox0, oy0 = origin(x, turned)
+    if way == 1:  # the driver's line, twice for 2 px, with the map done once per figure
         line = tft.line
         for a, b, c, d, ox, oy in lines:
             line(ox0 + a, oy0 + b, ox0 + c, oy0 + d, BLACK)
             line(ox0 + a + ox, oy0 + b + oy, ox0 + c + ox, oy0 + d + oy, BLACK)
-    elif way == 2:  # 3 polygon chains, 1 px; the driver closes each, so this times the cost, not the look
+    elif way == 2:  # 3 open polygon chains, 1 px: legs, arms, and hip to neck to the cane's tip (not a bone path)
         for pts in chains:
             tft.polygon(pts, ox0, oy0, BLACK)
     else:  # one 2 px quad per bone, filled
