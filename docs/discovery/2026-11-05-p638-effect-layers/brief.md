@@ -7,7 +7,7 @@ the remaining risk (D rows). An extension may tighten these. Next: design, or a 
 → the design skill the facts name, with this file; otherwise none, and the collection plan says who runs it.
 Stands on: the assumptions not retired in risks-and-tests.md; of which those the decider rated high, or — while any
 is unrated. check computes both. -->
-**Ready for:** collecting evidence <!-- REQUIRED:ready -->
+**Ready for:** an experiment: P639's slice 0 (design A) is the prototype test of A1 (D5), then design B (D8) <!-- REQUIRED:ready -->
 **Stands on:** 6 H, — of which would change the decision <!-- REQUIRED:debt -->
 **Decision needed:** which layer design pixel-games builds first, and in which stages <!-- REQUIRED:decision-needed -->
 
@@ -84,29 +84,43 @@ flowchart LR
 ```
 
 ## Riskiest assumption and its test
-- Riskiest: A1 · one heat field blended over the body, after the body is painted, reads as "on fire" to the PO and not as a body lost behind flames · proposed — the agent's opinion, pending Q1 <!-- REQUIRED:riskiest -->
-- Test · kind · pass line, dated before any result · proposed | D<n>: option A built as P639's slice 0 · a prototype test, n = 1 (the PO plays it on the board; a Mac PNG through `tools/render_scene.py` first) · pass line, set 2026-11-05: the PO says it looks on fire in his words, and the scene's draw ms stays at 13.5 or less (run90's lit blend 11.51 to 13.32, `bench.md:433`; run117 burning 6.40 to 6.44, `bench.md:570-571`), beside the fps line at 23 or more. The fps alone cannot fail, because FRAME_MS 40 caps it at 25 (`bench.md:435`) · proposed — the agent's, pending Q1 <!-- REQUIRED:test -->
+- Riskiest: A1 · one heat field blended over the body, after the body is painted, reads as "on fire" to the PO and not as a body lost behind flames · D4 (rated high by the PO) <!-- REQUIRED:riskiest -->
+- Test · kind · pass line, dated before any result · proposed | D<n>: option A built as P639's slice 0 · a prototype test, n = 1 (the PO plays it on the board; a Mac PNG through `tools/render_scene.py` first) · pass line, set 2026-11-05: the PO says it looks on fire in his words, and the scene's draw ms stays at 13.5 or less (run90's lit blend 11.51 to 13.32, `bench.md:433`; run117 burning 6.40 to 6.44, `bench.md:570-571`), beside the fps line at 23 or more. The fps alone cannot fail, because FRAME_MS 40 caps it at 25 (`bench.md:435`) · D5 <!-- REQUIRED:test -->
 
 ## Questions
 <!-- A queue; the first open question is asked alone. Each: Q<n> · question · decides: … · options · unblocks ·
 opinion (whose) · kind: decision | account (a past-tense question about the decider's own use; the answer is E,
 account, n = 1) · status: queued | asked <date> | answered D<n>.
 If the decider cannot be asked, the queue stays here, and whatever rests on it stays H. -->
-- Q0 · Is this frame right: the decision, the start and reach, the extensions and the depth? · decides: the frame · status: queued <!-- REQUIRED:q0 -->
-- Q1 · How important is each assumption, and what pass line must the riskiest test meet? · decides: importance and pass lines · status: queued <!-- REQUIRED:q1 -->
-- Q2 · When a body burns, must it stay visible through the front flames, or may the hottest flames cover it? · decides: one draw pass or two (option A's cost) · options: cover · stay visible · unblocks: P639's slice 0 · opinion (the writer's): cover first, it costs nothing · kind: decision · status: queued
-- Q3 · Is "our low level pixel pack" pixel-engine with the follow-up's split (driver, C core, binding, Python)? · decides: where the layer list lives · options: yes · a new package · unblocks: items.md · opinion (the writer's): yes, the follow-up says so · kind: decision · status: queued
-- Q4 · Which design: A the call order, B the layer list drawing in place, C surfaces with a compositor? · decides: the plan's stages and the C work · options: A · B · A then B · C · unblocks: P639 and items.md · opinion (the agent's): B with A as slice 0 · kind: decision · status: queued
-- Q5 · Does the compositing kernel (`blend565.h`) stay in the s3lcd fork or move to pixel-engine's core? · decides: the repository split after P632 and the Mac test's home · options: driver · core · opinion (the tech lead, council/tech-lead.md Q5): the core, since the driver only forwards it · kind: decision · status: queued
-- Q6 · Appetite for the first slice: P639 alone, or the layer list with it? · decides: the size of the next card · options: P639 alone · P639 plus slice 1 · opinion (the agent's): P639 alone · kind: decision · status: queued
-- Q7 · Did you see the fire's picture mode over the sky (run90) as "in front" the way you want for a body? · decides: whether A1 already has an account · kind: account · status: queued
-- Q8 · Does the layer list live in pixel-engine's Python side (beside `plugins.py`) or in pixel-games? · decides: where the list lives and who tests it · options: pixel-engine · pixel-games · unblocks: slice 1 · opinion (the PO assistant and the tech lead, council/): pixel-engine, by the PO's split · kind: decision · status: queued
-- Q9 · Which scene will next want two C layers with a Python layer between? · decides: whether slice 2 starts (A5) · options: a named scene · none yet · unblocks: slice 2 · opinion: — · kind: decision · status: queued
+- Q0 · Is this frame right: the decision, the start and reach, the extensions and the depth? · decides: the frame · status: answered D1, D2, D3 <!-- REQUIRED:q0 -->
+- Q1 · How important is each assumption, and what pass line must the riskiest test meet? · decides: importance and pass lines · status: answered D4, D5 <!-- REQUIRED:q1 -->
+- Q2 · When a body burns, must it stay visible through the front flames, or may the hottest flames cover it? · decides: one draw pass or two (option A's cost) · options: cover · stay visible · unblocks: P639's slice 0 · opinion (the writer's): cover first, it costs nothing · kind: decision · status: answered D6
+- Q3 · Is "our low level pixel pack" pixel-engine with the follow-up's split (driver, C core, binding, Python)? · decides: where the layer list lives · options: yes · a new package · unblocks: items.md · opinion (the writer's): yes, the follow-up says so · kind: decision · status: answered D7
+- Q4 · Which design: A the call order, B the layer list drawing in place, C surfaces with a compositor? · decides: the plan's stages and the C work · options: A · B · A then B · C · unblocks: P639 and items.md · opinion (the agent's): B with A as slice 0 · kind: decision · status: answered D8
+- Q5 · Does the compositing kernel (`blend565.h`) stay in the s3lcd fork or move to pixel-engine's core? · decides: the repository split after P632 and the Mac test's home · options: driver · core · opinion (the tech lead, council/tech-lead.md Q5): the core, since the driver only forwards it · kind: decision · status: answered D9
+- Q6 · Appetite for the first slice: P639 alone, or the layer list with it? · decides: the size of the next card · options: P639 alone · P639 plus slice 1 · opinion (the agent's): P639 alone · kind: decision · status: answered D10
+- Q7 · Did you see the fire's picture mode over the sky (run90) as "in front" the way you want for a body? · decides: whether A1 already has an account · kind: account · status: answered D11
+- Q8 · Does the layer list live in pixel-engine's Python side (beside `plugins.py`) or in pixel-games? · decides: where the list lives and who tests it · options: pixel-engine · pixel-games · unblocks: slice 1 · opinion (the PO assistant and the tech lead, council/): pixel-engine, by the PO's split · kind: decision · status: answered D12
+- Q9 · Which scene will next want two C layers with a Python layer between? · decides: whether slice 2 starts (A5) · options: a named scene · none yet · unblocks: slice 2 · opinion: — · kind: decision · status: answered D12
 
 ## Decisions
 <!-- D<n> · what · who · when · where recorded · options considered.
 A yes covers only the actions and choices it names. A standing yes names its kind of action and its source.
 Name what a D confirms in its words: the frame, the jobs, a direction, the remaining risk, a test, items.md. -->
+- D1 · the frame's decision and outcome confirmed: the PO picks how a frame stacks its drawings; the first test is a burning body with flames in front and behind, at 23 fps or more · the PO · 2026-11-05 · chat, "Yes, that is the goal" · options: yes, another first test, a bigger goal
+- D2 · the scope confirmed as written in the Frame (in and out) · the PO · 2026-11-05 · chat, "Yes, that size is right" · options: yes, move an item in, move an item out
+- D3 · the depth confirmed: one agent wrote the three lenses, the refuter and the review checked them, no independent council · the PO · 2026-11-05 · chat, "Enough, go on" · options: enough, three independent agents
+- D4 · importance: A1, A2, A3 and A5 would each change the pick if wrong (all high); A4 and A6 not rated by the PO · the PO · 2026-11-05 · chat · options: any of A1, A2, A3, A5
+- D5 · the test of A1 confirmed with its pass line: design A as P639's slice 0, a Mac PNG first, then the board; pass if the PO says in his words that the person looks on fire, the draw takes 13.5 ms or less a frame, and the fps stays at 23 or more · the PO · 2026-11-05 · chat · options: look and speed, look only, speed only
+- D6 · Q2: the hottest front flames may cover the body; cooler flames let it show through; one pass · the PO · 2026-11-05 · chat · options: may cover, always shows through
+- D7 · Q3: "our low level pixel pack" is pixel-engine, split by job (driver, C core, binding, Python) · the PO · 2026-11-05 · spark #853 comment of 15:06 UTC ("Yes, pixel-engine", then "split it into what belongs where") · options: yes, a new package
+- D8 · Q4, a direction: design A first (P639's slice 0), then design B, the layer list that draws in place; C is not built · the PO · 2026-11-05 · chat · options: A then B, A only, B now, C
+- D9 · Q5: the blend function (`alpha_blend_565`) moves from the s3lcd driver to pixel-engine's C core · the PO · 2026-11-05 · chat · options: core, driver
+- D10 · Q6, appetite: the next card is P639 alone (design A); the layer list is its own later card · the PO · 2026-11-05 · chat · options: P639 alone, P639 plus the list
+- D11 · Q7, an account (E, n = 1): the fire's picture mode over the sky (run90) is the "in front" look the PO wants for a body · the PO · 2026-11-05 · chat, "Yes, like that" · options: yes, different, not remembered
+- D12 · Q8 and Q9: the layer list lives in pixel-games `games/` beside `plugins.py`; P635's burning people (slices 1 to 3) are the next scene that needs a Python layer between two C layers · the PO · 2026-11-05 · chat · options: pixel-games, pixel-engine; P635, P616, none yet
+- D13 · the jobs confirmed: jobs 1 to 4 in jobs-and-journeys.md · the PO · 2026-11-05 · chat, "Yes, those four" · options: yes, change one
+- D14 · items.md confirmed for filing: P639 #854 takes design A, and three new cards (the layer list, the C rectangle, the blend function in the core) plus the #853 number fix · the PO · 2026-11-05 · chat · options: each of the four, multi-select
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
@@ -121,7 +135,7 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 <!-- Written only after the decider confirms the understanding (a D); copies only confirmed constraints. Holds: outcome ·
 who · success and its proof · constraints (appetite, confirmed no-gos, rabbit holes) · what they said (D) against what
 we assume (H) · links to the journeys and the map · riskiest assumptions and their tests · options considered. -->
-not yet: Q0 (the frame), Q1 (the pass lines), Q2 to Q9 are unconfirmed. The refuter ran on step 6 (verification.md) <!-- REQUIRED:handoff -->
+Outcome: a burning body shows flames in front and behind, judged by the PO on the board, at 23 fps or more (D1). Who: the PO, as the scene author (D13). Success and its proof: D5's pass line on P639. Constraints: P639 alone next (D10); hot flames may cover the body (D6); C (a surface per layer) is not built (D8). Said (D): D1 to D14. Assumed (H): A4 (a rect draw costs no more) and A6 (surfaces too costly), not rated. Next: P639 #854 builds design A; then P640 #858 the layer list in `games/` (D12), P641 #859 the C rectangle for P635 (D12), P642 #860 the blend in the C core (D9). See [jobs](jobs-and-journeys.md), [map](story-map.md), [risks](risks-and-tests.md). <!-- REQUIRED:handoff -->
 
 ## Files
 [Jobs and journeys](jobs-and-journeys.md) · [Story map](story-map.md) · [Risks and tests](risks-and-tests.md) · [Verification](verification.md) · [Items](items.md) · council/
