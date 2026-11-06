@@ -43,7 +43,8 @@ class Field(ctypes.Structure):
     _fields_ += [("base", ctypes.c_int32)]  # --- MVP (P596) ---
     _fields_ += [("filter", ctypes.c_int32)]  # --- MVP (P608) ---
     # --- Later, not MVP: a prototype for the PO's pick (P647) ---
-    _fields_ += [(name, ctypes.c_int32) for name in ("bend", "wander", "tick", "map_dx", "drift_vx")]
+    _fields_ += [(name, ctypes.c_int32) for name in ("bend", "wander", "tick", "map_dx", "drift_vx",
+                                                         "bend_rows", "bend_steps", "bend_width")]
 
 
 NEAREST, LINEAR = 0, 1  # FX_FIRE_NEAREST and FX_FIRE_LINEAR (P608)
@@ -588,7 +589,7 @@ class FireCoreTest(unittest.TestCase):
 
     def flowed(self, seed, bend, wander, steps):
         f, heat = self.field(W, H, seed=seed, look=self.LOOK)
-        self.lib.fx_fire_set_flow(ctypes.byref(f), bend, wander)
+        self.lib.fx_fire_set_flow(ctypes.byref(f), bend, 40, 50, 16, wander)
         self.lib.fx_fire_step(ctypes.byref(f), steps, 0)
         f.keep_heat = heat  # the field may step again after this returns
         return f, list(heat)
@@ -612,11 +613,12 @@ class FireCoreTest(unittest.TestCase):
     def test_the_flows_state_stays_in_its_ranges_for_the_seven_seeds(self):
         for seed in range(1, 8):
             f, _ = self.flowed(seed, 0, 0, 0)
-            self.lib.fx_fire_set_flow(ctypes.byref(f), 8, 255)
+            self.lib.fx_fire_set_flow(ctypes.byref(f), 8, 40, 50, 16, 1023)
             for _ in range(300):
                 self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
-                self.assertTrue(0 <= f.map_dx <= 0xFFFF and -255 <= f.drift_vx <= 255 and 0 <= f.tick < 50)
-            self.lib.fx_fire_set_flow(ctypes.byref(f), 0, 10)
+                self.assertTrue(0 <= f.map_dx <= 0xFFFF and -1023 <= f.drift_vx <= 1023 and 0 <= f.tick < 50)
+            self.lib.fx_fire_set_flow(ctypes.byref(f), 0, 40, 7, 16, 10)
+            self.assertLess(f.tick, 7)  # a shorter wave keeps the tick inside it
             self.assertLessEqual(abs(f.drift_vx), 10)  # a smaller wander clamps the speed at once
 
     def test_at_decay_31_the_bound_does_nothing(self):

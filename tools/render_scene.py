@@ -6,7 +6,8 @@ The scene is fire, burning or balls (P598); one PNG per frame count, side by sid
 filter after setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering; without it the scene's
 first mode draws. Each frame paints through lcd.TftCanvas, as on the board, so a scene's own fills (the burning
 bodies) show under its field (P639).
---flow BEND WANDER (P647) sets the field's flow after setup (fire and burning only). --gif N writes an animated GIF
+--flow BEND WANDER (P647) sets the field's flow after setup (fire and burning only), with the bend's shape from
+--bend-shape ROWS STEPS WIDTH (40 50 16, fx_fire.h's defaults). --gif N writes an animated GIF
 of N frames, 40 ms each, that starts at the last frame count, instead of the PNG sheet.
 The balls pour again every POUR_FRAMES frames, as taps would. --- MVP (P596) ---"""
 
@@ -50,6 +51,7 @@ def main():
     parser = argparse.ArgumentParser(description="Draw a C scene on the Mac to a PNG.")
     parser.add_argument("--filter", choices=sorted(FILTERS), help="the field's filter (P608)")
     parser.add_argument("--flow", type=int, nargs=2, metavar=("BEND", "WANDER"), help="the field's flow (P647)")
+    parser.add_argument("--bend-shape", type=int, nargs=3, default=[40, 50, 16], metavar=("ROWS", "STEPS", "WIDTH"))
     parser.add_argument("--gif", type=int, metavar="N", help="an animated GIF of N frames (P647)")
     parser.add_argument("scene", choices=sorted(SCENES))
     parser.add_argument("out")
@@ -68,7 +70,8 @@ def main():
         if args.filter:
             game.fire_plugin.set_filter(FILTERS[args.filter])
         if args.flow:
-            game.fire_plugin.field.set_flow(*args.flow)
+            bend, wander = args.flow
+            game.fire_plugin.field.set_flow(bend, *args.bend_shape, wander)
         for n in counts:
             while now // 40 < n:
                 _, now = play(game, 1, now, tft, canvas=lcd.TftCanvas)
