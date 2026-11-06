@@ -26,7 +26,7 @@ FIRE_DRAG_PCT = 5  # % of the world's speed that the heat field scrolls: at 100 
 
 
 def fire_look(decay):
-    return (decay, FIRE_COOL, 2, 0, 1, 200, 30, FIRE_FADE)
+    return (decay, FIRE_COOL, 1, 0, 1, 200, 30, FIRE_FADE)  # sway is on or off in fx_fire.c, so 1
 
 
 FIRE_START_SPEED, FIRE_FULL_SPEED = 300, 560  # px/s of base speed: no flame below the first, the full short flame from the second

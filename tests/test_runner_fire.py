@@ -136,3 +136,17 @@ class ObstacleGapTest(unittest.TestCase):
     def test_a_larger_factor_spaces_the_first_obstacle_further_out(self):
         self.assertGreater(self.last_end(3), self.last_end(1))
         self.assertEqual(self.last_end(1), self.last_end(1))
+
+
+class FireLookRangeTest(unittest.TestCase):
+    """The board's HeatField refuses a look outside its ranges (round 7 crashed on sway 2), and the desktop tests have no
+    engine to refuse it, so the ranges are checked here: decay, cool, fast, embers and fade 0 to 255, sway 0 or 1,
+    spots 0 to 16, spread 1 to 64."""
+
+    def test_the_runner_look_is_inside_the_board_ranges(self):
+        decay, cool, sway, spots, spread, fast, embers, fade = arcade.fire_look(arcade.FIRE_DECAY)
+        for value in (decay, cool, fast, embers, fade):
+            self.assertTrue(0 <= value <= 255, value)
+        self.assertIn(sway, (0, 1))
+        self.assertTrue(0 <= spots <= 16)
+        self.assertTrue(1 <= spread <= 64)
