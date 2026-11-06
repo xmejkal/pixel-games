@@ -648,7 +648,8 @@ the last seven 5 s lines of each run, after the 30 s warm-up.
 | `run128-p646-picture.log`, `run129-p646-picture.log` | picture | 22 to 23 | 8.34 to 8.53 | 14.78 to 16.48 |
 
 - Against P601's runs 124 and 125, with today's tables: linear draws 1.7 to 1.8 ms less (15.03 to 15.52 before), and
-  picture 2.8 to 3.5 ms less (18.26 to 19.29 before). Both are below P601's bound, which kept the interpolation.
+  picture 2.8 to 3.5 ms less (18.26 to 19.29 before). Linear is below P601's bound, which kept the interpolation
+  (14.50 to 14.62 ms). Picture's slowest line, 16.48 ms, is 0.3 ms above the bound's 15.85 to 16.18 ms.
 - The pass line was set before the runs: D5 (draw 13.5 ms or less, 23 fps or more) in every 5 s line, with more than
   0.5 ms to spare. Both modes miss it.
 - Linear misses by 0.28 ms at its slowest line (13.78 ms), and by 0.78 ms against the pass line with its spare. Its
