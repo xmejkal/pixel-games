@@ -14,7 +14,10 @@ from test_fire import Engine, Recorder, Tft  # noqa: E402
 import arcade  # noqa: E402
 import fire  # noqa: E402
 
-RUN_CELL_X = (arcade.RUN_X + arcade.RUN_BOX // 2) // 2  # the fire cell under the runner's centre
+RUN_CELL_X = arcade.RUN_X // 2  # the fire cell at the runner's back, where the trail burns
+
+
+FAST_FAR = 40000  # px: base speed is past the full-flame speed
 
 
 def run_frames(game, frames, now=0):
@@ -54,6 +57,7 @@ class RunnerFireTest(unittest.TestCase):
         fire.engine = None
 
     def test_the_runner_burns_at_its_own_cell_and_the_world_scrolls_the_fire_left(self):
+        self.game.far = FAST_FAR  # a run far enough on that the flame is full
         run_frames(self.game, 60)
         burns = fire.engine.burns
         self.assertTrue(burns)
@@ -62,6 +66,7 @@ class RunnerFireTest(unittest.TestCase):
         self.assertTrue(all(dx < 0 for dx in fire.engine.scrolls))
 
     def test_a_new_round_starts_with_no_fire(self):
+        self.game.far = FAST_FAR  # a run far enough on that the flame is full
         run_frames(self.game, 60)
         heat = self.game.layer.field.heat
         self.assertTrue(any(heat[:fire.W * fire.H]))
@@ -70,12 +75,14 @@ class RunnerFireTest(unittest.TestCase):
         self.assertFalse(self.game.trail.has_path)
 
     def test_the_fire_is_drawn_blended_over_the_frame(self):
+        self.game.far = FAST_FAR  # a run far enough on that the flame is full
         run_frames(self.game, 60)
         self.game.layer.draw(Recorder(tft := Tft()))
         self.assertEqual("tft alpha", fire.engine.targets[-1])
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))
 
     def test_the_heat_steps_every_fire_step_ms_not_every_frame(self):
+        self.game.far = FAST_FAR  # a run far enough on that the flame is full
         now = run_frames(self.game, 40)  # past the title
         steps = []
         self.game.layer.field.step = lambda n, wind: steps.append(n)
@@ -83,18 +90,33 @@ class RunnerFireTest(unittest.TestCase):
         self.assertEqual(arcade.FIRE_STEP_MS, 80)
         self.assertTrue(8 <= sum(steps) <= 11, steps)
 
-    def test_the_flame_starts_at_nothing_and_grows_to_full_in_fire_grow_ms(self):
+    def test_the_flame_follows_the_speed_none_at_the_start_full_at_the_full_speed(self):
         game, looks = self.game, fire.engine.looks
-        self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))  # off at the start of the round
-        now = run_frames(game, 36)  # the title, under 1,500 ms: the round has not begun
-        self.assertEqual(0, game.trail.heat)
-        now = run_frames(game, 29, now)  # about 1,000 ms of play: about half
-        self.assertTrue(0 < game.trail.heat < arcade.FIRE_HEAT, game.trail.heat)
-        self.assertTrue(0 < looks[-1][0] < arcade.FIRE_DECAY, looks[-1])
-        run_frames(game, 30, now)  # past FIRE_GROW_MS
+        self.assertEqual(150, int(game.base_speed()))  # the run starts below the start speed
+        self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))  # no flame
+        game.grow_fire(arcade.FIRE_START_SPEED)
+        self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))  # still none at the start speed
+        game.grow_fire((arcade.FIRE_START_SPEED + arcade.FIRE_FULL_SPEED) // 2)
+        self.assertTrue(0 < game.trail.heat < arcade.FIRE_HEAT and 0 < looks[-1][0] < arcade.FIRE_DECAY, looks[-1])
+        game.grow_fire(arcade.FIRE_FULL_SPEED)
         self.assertEqual((arcade.FIRE_HEAT, arcade.FIRE_DECAY), (game.trail.heat, looks[-1][0]))
         n = len(looks)
-        run_frames(game, 10, now + 1200)
-        self.assertEqual(n, len(looks))  # full: the look is not set again
+        game.grow_fire(arcade.FIRE_FULL_SPEED + 100)
+        self.assertEqual((n, arcade.FIRE_HEAT), (len(looks), game.trail.heat))  # faster is no bigger, no new look
         game.restart()
         self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))
+
+    def test_the_speed_grows_to_a_higher_top_and_the_flame_is_see_through(self):
+        game = self.game
+        speeds = []
+        for far in (0, 800, 5000, 40000, 10 ** 7):
+            game.far = far
+            speeds.append(int(game.base_speed()))
+        self.assertEqual(sorted(speeds), speeds)
+        self.assertTrue(arcade.FIRE_FULL_SPEED < speeds[3] < speeds[4] <= arcade.SPEED_KNEE + 80, speeds)
+        self.assertGreater(speeds[4], 650)  # the old top was 600
+        alpha = arcade.FIRE_ALPHA
+        self.assertEqual((0, arcade.FIRE_ALPHA_MAX), (alpha[0], alpha[255]))
+        self.assertEqual(0, alpha[arcade.FIRE_CLEAR - 1])  # the coolest cells are clear
+        self.assertLess(alpha[96], fire.ALPHA[96])  # fire.ALPHA is opaque from heat 96: this ramp is not
+        self.assertEqual(sorted(alpha), list(alpha))
