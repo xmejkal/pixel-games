@@ -5,6 +5,8 @@ from math import exp, sqrt
 
 import pictures
 import track
+from effects import FireTrail
+from fire import FireLayer
 from gfx import (BLACK, GREEN, GREY, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565)
 
 W, H = WIDTH, HEIGHT
@@ -13,6 +15,12 @@ BIRD_COLOURS = {"k": c565(40, 30, 20), "y": YELLOW, "w": WHITE, "o": ORANGE}
 RUN_TOP = ("..rrrr..", ".rrrrrr.", ".ssskss.", ".ssssss.", "..bbbb..", ".bbbbbb.", "sbbbbbbs", ".bbbbbb.", "..pppp..", "..pppp..")
 RUN_LEGS = (("..p..p..", ".kk..kk."), ("...pp...", "...kk..."))
 RUN_COLOURS = {"r": RED, "s": c565(250, 200, 160), "k": BLACK, "b": c565(50, 90, 240), "p": c565(40, 40, 120)}
+# --- MVP (P651) --- the runner's fire: the numbers start as the burning scene's and the flappy's (P607, P602), to tune on the panel
+FIRE_LOOK = (32, 40, 1, 0, 1, 128, 0, 16)  # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade
+FIRE_RADIUS, FIRE_HEAT, FIRE_LAG, FIRE_SEED = 3, 200, 0.5, 651  # cells of the disc each burn writes, its heat, frames of lag
+RUN_BOX = 24  # px: the box around the runner (its hit box height) that its trail burns from
+RUN_X = 52  # px: the runner's left edge
+FIRE_STEP_MS = 80  # ms a heat step: 40 (burning's) cost 10 ms a frame in update and sank the Runner to 16 fps (bench.md P651)
 
 
 class Flappy(Game):
@@ -118,7 +126,18 @@ class Runner(Game):
     GROUND = 192
     BUFFER = 0.15  # seconds a tap in the air is kept for the landing
 
+    def __init__(self):
+        # --- MVP (P651) --- made once, before Game.__init__ runs setup; the trail only when the field exists
+        self.layer = FireLayer(FIRE_LOOK, FIRE_SEED, FIRE_STEP_MS)
+        self.trail = None
+        if self.layer.field is not None:
+            self.trail = FireTrail(self.layer.field, RUN_BOX, FIRE_RADIUS, FIRE_HEAT, FIRE_LAG)
+        super().__init__()
+
     def setup(self):
+        self.layer.clear()  # --- MVP (P651) --- each round starts with no fire
+        if self.trail is not None:
+            self.trail.reset()
         self.h, self.vy, self.buffer = 0.0, 0.0, 0.0
         self.odo, self.far, self.points = 0.0, 0.0, 0.0  # px the world moved, px at the base speed, and the exact score
         self.track, self.effects = track.Track(), track.Effects()
@@ -158,6 +177,10 @@ class Runner(Game):
         self.far += base * dt
         self.points += base * dt / 20 * effects.factor(track.X2, 8)
         self.count()
+        dx = self.layer.update(self.ms, int(base * max(0.5, effects.factor(track.SLOW))))  # --- MVP (P651) --- the fire moves with the world
+        if self.trail is not None:
+            self.trail.scroll(dx)
+            self.trail.update(RUN_X, int(self.GROUND - self.h) - RUN_BOX)
         tr = self.track
         tr.move(step)
         tr.spawn(self.far / 20, k)
@@ -232,6 +255,7 @@ class Runner(Game):
             cv.fill(70 + i * 8, 19, 6, 6, track.BONUSES[2].colour)
             x2 //= 2
             i += 1
+        self.layer.draw(cv)  # --- MVP (P651) --- the fire behind the runner
         if pictures.draw(cv, self.pose(), 52, top):
             return
         run = int(self.t * 10) % 2  # by time, so the legs do not flicker at speed

@@ -680,3 +680,19 @@ The image is the one of `build-engine-p646.log` (`flash-p646.log`). The local `b
 | 13 gravpong | yes | 24, 24 |
 
 - Smoke (`run130-p656-smoke.log`): all fourteen entries start and print fps lines, with no error or traceback in the log, at 20 to 25 fps. Road is lowest (20 in its second interval), as in earlier smoke runs.
+
+## P651 (#874), 2026-11-06: the Runner's runner on fire
+
+Python only, on the P646 image (`flash-p646.log`; `HeatField.scroll` is in it since P602). The Runner carries a `FireTrail` on a `FireLayer` (the P602 flappy's shape): the layer scrolls with the world, one blend pass is drawn behind the runner. Each run went through `mpremote run probe651.py` (scratch): the Runner alone under an autopilot (a tap every 1.6 s, `die` off), after a hard `mpremote reset`, for 75 s. The probe times `FireLayer.update` (scroll and step) and `FireLayer.draw`. The values are per frame, from the last seven 5 s lines of each run. The pass line was set before the runs: fps 22 or more in every line, update plus draw 12 ms or less, 0 B allocated a frame.
+
+| run | fire | fps | paint | update | of it step | draw |
+| --- | --- | --- | --- | --- | --- | --- |
+| `run131-p651-before-runner.log` | master's `arcade.py` | 22 to 24 | 30.2 to 35.3 ms | none | none | none |
+| `run132-p651-after-runner.log` | heat step every 40 ms | 16 to 18 | 36.5 to 40.9 ms | 9.75 to 10.16 ms | not timed | 5.36 to 5.45 ms |
+| `run133-p651-after-step80-runner.log` | heat step every 80 ms (`FIRE_STEP_MS`, built) | 18 to 19 | 36.4 to 38.7 ms | 5.08 to 5.32 ms | 4.00 to 4.22 ms | 5.39 to 5.43 ms |
+
+- The pass line: update plus draw holds at 80 ms (10.5 to 10.8 ms, 12 or less) and misses at 40 ms (15.1 to 15.6 ms). The fps misses in both. The Runner is at the 40 ms frame edge with its painted layers and a HUD that redraws each frame under this autopilot (22 to 24 fps, paint 30 to 35 ms, more than run130's 22.9 ms), so any 10 ms more costs 4 to 5 fps.
+- The best setting found is the 80 ms heat step: it saves 4.8 ms of update (the step is 4.0 to 4.2 ms of the 5.2, the scroll about 1.1 ms) for 2 fps. The flames rise at half the burning scene's pace in time: the PO judges the look.
+- The blend draw is 5.4 ms, under P602's 7.6 ms (P646's early-out), and the field's 160 x 120 size is fixed by the C draw (it writes the whole panel).
+- Not tried: a heat step every 120 ms (about 2.6 ms of step, a slower, coarser flame), `RADIUS` 2, the fire only while a bonus runs.
+- The PO plays it (feel slice, not yet).

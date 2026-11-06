@@ -250,8 +250,8 @@ class FireLayer:
     blends it over the frame. Without the engine, field is None and draw does nothing. Made once: update and draw use
     int math only, so they make nothing a frame."""
 
-    def __init__(self, look, seed):
-        self.field, self.clock, self.acc = None, StepClock(STEP_MS, STEP_CAP), 0  # acc: px/s times ms
+    def __init__(self, look, seed, step_ms=STEP_MS):
+        self.field, self.clock, self.acc = None, StepClock(step_ms, STEP_CAP), 0  # acc: px/s times ms; step_ms: the heat's step
         if engine is not None:
             self.field = engine.HeatField(W, H, seed)
             self.field.set_look(*look)
