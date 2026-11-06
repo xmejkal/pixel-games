@@ -142,10 +142,7 @@ class BurningTest(unittest.TestCase):
         """Linear and nearest draw the field opaque, picture blends it over the sky (black on the Mac, which has no
         art). Then the eight bodies, then the field again in front of them at FRONT_ALPHA."""
         bodies = [(burning.BODY, burning.BODY)] * burning.N
-        blends = []
-        draw = fire.FirePlugin.draw_over
-        with contextlib.redirect_stdout(io.StringIO()), \
-                mock.patch.object(fire.FirePlugin, "draw_over", lambda p, cv, a: blends.append(a) or draw(p, cv, a)):
+        with contextlib.redirect_stdout(io.StringIO()):
             game = burning.BurningBodies()
             tft = Tft()
             _, now = play(game, 5, 0, tft)
@@ -160,8 +157,8 @@ class BurningTest(unittest.TestCase):
             ("picture", True, [fire.LINEAR], "tft alpha", bodies, "tft alpha"),
             ("nearest", False, [fire.NEAREST], "tft", bodies, "tft alpha"),
         ], seen)
-        self.assertEqual([fire.ALPHA, burning.FRONT_ALPHA], blends[-3:-1])  # picture: behind, then in front
-        self.assertIs(burning.FRONT_ALPHA, blends[-1])
+        # the tables that reached the C draw: picture behind and in front, then nearest opaque and in front
+        self.assertEqual([fire.ALPHA, burning.FRONT_ALPHA, None, burning.FRONT_ALPHA], fire.engine.alphas[-4:])
 
     def test_the_front_flames_are_cut_out_with_a_soft_edge(self):
         """Clear below FRONT_CLEAR, solid from FRONT_SOLID, and evenly between."""

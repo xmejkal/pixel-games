@@ -113,6 +113,7 @@ class Engine:
 
             def draw(self, tft, palette, alpha=None):
                 engine.targets.append("tft" if alpha is None else "tft alpha")
+                engine.alphas.append(alpha)  # P639: the table that reaches the C draw
                 out = (ctypes.c_uint16 * (len(tft.frame) // 2)).from_buffer(tft.frame)  # the display's frame
                 if alpha is None:
                     lib.fx_fire_draw(ctypes.byref(self.f), out, (ctypes.c_uint16 * 256).from_buffer(palette))
@@ -121,7 +122,7 @@ class Engine:
                                       (ctypes.c_uint8 * 256).from_buffer(alpha))
 
         self.HeatField, self.targets, self.looks, self.burns, self.filters = HeatField, [], [], [], []
-        self.scrolls = []  # P602
+        self.scrolls, self.alphas = [], []  # P602, P639
 
     def largest_free_internal(self):
         return 123456
