@@ -657,3 +657,26 @@ the last seven 5 s lines of each run, after the 30 s warm-up.
 - Picture misses by up to 2.98 ms (16.48 ms), by 3.48 ms against the pass line, and runs at 22 fps in most lines.
 - The Mac count of the plan: the check skips at least 95 to 97% of the front pass's cells and 81 to 89% of the picture
   field pass's (burning scene, frames 200 to 1000). The count used the limit 4T - 4, so it is a lower bound.
+
+## P656 (#881), 2026-11-06: smoke run of all 14 games on today's image
+
+The image of `build-engine-p646.log` (`flash-p646.log`): the local `build-engine/micropython.bin` has sha256 4c680c72a2957e39 (211,200 B left in the app partition, build output); the board reports `v1.29.0 on 2026-11-06`. The flashed image was not read back, so the hash is the build's, not the board's. Engine unchanged on master since P646 (a10a4c7). `games/*.py` and `games/art/*` at c9e1045: all 104 files match master by sha256 through mpremote. The board also holds files that master does not have: `boot.py`, `bench582.py`, `probe550.py`, `probe556.py`, `probe567.py`, `probe582.py` and `art/runner_jump.bin`; none collides with a game name. Each entry ran alone, `app.run(games=(G,))` through `mpremote run`, for about 13 s (`run130-p656-smoke.log`, a `=== entry N` header each).
+
+| entry | started | fps lines |
+| --- | --- | --- |
+| 0 fire | yes | 25 |
+| 1 balls | yes | 24, 24 |
+| 2 burning | yes | 24 |
+| 3 rain | yes | 25, 24 |
+| 4 flappy | yes | 24 |
+| 5 runner | yes | 24 |
+| 6 snake | yes | 25, 24 |
+| 7 stack | yes | 25 |
+| 8 cave | yes | 23, 24 |
+| 9 tunnel | yes | 25, 24 |
+| 10 road | yes | 23, 20 |
+| 11 starfire | yes | 25, 24 |
+| 12 cube | yes | 25, 24 |
+| 13 gravpong | yes | 24, 24 |
+
+- Smoke (`run130-p656-smoke.log`): all fourteen entries start and print fps lines, with no error or traceback in the log, at 20 to 25 fps. Road is lowest (20 in its second interval), as in earlier smoke runs.

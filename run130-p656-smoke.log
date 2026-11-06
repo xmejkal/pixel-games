@@ -1,0 +1,224 @@
+=== entry 0 Fire
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315904
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 25 step 6.36 draw 6.44
+fps fire 25
+time fire step 6.9 paint 9.2 send 4.3 gc 2.0 fps 25 worst 48 slowest 38 = step 6 paint 27 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 20 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 123968 glyphs 18
+=== entry 1 BallPit
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315920
+frame tft
+ready
+game balls
+balls n 10 fps 24 step 1.86 draw 4.25 hits 50
+fps balls 24
+time balls step 2.4 paint 7.3 send 5.2 gc 3.0 fps 24 worst 57 slowest 40 = step 2 paint 34 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 29 over 0 title 0
+avg balls static 0.0 paint 4.4 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap balls alloc 186480 glyphs 20
+balls n 10 fps 24 step 1.88 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.3 send 5.1 gc 2.9 fps 24 worst 56 slowest 40 = step 2 paint 35 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 29 over 0 title 0
+avg balls static 0.0 paint 4.4 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap balls alloc 187856 glyphs 20
+=== entry 2 BurningBodies
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315904
+frame tft
+ready
+burning internal largest 31744
+burning field internal
+game burning
+burning linear fps 24 step 7.80 draw 13.39
+fps burning 24
+time burning step 8.4 paint 16.3 send 3.7 gc 2.1 fps 24 worst 54 slowest 52 = step 8 paint 40 send 3 gc 0
+phases burning static 0 paint 16 fx 0 hud 26 over 0 title 0
+avg burning static 0.1 paint 13.6 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap burning alloc 131920 glyphs 23
+=== entry 3 Rain
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315888
+frame tft
+ready
+stepper c
+game rain
+rain c n 160 fps 25 step 0.27 read 1.11 draw 11.33
+fps rain 25
+time rain step 1.9 paint 17.9 send 3.5 gc 2.0 fps 25 worst 49 slowest 40 = step 2 paint 34 send 3 gc 0
+phases rain static 4 paint 15 fx 0 hud 17 over 0 title 0
+avg rain static 4.6 paint 11.5 fx 0.1 hud 1.6 over 0.0 title 0.0
+heap rain alloc 123168 glyphs 14
+rain c n 160 fps 24 step 0.27 read 1.13 draw 11.82
+fps rain 24
+time rain step 1.9 paint 18.2 send 3.5 gc 2.0 fps 24 worst 44 slowest 39 = step 2 paint 34 send 3 gc 0
+phases rain static 4 paint 15 fx 0 hud 16 over 0 title 0
+avg rain static 4.6 paint 12.0 fx 0.1 hud 1.4 over 0.0 title 0.0
+heap rain alloc 122720 glyphs 14
+=== entry 4 Flappy
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315904
+frame tft
+ready
+game flappy
+fps flappy 24
+time flappy step 0.7 paint 23.8 send 3.8 gc 2.1 fps 24 worst 56 slowest 54 = step 13 paint 38 send 3 gc 10
+phases flappy static 7 paint 12 fx 1 hud 9 over 19 title 20
+avg flappy static 7.3 paint 8.1 fx 0.3 hud 0.6 over 3.3 title 4.0
+heap flappy alloc 129280 glyphs 16
+=== entry 5 Runner
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315904
+frame tft
+ready
+game runner
+fps runner 24
+time runner step 1.2 paint 22.9 send 4.5 gc 2.1 fps 24 worst 46 slowest 44 = step 0 paint 18 send 26 gc 0
+phases runner static 7 paint 10 fx 2 hud 13 over 0 title 30
+avg runner static 7.3 paint 8.0 fx 0.5 hud 4.2 over 0.0 title 2.8
+heap runner alloc 135936 glyphs 28
+=== entry 6 Snake
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315904
+frame tft
+ready
+game snake
+fps snake 25
+time snake step 0.5 paint 13.5 send 3.7 gc 2.0 fps 25 worst 41 slowest 40 = step 0 paint 36 send 3 gc 0
+phases snake static 8 paint 1 fx 0 hud 13 over 0 title 28
+avg snake static 8.5 paint 0.7 fx 0.0 hud 0.7 over 0.0 title 3.3
+heap snake alloc 118384 glyphs 14
+fps snake 24
+time snake step 0.6 paint 10.7 send 3.6 gc 2.0 fps 24 worst 44 slowest 24 = step 1 paint 20 send 3 gc 0
+phases snake static 8 paint 1 fx 0 hud 9 over 0 title 0
+avg snake static 8.5 paint 1.0 fx 0.1 hud 0.9 over 0.0 title 0.0
+heap snake alloc 118640 glyphs 16
+=== entry 7 Stack
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315904
+frame tft
+ready
+game stack
+fps stack 25
+time stack step 0.7 paint 13.3 send 3.4 gc 2.0 fps 25 worst 40 slowest 29 = step 0 paint 25 send 3 gc 0
+phases stack static 7 paint 4 fx 0 hud 15 over 0 title 9
+avg stack static 7.5 paint 2.3 fx 0.2 hud 1.0 over 0.0 title 2.1
+heap stack alloc 125408 glyphs 11
+=== entry 8 Cave
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315904
+frame tft
+ready
+game cave
+fps cave 23
+time cave step 1.2 paint 30.5 send 3.6 gc 2.2 fps 23 worst 79 slowest 77 = step 15 paint 59 send 3 gc 10
+phases cave static 9 paint 19 fx 2 hud 13 over 25 title 26
+avg cave static 8.9 paint 12.2 fx 0.8 hud 1.4 over 4.6 title 2.5
+heap cave alloc 130752 glyphs 21
+fps cave 24
+time cave step 1.1 paint 26.4 send 3.4 gc 2.0 fps 24 worst 54 slowest 42 = step 1 paint 37 send 3 gc 0
+phases cave static 9 paint 17 fx 1 hud 11 over 0 title 0
+avg cave static 8.8 paint 14.8 fx 0.6 hud 2.0 over 0.0 title 0.0
+heap cave alloc 138192 glyphs 27
+=== entry 9 Tunnel
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315888
+frame tft
+ready
+game tunnel
+fps tunnel 25
+time tunnel step 1.1 paint 22.3 send 4.1 gc 2.0 fps 25 worst 47 slowest 40 = step 1 paint 34 send 3 gc 0
+phases tunnel static 7 paint 15 fx 2 hud 12 over 0 title 26
+avg tunnel static 6.9 paint 11.2 fx 1.0 hud 1.3 over 0.0 title 1.8
+heap tunnel alloc 139008 glyphs 17
+fps tunnel 24
+time tunnel step 1.2 paint 22.7 send 4.0 gc 2.0 fps 24 worst 61 slowest 45 = step 2 paint 39 send 3 gc 0
+phases tunnel static 7 paint 14 fx 2 hud 19 over 0 title 0
+avg tunnel static 6.9 paint 12.7 fx 1.3 hud 1.6 over 0.0 title 0.0
+heap tunnel alloc 193712 glyphs 22
+=== entry 10 Road
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315808
+frame tft
+ready
+game road
+fps road 23
+time road step 0.7 paint 34.4 send 3.5 gc 2.1 fps 23 worst 66 slowest 57 = step 0 paint 53 send 3 gc 0
+phases road static 15 paint 24 fx 1 hud 19 over 0 title 29
+avg road static 11.7 paint 15.6 fx 0.2 hud 1.3 over 0.0 title 5.4
+heap road alloc 173600 glyphs 21
+fps road 20
+time road step 1.0 paint 38.5 send 4.7 gc 2.3 fps 20 worst 105 slowest 103 = step 13 paint 68 send 20 gc 11
+phases road static 14 paint 25 fx 7 hud 21 over 20 title 0
+avg road static 11.3 paint 22.6 fx 0.7 hud 1.8 over 1.9 title 0.0
+heap road alloc 226704 glyphs 28
+=== entry 11 Starfire
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315792
+frame tft
+ready
+game starfire
+fps starfire 25
+time starfire step 1.1 paint 20.8 send 3.3 gc 2.1 fps 25 worst 69 slowest 56 = step 2 paint 50 send 3 gc 0
+phases starfire static 14 paint 10 fx 1 hud 31 over 0 title 20
+avg starfire static 10.6 paint 6.0 fx 0.1 hud 1.1 over 0.0 title 2.8
+heap starfire alloc 139792 glyphs 11
+fps starfire 24
+time starfire step 1.4 paint 21.8 send 3.4 gc 2.1 fps 24 worst 48 slowest 36 = step 2 paint 31 send 3 gc 0
+phases starfire static 11 paint 13 fx 2 hud 11 over 0 title 0
+avg starfire static 10.5 paint 9.7 fx 0.3 hud 1.2 over 0.0 title 0.0
+heap starfire alloc 122896 glyphs 13
+=== entry 12 CubeTiming
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315792
+frame tft
+ready
+game cube
+fps cube 25
+time cube step 0.7 paint 17.4 send 3.5 gc 2.0 fps 25 worst 46 slowest 44 = step 0 paint 18 send 26 gc 0
+phases cube static 5 paint 12 fx 1 hud 8 over 0 title 30
+avg cube static 5.0 paint 7.0 fx 0.2 hud 0.9 over 0.0 title 4.1
+heap cube alloc 128896 glyphs 17
+fps cube 24
+time cube step 1.1 paint 23.6 send 3.5 gc 2.2 fps 24 worst 72 slowest 70 = step 13 paint 53 send 3 gc 10
+phases cube static 5 paint 13 fx 4 hud 10 over 23 title 0
+avg cube static 5.0 paint 10.7 fx 0.9 hud 1.2 over 5.7 title 0.0
+heap cube alloc 131536 glyphs 19
+=== entry 13 GravityPong
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6315904
+frame tft
+ready
+game gravpong
+fps gravpong 24
+time gravpong step 0.6 paint 17.1 send 4.9 gc 1.9 fps 24 worst 66 slowest 55 = step 0 paint 28 send 26 gc 0
+phases gravpong static 12 paint 1 fx 1 hud 17 over 0 title 30
+avg gravpong static 11.1 paint 0.9 fx 0.1 hud 1.0 over 0.0 title 3.8
+heap gravpong alloc 126400 glyphs 18
+fps gravpong 24
+time gravpong step 0.7 paint 14.0 send 3.7 gc 2.0 fps 24 worst 43 slowest 36 = step 1 paint 32 send 3 gc 0
+phases gravpong static 11 paint 1 fx 1 hud 18 over 0 title 0
+avg gravpong static 11.2 paint 1.2 fx 0.2 hud 1.2 over 0.0 title 0.0
+heap gravpong alloc 120368 glyphs 21
