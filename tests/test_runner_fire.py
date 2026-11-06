@@ -82,3 +82,19 @@ class RunnerFireTest(unittest.TestCase):
         run_frames(self.game, 20, now)  # 800 ms of play: a step in every second frame
         self.assertEqual(arcade.FIRE_STEP_MS, 80)
         self.assertTrue(8 <= sum(steps) <= 11, steps)
+
+    def test_the_flame_starts_at_nothing_and_grows_to_full_in_fire_grow_ms(self):
+        game, looks = self.game, fire.engine.looks
+        self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))  # off at the start of the round
+        now = run_frames(game, 36)  # the title, under 1,500 ms: the round has not begun
+        self.assertEqual(0, game.trail.heat)
+        now = run_frames(game, 29, now)  # about 1,000 ms of play: about half
+        self.assertTrue(0 < game.trail.heat < arcade.FIRE_HEAT, game.trail.heat)
+        self.assertTrue(0 < looks[-1][0] < arcade.FIRE_DECAY, looks[-1])
+        run_frames(game, 30, now)  # past FIRE_GROW_MS
+        self.assertEqual((arcade.FIRE_HEAT, arcade.FIRE_DECAY), (game.trail.heat, looks[-1][0]))
+        n = len(looks)
+        run_frames(game, 10, now + 1200)
+        self.assertEqual(n, len(looks))  # full: the look is not set again
+        game.restart()
+        self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))

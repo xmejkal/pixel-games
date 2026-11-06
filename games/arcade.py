@@ -16,7 +16,16 @@ RUN_TOP = ("..rrrr..", ".rrrrrr.", ".ssskss.", ".ssssss.", "..bbbb..", ".bbbbbb.
 RUN_LEGS = (("..p..p..", ".kk..kk."), ("...pp...", "...kk..."))
 RUN_COLOURS = {"r": RED, "s": c565(250, 200, 160), "k": BLACK, "b": c565(50, 90, 240), "p": c565(40, 40, 120)}
 # --- MVP (P651) --- the runner's fire: the numbers start as the burning scene's and the flappy's (P607, P602), to tune on the panel
-FIRE_LOOK = (32, 40, 1, 0, 1, 128, 0, 16)  # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade
+# fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade. DECAY sets the flame's length: on a Mac field at
+# 450 px/s, 32 (the burning scene's) rises 14 rows and trails 146 cells, 20 rises 7 and trails 73, 10 rises 4 and trails 34.
+FIRE_DECAY = 10
+FIRE_GROW_MS = 2000  # a round's flame grows from nothing to FIRE_DECAY and FIRE_HEAT over this long, then stays
+
+
+def fire_look(decay):
+    return (decay, 40, 1, 0, 1, 128, 0, 16)
+
+
 FIRE_RADIUS, FIRE_HEAT, FIRE_LAG, FIRE_SEED = 3, 200, 0.5, 651  # cells of the disc each burn writes, its heat, frames of lag
 RUN_BOX = 24  # px: the box around the runner (its hit box height) that its trail burns from
 RUN_X = 52  # px: the runner's left edge
@@ -128,7 +137,7 @@ class Runner(Game):
 
     def __init__(self):
         # --- MVP (P651) --- made once, before Game.__init__ runs setup; the trail only when the field exists
-        self.layer = FireLayer(FIRE_LOOK, FIRE_SEED, FIRE_STEP_MS)
+        self.layer = FireLayer(fire_look(FIRE_DECAY), FIRE_SEED, FIRE_STEP_MS)
         self.trail = None
         if self.layer.field is not None:
             self.trail = FireTrail(self.layer.field, RUN_BOX, FIRE_RADIUS, FIRE_HEAT, FIRE_LAG)
@@ -136,13 +145,26 @@ class Runner(Game):
 
     def setup(self):
         self.layer.clear()  # --- MVP (P651) --- each round starts with no fire
+        self.fire_ms, self.fire_decay = 0, 0
         if self.trail is not None:
             self.trail.reset()
+            self.grow_fire()
         self.h, self.vy, self.buffer = 0.0, 0.0, 0.0
         self.odo, self.far, self.points = 0.0, 0.0, 0.0  # px the world moved, px at the base speed, and the exact score
         self.track, self.effects = track.Track(), track.Effects()
         self.jumped, self.landed = -1.0, -1.0  # when the last jump and the last landing began (self.t), for the pose
         self.covers = pictures.load()  # painted art on the board: its sky covers the screen, so no fill goes under it
+
+    def grow_fire(self):
+        """The flame at fire_ms of the round: DECAY and the burns' heat climb evenly from 0 to their values over
+        FIRE_GROW_MS. The look is set again only when the decay steps (at most FIRE_DECAY times a round), so a frame
+        allocates nothing. --- MVP (P651) ---"""
+        k = min(self.fire_ms, FIRE_GROW_MS)
+        self.trail.heat = FIRE_HEAT * k // FIRE_GROW_MS
+        decay = FIRE_DECAY * k // FIRE_GROW_MS
+        if decay != self.fire_decay or k == 0:
+            self.fire_decay = decay
+            self.layer.field.set_look(*fire_look(decay))
 
     def base_speed(self):
         """px/s from the distance run, not the score, so a score bonus does not speed the game up. The same start as
@@ -179,6 +201,9 @@ class Runner(Game):
         self.count()
         dx = self.layer.update(self.ms, int(base * max(0.5, effects.factor(track.SLOW))))  # --- MVP (P651) --- the fire moves with the world
         if self.trail is not None:
+            if self.fire_ms < FIRE_GROW_MS:
+                self.fire_ms += self.ms
+                self.grow_fire()
             self.trail.scroll(dx)
             self.trail.update(RUN_X, int(self.GROUND - self.h) - RUN_BOX)
         tr = self.track
