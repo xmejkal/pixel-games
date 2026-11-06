@@ -58,8 +58,9 @@ SEED = 596
 # --- MVP (P639) --- The front flames' alpha per heat: a cutout with a soft edge (Unity's alpha clipping, with a ramp in
 # place of its one threshold): clear below FRONT_CLEAR, so the cooler flames stay behind the body, then climbing evenly
 # to solid at FRONT_SOLID. The PO picked it from five front layers on Mac frames (2026-11-06), over a front at most half
-# opaque (17.9 ms of draw on the board, run119) and a second field (6.8 ms more step, run120).
-FRONT_CLEAR, FRONT_SOLID = 120, 180
+# opaque (17.9 ms of draw on the board, run119) and a second field (6.8 ms more step, run120). On the panel, 120 to 180
+# made the hot flames pop on and off over the bodies, and the wider 100 to 230 softened it (the PO's ok, 2026-11-06).
+FRONT_CLEAR, FRONT_SOLID = 100, 230
 FRONT_ALPHA = array("B", [0 if heat < FRONT_CLEAR else 255 if heat >= FRONT_SOLID else
                           (heat - FRONT_CLEAR) * 255 // (FRONT_SOLID - FRONT_CLEAR) for heat in range(256)])
 

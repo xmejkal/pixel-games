@@ -166,7 +166,7 @@ class BurningTest(unittest.TestCase):
         """Clear below FRONT_CLEAR, solid from FRONT_SOLID, and evenly between."""
         alpha, clear, solid = burning.FRONT_ALPHA, burning.FRONT_CLEAR, burning.FRONT_SOLID
         self.assertEqual((0, 0, 255, 255), (alpha[0], alpha[clear - 1], alpha[solid], alpha[255]))
-        self.assertEqual((0, 127, 250), (alpha[clear], alpha[(clear + solid) // 2], alpha[solid - 1]))
+        self.assertEqual((0, 127, 253), (alpha[clear], alpha[(clear + solid) // 2], alpha[solid - 1]))
 
     @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
     def test_a_landing_in_c_flares_in_python(self):
