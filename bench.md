@@ -579,3 +579,26 @@ from the scene's 5 s lines (seven each), and paint from the App's `time` lines.
   boxes are in the same places (the refuter's 300 frames on the Mac). A row in P633's rows file holds it.
 - The review fixes after 143c879 (`take_step_us`, and the burning scene takes a tap before it counts) were not run
   on the board. They add one call a frame and move no work.
+
+## P639 (#854), 2026-11-06: flames in front of the burning bodies
+
+Python only, so the image is the one flashed in P632 (`flash-p632.log`). Each run went through `mpremote run` with
+`app.run(games=(B,))`, where `B` starts `BurningBodies` in one mode, for 42 s after one 30 s warm-up. The values are
+per frame, from seven 5 s lines each. The draw now times the whole `draw_layers`: the field behind, the eight body
+fills (about 0.7 ms, P550's 87 µs a fill) and the field in front. Before, it timed the opaque field alone: 6.40 to
+6.44 ms (run117, `bench.md:570-571`).
+
+| run | front layer | mode | fps | step ms | draw ms |
+| --- | --- | --- | --- | --- | --- |
+| `run119-p639-burning-linear.log` | the same field, at most half opaque | linear | 23 to 24 | 7.92 to 8.08 | 17.30 to 18.04 |
+| `run119-p639-burning-picture.log` | the same field, at most half opaque | picture | 20 to 21 | 8.85 to 9.12 | 20.21 to 21.36 |
+| `run120-p639-front5b-probe.log` | a second field with its own burns, alpha test at heat 110 | linear | 23 | 14.51 to 14.84 | 14.30 to 14.39 |
+| `run121-p639-cutout-linear.log` | the same field, cut out: clear below heat 120, solid from 180 | linear | 24 | 7.85 to 8.10 | 14.80 to 15.03 |
+| `run121-p639-cutout-picture.log` | the same field, cut out: clear below heat 120, solid from 180 | picture | 21 to 22 | 8.46 to 8.71 | 17.91 to 18.54 |
+
+- The PO picked the soft cutout from Mac frames of five front layers (2026-11-06). It is the built one.
+- D5's line (draw 13.5 ms or less, 23 fps or more) does not hold: the cutout draws 1.3 to 1.5 ms over it in linear,
+  and the picture mode falls to 21 to 22 fps. The PO judges the look on the panel.
+- A front blend that is half opaque everywhere costs about 3 ms more than the cutout: cells of alpha 0 are skipped
+  and cells of alpha 255 need no blend math (`fx_fire.c:283-322`).
+- The second field (run120, a scratch probe) fits in internal RAM (18,432 B left after it) and steps 6.8 ms more.

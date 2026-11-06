@@ -231,8 +231,10 @@ Four pieces work together on one field of heat: a byte per cell, 0 to 255, in `f
    Linear costs about 2.15 ms more to draw (6.41 ms against 4.26 ms in the burning scene, `bench.md:429-430`, P608).
 4. The blend puts the fire over a picture. `fx_fire_blend` turns each pixel into
    `alpha_blend_565(palette[heat], pixel, alpha[heat])` and skips cells of alpha 0 (`fx_fire.c:283-322`). Python gives the
-   `ALPHA` table, which is clear at heat 0 and full from heat 96 (`fire.py:90-91`). `Fire.paint` picks blend or opaque draw
-   (`fire.py:166-169`). The burning scene uses the opaque draw (`burning.py:59`, `blend` is False). The picture mode of the fire
+   `ALPHA` table, which is clear at heat 0 and full from heat 96 (`fire.py:90-91`). `FirePlugin.draw` picks blend or opaque draw
+   (`fire.py:129-136`). The burning scene draws the field twice (P639): opaque, or blended over the sky in its picture
+   mode, behind the bodies, then blended in front of them at `FRONT_ALPHA`, a cutout with a soft edge
+   (`burning.py:141-147`). It draws in 14.80 to 15.03 ms (run121, linear). The picture mode of the fire
    and the unused `FireLayer.draw` use the blend (`fire.py:240`). The picture mode costs 11.51 to 13.32 ms to draw
    (`bench.md:433`, P608).
 The scroll moves the whole field under the screen by `dx` cells, clears what it uncovers and moves the live embers too

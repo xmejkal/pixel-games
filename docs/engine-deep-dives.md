@@ -35,10 +35,10 @@ for (int32_t ox = -r; ox <= r; ox++) {
 
    So two trails that cross never overflow a byte, and the order of the burns does not matter.
 3. Who burns. `FireTrail.update` burns a path a little behind each body (`effects.py:42-56`). `flare` burns one disc
-   at a hard hit (`burning.py:109-115`). Both call the same `field.burn` (`binding.c:232-247`). The burning scene turns
-   the base off, so only burns feed the field (`burning.py:69`, `fx_fire.c:188-189`).
+   at a hard hit (`burning.py:127-133`). Both call the same `field.burn` (`binding.c:232-247`). The burning scene turns
+   the base off, so only burns feed the field (`burning.py:85`, `fx_fire.c:188-189`).
 4. Order inside a frame. `BurningBodies.play` runs step, read, dispatch (flares), update (trails), and then
-   `Fire.play` steps the field (`burning.py:102-107`, `fire.py:148`). So a flare rises in the frame it happened.
+   `FirePlugin.late_update` steps the field (`burning.py:114-125`, `fire.py:116-127`). So a flare rises in the frame it happened.
 5. The step moves the heat. Each cell reads the cells below it and cools (`fx_fire.c:197-233`). This is the
    mixing stage: a hot trail and a cold patch of the cooling map meet here, cell by cell.
 6. The draw is the composite. `Fire.paint` picks opaque or blend (`fire.py:166-169`). Opaque writes
@@ -62,7 +62,8 @@ for (int32_t y = 0; y < h; y++, col += w) {
    The alpha per heat is data from Python: clear at 0, full from heat 96 (`fire.py:90-91`).
 7. The layers above the fire. `TftOut.draw` paints the background and the still picture first (`lcd.py:179-182`).
    Then `Game.draw` paints in this order: `paint`, particles `fx.draw`, `hud`, `draw_over` (`gfx.py:379-388`).
-   In the burning scene `paint` is the fire draw and then one `cv.fill` per body (`burning.py:117-121`).
+   In the burning scene `paint` times `draw_layers`: the fire draw, one `cv.fill` per body, and then the same field
+   again in front, cut out with a soft edge, so a body burns inside its flames (P639, `burning.py:135-147`).
 8. The filter is not a layer. NEAREST or LINEAR only decides how one cell becomes four pixels
    (`fx_fire.c:252-269`). It costs 2.15 ms more a frame (`bench.md:429-430`).
 
@@ -72,14 +73,14 @@ for (int32_t y = 0; y < h; y++, col += w) {
 flowchart LR
     subgraph writers [Python decides, C writes]
         T[FireTrail.update<br/>effects.py:42] -->|burn path| F
-        L[flare<br/>burning.py:109] -->|burn disc| F
+        L[flare<br/>burning.py:127] -->|burn disc| F
         B[base row or embers<br/>fx_fire.c:188, :171] -->|max| F
     end
     F[(heat field<br/>160 x 120 bytes)] -->|fx_fire_step| F
     F -->|palette, alpha| D[fx_fire_draw or _blend<br/>fx_fire.c:252, :283]
     S[sky or bg fill<br/>lcd.py:179-182] --> P[(s3lcd frame buffer)]
     D --> P
-    P --> O[cv.fill bodies<br/>burning.py:119] --> Q[particles, HUD strip, game over<br/>gfx.py:382-388] --> W[tft.show<br/>lcd.py:188]
+    P --> O[cv.fill bodies<br/>burning.py:146] --> R[front flames, cut out<br/>burning.py:147] --> Q[particles, HUD strip, game over<br/>gfx.py:382-388] --> W[tft.show<br/>lcd.py:188]
 ```
 
 ### How others do it
@@ -135,7 +136,7 @@ for (int32_t dy = -1; dy <= 1; dy++) {
 7. Events back to Python. Only pass 0 writes events, and only above `hit_min` (`:156-161`, walls `:208-210`).
    `events_add` keeps the first 64 and counts the rest (`events.h:29-38`). Python drains with one call
    (`binding.c:436-445`). The pit counts them (`balls.py:117-119`). The burning scene maps `HIT` to `flare`
-   (`burning.py:80`, `effects.py:91-97`).
+   (`burning.py:97`, `effects.py:91-97`).
 
 The bodies skip steps 2 to 6. Their whole contact is one test against `rest_y` and a bounce or a sleep (`world.c:50-63`).
 
@@ -152,10 +153,10 @@ sequenceDiagram
     C->>E: events_clear  world.c:41
     C->>C: y >= rest_y: back onto the plane  world.c:50
     C->>E: events_add(i, HIT, v)  world.c:59
-    G->>S: dispatch(handlers)  burning.py:104
+    G->>S: dispatch(handlers)  burning.py:123
     S->>E: drain into array('i')  rain.py:65
     S->>G: flare(body, speed)  effects.py:97
-    G->>H: burn(cx, cy, cx, cy, radius, heat)  burning.py:115
+    G->>H: burn(cx, cy, cx, cy, radius, heat)  burning.py:133
 ```
 
 ### How this differs from a graphics effect
