@@ -93,7 +93,7 @@ PALETTE = ramp(STOPS)
 # (2026-11-04). From 48, the dark red edges turn opaque and darken the sky again.
 ALPHA_FULL = 96
 ALPHA = array("B", [min(255, heat * 255 // ALPHA_FULL) for heat in range(256)])
-# --- MVP (P639) --- The palette of every blended draw: below ALPHA_FULL each heat keeps that heat's red, and only ALPHA
+# --- MVP (P639) --- The palette of every blended draw: below ALPHA_FULL each heat takes ALPHA_FULL's red, and only ALPHA
 # fades it. With PALETTE the cool edges are dark red to black, so half of a dark colour went into a bright sky and the
 # flames had dark borders (the PO saw them on the panel, 2026-11-06). Texture tools call this fix alpha bleeding: a
 # see-through pixel takes its colour from its opaque neighbour.
