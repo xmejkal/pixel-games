@@ -6,6 +6,8 @@ The scene is fire, burning or balls (P598); one PNG per frame count, side by sid
 filter after setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering; without it the scene's
 first mode draws. Each frame paints through lcd.TftCanvas, as on the board, so a scene's own fills (the burning
 bodies) show under its field (P639).
+--flow BEND WANDER (P647) sets the field's flow after setup (fire and burning only). --gif N writes an animated GIF
+of N frames, 40 ms each, that starts at the last frame count, instead of the PNG sheet.
 The balls pour again every POUR_FRAMES frames, as taps would. --- MVP (P596) ---"""
 
 import argparse
@@ -47,11 +49,17 @@ def frame_image(tft):
 def main():
     parser = argparse.ArgumentParser(description="Draw a C scene on the Mac to a PNG.")
     parser.add_argument("--filter", choices=sorted(FILTERS), help="the field's filter (P608)")
+    parser.add_argument("--flow", type=int, nargs=2, metavar=("BEND", "WANDER"), help="the field's flow (P647)")
+    parser.add_argument("--gif", type=int, metavar="N", help="an animated GIF of N frames (P647)")
     parser.add_argument("scene", choices=sorted(SCENES))
     parser.add_argument("out")
     parser.add_argument("frames", type=int, nargs="*", default=[100])
     args = parser.parse_args()
     name, out, counts = args.scene, args.out, args.frames
+    if args.flow and name == "balls":
+        parser.error("--flow needs a scene with a fire: fire or burning")
+    if args.gif:  # --- Later, not MVP: a prototype for the PO's pick (P647) ---
+        counts = counts[-1:] + list(range(counts[-1] + 1, counts[-1] + args.gif))
     fire.engine = Engine(build(core("fx_fire"), ("-I", S3LCD_SRC)))
     balls.engine, plugins.engine = balls_lib.engine(), None  # bodies on a PhysicsPlugin over motion.Bodies
     fire.random.seed(fire.SEED)  # the fire's gusts too, so a render with each filter shows the same flames
@@ -59,12 +67,18 @@ def main():
         game, tft, now, shots = SCENES[name](), Tft(), 0, []
         if args.filter:
             game.fire_plugin.set_filter(FILTERS[args.filter])
+        if args.flow:
+            game.fire_plugin.field.set_flow(*args.flow)
         for n in counts:
             while now // 40 < n:
                 _, now = play(game, 1, now, tft, canvas=lcd.TftCanvas)
                 if name == "balls" and (now // 40) % POUR_FRAMES == 0:
                     game.pour()  # play() takes one pressed flag, so the scene pours itself
             shots.append(frame_image(tft))
+    if args.gif:
+        shots[0].save(out, save_all=True, append_images=shots[1:], duration=40, loop=0)
+        print(out)
+        return
     sheet = Image.new("RGB", (330 * len(shots), 240))
     for k, shot in enumerate(shots):
         sheet.paste(shot, (330 * k, 0))
