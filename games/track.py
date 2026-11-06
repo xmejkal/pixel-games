@@ -158,14 +158,14 @@ class Track:
         self.last_end -= step
         self.bonus_due -= step
 
-    def spawn(self, level, k):
+    def spawn(self, level, k, spread=1):
         while self.last_end < W + 40:
             if self.chain:  # the rest of a pair or a run: low and close, and it cannot start another one
                 self.chain -= 1
                 self.add(CACTUS, self.last_end + random.randrange(40, 70) * k, True)
                 continue
             pattern = self.pick(level)
-            gap = random.randrange(300, 420) * k if pattern == WIDE else random.randrange(180, 300) * k
+            gap = (random.randrange(300, 420) if pattern == WIDE else random.randrange(180, 300)) * k * spread
             if self.bonus_due <= 0 and pattern in (SINGLE, WIDE):
                 gap = self.bonus(level, k, gap)
             if pattern in (PAIR, RUN3):

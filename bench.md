@@ -711,3 +711,4 @@ The PO's looks (2026-11-06: "shorter", "even shorter", "grow with speed", "looks
 - Run 131 (no fire) was 22 to 24 fps with paint 30 to 35 ms. Runs 135 to 138 start with the run far on (`far` 40,000 px, base speed 697 px/s), so the flame is full and the world scrolls the most cells: the worst case. Their paint is also higher (the faster world, more things). The cost of the fire in the built version is the update (5.2 to 5.4 ms) plus the draw (5.7 ms), 10.9 to 11.1 ms, under the 12 ms line; the 22 fps line is missed (17 to 18).
 - Run 134 (`run134-p651-decay20-runner.log`, decay 20 at the old speed, flame full from the start): 18 to 19 fps, update 5.2 to 5.3 ms, draw 5.4 ms.
 - The PO plays it (feel slice, not yet). The Runner runs on the board after the last measurement.
+- Set `OBSTACLE_GAP` in `games/arcade.py` back to 1 before the merge (it is 3 while the flame is tuned, so the PO jumps less).

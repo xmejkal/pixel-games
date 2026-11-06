@@ -21,6 +21,7 @@ RUN_COLOURS = {"r": RED, "s": c565(250, 200, 160), "k": BLACK, "b": c565(50, 90,
 # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade. DECAY sets how high the flame climbs, COOL (the cooling map's patches) and FADE tear it
 # into ragged wisps that die toward the tip. Burning's own look is 32, 40 and 16: a longer, smoother tongue.
 FIRE_DECAY, FIRE_COOL, FIRE_FADE = 36, 255, 48
+OBSTACLE_GAP = 3  # factor on the gap between the Runner's obstacles, for tuning only (P651): 1 is the game as it is, set it back to 1 before the merge
 FIRE_DRAG_PCT = 5  # % of the world's speed that the heat field scrolls: at 100 the heat is smeared into a flat bar behind the runner
 
 
@@ -226,7 +227,7 @@ class Runner(Game):
             self.trail.update(RUN_X - RUN_BOX // 2, int(self.GROUND - self.h) - RUN_BOX)  # burns at the runner's back, x = RUN_X
         tr = self.track
         tr.move(step)
-        tr.spawn(self.far / 20, k)
+        tr.spawn(self.far / 20, k, OBSTACLE_GAP)
         for t in tr.things:
             if tr.hit(t, step, was, self.h):
                 kind = t[1]

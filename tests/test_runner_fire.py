@@ -120,3 +120,19 @@ class RunnerFireTest(unittest.TestCase):
         self.assertEqual(0, alpha[arcade.FIRE_CLEAR - 1])  # the coolest cells are clear
         self.assertLess(alpha[96], fire.ALPHA[96])  # fire.ALPHA is opaque from heat 96: this ramp is not
         self.assertEqual(sorted(alpha), list(alpha))
+
+
+class ObstacleGapTest(unittest.TestCase):
+    """The tuning factor on the gap between obstacles (P651): 1 is the game's own spacing."""
+
+    def last_end(self, spread):
+        import random
+        import track
+        random.seed(5)
+        tr = track.Track()
+        tr.spawn(0, 1, spread)
+        return tr.last_end
+
+    def test_a_larger_factor_spaces_the_first_obstacle_further_out(self):
+        self.assertGreater(self.last_end(3), self.last_end(1))
+        self.assertEqual(self.last_end(1), self.last_end(1))
