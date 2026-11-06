@@ -322,6 +322,50 @@ class FireCoreTest(unittest.TestCase):
                         for t, bg in zip(heats, background)]
                 self.assertEqual(want, self.blend(f, palette, alpha, background))
 
+    # --- MVP (P646) --- the early-out: a cell too cold for any alpha but 0 skips its heats, with the same output
+    def linear_blend_matches(self, heat_values, w, h, alpha, rng):
+        """fx_fire_blend with LINEAR over heat_values gives the reference's pixels, each blended at its heat's alpha."""
+        f, heat = self.field(w, h)
+        heat[:] = heat_values
+        self.lib.fx_fire_set_filter(ctypes.byref(f), LINEAR)
+        palette = [rng.randrange(1 << 16) for _ in range(256)]
+        background = [rng.randrange(1 << 16) for _ in range(4 * w * h)]
+        heats = reference_draw_linear(list(heat_values), w, h, list(range(256)))
+        want = [bg if alpha[t] == 0 else reference_blend(palette[t], bg, alpha[t]) for t, bg in zip(heats, background)]
+        self.assertEqual(want, self.blend(f, palette, alpha, background))
+
+    def test_linear_blend_skips_cold_cells_byte_for_byte(self):
+        """A table clear below heat 101 with a hole at 150, over cold fields of varied heats with hot blocks and single
+        hot cells: a skipped cell still moves its mixes on, so the next blended cell reads the right ones."""
+        rng = random.Random(646)
+        alpha = [0 if t < 101 else (t - 100) * 255 // 130 if t < 230 else 255 for t in range(256)]
+        alpha[150] = 0
+        for w, h in ((SMALL_W, SMALL_H), (7, 5), (6, 9), (1, 4), (5, 1)):
+            with self.subTest(w=w, h=h):
+                heat = [rng.randrange(1, 101) for _ in range(w * h)]  # cold, never all 0
+                for _ in range(max(1, w * h // 12)):  # single hot cells, some at the edges
+                    heat[rng.randrange(w * h)] = rng.randrange(101, 256)
+                x0, y0 = rng.randrange(w), rng.randrange(h)  # one hot block
+                for y in range(y0, min(h, y0 + 3)):
+                    for x in range(x0, min(w, x0 + 3)):
+                        heat[y * w + x] = rng.randrange(140, 256)
+                self.linear_blend_matches(heat, w, h, alpha, rng)
+
+    def test_linear_blend_mixes_a_heat_of_exactly_the_first_visible(self):
+        """Columns of heat 100 and 102 make the mixes 3 * 100 + 102 = 4 * 101 - 2 down a 100 column, so its pixels have
+        heat 101, the first one with alpha, and must blend: the largest mix a cell may skip at is 4 * 101 - 3."""
+        alpha = [0] * 101 + [255] * 155
+        w, h = 8, 6
+        heat = [100 if x % 2 == 0 else 102 for _ in range(h) for x in range(w)]
+        self.linear_blend_matches(heat, w, h, alpha, random.Random(647))
+
+    def test_linear_blend_at_alpha_of_heat_0_mixes_a_cold_field(self):
+        self.linear_blend_matches([0] * (6 * 5), 6, 5, [9] + [0] * 255, random.Random(648))
+
+    def test_linear_blend_at_every_alpha_0_leaves_the_background(self):
+        self.linear_blend_matches([random.Random(649).randrange(256) for _ in range(35)], 7, 5, [0] * 256,
+                                  random.Random(650))
+
     def test_nearest_after_linear_is_the_old_draw(self):
         f, heat = self.random_field(random.Random(609), SMALL_W, SMALL_H, LINEAR)
         self.lib.fx_fire_set_filter(ctypes.byref(f), NEAREST)
