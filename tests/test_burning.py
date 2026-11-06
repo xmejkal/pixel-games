@@ -163,11 +163,11 @@ class BurningTest(unittest.TestCase):
         self.assertEqual([fire.ALPHA, burning.FRONT_ALPHA], blends[-3:-1])  # picture: behind, then in front
         self.assertIs(burning.FRONT_ALPHA, blends[-1])
 
-    def test_the_front_flames_stay_at_most_half_opaque(self):
-        """The fire's ramp up to ALPHA_FULL, then FRONT_MAX for every hotter heat, so a body shows through."""
-        self.assertEqual((0, burning.FRONT_MAX, burning.FRONT_MAX), (burning.FRONT_ALPHA[0],
-                         burning.FRONT_ALPHA[fire.ALPHA_FULL], burning.FRONT_ALPHA[255]))
-        self.assertEqual(64, burning.FRONT_ALPHA[fire.ALPHA_FULL // 2])
+    def test_the_front_flames_are_cut_out_with_a_soft_edge(self):
+        """Clear below FRONT_CLEAR, solid from FRONT_SOLID, and evenly between."""
+        alpha, clear, solid = burning.FRONT_ALPHA, burning.FRONT_CLEAR, burning.FRONT_SOLID
+        self.assertEqual((0, 0, 255, 255), (alpha[0], alpha[clear - 1], alpha[solid], alpha[255]))
+        self.assertEqual((0, 127, 250), (alpha[clear], alpha[(clear + solid) // 2], alpha[solid - 1]))
 
     @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
     def test_a_landing_in_c_flares_in_python(self):

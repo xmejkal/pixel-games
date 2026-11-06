@@ -26,7 +26,7 @@ from array import array
 
 import plugins
 from effects import EffectSystem, FireTrail, cell
-from fire import ALPHA_FULL, FAST, LINEAR, NEAREST, SWAY, Fire
+from fire import FAST, LINEAR, NEAREST, SWAY, Fire
 from gfx import HEIGHT, WIDTH, c565
 from motion import HIT
 from plugins import PhysicsPlugin
@@ -52,11 +52,13 @@ FLARE_SPEED_PER_CELL = 150  # px/s of impact per cell of the flare's radius: 600
 FLARE_RADIUS_MAX = 12  # cells; HeatField.burn takes up to 16
 FLARE_SPEED_PER_HEAT = 8  # the heat climbs from HEAT at FLARE_MIN by 1 for each 8 px/s more, up to 255
 SEED = 596
-# --- MVP (P639) --- The front flames' alpha per heat: the fire's own ramp (fire.ALPHA), cut at FRONT_MAX, so a body shows
-# through even its hottest flames. The PO picked "two passes, at most half opaque" from Mac frames (2026-11-06): one
-# blend at full alpha hid a body inside its burn, and a cap on one blend turned all the flames pale.
-FRONT_MAX = 128
-FRONT_ALPHA = array("B", [min(FRONT_MAX, heat * FRONT_MAX // ALPHA_FULL) for heat in range(256)])
+# --- MVP (P639) --- The front flames' alpha per heat: a cutout with a soft edge (Unity's alpha clipping, with a ramp in
+# place of its one threshold): clear below FRONT_CLEAR, so the cooler flames stay behind the body, then climbing evenly
+# to solid at FRONT_SOLID. The PO picked it from five front layers on Mac frames (2026-11-06), over a front at most half
+# opaque (17.9 ms of draw on the board, run119) and a second field (6.8 ms more step, run120).
+FRONT_CLEAR, FRONT_SOLID = 120, 180
+FRONT_ALPHA = array("B", [0 if heat < FRONT_CLEAR else 255 if heat >= FRONT_SOLID else
+                          (heat - FRONT_CLEAR) * 255 // (FRONT_SOLID - FRONT_CLEAR) for heat in range(256)])
 
 
 def flare_size(speed):
@@ -137,8 +139,8 @@ class BurningBodies(Fire):
         super().paint(cv)
 
     def draw_layers(self, cv):
-        """The flames behind the bodies, the bodies, then the same flames in front of them at most FRONT_MAX opaque, so
-        a body shows inside its fire (the PO's pick from the Mac frames, 2026-11-06). --- MVP (P639) ---"""
+        """The flames behind the bodies, the bodies, then the same flames' hot part in front of them, cut out at
+        FRONT_ALPHA, so a body burns inside its fire (the PO's pick from the Mac frames, 2026-11-06). --- MVP (P639) ---"""
         plugin = self.fire_plugin
         plugin.draw(cv)
         self.physics_plugin.draw(cv, BODY, COALS)
