@@ -628,5 +628,6 @@ the best that any blend rewrite can reach. The values are per frame, from seven 
 - All the blend math costs about 0.75 ms in linear (one blended pass) and about 2.6 to 2.9 ms in picture (two). The rest
   of each pass is the bilinear interpolation, which every pixel pays, also a pixel that the blend then skips.
 - The bound is optimistic: a store of 255 reads no background, and a real blend does.
-- The `-linear2` logs were meant as picture runs. Their mode was set in `__init__`, which `setup` reset, so they are
+- The `-linear2` logs were meant as picture runs. The probe set `self.mode` after `Game.__init__`, which already ran
+  `setup` and its `set_mode(0)` (`games/gfx.py:316`). The number alone changes no filter, blend or name, so they are
   four more linear runs (P639's row 14 again).
