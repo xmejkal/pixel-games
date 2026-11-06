@@ -11,8 +11,11 @@ through effects.EffectSystem.dispatch, decides what it causes (D12). A hit at FL
 at the body's x and its plane, wider and hotter the faster it hit.
 
 The HUD and the report are the fire's: `burning <mode> fps <fps> step <ms> draw <ms>`, where step holds the bodies'
-step, their read and the burns too. A BOOT tap moves between the modes linear (bilinear filtering) and nearest (2 x 2
-px blocks, the draw before P608).
+step, their read and the burns too. A BOOT tap walks the fire's three modes: linear (bilinear filtering), picture (the
+field blended over the sky) and nearest (2 x 2 px blocks, the draw before P608).
+
+The flames show behind and in front of a body (P639): draw_layers draws the field, the bodies, then the field's hot part
+again, cut out at FRONT_ALPHA. The report's draw times all three.
 
 The scene lists two plugins (P633): the bodies' PhysicsPlugin, then the fire's FirePlugin. In one frame the bodies step
 (FixedUpdate), the scene reads them, handles their events and burns their trails (Update), and the field takes the
@@ -22,10 +25,11 @@ burns and steps (LateUpdate).
 
 import random
 import time
+from array import array
 
 import plugins
 from effects import EffectSystem, FireTrail, cell
-from fire import FAST, LINEAR, NEAREST, SWAY, Fire
+from fire import FAST, SWAY, Fire
 from gfx import HEIGHT, WIDTH, c565
 from motion import HIT
 from plugins import PhysicsPlugin
@@ -51,6 +55,14 @@ FLARE_SPEED_PER_CELL = 150  # px/s of impact per cell of the flare's radius: 600
 FLARE_RADIUS_MAX = 12  # cells; HeatField.burn takes up to 16
 FLARE_SPEED_PER_HEAT = 8  # the heat climbs from HEAT at FLARE_MIN by 1 for each 8 px/s more, up to 255
 SEED = 596
+# --- MVP (P639) --- The front flames' alpha per heat: a cutout with a soft edge (Unity's alpha clipping, with a ramp in
+# place of its one threshold): clear below FRONT_CLEAR, so the cooler flames stay behind the body, then climbing evenly
+# to solid at FRONT_SOLID. The PO picked it from five front layers on Mac frames (2026-11-06), over a front at most half
+# opaque (17.9 ms of draw on the board, run119) and a second field (6.8 ms more step, run120). On the panel, 120 to 180
+# made the hot flames pop on and off over the bodies, and the wider 100 to 230 softened it (the PO's ok, 2026-11-06).
+FRONT_CLEAR, FRONT_SOLID = 100, 230
+FRONT_ALPHA = array("B", [0 if heat < FRONT_CLEAR else 255 if heat >= FRONT_SOLID else
+                          (heat - FRONT_CLEAR) * 255 // (FRONT_SOLID - FRONT_CLEAR) for heat in range(256)])
 
 
 def flare_size(speed):
@@ -62,7 +74,6 @@ def flare_size(speed):
 class BurningBodies(Fire):
     name = "burning"
     LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)  # no spots, no embers: the base is off
-    MODES = (("linear", LINEAR, False), ("nearest", NEAREST, False))  # --- MVP (P608) --- opaque, no sky
 
     def setup(self):
         random.seed(SEED)
@@ -124,5 +135,15 @@ class BurningBodies(Fire):
             self.fire_plugin.field.burn(cx, cy, cx, cy, radius, heat)
 
     def paint(self, cv):
+        """Without the field, the bodies alone; with it, Fire.paint times draw_layers. --- MVP (P639) ---"""
+        if self.fire_plugin.field is None:
+            self.physics_plugin.draw(cv, BODY, COALS)
         super().paint(cv)
+
+    def draw_layers(self, cv):
+        """The flames behind the bodies, the bodies, then the same flames' hot part in front of them, cut out at
+        FRONT_ALPHA, so a body burns inside its fire (the PO's pick from the Mac frames, 2026-11-06)."""
+        plugin = self.fire_plugin
+        plugin.draw(cv)
         self.physics_plugin.draw(cv, BODY, COALS)
+        plugin.draw_over(cv, FRONT_ALPHA)

@@ -93,6 +93,11 @@ PALETTE = ramp(STOPS)
 # (2026-11-04). From 48, the dark red edges turn opaque and darken the sky again.
 ALPHA_FULL = 96
 ALPHA = array("B", [min(255, heat * 255 // ALPHA_FULL) for heat in range(256)])
+# --- MVP (P639) --- The palette of every blended draw: below ALPHA_FULL each heat takes ALPHA_FULL's red, and only
+# ALPHA fades it. With PALETTE the cool edges are dark red to black, so half of a dark colour went into a bright sky and
+# the flames had dark borders (the PO saw them on the panel, 2026-11-06). Texture tools fix the same dark halo by edge
+# dilation (also called alpha bleeding): a see-through pixel takes its colour from its opaque neighbour.
+BLEND_PALETTE = array("H", [PALETTE[max(heat, ALPHA_FULL)] for heat in range(256)])
 
 
 class FirePlugin(Plugin):
@@ -131,9 +136,14 @@ class FirePlugin(Plugin):
         if self.field is None:
             return
         if self.blend:
-            self.field.draw(cv.tft, PALETTE, ALPHA)
+            self.draw_over(cv, ALPHA)
         else:
             self.field.draw(cv.tft, PALETTE)
+
+    def draw_over(self, cv, alpha):
+        """The field blended over what the frame holds, at alpha's byte for each heat. Only with a field: its callers
+        check. --- MVP (P639) ---"""
+        self.field.draw(cv.tft, BLEND_PALETTE, alpha)
 
 
 class Fire(Game):
@@ -197,9 +207,14 @@ class Fire(Game):
             return
         self.add_us(0, plugin.take_step_us())  # this frame's step: LateUpdate ran before the render. --- MVP (P633) ---
         t = time.ticks_us()
-        plugin.draw(cv)
+        self.draw_layers(cv)
         self.add(1, t)
         self.count(self.last)
+
+    def draw_layers(self, cv):
+        """What the report's draw times: here the field alone. A scene on the field draws its own layers around it.
+        --- MVP (P639) ---"""
+        self.fire_plugin.draw(cv)
 
     def count(self, now):
         """One more frame at now, the frame's start in ms: the HUD's text twice a second, the report every REPORT_MS."""
@@ -268,4 +283,4 @@ class FireLayer:
     def draw(self, cv):
         """The heat blended over what the frame holds, at its alpha. Only a canvas with an s3lcd tft has a frame."""
         if self.field is not None and hasattr(cv, "tft"):
-            self.field.draw(cv.tft, PALETTE, ALPHA)
+            self.field.draw(cv.tft, BLEND_PALETTE, ALPHA)

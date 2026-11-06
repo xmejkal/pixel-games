@@ -55,7 +55,9 @@ Runs now:
 - The bodies on fire (P596, P607, `games/burning.py`), third: eight falling bodies on the rain's physics each carry
   an `effects.FireTrail`, which burns heat into the fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
   burn. A hit at 600 px/s or faster flares up at the body's plane: C reports the hit with its speed as an event, and
-  Python decides the flare (P590). `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO,
+  Python decides the flare (P590). The flames show behind and in front of a body: the scene draws the field, the
+  bodies, then the field's hot part again, cut out with a soft edge (P639). A BOOT tap walks three modes: linear,
+  picture (over the sky) and nearest. `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO,
   2026-11-04).
 - The rain (P593, `games/rain.py`), fourth: 160 boxes fall, stepped by the C engine, and a BOOT tap swaps C
   and Python. On the board, C runs at 24 to 25 fps with a 0.22 ms step, and Python at 8 to 9 fps with a 28 ms step

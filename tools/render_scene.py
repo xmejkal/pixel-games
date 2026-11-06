@@ -4,7 +4,9 @@ clang and Pillow. From the repository root:
     python3 -B tools/render_scene.py [--filter nearest|linear] burning out.png [frames ...]
 The scene is fire, burning or balls (P598); one PNG per frame count, side by side. --filter (P608) sets a heat field's
 filter after setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering; without it the scene's
-first mode draws. The balls pour again every POUR_FRAMES frames, as taps would. --- MVP (P596) ---"""
+first mode draws. Each frame paints through lcd.TftCanvas, as on the board, so a scene's own fills (the burning
+bodies) show under its field (P639).
+The balls pour again every POUR_FRAMES frames, as taps would. --- MVP (P596) ---"""
 
 import argparse
 import contextlib
@@ -22,6 +24,7 @@ import balls  # noqa: E402
 import balls_lib  # noqa: E402
 import burning  # noqa: E402
 import fire  # noqa: E402
+import lcd  # noqa: E402
 import plugins  # noqa: E402
 from PIL import Image  # noqa: E402
 
@@ -58,7 +61,7 @@ def main():
             game.fire_plugin.set_filter(FILTERS[args.filter])
         for n in counts:
             while now // 40 < n:
-                _, now = play(game, 1, now, tft)
+                _, now = play(game, 1, now, tft, canvas=lcd.TftCanvas)
                 if name == "balls" and (now // 40) % POUR_FRAMES == 0:
                     game.pour()  # play() takes one pressed flag, so the scene pours itself
             shots.append(frame_image(tft))
