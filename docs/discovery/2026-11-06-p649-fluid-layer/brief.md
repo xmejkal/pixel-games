@@ -1,6 +1,14 @@
 <!-- Resume: invoke product-discovery again; `discovery.py check <this folder>` names the next step. -->
 # P649 one fluid layer: discovery brief
 
+> Paused on 2026-11-06 at step 5 of 8, because the PO put spark's refactor first. The work so far: the frame (D1),
+> one lens report (council/light.md), jobs, a proposed story map, seven assumptions, three proposed stories and
+> four queued questions. To resume: run the refuter on this brief (step 6, the prompt in the skill's
+> references/council.md), reproduce ★C2, ★C7 and ★C9, then ask Q1. The main finding so far: the two water cards,
+> P597 and P600, read no velocity field (★C6), so a fluid layer serves gases such as smoke or steam, not water.
+> `discovery.py check` lists 32 problems on 2026-11-06, mostly keep words missing where a ★ claim is cited.
+> Fix them before the refuter runs.
+
 <!-- Readiness, its one home. collecting evidence: anything short of the two below. an experiment: the decider chose
 a test (a D) before choosing an option. design: the decider confirmed the frame, the jobs and a direction, and accepted
 the remaining risk (D rows). An extension may tighten these. Next: design, or a chosen test of kind spike or prototype
