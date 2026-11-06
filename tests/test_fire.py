@@ -113,7 +113,8 @@ class Engine:
 
             def draw(self, tft, palette, alpha=None):
                 engine.targets.append("tft" if alpha is None else "tft alpha")
-                engine.alphas.append(alpha)  # P639: the table that reaches the C draw
+                engine.alphas.append(alpha)  # P639: the tables that reach the C draw
+                engine.palettes.append(palette)
                 out = (ctypes.c_uint16 * (len(tft.frame) // 2)).from_buffer(tft.frame)  # the display's frame
                 if alpha is None:
                     lib.fx_fire_draw(ctypes.byref(self.f), out, (ctypes.c_uint16 * 256).from_buffer(palette))
@@ -122,7 +123,7 @@ class Engine:
                                       (ctypes.c_uint8 * 256).from_buffer(alpha))
 
         self.HeatField, self.targets, self.looks, self.burns, self.filters = HeatField, [], [], [], []
-        self.scrolls, self.alphas = [], []  # P602, P639
+        self.scrolls, self.alphas, self.palettes = [], [], []  # P602, P639
 
     def largest_free_internal(self):
         return 123456
@@ -155,6 +156,12 @@ class PaletteTest(unittest.TestCase):
         self.assertEqual(256, len(fire.PALETTE))
         self.assertEqual(fire.BLACK, fire.PALETTE[0])
         self.assertEqual(fire.WHITE, fire.PALETTE[255])
+
+    def test_a_blend_keeps_the_red_of_alpha_full_below_it(self):
+        """P639: no dark edge over a bright sky. Below ALPHA_FULL the blend's colour stays PALETTE[ALPHA_FULL]."""
+        red = fire.PALETTE[fire.ALPHA_FULL]
+        self.assertEqual([red] * (fire.ALPHA_FULL + 1), list(fire.BLEND_PALETTE[:fire.ALPHA_FULL + 1]))
+        self.assertEqual(list(fire.PALETTE[fire.ALPHA_FULL:]), list(fire.BLEND_PALETTE[fire.ALPHA_FULL:]))
 
     def test_the_alpha_climbs_from_clear_to_full_at_heat_96(self):
         """P603: the cool cells fade into the sky, the fire from heat 96 up is solid (the PO's pick, curve B)."""
@@ -342,6 +349,7 @@ class FireTest(unittest.TestCase):
         layer.draw(Recorder(tft))
         layer.draw(object())  # a canvas without tft draws nothing
         self.assertEqual(["tft alpha"], fire.engine.targets)
+        self.assertEqual([fire.BLEND_PALETTE], fire.engine.palettes)  # P639: the red edge, no dark border
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))
 
     def test_the_look_stays_low_at_the_top_for_the_seven_seeds(self):

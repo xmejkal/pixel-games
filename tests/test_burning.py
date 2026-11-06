@@ -159,6 +159,8 @@ class BurningTest(unittest.TestCase):
         ], seen)
         # the tables that reached the C draw: picture behind and in front, then nearest opaque and in front
         self.assertEqual([fire.ALPHA, burning.FRONT_ALPHA, None, burning.FRONT_ALPHA], fire.engine.alphas[-4:])
+        blend, opaque = fire.BLEND_PALETTE, fire.PALETTE
+        self.assertEqual([blend, blend, opaque, blend], fire.engine.palettes[-4:])
 
     def test_the_front_flames_are_cut_out_with_a_soft_edge(self):
         """Clear below FRONT_CLEAR, solid from FRONT_SOLID, and evenly between."""
