@@ -6,9 +6,10 @@ with a pointer, H a hypothesis and where it comes from. All clips ran on the Mac
 
 ## Short version
 
-> 1. The cause has two parts. The cooling map and the fast map scroll only up. Cell x always reads map column
->    `x & 255`, so the cold gaps stay in the same columns (E: `engine/core/fx_fire.c`, the row loop). And the heat
->    rises straight up from 12 hot spots that walk 1 cell at a time (E: `games/fire.py`, `SPOTS`, `SPREAD`).
+> 1. The cause has two parts. The cooling map and the fast map scroll only up. Cell x always reads cooling map
+>    column `x & 255` (the fast map `(x + 128) & 255`), so the cold gaps stay in the same columns (E:
+>    `engine/core/fx_fire.c`, the row loop). And the heat rises straight up from 12 hot spots, which walk 1 cell a
+>    step and jump in 1 step of 64 (E: `games/fire.py`, `SPOTS`, `SPREAD`).
 > 2. Two flows, each a setting, break the columns up: bend (domain warping) and wander (texture panning). Fixed
 >    columns show as bright spikes in a 100-frame average, and both flows blur them (E: the picture below).
 > 3. The PO picked the light flow: bend 1, wander 512, every number a setting, less bend where in doubt. Story
@@ -37,7 +38,7 @@ From the left: none, wander 512, light (bend 1, wander 512), strong (bend 2, wan
 ## Cost (H, from the code, not measured)
 
 - Wander: one random draw a step and one add in each map read. The rows stay byte lines.
-- Bend: about five table reads and a few adds per cell. The shift differs per cell, so P601
+- Bend: about six table reads and a few adds per cell. The shift differs per cell, so P601
   [#802](https://github.com/xmejkal/spark/issues/802)'s 16-byte vectors no longer fit the step as it is.
 - What neither fixes: the flames do not cross or merge. A velocity field per cell can fix that (P649).
 
