@@ -42,6 +42,9 @@ class Field(ctypes.Structure):
                                                                    "ember_heat")]
     _fields_ += [("base", ctypes.c_int32)]  # --- MVP (P596) ---
     _fields_ += [("filter", ctypes.c_int32)]  # --- MVP (P608) ---
+    # --- Later, not MVP: a prototype for the PO's pick (P647) ---
+    _fields_ += [(name, ctypes.c_int32) for name in ("bend", "wander", "tick", "map_dx", "drift_vx",
+                                                         "bend_rows", "bend_steps", "bend_width")]
 
 
 NEAREST, LINEAR = 0, 1  # FX_FIRE_NEAREST and FX_FIRE_LINEAR (P608)
@@ -580,6 +583,43 @@ class FireCoreTest(unittest.TestCase):
         still = mean_column(0)
         self.assertGreater(mean_column(255), still)
         self.assertLess(mean_column(-255), still)
+
+    # --- Later, not MVP: a prototype for the PO's pick (P647) ---
+    LOOK = (33, 24, 1, 12, 16, 128, 0, 0)
+
+    def flowed(self, seed, bend, wander, steps):
+        f, heat = self.field(W, H, seed=seed, look=self.LOOK)
+        self.lib.fx_fire_set_flow(ctypes.byref(f), bend, 40, 50, 16, wander)
+        self.lib.fx_fire_step(ctypes.byref(f), steps, 0)
+        f.keep_heat = heat  # the field may step again after this returns
+        return f, list(heat)
+
+    def test_a_flow_of_0_is_the_step_without_one(self):
+        f, heat = self.flowed(SEED, 0, 0, 100)
+        g, before = self.field(W, H, look=self.LOOK)
+        self.lib.fx_fire_step(ctypes.byref(g), 100, 0)
+        self.assertEqual((heat, f.rng, f.map_dx, f.drift_vx), (list(before), g.rng, 0, 0))
+
+    def test_each_flow_changes_the_flames_and_wander_alone_draws(self):
+        _, still = self.flowed(SEED, 0, 0, 100)
+        bent, bend = self.flowed(SEED, 4, 0, 100)
+        drift, wander = self.flowed(SEED, 0, 64, 100)
+        self.assertNotEqual(bend, still)
+        self.assertNotEqual(wander, still)
+        g, _ = self.flowed(SEED, 0, 0, 100)
+        self.assertEqual(bent.rng, g.rng)  # the bend takes no draw
+        self.assertNotEqual(drift.rng, g.rng)  # the wander takes one a step
+
+    def test_the_flows_state_stays_in_its_ranges_for_the_seven_seeds(self):
+        for seed in range(1, 8):
+            f, _ = self.flowed(seed, 0, 0, 0)
+            self.lib.fx_fire_set_flow(ctypes.byref(f), 8, 40, 50, 16, 1023)
+            for _ in range(300):
+                self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
+                self.assertTrue(0 <= f.map_dx <= 0xFFFF and -1023 <= f.drift_vx <= 1023 and 0 <= f.tick < 50)
+            self.lib.fx_fire_set_flow(ctypes.byref(f), 0, 40, 7, 16, 10)
+            self.assertLess(f.tick, 7)  # a shorter wave keeps the tick inside it
+            self.assertLessEqual(abs(f.drift_vx), 10)  # a smaller wander clamps the speed at once
 
     def test_at_decay_31_the_bound_does_nothing(self):
         """Part 2's look at decay 31 gives the field of the step without the bound. Part 3's 256 x 32 map (the PO's
