@@ -598,7 +598,7 @@ fills (about 0.7 ms, P550's 87 µs a fill) and the field in front. Before, it ti
 
 - The PO picked the soft cutout from Mac frames of five front layers (2026-11-06). It is the built one.
 - D5's line (draw 13.5 ms or less, 23 fps or more) does not hold: the cutout draws 1.3 to 1.5 ms over it in linear,
-  and the picture mode falls to 21 to 22 fps. The PO judges the look on the panel.
+  of which about 0.7 ms is the body fills the old draw never timed, and the picture mode falls to 21 to 22 fps. The PO judges the look on the panel.
 - A front blend that is half opaque everywhere costs about 3 ms more than the cutout: cells of alpha 0 are skipped
   and cells of alpha 255 need no blend math (`fx_fire.c:294`, `engine/driver/src/blend565.h:22-24`).
 - The second field (run120, a scratch probe) fits in internal RAM (18,432 B left after it) and steps 6.8 ms more.

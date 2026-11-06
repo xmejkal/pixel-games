@@ -11,8 +11,11 @@ through effects.EffectSystem.dispatch, decides what it causes (D12). A hit at FL
 at the body's x and its plane, wider and hotter the faster it hit.
 
 The HUD and the report are the fire's: `burning <mode> fps <fps> step <ms> draw <ms>`, where step holds the bodies'
-step, their read and the burns too. A BOOT tap moves between the modes linear (bilinear filtering) and nearest (2 x 2
-px blocks, the draw before P608).
+step, their read and the burns too. A BOOT tap walks the fire's three modes: linear (bilinear filtering), picture (the
+field blended over the sky) and nearest (2 x 2 px blocks, the draw before P608).
+
+The flames show behind and in front of a body (P639): draw_layers draws the field, the bodies, then the field's hot part
+again, cut out at FRONT_ALPHA. The report's draw times all three.
 
 The scene lists two plugins (P633): the bodies' PhysicsPlugin, then the fire's FirePlugin. In one frame the bodies step
 (FixedUpdate), the scene reads them, handles their events and burns their trails (Update), and the field takes the
@@ -26,7 +29,7 @@ from array import array
 
 import plugins
 from effects import EffectSystem, FireTrail, cell
-from fire import FAST, LINEAR, NEAREST, SWAY, Fire
+from fire import FAST, SWAY, Fire
 from gfx import HEIGHT, WIDTH, c565
 from motion import HIT
 from plugins import PhysicsPlugin
@@ -70,8 +73,6 @@ def flare_size(speed):
 class BurningBodies(Fire):
     name = "burning"
     LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)  # no spots, no embers: the base is off
-    # --- MVP (P639) --- the field behind the bodies: opaque (black where it is cold), over the sky, or the 2 x 2 blocks
-    MODES = (("linear", LINEAR, False), ("picture", LINEAR, True), ("nearest", NEAREST, False))
 
     def setup(self):
         random.seed(SEED)
@@ -140,7 +141,7 @@ class BurningBodies(Fire):
 
     def draw_layers(self, cv):
         """The flames behind the bodies, the bodies, then the same flames' hot part in front of them, cut out at
-        FRONT_ALPHA, so a body burns inside its fire (the PO's pick from the Mac frames, 2026-11-06). --- MVP (P639) ---"""
+        FRONT_ALPHA, so a body burns inside its fire (the PO's pick from the Mac frames, 2026-11-06)."""
         plugin = self.fire_plugin
         plugin.draw(cv)
         self.physics_plugin.draw(cv, BODY, COALS)

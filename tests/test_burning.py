@@ -182,8 +182,9 @@ class BurningTest(unittest.TestCase):
         fire.engine = None
         with contextlib.redirect_stdout(io.StringIO()):
             game = burning.BurningBodies()
-            play(game, 150, 0, Tft())  # past the first hard landings, as in test_the_bodies_burn_and_report
+            cv, _ = play(game, 150, 0, Tft())  # past the first hard landings, as in test_the_bodies_burn_and_report
         self.assertIsNone(game.fire_plugin.field)
+        self.assertEqual(burning.N, len(cv.fills))  # P639: each body once, with no field over them
         self.assertEqual({}, game.handlers)
 
     def flares(self):

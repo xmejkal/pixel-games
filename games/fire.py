@@ -136,7 +136,8 @@ class FirePlugin(Plugin):
             self.field.draw(cv.tft, PALETTE)
 
     def draw_over(self, cv, alpha):
-        """The field blended over what the frame holds, at alpha's byte for each heat. --- MVP (P639) ---"""
+        """The field blended over what the frame holds, at alpha's byte for each heat. Only with a field: its callers
+        check. --- MVP (P639) ---"""
         self.field.draw(cv.tft, PALETTE, alpha)
 
 
@@ -206,8 +207,8 @@ class Fire(Game):
         self.count(self.last)
 
     def draw_layers(self, cv):
-        """What the report's draw times: here the field alone. A scene on the field draws its own layers around it
-        (P639). --- MVP (P639) ---"""
+        """What the report's draw times: here the field alone. A scene on the field draws its own layers around it.
+        --- MVP (P639) ---"""
         self.fire_plugin.draw(cv)
 
     def count(self, now):
