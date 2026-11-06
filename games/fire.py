@@ -67,14 +67,9 @@ STOPS = ((0, 0, 0, 0), (48, 140, 10, 0), (96, 240, 60, 0), (144, 255, 160, 20), 
 # --- MVP (P608) ---
 # The filters of HeatField.set_filter, OpenGL's GL_NEAREST and GL_LINEAR. 0 and 1 without the C engine
 NEAREST, LINEAR = getattr(engine, "NEAREST", 0), getattr(engine, "LINEAR", 1)
-# --- MVP (P639) --- What a mode puts under the field, named after Godot's Environment.BGMode
-# (https://docs.godotengine.org/en/stable/classes/class_environment.html): BG_NONE, nothing, as the field draws opaque
-# over every pixel; BG_COLOR, a black fill the field blends over; BG_SKY, the sky picture it blends over, or black where
-# there is no art.
-BG_NONE, BG_COLOR, BG_SKY = 0, 1, 2
-# Each mode as (name, filter, background). A name is one word, as the report line has one token for it. Linear and
-# nearest name the filter, picture names the sky under it
-MODES = (("linear", LINEAR, BG_NONE), ("picture", LINEAR, BG_SKY), ("nearest", NEAREST, BG_NONE))
+# Each mode as (name, filter, blend): blend True paints the sky and blends the fire over it. A name is one word, as the
+# report line has one token for it
+MODES = (("linear", LINEAR, False), ("picture", LINEAR, True), ("nearest", NEAREST, False))
 REPORT_MS = 5000  # app.py's FPS_EVERY_MS, so a fire line comes with each of its time lines
 HUD_MS = 500
 # --- Later, not MVP: kept for other games, the PO 2026-11-04 (P602) ---
@@ -136,9 +131,13 @@ class FirePlugin(Plugin):
         if self.field is None:
             return
         if self.blend:
-            self.field.draw(cv.tft, PALETTE, ALPHA)
+            self.draw_over(cv, ALPHA)
         else:
             self.field.draw(cv.tft, PALETTE)
+
+    def draw_over(self, cv, alpha):
+        """The field blended over what the frame holds, at alpha's byte for each heat. --- MVP (P639) ---"""
+        self.field.draw(cv.tft, PALETTE, alpha)
 
 
 class Fire(Game):
@@ -164,11 +163,9 @@ class Fire(Game):
         self.begin()
 
     def set_mode(self, mode):
-        """Mode number mode: its name, its filter on the field, and its background: with one, the field blends over
-        it. --- MVP (P608, P639) ---"""
+        """Mode number mode: its name, whether it blends, and its filter on the field. --- MVP (P608) ---"""
         self.mode = mode
-        self.mode_name, mag_filter, self.background = self.MODES[mode]
-        self.fire_plugin.blend = self.background != BG_NONE
+        self.mode_name, mag_filter, self.fire_plugin.blend = self.MODES[mode]
         self.fire_plugin.set_filter(mag_filter)
 
     def begin(self):
@@ -194,11 +191,8 @@ class Fire(Game):
         self.hud_us += us
 
     def paint_static(self, cv):
-        """The mode's background: the sky, or black for BG_COLOR and where there is no art, so covers stays true."""
-        background = self.background
-        if self.fire_plugin.field is None or background == BG_NONE:
-            return
-        if background != BG_SKY or not pictures.draw(cv, "sky", 0, 0):
+        """The sky under the picture mode, or black where there is no art, so covers stays true."""
+        if self.fire_plugin.field is not None and self.fire_plugin.blend and not pictures.draw(cv, "sky", 0, 0):
             cv.fill(0, 0, WIDTH, HEIGHT, BLACK)
 
     def paint(self, cv):
@@ -207,9 +201,14 @@ class Fire(Game):
             return
         self.add_us(0, plugin.take_step_us())  # this frame's step: LateUpdate ran before the render. --- MVP (P633) ---
         t = time.ticks_us()
-        plugin.draw(cv)
+        self.draw_layers(cv)
         self.add(1, t)
         self.count(self.last)
+
+    def draw_layers(self, cv):
+        """What the report's draw times: here the field alone. A scene on the field draws its own layers around it
+        (P639). --- MVP (P639) ---"""
+        self.fire_plugin.draw(cv)
 
     def count(self, now):
         """One more frame at now, the frame's start in ms: the HUD's text twice a second, the report every REPORT_MS."""

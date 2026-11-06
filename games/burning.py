@@ -22,10 +22,11 @@ burns and steps (LateUpdate).
 
 import random
 import time
+from array import array
 
 import plugins
 from effects import EffectSystem, FireTrail, cell
-from fire import BG_COLOR, BG_SKY, FAST, LINEAR, NEAREST, SWAY, Fire
+from fire import ALPHA_FULL, FAST, LINEAR, NEAREST, SWAY, Fire
 from gfx import HEIGHT, WIDTH, c565
 from motion import HIT
 from plugins import PhysicsPlugin
@@ -51,6 +52,11 @@ FLARE_SPEED_PER_CELL = 150  # px/s of impact per cell of the flare's radius: 600
 FLARE_RADIUS_MAX = 12  # cells; HeatField.burn takes up to 16
 FLARE_SPEED_PER_HEAT = 8  # the heat climbs from HEAT at FLARE_MIN by 1 for each 8 px/s more, up to 255
 SEED = 596
+# --- MVP (P639) --- The front flames' alpha per heat: the fire's own ramp (fire.ALPHA), cut at FRONT_MAX, so a body shows
+# through even its hottest flames. The PO picked "two passes, at most half opaque" from Mac frames (2026-11-06): one
+# blend at full alpha hid a body inside its burn, and a cap on one blend turned all the flames pale.
+FRONT_MAX = 128
+FRONT_ALPHA = array("B", [min(FRONT_MAX, heat * FRONT_MAX // ALPHA_FULL) for heat in range(256)])
 
 
 def flare_size(speed):
@@ -62,8 +68,8 @@ def flare_size(speed):
 class BurningBodies(Fire):
     name = "burning"
     LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)  # no spots, no embers: the base is off
-    # --- MVP (P639) --- every mode blends over the bodies: over black, over the sky, and the 2 x 2 blocks over black
-    MODES = (("linear", LINEAR, BG_COLOR), ("picture", LINEAR, BG_SKY), ("nearest", NEAREST, BG_COLOR))
+    # --- MVP (P639) --- the field behind the bodies: opaque (black where it is cold), over the sky, or the 2 x 2 blocks
+    MODES = (("linear", LINEAR, False), ("picture", LINEAR, True), ("nearest", NEAREST, False))
 
     def setup(self):
         random.seed(SEED)
@@ -125,7 +131,15 @@ class BurningBodies(Fire):
             self.fire_plugin.field.burn(cx, cy, cx, cy, radius, heat)
 
     def paint(self, cv):
-        """The bodies first, then the field blended over them, so the flames show in front of a body too. The hottest
-        cells cover it (P638's D6). --- MVP (P639) ---"""
-        self.physics_plugin.draw(cv, BODY, COALS)
+        """Without the field, the bodies alone; with it, Fire.paint times draw_layers. --- MVP (P639) ---"""
+        if self.fire_plugin.field is None:
+            self.physics_plugin.draw(cv, BODY, COALS)
         super().paint(cv)
+
+    def draw_layers(self, cv):
+        """The flames behind the bodies, the bodies, then the same flames in front of them at most FRONT_MAX opaque, so
+        a body shows inside its fire (the PO's pick from the Mac frames, 2026-11-06). --- MVP (P639) ---"""
+        plugin = self.fire_plugin
+        plugin.draw(cv)
+        self.physics_plugin.draw(cv, BODY, COALS)
+        plugin.draw_over(cv, FRONT_ALPHA)
