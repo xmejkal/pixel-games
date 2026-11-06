@@ -22,7 +22,7 @@ fire scene lists it alone, the burning scene after its PhysicsPlugin. The scene 
 
 FireLayer (P602) puts the same field into another game as one more layer of its picture: heat burned at a body, moved
 with the world and blended over the game's frame. It was tried as a fire trail behind flappy's bird, and the PO kept
-it for other games (2026-11-04). No game uses it yet.
+it for other games (2026-11-04). The Runner uses it (P651).
 --- MVP (P595) ---
 """
 
@@ -250,13 +250,14 @@ class FireLayer:
     blends it over the frame. Without the engine, field is None and draw does nothing. Made once: update and draw use
     int math only, so they make nothing a frame."""
 
-    def __init__(self, look, seed):
-        self.field, self.clock, self.acc = None, StepClock(STEP_MS, STEP_CAP), 0  # acc: px/s times ms
+    def __init__(self, look, seed, step_ms=STEP_MS, alpha=ALPHA, palette=BLEND_PALETTE):
+        self.field, self.clock, self.acc = None, StepClock(step_ms, STEP_CAP), 0  # acc: px/s times ms; step_ms: the heat's step
         if engine is not None:
             self.field = engine.HeatField(W, H, seed)
             self.field.set_look(*look)
             self.field.set_base(False)
             self.field.set_filter(LINEAR)
+        self.alpha, self.palette = alpha, palette  # the blend's alpha and colour by heat
 
     def update(self, ms, speed):
         """ms of a world moving left at speed px/s, an int: the field scrolls the whole cells it moved, the rest waits,
@@ -283,4 +284,4 @@ class FireLayer:
     def draw(self, cv):
         """The heat blended over what the frame holds, at its alpha. Only a canvas with an s3lcd tft has a frame."""
         if self.field is not None and hasattr(cv, "tft"):
-            self.field.draw(cv.tft, BLEND_PALETTE, ALPHA)
+            self.field.draw(cv.tft, self.palette, self.alpha)

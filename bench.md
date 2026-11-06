@@ -680,3 +680,36 @@ The image is the one of `build-engine-p646.log` (`flash-p646.log`). The local `b
 | 13 gravpong | yes | 24, 24 |
 
 - Smoke (`run130-p656-smoke.log`): all fourteen entries start and print fps lines, with no error or traceback in the log, at 20 to 25 fps. Road is lowest (20 in its second interval), as in earlier smoke runs.
+
+## P651 (#874), 2026-11-06: the Runner's runner on fire
+
+Python only, on the P646 image (`flash-p646.log`; `HeatField.scroll` is in it since P602). The Runner carries a `FireTrail` on a `FireLayer` (the P602 flappy's shape): the layer scrolls with the world, one blend pass is drawn behind the runner. Each run went through `mpremote run probe651.py` (scratch): the Runner alone under an autopilot (a tap every 1.6 s, `die` off), after a hard `mpremote reset`, for 75 s. The probe times `FireLayer.update` (scroll and step) and `FireLayer.draw`. The values are per frame, from the last seven 5 s lines of each run. The pass line was set before the runs: fps 22 or more in every line, update plus draw 12 ms or less, 0 B allocated a frame. That last line was never measured for the fire alone.
+
+| run | fire | fps | paint | update | of it step | draw |
+| --- | --- | --- | --- | --- | --- | --- |
+| `run131-p651-before-runner.log` | master's `arcade.py` | 22 to 24 | 30.2 to 35.3 ms | none | none | none |
+| `run132-p651-after-runner.log` | heat step every 40 ms | 16 to 18 | 36.5 to 40.9 ms | 9.75 to 10.16 ms | not timed | 5.36 to 5.45 ms |
+| `run133-p651-after-step80-runner.log` | heat step every 80 ms (`FIRE_STEP_MS`, built) | 18 to 19 | 36.4 to 38.7 ms | 5.08 to 5.32 ms | 4.00 to 4.22 ms | 5.39 to 5.43 ms |
+
+- The pass line: update plus draw holds at 80 ms (10.5 to 10.8 ms, 12 or less) and misses at 40 ms (15.1 to 15.6 ms). The fps misses in both. The Runner is at the 40 ms frame edge with its painted layers and a HUD that redraws each frame under this autopilot (22 to 24 fps, paint 30 to 35 ms, more than run130's 22.9 ms), so any 10 ms more costs 4 to 5 fps.
+- The best setting found is the 80 ms heat step: it saves 4.8 ms of update (the step is 4.0 to 4.2 ms of the 5.2, the scroll about 1.1 ms) for 2 fps. The flames rise at half the burning scene's pace in time: the PO judges the look.
+- The blend draw is 5.4 ms, under P602's 7.6 ms (P646's early-out), and the field's 160 x 120 size is fixed by the C draw (it writes the whole panel).
+- Not tried: a heat step every 120 ms (about 2.6 ms of step, a slower, coarser flame), `RADIUS` 2, the fire only while a bonus runs.
+
+The PO's looks (2026-11-06: "shorter", "even shorter", "grow with speed", "looks bad: flat yellow or orange, not see-through", "falling apart and fading", "iterate until realistic") led to a longer change. The flame follows the base speed (none below `FIRE_START_SPEED` 300 px/s, full from `FIRE_FULL_SPEED` 560), and the speed curve rises more (`SPEED_SLOPE`, `SPEED_ROOT`, `SPEED_KNEE` 6, 8, 620 against 4, 6, 520; the top 700 against 600; the jump's reach and the obstacle gaps both scale with sqrt(base), so the ratio holds, the reaction time at 700 px/s from the right edge to the runner is 0.38 s against 0.52 s at 520). Seven sheets of Mac frames of the C kernel over the Runner's sky (kept outside the repository, `p651-sheets/round1.png` to `round7.png`) set the look:
+- Round 1 (decay, cool, fade, embers): a flat bar smeared behind the runner. Round 2 (heat field drag at 6 to 30% of the world speed): tongues rise and break into wisps, but thin and hidden behind the sprite, with a bright blob in front. Round 3 (burn at the runner's back, bigger heat and radius): it looks like fire, but too tall and the core is a white blob. Round 4 (smaller, heat 225): short, white-yellow core, orange tongues, red wisps that detach and fade; the variants differ little, so the sweep stops.
+- Rounds 5 and 6 (after the lead's critique: a flat pale wedge, a flame that lies down like a comet tail, orange that vanishes on the peach sky): round 5 swept wide (decay 20 to 40, cool 120 to 255, fade 24 to 80, heat 200 to 255, radius 2 to 4, drag 0 to 0.3, a random heat and radius each frame, a deep-red palette); the best has tongues that rise and break into separate flickering bits (decay 36, drag 0.04). Round 6 narrowed around it: its eight variants differ little, so the sweep stops there.
+- Chosen (round 7, version E; the code): `FIRE_DECAY` 36, `FIRE_COOL` 255, `FIRE_FADE` 56 (burning's: 32, 40, 16), the burn at the runner's back with `FIRE_HEAT` 255 and `FIRE_RADIUS` 2, each frame up to `FIRE_HEAT_JIT` 80 cooler and `FIRE_RADIUS_JIT` 1 smaller at random (the flicker), the heat field scrolling at `FIRE_DRAG_PCT` 5% of the world speed (100% leaves a flat bar), the heat step every 80 ms, alpha by heat as a ramp 30 to 150 up to 235 (`FIRE_ALPHA`; fire.ALPHA is opaque from heat 96), and its own palette `FIRE_STOPS` (orange-red low end, orange, yellow, a small pale core only at the top) through `fire.ramp`, passed to `FireLayer(..., alpha, palette)`.
+
+| run | flame | fps | paint | update | of it step | draw |
+| --- | --- | --- | --- | --- | --- | --- |
+| `run135-p651-alpha-speed-full-runner.log` | speed-driven, squared alpha, drag 100% | 16 to 18 | 40.2 to 43.3 ms | 5.37 to 5.59 ms | 4.29 to 4.54 ms | 5.44 to 5.48 ms |
+| `run136-p651-ragged-flame-full-runner.log` | decay 24, cool 160, fade 40, ramp alpha, drag 20% | 17 to 18 | 39.9 to 42.0 ms | 5.33 to 5.57 ms | 4.19 to 4.43 ms | 5.48 to 5.51 ms |
+| `run137-p651-realistic-flame-full-runner.log` | decay 28, cool 220, fade 56, heat 225, drag 8%, burning's palette | 17 to 18 | 39.2 to 41.4 ms | 5.30 to 5.50 ms | 4.17 to 4.36 ms | 5.49 to 5.51 ms |
+| `run138-p651-rising-flame-full-runner.log` (built) | decay 36, cool 255, fade 48, heat 255 with jitter, drag 5%, own palette | 17 to 18 | 40.3 to 41.2 ms | 5.21 to 5.39 ms | 4.26 to 4.33 ms | 5.69 to 5.75 ms |
+
+- Run 131 (no fire) was 22 to 24 fps with paint 30 to 35 ms. Runs 135 to 138 start with the run far on (`far` 40,000 px, base speed 697 px/s), so the flame is full and the world scrolls the most cells: the worst case. Their paint is also higher (the faster world, more things). The cost of the fire in the built version is the update (5.2 to 5.4 ms) plus the draw (5.7 ms), 10.9 to 11.1 ms, under the 12 ms line; the 22 fps line is missed (17 to 18).
+- Run 134 (`run134-p651-decay20-runner.log`, decay 20 at the old speed, flame full from the start): 18 to 19 fps, update 5.2 to 5.3 ms, draw 5.4 ms.
+- Round 7 (`p651-sheets/round7.png`, five versions A to E; the PO picked E, 2026-11-06: "still not great, but we can tune it later"): the burn narrower at the runner (`FIRE_RADIUS` 2, `FIRE_RADIUS_JIT` 1, was 4 and 2), more broken (`FIRE_FADE` 56, sway 1 (sway 2 crashed the board's binding; fx_fire.c reads sway as on or off, so the picture is the same), fast 200, embers 30, was 48, 1, 128, 0), no dark rim (alpha ramp `FIRE_CLEAR` 30 to `FIRE_SOLID` 150, was 10 to 150; the palette's low end orange-red 200, 60, 10, was dark red 90, 15, 10). Not yet measured on the board.
+- The PO plays it (feel slice, not yet). The Runner runs on the board after the last measurement.
+- Set `OBSTACLE_GAP` in `games/arcade.py` back to 1 before the merge (it is 1 at the merge, and 3 while the flame is tuned, so the PO jumps less).
