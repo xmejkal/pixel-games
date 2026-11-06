@@ -595,10 +595,12 @@ fills (about 0.7 ms, P550's 87 µs a fill) and the field in front. Before, it ti
 | `run120-p639-front5b-probe.log` | a second field with its own burns, alpha test at heat 110 | linear | 23 | 14.51 to 14.84 | 14.30 to 14.39 |
 | `run121-p639-cutout-linear.log` | the same field, cut out: clear below heat 120, solid from 180 | linear | 24 | 7.85 to 8.10 | 14.80 to 15.03 |
 | `run121-p639-cutout-picture.log` | the same field, cut out: clear below heat 120, solid from 180 | picture | 21 to 22 | 8.46 to 8.71 | 17.91 to 18.54 |
+| `run122-p639-edge-picture.log` | the cutout, and `BLEND_PALETTE` for every blend | picture | 21 to 22 | 8.39 to 8.77 | 17.88 to 18.56 |
 
 - The PO picked the soft cutout from Mac frames of five front layers (2026-11-06). It is the built one.
 - D5's line (draw 13.5 ms or less, 23 fps or more) does not hold: the cutout draws 1.3 to 1.5 ms over it in linear,
   of which about 0.7 ms is the body fills the old draw never timed, and the picture mode falls to 21 to 22 fps. The PO judges the look on the panel.
 - A front blend that is half opaque everywhere costs about 3 ms more than the cutout: cells of alpha 0 are skipped
   and cells of alpha 255 need no blend math (`fx_fire.c:294`, `engine/driver/src/blend565.h:22-24`).
+- `BLEND_PALETTE` (run122) removes the dark borders over the sky at no cost: the same table lookup, another table.
 - The second field (run120, a scratch probe) fits in internal RAM (18,432 B left after it) and steps 6.8 ms more.

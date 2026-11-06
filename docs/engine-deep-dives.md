@@ -59,7 +59,9 @@ for (int32_t y = 0; y < h; y++, col += w) {
 }
 ```
 
-   The alpha per heat is data from Python: clear at 0, full from heat 96 (`fire.py:94-95`).
+   The alpha per heat is data from Python: clear at 0, full from heat 96 (`fire.py:94-95`). A blend reads
+   `BLEND_PALETTE`, where each heat below 96 keeps the red of heat 96, so a cool edge fades into the sky and does not
+   darken it (P639, `fire.py:96-100`).
 7. The layers above the fire. `TftOut.draw` paints the background and the still picture first (`lcd.py:179-182`).
    Then `Game.draw` paints in this order: `paint`, particles `fx.draw`, `hud`, `draw_over` (`gfx.py:379-388`).
    In the burning scene `paint` times `draw_layers`: the fire draw, one `cv.fill` per body, and then the same field
