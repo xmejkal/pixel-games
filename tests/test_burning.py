@@ -18,7 +18,7 @@ from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from test_fire import FIRE_C, S3LCD_SRC, Engine, Recorder, Tft, play  # noqa: E402  (also puts games/ and stubs/ on the path)
+from test_fire import FIRE_C, S3LCD_SRC, Engine, Recorder, Tft, play  # noqa: E402  (puts games/, stubs/ on the path)
 
 import burning  # noqa: E402
 import fire  # noqa: E402

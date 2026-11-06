@@ -5,7 +5,8 @@ clang and Pillow. From the repository root:
 The scene is fire, burning or balls (P598); one PNG per frame count, side by side. --filter (P608) sets a heat field's
 filter after setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering; without it the scene's
 first mode draws. Each frame paints through lcd.TftCanvas, as on the board, so a scene's own fills (the burning
-bodies, a black ground) show under its field (P639). The balls pour again every POUR_FRAMES frames, as taps would. --- MVP (P596) ---"""
+bodies) show under its field (P639).
+The balls pour again every POUR_FRAMES frames, as taps would. --- MVP (P596) ---"""
 
 import argparse
 import contextlib
