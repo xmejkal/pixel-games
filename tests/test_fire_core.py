@@ -351,13 +351,24 @@ class FireCoreTest(unittest.TestCase):
                         heat[y * w + x] = rng.randrange(140, 256)
                 self.linear_blend_matches(heat, w, h, alpha, rng)
 
+    def test_linear_blend_reads_the_cells_above_and_below(self):
+        """A hot cell on the top row and one on the bottom row of a cold field: the cells next to them blend only if the
+        check reads both down and up."""
+        w, h = 5, 6
+        heat = [90] * (w * h)  # mixes of 360 skip, and a hot cell beside lifts a pixel to heat 121
+        heat[2], heat[(h - 1) * w + 3] = 255, 255
+        self.linear_blend_matches(heat, w, h, [0] * 101 + [255] * 155, random.Random(651))
+
     def test_linear_blend_mixes_a_heat_of_exactly_the_first_visible(self):
-        """Columns of heat 100 and 102 make the mixes 3 * 100 + 102 = 4 * 101 - 2 down a 100 column, so its pixels have
-        heat 101, the first one with alpha, and must blend: the largest mix a cell may skip at is 4 * 101 - 3."""
-        alpha = [0] * 101 + [255] * 155
+        """Columns of heat T - 1 and T + 1 make the mixes 3(T - 1) + T + 1 = 4T - 2 down a T - 1 column, so its pixels
+        have heat T, the first one with alpha, and must blend: the largest mix a cell may skip at is 4T - 3. T 101 is
+        FRONT_ALPHA's, T 1 the picture field's."""
         w, h = 8, 6
-        heat = [100 if x % 2 == 0 else 102 for _ in range(h) for x in range(w)]
-        self.linear_blend_matches(heat, w, h, alpha, random.Random(647))
+        for first in (101, 1):
+            with self.subTest(first=first):
+                alpha = [0] * first + [255] * (256 - first)
+                heat = [first - 1 if x % 2 == 0 else first + 1 for _ in range(h) for x in range(w)]
+                self.linear_blend_matches(heat, w, h, alpha, random.Random(647))
 
     def test_linear_blend_at_alpha_of_heat_0_mixes_a_cold_field(self):
         self.linear_blend_matches([0] * (6 * 5), 6, 5, [9] + [0] * 255, random.Random(648))
