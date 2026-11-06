@@ -622,12 +622,14 @@ the best that any blend rewrite can reach. The values are per frame, from seven 
 | `run124-p601-a-picture.log`, `run125-p601-a-picture.log` | a | picture | 21 | 8.63 to 8.93 | 18.26 to 19.29 |
 | `run126-p601-bound-picture.log`, `run127-p601-bound-picture.log` | bound | picture | 22 to 23 | 8.31 to 8.45 | 15.85 to 16.18 |
 
-- The pass line, set in the plan before the runs: D5 (draw 13.5 ms or less, 23 fps or more) in every 5 s line, with more
-  than 0.5 ms to spare. The bound misses it in both modes: by about 1.0 to 1.1 ms in linear, and by 2.4 to 2.7 ms in
-  picture. So no blend rewrite, neither the SWAR blend nor PIE on the blend, can make either mode pass.
-- All the blend math costs about 0.75 ms in linear (one blended pass) and about 2.6 to 2.9 ms in picture (two). The rest
-  of each pass is the bilinear interpolation, which every pixel pays, also a pixel that the blend then skips.
+- The plan set the pass line before the runs: D5 (draw 13.5 ms or less, 23 fps or more) in every 5 s line. A pass
+  needs more than 0.5 ms to spare.
+- The bound misses the line in both modes: by 1.0 to 1.1 ms in linear and by 2.4 to 2.7 ms in picture. So no blend
+  rewrite, neither the SWAR blend nor PIE on the blend, can make either mode pass.
+- All the blend math costs about 0.75 ms in linear (one blended pass) and 2.6 to 2.8 ms in picture (two). The rest of
+  each pass is the bilinear interpolation. Every pixel pays it, also a pixel that the blend then skips.
 - The bound is optimistic: a store of 255 reads no background, and a real blend does.
-- The `-linear2` logs were meant as picture runs. The probe set `self.mode` after `Game.__init__`, which already ran
-  `setup` and its `set_mode(0)` (`games/gfx.py:316`). The number alone changes no filter, blend or name, so they are
-  four more linear runs (P639's row 14 again).
+- The `-linear2` logs were meant as picture runs, but they are four more linear runs (P639's row 14 again).
+  `Game.__init__` calls `reset`, `restart` and `setup` (`games/gfx.py:306-316`), and `Fire.setup` calls
+  `set_mode(self.mode)` with the 0 of `Fire.__init__` (`games/fire.py:156, 168`). The probe set `self.mode` only
+  after that. The number alone changes no filter, blend or name.
