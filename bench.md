@@ -633,3 +633,26 @@ the best that any blend rewrite can reach. The values are per frame, from seven 
   `Game.__init__` calls `reset`, `restart` and `setup` (`games/gfx.py:306-316`), and `Fire.setup` calls
   `set_mode(self.mode)` with the 0 of `Fire.__init__` (`games/fire.py:156, 168`). The probe set `self.mode` only
   after that. The number alone changes no filter, blend or name.
+
+## P646 (#865), 2026-11-06: the early-out in the LINEAR blend
+
+The image of `build-engine-p646.log` (`flash-p646.log`), with engine 2a5ffdd: `fx_fire_blend`'s LINEAR path skips the
+two heats of a cell whose three mixes are at most 4T - 3, with T the first heat whose alpha is not 0. The output stays
+byte for byte the same (`tests/test_fire_core.py`). A scratch probe ran `BurningBodies` as P601's did, but it set the
+mode with `set_mode` after `setup`. Each run lasted 72 s after a hard `mpremote reset`. The values are per frame, from
+the last seven 5 s lines of each run, after the 30 s warm-up.
+
+| run | mode | fps | step ms | draw ms |
+| --- | --- | --- | --- | --- |
+| `run128-p646-linear.log`, `run129-p646-linear.log` | linear | 24 | 7.91 to 8.06 | 13.21 to 13.78 |
+| `run128-p646-picture.log`, `run129-p646-picture.log` | picture | 22 to 23 | 8.34 to 8.53 | 14.78 to 16.48 |
+
+- Against P601's runs 124 and 125, with today's tables: linear draws 1.7 to 1.8 ms less (15.03 to 15.52 before), and
+  picture 2.8 to 3.5 ms less (18.26 to 19.29 before). Both are below P601's bound, which kept the interpolation.
+- The pass line was set before the runs: D5 (draw 13.5 ms or less, 23 fps or more) in every 5 s line, with more than
+  0.5 ms to spare. Both modes miss it.
+- Linear misses by 0.28 ms at its slowest line (13.78 ms), and by 0.78 ms against the pass line with its spare. Its
+  fps stays 24.
+- Picture misses by up to 2.98 ms (16.48 ms), by 3.48 ms against the pass line, and runs at 22 fps in most lines.
+- The Mac count of the plan: the check skips at least 95 to 97% of the front pass's cells and 81 to 89% of the picture
+  field pass's (burning scene, frames 200 to 1000). The count used the limit 4T - 4, so it is a lower bound.

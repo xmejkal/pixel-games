@@ -218,7 +218,7 @@ The lessons D to G in depth, with code, diagrams and other libraries: [engine-de
 Four pieces work together on one field of heat: a byte per cell, 0 to 255, in `fx_fire_t.heat`.
 1. A body effect puts heat in. `FireTrail.update` finds the cell under the body, picks a point `lag` frames behind it, and calls
    `field.burn` along the path from the last burn point (`effects.py:42-56`). `fx_fire_burn` walks the segment and, for every cell
-   inside radius `r`, writes the larger of the old heat and the new heat (`fx_fire.c:334-352`, the test at `:347`). The rule is
+   inside radius `r`, writes the larger of the old heat and the new heat (`fx_fire.c:346-365`, the test at `:359`). The rule is
    "keep the max", not "add". So two bodies close together never overflow a byte, and the order of burns does not matter.
    Embers and the spots at the base use the same rule (`fx_fire.c:172`, `:133`).
 2. The field's own step moves the heat. Each cell becomes the sum of the three cells below it and the cell two below, times the decay, shifted right by 7,
@@ -226,19 +226,20 @@ Four pieces work together on one field of heat: a byte per cell, 0 to 255, in `f
    The scene sets `set_base(False)`, so the base row is cleared and only the burns feed the fire (`burning.py:69`,
    `fx_fire.c:188-189`). The look is data: `LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)` (`burning.py:58`).
 3. The filter decides how a cell is magnified to its 2 by 2 pixels. `NEAREST` copies the cell. `LINEAR` mixes it with its
-   neighbours at the weights (9a + 3b + 3c + d + 8) >> 4, the same as OpenGL's `GL_LINEAR` at 2x (`fx_fire.h:84-91`,
+   neighbours at the weights (9a + 3b + 3c + d + 8) >> 4, the same as OpenGL's `GL_LINEAR` at 2x (`fx_fire.h:85-92`,
    `fx_fire.c:240-280`). The Python side only chooses: `set_filter(mag_filter)` from the mode table (`fire.py:67`, `:117-122`).
    Linear costs about 2.15 ms more to draw (6.41 ms against 4.26 ms in the burning scene, `bench.md:429-430`, P608).
 4. The blend puts the fire over a picture. `fx_fire_blend` turns each pixel into
-   `alpha_blend_565(palette[heat], pixel, alpha[heat])` and skips cells of alpha 0 (`fx_fire.c:283-322`). Python gives the
+   `alpha_blend_565(palette[heat], pixel, alpha[heat])` and skips cells of alpha 0 (`fx_fire.c:283-334`). With `LINEAR`, a
+   cell whose mixes are all too cold for any alpha but 0 also skips its two heats, with the same output (P646). Python gives the
    `ALPHA` table, which is clear at heat 0 and full from heat 96 (`fire.py:94-95`). `FirePlugin.draw` picks blend or opaque draw
    (`fire.py:129-136`). The burning scene draws the field twice (P639): opaque, or blended over the sky in its picture
    mode, behind the bodies, then blended in front of them at `FRONT_ALPHA`, a cutout with a soft edge
-   (`burning.py:142-148`). It draws in 15.11 to 15.46 ms (run123, linear). The picture mode of the fire
+   (`burning.py:142-148`). It draws in 13.21 to 13.78 ms (run128 and run129, linear, P646). The picture mode of the fire
    and the unused `FireLayer.draw` use the blend (`fire.py:277-280`). The picture mode costs 11.51 to 13.32 ms to draw
    (`bench.md:433`, P608).
 The scroll moves the whole field under the screen by `dx` cells, clears what it uncovers and moves the live embers too
-(`fx_fire.c:356-377`). `FireLayer.update` turns the world's speed into whole cells with an integer remainder and calls it
+(`fx_fire.c:368-389`). `FireLayer.update` turns the world's speed into whole cells with an integer remainder and calls it
 (`fire.py:215-228`), and `Effect.scroll` lets a trail follow (`effects.py:28-30`, `:62-64`). No game uses it now. The PO tried it
 behind the flappy bird and kept it for other games (`bench.md:456`, P602).
 A new effect is one more `Effect` subclass with `update(x, y)` and `reset()` (`effects.py:19-26`). Its callers do not change.
