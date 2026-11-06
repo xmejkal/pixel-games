@@ -17,16 +17,17 @@ BIRD_COLOURS = {"k": c565(40, 30, 20), "y": YELLOW, "w": WHITE, "o": ORANGE}
 RUN_TOP = ("..rrrr..", ".rrrrrr.", ".ssskss.", ".ssssss.", "..bbbb..", ".bbbbbb.", "sbbbbbbs", ".bbbbbb.", "..pppp..", "..pppp..")
 RUN_LEGS = (("..p..p..", ".kk..kk."), ("...pp...", "...kk..."))
 RUN_COLOURS = {"r": RED, "s": c565(250, 200, 160), "k": BLACK, "b": c565(50, 90, 240), "p": c565(40, 40, 120)}
-# --- MVP (P651) --- the runner's fire, tuned on Mac frames of the C kernel over the Runner's sky (six sheets, bench.md P651)
+# --- MVP (P651) --- the runner's fire, tuned on Mac frames of the C kernel over the Runner's sky (seven sheets, bench.md P651)
 # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade. DECAY sets how high the flame climbs, COOL (the cooling map's patches) and FADE tear it
 # into ragged wisps that die toward the tip. Burning's own look is 32, 40 and 16: a longer, smoother tongue.
 FIRE_DECAY, FIRE_COOL, FIRE_FADE = 36, 255, 56
-OBSTACLE_GAP = 3  # factor on the gap between the Runner's obstacles, for tuning only (P651): 1 is the game as it is, set it back to 1 before the merge
+FIRE_FAST, FIRE_EMBERS = 200, 30
+OBSTACLE_GAP = 1  # factor on the gap between the Runner's obstacles: the tuning knob (P651), 3 while tuning the flame, 1 is the game's own
 FIRE_DRAG_PCT = 5  # % of the world's speed that the heat field scrolls: at 100 the heat is smeared into a flat bar behind the runner
 
 
 def fire_look(decay):
-    return (decay, FIRE_COOL, 1, 0, 1, 200, 30, FIRE_FADE)  # sway is on or off in fx_fire.c, so 1
+    return (decay, FIRE_COOL, 1, 0, 1, FIRE_FAST, FIRE_EMBERS, FIRE_FADE)  # sway is on or off in fx_fire.c, so 1
 
 
 FIRE_START_SPEED, FIRE_FULL_SPEED = 300, 560  # px/s of base speed: no flame below the first, the full short flame from the second
@@ -163,25 +164,25 @@ class Runner(Game):
 
     def setup(self):
         self.layer.clear()  # --- MVP (P651) --- each round starts with no fire
-        self.fire_decay = 0
+        self.fire_decay = self.fire_k = self.fire_heat = 0
         if self.trail is not None:
             self.trail.reset()
-            self.grow_fire(0)
+            self.grow_fire(0, force=True)
         self.h, self.vy, self.buffer = 0.0, 0.0, 0.0
         self.odo, self.far, self.points = 0.0, 0.0, 0.0  # px the world moved, px at the base speed, and the exact score
         self.track, self.effects = track.Track(), track.Effects()
         self.jumped, self.landed = -1.0, -1.0  # when the last jump and the last landing began (self.t), for the pose
         self.covers = pictures.load()  # painted art on the board: its sky covers the screen, so no fill goes under it
 
-    def grow_fire(self, speed):
+    def grow_fire(self, speed, force=False):
         """The flame at base speed px/s: none below FIRE_START_SPEED, then DECAY and the burns' heat climb evenly to
         their values at FIRE_FULL_SPEED. The look is set again only when the decay steps (at most FIRE_DECAY times in a
-        round), so a frame allocates nothing. --- MVP (P651) ---"""
+        round), so a frame allocates nothing; force sets it anyway (a new round). The burns' heat is play's. --- MVP (P651) ---"""
         k = max(0, min(256, (speed - FIRE_START_SPEED) * 256 // (FIRE_FULL_SPEED - FIRE_START_SPEED)))
         self.fire_k = k
-        self.trail.heat = FIRE_HEAT * k // 256
+        self.fire_heat = FIRE_HEAT * k // 256  # the burns' heat before the flicker
         decay = FIRE_DECAY * k // 256
-        if decay != self.fire_decay or speed == 0:
+        if decay != self.fire_decay or force:
             self.fire_decay = decay
             self.layer.field.set_look(*fire_look(decay))
 
@@ -218,13 +219,14 @@ class Runner(Game):
         self.far += base * dt
         self.points += base * dt / 20 * effects.factor(track.X2, 8)
         self.count()
-        dx = self.layer.update(self.ms, int(base * max(0.5, effects.factor(track.SLOW))) * FIRE_DRAG_PCT // 100)  # --- MVP (P651) --- the fire moves with the world
-        if self.trail is not None:
+        dx = self.layer.update(self.ms, int(base * max(0.5, effects.factor(track.SLOW))) * FIRE_DRAG_PCT // 100)  # the fire moves with the world
+        if self.trail is not None:  # --- MVP (P651) ---
             self.grow_fire(int(base))
-            self.trail.heat = FIRE_HEAT * self.fire_k // 256 - random.randrange(FIRE_HEAT_JIT * self.fire_k // 256 + 1)
-            self.trail.radius = FIRE_RADIUS - random.randrange(FIRE_RADIUS_JIT + 1)
             self.trail.scroll(dx)
-            self.trail.update(RUN_X - RUN_BOX // 2, int(self.GROUND - self.h) - RUN_BOX)  # burns at the runner's back, x = RUN_X
+            if self.fire_k:  # below FIRE_START_SPEED the burn is invisible, so it is skipped
+                self.trail.heat = self.fire_heat - random.randrange(FIRE_HEAT_JIT * self.fire_k // 256 + 1)
+                self.trail.radius = FIRE_RADIUS - random.randrange(FIRE_RADIUS_JIT + 1)
+                self.trail.update(RUN_X - RUN_BOX // 2, int(self.GROUND - self.h) - RUN_BOX)  # burns at the runner's back, x = RUN_X
         tr = self.track
         tr.move(step)
         tr.spawn(self.far / 20, k, OBSTACLE_GAP)

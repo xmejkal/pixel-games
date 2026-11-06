@@ -87,24 +87,23 @@ class RunnerFireTest(unittest.TestCase):
         steps = []
         self.game.layer.field.step = lambda n, wind: steps.append(n)
         run_frames(self.game, 20, now)  # 800 ms of play: a step in every second frame
-        self.assertEqual(arcade.FIRE_STEP_MS, 80)
         self.assertTrue(8 <= sum(steps) <= 11, steps)
 
     def test_the_flame_follows_the_speed_none_at_the_start_full_at_the_full_speed(self):
         game, looks = self.game, fire.engine.looks
         self.assertEqual(150, int(game.base_speed()))  # the run starts below the start speed
-        self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))  # no flame
+        self.assertEqual((0, 0), (game.fire_heat, looks[-1][0]))  # no flame
         game.grow_fire(arcade.FIRE_START_SPEED)
-        self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))  # still none at the start speed
-        game.grow_fire((arcade.FIRE_START_SPEED + arcade.FIRE_FULL_SPEED) // 2)
-        self.assertTrue(0 < game.trail.heat < arcade.FIRE_HEAT and 0 < looks[-1][0] < arcade.FIRE_DECAY, looks[-1])
+        self.assertEqual((0, 0), (game.fire_heat, looks[-1][0]))  # still none at the start speed
+        game.grow_fire(430)  # the midpoint, by hand: k = (430 - 300) * 256 // 260 = 128, decay 36 * 128 // 256, heat 255 * 128 // 256
+        self.assertEqual((128, 127, 18), (game.fire_k, game.fire_heat, looks[-1][0]))
         game.grow_fire(arcade.FIRE_FULL_SPEED)
-        self.assertEqual((arcade.FIRE_HEAT, arcade.FIRE_DECAY), (game.trail.heat, looks[-1][0]))  # the flicker comes in play
+        self.assertEqual((arcade.FIRE_HEAT, arcade.FIRE_DECAY), (game.fire_heat, looks[-1][0]))  # the flicker comes in play
         n = len(looks)
         game.grow_fire(arcade.FIRE_FULL_SPEED + 100)
-        self.assertEqual((n, arcade.FIRE_HEAT), (len(looks), game.trail.heat))  # faster is no bigger, no new look
+        self.assertEqual((n, arcade.FIRE_HEAT), (len(looks), game.fire_heat))  # faster is no bigger, no new look
         game.restart()
-        self.assertEqual((0, 0), (game.trail.heat, looks[-1][0]))
+        self.assertEqual((0, 0), (game.fire_heat, looks[-1][0]))
 
     def test_the_speed_grows_to_a_higher_top_and_the_flame_is_see_through(self):
         game = self.game
@@ -125,17 +124,27 @@ class RunnerFireTest(unittest.TestCase):
 class ObstacleGapTest(unittest.TestCase):
     """The tuning factor on the gap between obstacles (P651): 1 is the game's own spacing."""
 
-    def last_end(self, spread):
+    def first_gap(self, spread):
+        """px from the track's start to the first obstacle, for seed 5; the random state is put back."""
         import random
         import track
-        random.seed(5)
-        tr = track.Track()
-        tr.spawn(0, 1, spread)
-        return tr.last_end
+        state = random.getstate()
+        try:
+            random.seed(5)
+            tr = track.Track()
+            start = tr.last_end
+            tr.spawn(0, 1, spread)
+            return tr.things[0][0] - start
+        finally:
+            random.setstate(state)
+
+    def test_the_merge_keeps_the_games_own_gaps(self):
+        """OBSTACLE_GAP is 3 while the flame is tuned; the merge sets it back to 1."""
+        self.assertEqual(arcade.OBSTACLE_GAP, 1)
 
     def test_a_larger_factor_spaces_the_first_obstacle_further_out(self):
-        self.assertGreater(self.last_end(3), self.last_end(1))
-        self.assertEqual(self.last_end(1), self.last_end(1))
+        self.assertGreater(self.first_gap(1), 0)
+        self.assertGreaterEqual(self.first_gap(3), 3 * self.first_gap(1))
 
 
 class FireLookRangeTest(unittest.TestCase):

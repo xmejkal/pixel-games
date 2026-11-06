@@ -22,7 +22,7 @@ fire scene lists it alone, the burning scene after its PhysicsPlugin. The scene 
 
 FireLayer (P602) puts the same field into another game as one more layer of its picture: heat burned at a body, moved
 with the world and blended over the game's frame. It was tried as a fire trail behind flappy's bird, and the PO kept
-it for other games (2026-11-04). No game uses it yet.
+it for other games (2026-11-04). The Runner uses it (P651).
 --- MVP (P595) ---
 """
 

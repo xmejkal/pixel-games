@@ -236,12 +236,12 @@ Four pieces work together on one field of heat: a byte per cell, 0 to 255, in `f
    (`fire.py:129-136`). The burning scene draws the field twice (P639): opaque, or blended over the sky in its picture
    mode, behind the bodies, then blended in front of them at `FRONT_ALPHA`, a cutout with a soft edge
    (`burning.py:142-148`). It draws in 13.21 to 13.78 ms (run128 and run129, linear, P646). The picture mode of the fire
-   and the unused `FireLayer.draw` use the blend (`fire.py:277-280`). The picture mode costs 11.51 to 13.32 ms to draw
+   and the Runner's `FireLayer.draw` (P651) use the blend (`fire.py:277-280`). The picture mode costs 11.51 to 13.32 ms to draw
    (`bench.md:433`, P608).
 The scroll moves the whole field under the screen by `dx` cells, clears what it uncovers and moves the live embers too
 (`fx_fire.c:368-389`). `FireLayer.update` turns the world's speed into whole cells with an integer remainder and calls it
-(`fire.py:215-228`), and `Effect.scroll` lets a trail follow (`effects.py:28-30`, `:62-64`). No game uses it now. The PO tried it
-behind the flappy bird and kept it for other games (`bench.md:456`, P602).
+(`fire.py:215-228`), and `Effect.scroll` lets a trail follow (`effects.py:28-30`, `:62-64`). The Runner uses it (P651). The PO tried it
+behind the flappy bird first and kept it for other games (`bench.md:456`, P602).
 A new effect is one more `Effect` subclass with `update(x, y)` and `reset()` (`effects.py:19-26`). Its callers do not change.
 
 ## Lesson E. Physics: bodies (P590) against balls (P598)
