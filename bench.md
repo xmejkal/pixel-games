@@ -606,3 +606,30 @@ fills (about 0.7 ms, P550's 87 µs a fill) and the field in front. Before, it ti
   and cells of alpha 255 need no blend math (`fx_fire.c:294`, `engine/driver/src/blend565.h:22-24`).
 - `BLEND_PALETTE` (run122) removes the dark borders over the sky at no cost: the same table lookup, another table.
 - The second field (run120, a scratch probe) fits in internal RAM (18,432 B left after it) and steps 6.8 ms more.
+
+## P601 (#802), 2026-11-06: the bound probe, before any SWAR blend
+
+Python only, on the P632 image (`flash-p632.log`). A scratch probe ran `BurningBodies` in one mode, started through
+`setup` and `set_mode`, for 42 s after a 30 s warm-up, with a hard `mpremote reset` before each run. "a" keeps
+today's alpha tables. "bound" sets each alpha of `burning.FRONT_ALPHA` and `fire.ALPHA` to 0 where the SWAR blend
+skips (alpha 0 to 3) and to 255 elsewhere. Then no pixel is mixed, each pixel is skipped or stored, and the draw is
+the best that any blend rewrite can reach. The values are per frame, from seven 5 s lines each.
+
+| run | tables | mode | fps | step ms | draw ms |
+| --- | --- | --- | --- | --- | --- |
+| `run124-p601-a-linear.log`, `run125-p601-a-linear.log` and their `-linear2` repeats | a | linear | 24 | 7.96 to 8.10 | 15.03 to 15.52 |
+| `run126-p601-bound-linear.log`, `run127-p601-bound-linear.log` and their `-linear2` repeats | bound | linear | 24 | 7.96 to 8.06 | 14.50 to 14.62 |
+| `run124-p601-a-picture.log`, `run125-p601-a-picture.log` | a | picture | 21 | 8.63 to 8.93 | 18.26 to 19.29 |
+| `run126-p601-bound-picture.log`, `run127-p601-bound-picture.log` | bound | picture | 22 to 23 | 8.31 to 8.45 | 15.85 to 16.18 |
+
+- The plan set the pass line before the runs: D5 (draw 13.5 ms or less, 23 fps or more) in every 5 s line. A pass
+  needs more than 0.5 ms to spare.
+- The bound misses the line in both modes: by 1.0 to 1.1 ms in linear and by 2.4 to 2.7 ms in picture. So no blend
+  rewrite, neither the SWAR blend nor PIE on the blend, can make either mode pass.
+- All the blend math costs about 0.75 ms in linear (one blended pass) and 2.6 to 2.8 ms in picture (two). The rest of
+  each pass is the bilinear interpolation. Every pixel pays it, also a pixel that the blend then skips.
+- The bound is optimistic: a store of 255 reads no background, and a real blend does.
+- The `-linear2` logs were meant as picture runs, but they are four more linear runs (P639's row 14 again).
+  `Game.__init__` calls `reset`, `restart` and `setup` (`games/gfx.py:306-316`), and `Fire.setup` calls
+  `set_mode(self.mode)` with the 0 of `Fire.__init__` (`games/fire.py:156, 168`). The probe set `self.mode` only
+  after that. The number alone changes no filter, blend or name.
