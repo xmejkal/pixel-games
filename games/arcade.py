@@ -20,28 +20,28 @@ RUN_COLOURS = {"r": RED, "s": c565(250, 200, 160), "k": BLACK, "b": c565(50, 90,
 # --- MVP (P651) --- the runner's fire, tuned on Mac frames of the C kernel over the Runner's sky (six sheets, bench.md P651)
 # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade. DECAY sets how high the flame climbs, COOL (the cooling map's patches) and FADE tear it
 # into ragged wisps that die toward the tip. Burning's own look is 32, 40 and 16: a longer, smoother tongue.
-FIRE_DECAY, FIRE_COOL, FIRE_FADE = 36, 255, 48
+FIRE_DECAY, FIRE_COOL, FIRE_FADE = 36, 255, 56
 OBSTACLE_GAP = 3  # factor on the gap between the Runner's obstacles, for tuning only (P651): 1 is the game as it is, set it back to 1 before the merge
 FIRE_DRAG_PCT = 5  # % of the world's speed that the heat field scrolls: at 100 the heat is smeared into a flat bar behind the runner
 
 
 def fire_look(decay):
-    return (decay, FIRE_COOL, 1, 0, 1, 128, 0, FIRE_FADE)
+    return (decay, FIRE_COOL, 2, 0, 1, 200, 30, FIRE_FADE)
 
 
 FIRE_START_SPEED, FIRE_FULL_SPEED = 300, 560  # px/s of base speed: no flame below the first, the full short flame from the second
 # See-through flame: alpha by heat, a ramp (the soft cutout of burning's FRONT_ALPHA, P639, with other ends): clear below
 # FIRE_CLEAR, solid FIRE_ALPHA_MAX from FIRE_SOLID, so the sky shows through the cool edges and only the core is solid.
-# The colour by heat is FIRE_STOPS through fire.ramp, as fire.PALETTE is made: deep red edges that show against the pale sky
+# The colour by heat is FIRE_STOPS through fire.ramp, as fire.PALETTE is made: orange-red edges (version E, no dark rim) that show against the pale sky
 # (burning's BLEND_PALETTE takes every cool heat at one orange-red), orange, yellow, and a small pale core only at the top.
-FIRE_STOPS = ((0, 90, 15, 10), (16, 130, 20, 10), (70, 190, 35, 5), (120, 235, 70, 5), (170, 255, 130, 10),
+FIRE_STOPS = ((0, 200, 60, 10), (16, 215, 60, 10), (70, 235, 80, 5), (120, 250, 110, 5), (170, 255, 150, 10),
               (225, 255, 190, 50), (255, 255, 235, 150))
 FIRE_PALETTE = ramp(FIRE_STOPS)
-FIRE_CLEAR, FIRE_SOLID, FIRE_ALPHA_MAX = 10, 150, 235
+FIRE_CLEAR, FIRE_SOLID, FIRE_ALPHA_MAX = 30, 150, 235
 FIRE_ALPHA = array("B", [0 if heat < FIRE_CLEAR else FIRE_ALPHA_MAX if heat >= FIRE_SOLID else
                          (heat - FIRE_CLEAR) * FIRE_ALPHA_MAX // (FIRE_SOLID - FIRE_CLEAR) for heat in range(256)])
-FIRE_RADIUS, FIRE_HEAT, FIRE_LAG, FIRE_SEED = 4, 255, 0.5, 651  # cells of the disc each burn writes, its heat, frames of lag
-FIRE_RADIUS_JIT, FIRE_HEAT_JIT = 2, 80  # each frame's burn is up to this much smaller and cooler, at random: the flicker
+FIRE_RADIUS, FIRE_HEAT, FIRE_LAG, FIRE_SEED = 2, 255, 0.5, 651  # cells of the disc each burn writes, its heat, frames of lag
+FIRE_RADIUS_JIT, FIRE_HEAT_JIT = 1, 80  # each frame's burn is up to this much smaller and cooler, at random: the flicker
 RUN_BOX = 24  # px: the box around the runner (its hit box height) that its trail burns from
 RUN_X = 52  # px: the runner's left edge
 # The speed's curve (the PO, 2026-11-06: "the speed should also grow more"). Was 4, 6 (the PO found 12 too fast on
