@@ -25,7 +25,7 @@ import time
 
 import plugins
 from effects import EffectSystem, FireTrail, cell
-from fire import FAST, LINEAR, NEAREST, SWAY, Fire
+from fire import BG_COLOR, BG_SKY, FAST, LINEAR, NEAREST, SWAY, Fire
 from gfx import HEIGHT, WIDTH, c565
 from motion import HIT
 from plugins import PhysicsPlugin
@@ -62,7 +62,8 @@ def flare_size(speed):
 class BurningBodies(Fire):
     name = "burning"
     LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)  # no spots, no embers: the base is off
-    MODES = (("linear", LINEAR, False), ("nearest", NEAREST, False))  # --- MVP (P608) --- opaque, no sky
+    # --- MVP (P639) --- every mode blends over the bodies: over black, over the sky, and the 2 x 2 blocks over black
+    MODES = (("linear", LINEAR, BG_COLOR), ("picture", LINEAR, BG_SKY), ("nearest", NEAREST, BG_COLOR))
 
     def setup(self):
         random.seed(SEED)
@@ -124,5 +125,7 @@ class BurningBodies(Fire):
             self.fire_plugin.field.burn(cx, cy, cx, cy, radius, heat)
 
     def paint(self, cv):
-        super().paint(cv)
+        """The bodies first, then the field blended over them, so the flames show in front of a body too. The hottest
+        cells cover it (P638's D6). --- MVP (P639) ---"""
         self.physics_plugin.draw(cv, BODY, COALS)
+        super().paint(cv)

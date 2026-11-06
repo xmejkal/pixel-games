@@ -18,7 +18,7 @@ from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from test_fire import FIRE_C, S3LCD_SRC, Engine, Tft, play  # noqa: E402  (also puts games/ and stubs/ on the path)
+from test_fire import FIRE_C, S3LCD_SRC, Engine, Recorder, Tft, play  # noqa: E402  (also puts games/ and stubs/ on the path)
 
 import burning  # noqa: E402
 import fire  # noqa: E402
@@ -26,7 +26,7 @@ import plugins  # noqa: E402
 import world_lib  # noqa: E402
 from motion import HIT, SLEEP  # noqa: E402
 
-REPORT = re.compile(r"^burning (linear|nearest) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
+REPORT = re.compile(r"^burning (linear|picture|nearest) fps \d+ step \d+\.\d\d draw \d+\.\d\d$", re.M)
 
 
 class PhysicsPluginStandIn(plugins.Plugin):
@@ -96,7 +96,7 @@ class BurningTest(unittest.TestCase):
         game.ms = 40
         with mock.patch.object(time, "ticks_us", lambda: 0):  # the read's own time is 0, so the sums are exact
             game.play(True, True)
-        self.assertEqual("nearest", game.mode_name)
+        self.assertEqual("picture", game.mode_name)
         self.assertEqual((7, 7), (game.us[0], game.hud_us))
 
     def test_the_scene_counts_the_ms_it_played(self):
@@ -126,21 +126,47 @@ class BurningTest(unittest.TestCase):
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the flames reached the frame
         self.assertTrue(self.flares(), "a first landing flares")
 
-    # --- MVP (P608) ---
-    def test_both_modes_draw_opaque_with_no_sky(self):
+    # --- MVP (P639) ---
+    def test_a_tap_walks_three_modes_each_blended_over_its_ground(self):
+        """Every mode blends the field over the bodies. Linear and nearest fill black under them, picture draws the sky
+        (black on the Mac, which has no art, so pictures.draw is watched here)."""
+        skies = []
+        sky = lambda cv, name, x, y: skies.append(name)  # noqa: E731  a draw that finds no art, as on the Mac
+        with contextlib.redirect_stdout(io.StringIO()), mock.patch.object(fire.pictures, "draw", sky):
+            game = burning.BurningBodies()
+            tft = Tft()
+            _, now = play(game, 5, 0, tft)
+            self.assertEqual(["tft alpha"] * 5, fire.engine.targets)  # linear first, blended
+            seen = []
+            for _ in range(3):
+                fire.engine.targets, fire.engine.filters, skies[:] = [], [], []
+                cv, now = play(game, 1, now, tft, pressed=True)
+                seen.append((game.mode_name, game.background, fire.engine.filters, fire.engine.targets, list(skies),
+                             cv.fills[0]))
+        black = (0, 0, fire.WIDTH, fire.HEIGHT)
+        self.assertEqual([
+            ("picture", fire.BG_SKY, [fire.LINEAR], ["tft alpha"], ["sky"], black),
+            ("nearest", fire.BG_COLOR, [fire.NEAREST], ["tft alpha"], [], black),
+            ("linear", fire.BG_COLOR, [fire.LINEAR], ["tft alpha"], [], black),
+        ], seen)
+
+    def test_the_bodies_paint_before_the_field_blends_over_them(self):
+        """One frame: the black fill, then the eight bodies, then the field's blend, so the flames cover a body."""
+        def canvas(tft):
+            cv = Recorder(tft)
+            cv.fills = fire.engine.targets  # one log for the fills and the field's draw, in their order
+            return cv
+
         with contextlib.redirect_stdout(io.StringIO()):
             game = burning.BurningBodies()
             tft = Tft()
-            cv, now = play(game, 5, 0, tft)
-            self.assertEqual("linear", game.mode_name)
-            self.assertEqual(["tft"] * 5, fire.engine.targets)  # linear: opaque
-            self.assertNotIn((0, 0, fire.WIDTH, fire.HEIGHT), cv.fills)  # no sky
+            _, now = play(game, 5, 0, tft)
             fire.engine.targets = []
-            cv, now = play(game, 1, now, tft, pressed=True)
-        self.assertEqual(("nearest", fire.NEAREST), (game.MODES[game.mode][0], game.fire_plugin.field.f.filter))
-        self.assertEqual([fire.LINEAR, fire.NEAREST], fire.engine.filters)
-        self.assertEqual(["tft"], fire.engine.targets)  # opaque
-        self.assertNotIn((0, 0, fire.WIDTH, fire.HEIGHT), cv.fills)  # no sky
+            play(game, 1, now, tft, canvas=canvas)
+        log = fire.engine.targets
+        self.assertEqual((0, 0, fire.WIDTH, fire.HEIGHT), log[0])
+        self.assertEqual([(burning.BODY, burning.BODY)] * burning.N, [fill[2:] for fill in log[1:-1]])
+        self.assertEqual("tft alpha", log[-1])
 
     @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
     def test_a_landing_in_c_flares_in_python(self):

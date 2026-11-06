@@ -13,6 +13,7 @@ import sys
 import tempfile
 import time
 import unittest
+from array import array
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
@@ -47,6 +48,13 @@ class Tft:
 
     def blit_buffer(self, buf, *args):
         self.blits.append(args)
+
+    def fill_rect(self, x, y, w, h, c):
+        """A panel rectangle into the frame, each pixel a native uint16 as the C draw writes it (P639), so a render
+        through lcd.TftCanvas shows the fills under the field."""
+        px = memoryview(self.frame).cast("H")
+        for row in range(y, y + h):
+            px[row * lcd.PANEL_W + x:row * lcd.PANEL_W + x + w] = array("H", [c] * w)
 
 
 class Recorder:
@@ -119,15 +127,26 @@ class Engine:
         return 123456
 
 
-def play(game, frames, now, tft, pressed=False):
-    """frames frames 40 ms apart from now, the first one pressed if asked: the last frame's canvas, and now."""
+def play(game, frames, now, tft, pressed=False, canvas=Recorder):
+    """frames frames 40 ms apart from now, the first one pressed if asked: the last frame's canvas, and now. canvas
+    makes each frame's canvas from the tft (P639: tools/render_scene.py passes lcd.TftCanvas)."""
     for k in range(frames):
         now += FRAME_MS
         game.step(now, pressed and k == 0, False)
-        cv = Recorder(tft)
+        cv = canvas(tft)
         game.paint_static(cv)
         game.paint(cv)
     return cv, now
+
+
+class TftTest(unittest.TestCase):
+    def test_fill_rect_writes_native_uint16_pixels_as_the_c_draw(self):
+        """P639: the stand-in's fill lands where and as the C draw's pixels do, a uint16 per pixel, row after row."""
+        tft = Tft()
+        tft.fill_rect(1, 2, 2, 1, 0x1234)
+        k = 2 * (2 * lcd.PANEL_W)
+        self.assertEqual(array("H", [0, 0x1234, 0x1234, 0]).tobytes(), bytes(tft.frame[k:k + 8]))
+        self.assertEqual(4, sum(1 for b in tft.frame if b))  # two pixels of two bytes, nothing else
 
 
 class PaletteTest(unittest.TestCase):
