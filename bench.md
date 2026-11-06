@@ -600,7 +600,7 @@ fills (about 0.7 ms, P550's 87 µs a fill) and the field in front. Before, it ti
 
 - The PO picked the soft cutout from Mac frames of five front layers (2026-11-06). On the panel its hot flames popped
   on and off over the bodies, so the built ramp is the wider 100 to 230 (run123, the PO's ok): 0.3 to 0.4 ms more draw.
-- D5's line (draw 13.5 ms or less, 23 fps or more) does not hold: the cutout draws 1.3 to 1.5 ms over it in linear,
+- D5's line (draw 13.5 ms or less, 23 fps or more) does not hold: the built ramp draws 1.6 to 2.0 ms over it in linear (run123),
   of which about 0.7 ms is the body fills the old draw never timed, and the picture mode falls to 21 to 22 fps. The PO judges the look on the panel.
 - A front blend that is half opaque everywhere costs about 3 ms more than the cutout: cells of alpha 0 are skipped
   and cells of alpha 255 need no blend math (`fx_fire.c:294`, `engine/driver/src/blend565.h:22-24`).
