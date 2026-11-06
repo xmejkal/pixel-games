@@ -99,7 +99,7 @@ class RunnerFireTest(unittest.TestCase):
         game.grow_fire((arcade.FIRE_START_SPEED + arcade.FIRE_FULL_SPEED) // 2)
         self.assertTrue(0 < game.trail.heat < arcade.FIRE_HEAT and 0 < looks[-1][0] < arcade.FIRE_DECAY, looks[-1])
         game.grow_fire(arcade.FIRE_FULL_SPEED)
-        self.assertEqual((arcade.FIRE_HEAT, arcade.FIRE_DECAY), (game.trail.heat, looks[-1][0]))
+        self.assertEqual((arcade.FIRE_HEAT, arcade.FIRE_DECAY), (game.trail.heat, looks[-1][0]))  # the flicker comes in play
         n = len(looks)
         game.grow_fire(arcade.FIRE_FULL_SPEED + 100)
         self.assertEqual((n, arcade.FIRE_HEAT), (len(looks), game.trail.heat))  # faster is no bigger, no new look

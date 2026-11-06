@@ -250,14 +250,14 @@ class FireLayer:
     blends it over the frame. Without the engine, field is None and draw does nothing. Made once: update and draw use
     int math only, so they make nothing a frame."""
 
-    def __init__(self, look, seed, step_ms=STEP_MS, alpha=ALPHA):
+    def __init__(self, look, seed, step_ms=STEP_MS, alpha=ALPHA, palette=BLEND_PALETTE):
         self.field, self.clock, self.acc = None, StepClock(step_ms, STEP_CAP), 0  # acc: px/s times ms; step_ms: the heat's step
         if engine is not None:
             self.field = engine.HeatField(W, H, seed)
             self.field.set_look(*look)
             self.field.set_base(False)
             self.field.set_filter(LINEAR)
-        self.alpha = alpha  # the blend's alpha by heat
+        self.alpha, self.palette = alpha, palette  # the blend's alpha and colour by heat
 
     def update(self, ms, speed):
         """ms of a world moving left at speed px/s, an int: the field scrolls the whole cells it moved, the rest waits,
@@ -284,4 +284,4 @@ class FireLayer:
     def draw(self, cv):
         """The heat blended over what the frame holds, at its alpha. Only a canvas with an s3lcd tft has a frame."""
         if self.field is not None and hasattr(cv, "tft"):
-            self.field.draw(cv.tft, BLEND_PALETTE, self.alpha)
+            self.field.draw(cv.tft, self.palette, self.alpha)

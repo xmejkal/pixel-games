@@ -8,7 +8,7 @@ import track
 from array import array
 
 from effects import FireTrail
-from fire import FireLayer
+from fire import FireLayer, ramp
 from gfx import (BLACK, GREEN, GREY, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565)
 
 W, H = WIDTH, HEIGHT
@@ -17,11 +17,11 @@ BIRD_COLOURS = {"k": c565(40, 30, 20), "y": YELLOW, "w": WHITE, "o": ORANGE}
 RUN_TOP = ("..rrrr..", ".rrrrrr.", ".ssskss.", ".ssssss.", "..bbbb..", ".bbbbbb.", "sbbbbbbs", ".bbbbbb.", "..pppp..", "..pppp..")
 RUN_LEGS = (("..p..p..", ".kk..kk."), ("...pp...", "...kk..."))
 RUN_COLOURS = {"r": RED, "s": c565(250, 200, 160), "k": BLACK, "b": c565(50, 90, 240), "p": c565(40, 40, 120)}
-# --- MVP (P651) --- the runner's fire, tuned on Mac frames of the C kernel over the Runner's sky (four sheets, bench.md P651)
+# --- MVP (P651) --- the runner's fire, tuned on Mac frames of the C kernel over the Runner's sky (six sheets, bench.md P651)
 # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade. DECAY sets how high the flame climbs, COOL (the cooling map's patches) and FADE tear it
 # into ragged wisps that die toward the tip. Burning's own look is 32, 40 and 16: a longer, smoother tongue.
-FIRE_DECAY, FIRE_COOL, FIRE_FADE = 28, 220, 56
-FIRE_DRAG_PCT = 8  # % of the world's speed that the heat field scrolls: at 100 the heat is smeared into a flat bar behind the runner
+FIRE_DECAY, FIRE_COOL, FIRE_FADE = 36, 255, 48
+FIRE_DRAG_PCT = 5  # % of the world's speed that the heat field scrolls: at 100 the heat is smeared into a flat bar behind the runner
 
 
 def fire_look(decay):
@@ -31,11 +31,16 @@ def fire_look(decay):
 FIRE_START_SPEED, FIRE_FULL_SPEED = 300, 560  # px/s of base speed: no flame below the first, the full short flame from the second
 # See-through flame: alpha by heat, a ramp (the soft cutout of burning's FRONT_ALPHA, P639, with other ends): clear below
 # FIRE_CLEAR, solid FIRE_ALPHA_MAX from FIRE_SOLID, so the sky shows through the cool edges and only the core is solid.
-# fire.BLEND_PALETTE gives the colour by heat (red, orange, yellow, white), as the burning scene's blend does.
-FIRE_CLEAR, FIRE_SOLID, FIRE_ALPHA_MAX = 16, 170, 230
+# The colour by heat is FIRE_STOPS through fire.ramp, as fire.PALETTE is made: deep red edges that show against the pale sky
+# (burning's BLEND_PALETTE takes every cool heat at one orange-red), orange, yellow, and a small pale core only at the top.
+FIRE_STOPS = ((0, 90, 15, 10), (16, 130, 20, 10), (70, 190, 35, 5), (120, 235, 70, 5), (170, 255, 130, 10),
+              (225, 255, 190, 50), (255, 255, 235, 150))
+FIRE_PALETTE = ramp(FIRE_STOPS)
+FIRE_CLEAR, FIRE_SOLID, FIRE_ALPHA_MAX = 10, 150, 235
 FIRE_ALPHA = array("B", [0 if heat < FIRE_CLEAR else FIRE_ALPHA_MAX if heat >= FIRE_SOLID else
                          (heat - FIRE_CLEAR) * FIRE_ALPHA_MAX // (FIRE_SOLID - FIRE_CLEAR) for heat in range(256)])
-FIRE_RADIUS, FIRE_HEAT, FIRE_LAG, FIRE_SEED = 3, 225, 0.5, 651  # cells of the disc each burn writes, its heat, frames of lag
+FIRE_RADIUS, FIRE_HEAT, FIRE_LAG, FIRE_SEED = 4, 255, 0.5, 651  # cells of the disc each burn writes, its heat, frames of lag
+FIRE_RADIUS_JIT, FIRE_HEAT_JIT = 2, 80  # each frame's burn is up to this much smaller and cooler, at random: the flicker
 RUN_BOX = 24  # px: the box around the runner (its hit box height) that its trail burns from
 RUN_X = 52  # px: the runner's left edge
 # The speed's curve (the PO, 2026-11-06: "the speed should also grow more"). Was 4, 6 (the PO found 12 too fast on
@@ -149,7 +154,7 @@ class Runner(Game):
 
     def __init__(self):
         # --- MVP (P651) --- made once, before Game.__init__ runs setup; the trail only when the field exists
-        self.layer = FireLayer(fire_look(FIRE_DECAY), FIRE_SEED, FIRE_STEP_MS, FIRE_ALPHA)
+        self.layer = FireLayer(fire_look(FIRE_DECAY), FIRE_SEED, FIRE_STEP_MS, FIRE_ALPHA, FIRE_PALETTE)
         self.trail = None
         if self.layer.field is not None:
             self.trail = FireTrail(self.layer.field, RUN_BOX, FIRE_RADIUS, FIRE_HEAT, FIRE_LAG)
@@ -172,6 +177,7 @@ class Runner(Game):
         their values at FIRE_FULL_SPEED. The look is set again only when the decay steps (at most FIRE_DECAY times in a
         round), so a frame allocates nothing. --- MVP (P651) ---"""
         k = max(0, min(256, (speed - FIRE_START_SPEED) * 256 // (FIRE_FULL_SPEED - FIRE_START_SPEED)))
+        self.fire_k = k
         self.trail.heat = FIRE_HEAT * k // 256
         decay = FIRE_DECAY * k // 256
         if decay != self.fire_decay or speed == 0:
@@ -214,6 +220,8 @@ class Runner(Game):
         dx = self.layer.update(self.ms, int(base * max(0.5, effects.factor(track.SLOW))) * FIRE_DRAG_PCT // 100)  # --- MVP (P651) --- the fire moves with the world
         if self.trail is not None:
             self.grow_fire(int(base))
+            self.trail.heat = FIRE_HEAT * self.fire_k // 256 - random.randrange(FIRE_HEAT_JIT * self.fire_k // 256 + 1)
+            self.trail.radius = FIRE_RADIUS - random.randrange(FIRE_RADIUS_JIT + 1)
             self.trail.scroll(dx)
             self.trail.update(RUN_X - RUN_BOX // 2, int(self.GROUND - self.h) - RUN_BOX)  # burns at the runner's back, x = RUN_X
         tr = self.track
