@@ -98,6 +98,9 @@ class Engine:
                 engine.filters.append(mag_filter)
                 lib.fx_fire_set_filter(ctypes.byref(self.f), mag_filter)
 
+            def set_flow(self, bend, wander):  # --- Later, not MVP: a prototype for the PO's pick (P647) ---
+                lib.fx_fire_set_flow(ctypes.byref(self.f), bend, wander)
+
             def set_base(self, on):  # P596
                 lib.fx_fire_set_base(ctypes.byref(self.f), 1 if on else 0)
 
