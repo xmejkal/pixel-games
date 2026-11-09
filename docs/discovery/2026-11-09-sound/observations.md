@@ -51,6 +51,7 @@ This file stays in pixel-games while the other session refactors spark. When tha
 | 40 | GPIO12, 13 and 4 or 14 also reach the GDI connector. Only an unproven record says that this display leaves them unused. DFRobot's page and the board record disagree on D5, D6 and D10. | refuter, second pass | raised | The tone test settles the pads. | Yes: the board record and the maker's page disagree. |
 | 41 | `~/.local/share/spark/boards` holds no pin data for the FireBeetle, and the pins are in the spark repository's `boards/`. My first read failed on this. | this session | verified | `boards/firebeetle2-esp32s3.json` in `~/Development/spark`. | Yes: name one home for board records. |
 | 42 | A board listing of 900 items failed with a rate limit error while `rate_limit` still showed 3,765 points left. This is a second limit that the counter does not show. | this session | verified | Card P733 #1003 was already filed. I stopped calling the API. | Yes: list the board less often, and filter on the server. |
+| 43 | The PO asked to see the findings with diagrams. The discovery's files are too long to read for that. | the PO, 2026-11-09 | acted | https://claude.ai/artifact/E7Po7kRqDyCkAxj4GLRpCg, private to the PO. | Yes: a discovery can end with a one-page summary. |
 | 34 | The second pass of the refuter waits until after Q1, so that one pass covers all changed sections. | this session | acted | Step 8 of the discovery. | No |
 
 ## Time
