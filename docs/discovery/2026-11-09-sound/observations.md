@@ -36,6 +36,14 @@ This file stays in pixel-games while the other session refactors spark. When tha
 | 24 | The photos show no jumper wires to the amplifier or the microphone. The speaker plugs into the amplifier. | photos | raised | The pin list comes before the wiring. | No |
 | 25 | The PO's idea: a microphone and a camera as test instruments on the bench, and perhaps later part of spark. | the PO, 2026-11-09 | acted | Card P731 #1000 holds the PO's words. It is not on the board yet, see row 26. | Yes: P731. |
 | 26 | GitHub refused GraphQL calls with "API rate limit already exceeded for user ID 631808." at 11:48 +0100. The limit is shared with the other session. | this session | raised | `rate_limit` printed a reset at 12:19:16 +0100. I wait for the reset. My 2,000-item board listing used several pages. The share of each session is unknown. | Yes: board readers need a cost limit. |
+| 27 | All three lenses missed AMY, an MIT synthesizer in C that runs on the S3. Only the refuter found it. | refuter ★C8 | acted | Brief question Q3 now holds it as option P4. | Yes: a fresh adversary found what the reuse search did not. |
+| 28 | My brief to the agent named the repository `shortwave/amy`. The real one is `shorepine/amy`. | correction agent | verified | The agent found and used the right repository. | No |
+| 29 | Road's 105 ms frame holds a state change. Frames during play reach 69 ms. | refuter ★C1 | acted | Brief question Q7 asks which of these the buffer covers. | No |
+| 30 | `discovery.py check` read a quoted fill marker in the refuter's report as an unfilled slot. The agent changed that quoted token. | correction agent | raised | `council/refuter.md:3` | Maybe: the skill's tool. |
+| 31 | `discovery.py check` wants each keep phrase on every line that cites a claim, so citing lines carry extra words in brackets. | correction agent | raised | `brief.md` | Maybe: the skill's tool. |
+| 32 | A fresh agent reproduced the starred claims, and I did not. The skill says "yourself". 22 of 22 reproduced, and 3 of them have limits. I read only the pin path myself. | this session | raised | `verification.md`, `games/lcd.py:199-206`, `games/gdi.py:15-19` | Yes: the rule can say who reproduces the claims. |
+| 33 | The microphone's pads read SD, VDD, GND, L/R, WS and SCK. The SEN0526 page reads 3V3, GND, SCK, SEL, WS and DO. The module in the photo is probably another part. | correction agent | raised | The model stays unknown until the PO names it. | Yes: a drawer match by function is not an identity. |
+| 34 | The second pass of the refuter waits until after Q1, so that one pass covers all changed sections. | this session | acted | Step 8 of the discovery. | No |
 
 ## Time
 
@@ -47,6 +55,8 @@ All times are Europe/Prague (+0100), from the commits of 2026-11-09.
 | Q0 | 11:18:33 +0100 | the PO's answer recorded |
 | 3 lenses | 11:23:24 +0100 | three reports committed |
 | 4, 5 synthesis | 11:34:57 +0100 | jobs, map, options, risks, items |
+| 6 refuter | 11:52:37 +0100 | the report committed |
+| 6 corrections | 12:06 +0100 | corrections, AMY, pin proposal, reproduced claims |
 
 ## Agents
 
@@ -58,4 +68,6 @@ The figures come from each agent's completion notice. The first three ran in par
 | PO assistant lens | Sonnet | 218 | 19 | 86,081 |
 | tech lead lens | Sonnet | 243 | 25 | 125,415 |
 | synthesis | Opus | 644 | 41 | 194,531 |
-| total so far | | | 96 | 481,887 |
+| refuter | Opus | 1,022 | 38 | 236,861 |
+| corrections and reproduction | Opus | 810 | 31 | 225,071 |
+| total so far | | | 165 | 943,819 |
