@@ -174,3 +174,149 @@ Sentence to change: "The walk's amplifier pins 12, 13, 14 and 6 are free in `gdi
 3. `MAX98357A datasheet LRCLK "only supports" 8kHz 16kHz 32kHz 44.1kHz 48kHz 88.2kHz 96kHz 22.05kHz not supported` (web, for ★C18) · the summary misread and gave a continuous-range answer. Its link to a datasheet copy was used instead (the NXP-hosted PDF, Rev 7 2/16, read with `pdftotext`).
 
 Fetches, not searches: `docs.rs` garjan `fire.rs` (read through a summarising model); `analog.com` MAX98357A datasheet (two timeouts: could not open); `community.nxp.com` datasheet copy (fetched, then `pdftotext`).
+
+## Second pass
+
+Read 2026-11-09 (Europe/Prague), changed sections only, against the working tree at 518b6af. Paths as in the first pass. Nothing was run on a board. `B:n` is a line of `brief.md`, `RT:n` of `risks-and-tests.md`, `OB:n` of `observations.md`.
+
+Could not open:
+- **The PO's words for D8 to D15.** The folder keeps words only for D5, D6, D7 and D16. D8 to D15 say "answer to Q<n>" and hold no quote, and the subjects of commits 8a86961, 8565c9a and 518b6af hold none either. So those eight are compared with the option text they answer, and not with what the PO said. `OB:30` already says "a D needs the decider's words on that point".
+- **The PO's photos** (D7, ★C26, C30). They are not in the folder.
+- **Issue 997.** It was not opened in this pass, so "issue 997's words" (B:19) rests on the first pass's quote.
+- **The s3lcd driver's source.** Not read, so whether it claims a pin beyond the arguments at `games/lcd.py:203-204` is —.
+
+### 2
+
+**Decisions written more strongly or more broadly than the record**
+
+- **D6 (B:140).** The words are "we can add it later. the idea with the testing machine is good, I like it, we can try that too." D6 writes "a test instrument in this epic that lets the board hear its own speaker and report gaps". "In this epic", "the board", "its own speaker" and "report gaps" are not in the words, and "we can try that too" is a try. `OB:34` records it more weakly: "the test instrument is worth a try". The Scope line (B:22) lists it as in.
+- **D7 (B:141).** The words are "Here's the picture of the modules I want to use". The list is the facilitator's reading of a picture and not the PO's naming. "The MAX98357 amplifier module" and "the enclosed speaker" are then treated as the drawer's DFR0954 and FIT0502 (★C17, B:75; `story-map.md:20`; the rail at RT:21; A8). No line in the folder compares the photographed amplifier or speaker with those records. C30 shows that this same step failed for the microphone, and `OB:45` draws the rule: "a drawer match by function is not an identity". The rule is not applied to the other two parts.
+- **D8 (B:142) and Stands on (B:11).** D8 says that importance "does not rank them". The top line turns the same answer into "10 of which would change the decision". A rating of high is not a statement that the result would change the decision.
+- **D9 (B:143).** It says "as proposed", and its text differs from the proposal (B:117, RT:32).
+  - "No gaps at all" replaces "0 gaps in the recording". The instrument is gone, and with it "A recording cannot show a very short gap".
+  - The clause "no refill later than the buffered time in the log" is gone.
+  - "This answers Q7: the buffer covers the state-change frames" is a second decision placed inside the answer to Q1. Q7 is a choice between 4096 B and 2560 B and between a delay of 168 ms and 120 ms (B:131). The record does not show that this trade was put to the PO, and "at most 4096 B" does not choose either depth.
+  - "Covers" is stronger than ★C3's "about 104 to 128 ms (calculated, not run)", and Road's 105 ms sits inside that range.
+  - The record does not show whether the PO saw the refuter's noise reading before confirming.
+- **D10 (B:144).** "If A2 fails, N3 replaces it" is the facilitator's opinion at Q2 (B:126), with no words recorded. A2 has two lines: pass under 10 ms, and change over 17.6 ms (RT:33). A result between 10 and 17.6 ms is neither, so "fails" is undefined. Q6 "unblocks: Q2 and A2" stays queued (B:130) while Q2 reads answered.
+- **D11 (B:145).**
+  - "A driver repository exists only if the A1 test fails" is narrower than D1's "only if the discovery shows the need" (B:20). It copies the facilitator's opinion at Q3 (B:127) into the decision. A need shown any other way is shut out, for example A3's delay (RT:34: "Q3 moves to a shorter buffer or the own task").
+  - "AMY is the first candidate to start from" drops Q3's "its fit is not built".
+  - P4 is a synth core with AMY's own I2S tasks in a user C module (B:98). The driver repository belongs to P2 (B:96). D11 joins them, and the failure branch of A1 still says "Q3 moves to the own task" (RT:32) and does not name AMY.
+- **D12 (B:146).** O4 holds the microphone count and a latency column (B:104). "One listening verdict per version" comes from O2 (B:102). The decision is a merge that the option list did not offer, with no words kept. O4's caveats are dropped from D12 and from the Outcome line (B:19): "nobody ran it", "The shortest gap it can show is —", "the reading costs the run it measures".
+- **D13 (B:147).** "A layer for physics events can sit on top later" is not in option A (B:107). Option A's caveat "fire is not a sample, so it needs `set` parameters" is dropped.
+- **D14 (B:148).** "The ball pit test" is not defined as Mac or board. A5 (RT:36) still tests "a cap of 4 and of 8" on a Mac render, so V2 and V3 are not in the test that D14 names. Q5's status names only D13 (B:129).
+- **D15 (B:149).** It allocates two rounds and does not show that they fit. ★C15's "Whether 3 days (D4) cover the rounds a sound needs is —" stands. D4 has no quote and predates the microphone in Scope, and no D re-confirms the 3 days with it (`OB:31`).
+- **D16 (B:150).** Q8 asks whether an earlier sentence confirmed the frame and the reuse, with the options "yes, or restate the frame" (B:132). D16 writes "the frame with the changes of today", and its options are "yes to both, another amplifier, change the frame". "The changes of today" is not in Q8, and the option sets differ, so "Yes to both" cannot be tied to one text. D16 does not touch RA-8's open question on work in progress, or C29's walk.
+- **Ready for (B:10).** The comment at B:4-6 defines "an experiment" as "the decider chose a test (a D)". D9 records a pass line. No D records choosing to run A1 next, and the top line stands on D9 for that. Four "before A1" rows stay open (RT:47-49, RT:51), and the microphone's identity is the open "Decision needed" (B:12).
+
+**Places that still treat the microphone as a SEN0526 or as unsettled, against C30**
+
+C30 (B:82) says "is not a SEN0526". ★C26 (B:80) says "not proven", and the two stand side by side with no line that reconciles them.
+- B:14, B:104 and B:117 carry "★C26 (not proven)".
+- B:80 opens the microphone's claim with "The drawer holds 3 SEN0526 modules".
+- RT:18 "H ★C26: the microphone (D6)". RT:32 "Proposal (D6, ★C26)".
+- RT:21 "the SEN0526's "DC 3.3V" applies only if it is that module (★C26)" and "the microphone's range is — (★C26)". The rail stays open on a condition that C30 says is false.
+- RT:51 "Which microphone is it? ... SEN0526's page reads 3V3, GND, SCK, SEL, WS, DO (★C26)".
+- `story-map.md:23` "H ★C26".
+- `verification.md:26` keeps "not proven", with no row for C30.
+- `OB:35` still reads "The identity stays unproven".
+- C30 has no star although Decision needed (B:12) rests on it, and B:41-42 says that ★ marks such a claim.
+- "C30" is used twice (B:82, B:155) for two different claims.
+- `items.md` does not name the microphone at all, though D6 and D12 put it in scope. The probe item (`items.md:9-14`) lists no microphone wiring and no identification step, and its proof is "the gap count".
+
+**Caveats dropped, and claims stronger than their source**
+
+- **D12 is written as still open.** B:14 says "proposes", B:117 "Proposal, not decided (D6)", RT:32 "Proposal", and `story-map.md:23` "Proposal (D6, Q4's O4)". B:117 also ends "The PO sets it at Q1", and RT:32 says "proposed", after D9.
+- **The instrument of A1 is contradictory.** D12 says gaps are counted with the microphone, and the pass line (B:117) says "0 gaps in the recording", a phone. `story-map.md:23` puts the microphone at slice 3, and `story-map.md:16` puts A1 before slice 0.
+- **The Outcome's count works only on a tone.** B:19 gives "gaps per minute" from the microphone for "one row per sound version". The method is described only for a known tone (B:117, RT:18 "a known tone"). Nothing says how a gap is told from an intended silence in a version's real sound. The row's population is missing.
+- **O4 "proves: a count of gaps in the sound itself, the source ★C6 (dry blocks) says the stock class lacks" (B:104).** ★C6 is about dry blocks. A heard gap is another quantity, and "proves" sits beside "nobody ran it".
+- **A1's frame-time line and the microphone.** O4 says the reading costs the run it measures. D9's "within 5 ms" and "same fps" are read against a run130 that had no RX channel. Whether the 5 minutes run with the microphone on is —.
+- **D9 is not tested by its own test.** "The buffer covers the state-change frames", and the test text does not require a state change in the 5 minutes. Road's 105 ms window holds one (R1).
+- **The first pass's statistic point is half kept.** B:117 keeps "Road 66 and 105, Cave 79 and 54". It drops "A 5-minute maximum against a 5 to 10 s maximum is not the same statistic" and the fps spread of 1 to 3 within one game.
+- **D9 makes A1 and A3 pull harder.** At a kept-full 128 ms the median is about 132 to 148 ms against A3's under 130 ms (RT:34). This is in RT:34 and is not in D9, Ready for or the Short version.
+- **D10 and D13 do not meet.** D13 picks `Mixer` with `play(sample_id, volume)` (B:107). D10 picks N1, one voice of live synthesis (B:90), with no sample to play and nothing to mix. N3's caveat "it compares a mixer and not a generator" (B:92) applies here, and it is not raised.
+- **Pin list sources (RT:21).**
+  - "Source the board record's `pins`" for the microphone: that record maps pads to GPIOs and proposes nothing, so no source chose GPIO7, 8 and 4.
+  - "Free because they are in no line above" means free in the code. See Pin list.
+  - The rail is sourced from `parts/max98357a-dfr0954.json`, which assumes the photographed module is a DFR0954.
+- **★C25 (B:79).** It is tagged E with a datasheet read "(Espressif document search)", and `verification.md:25` says "one query". ★C14's caveat holds that "Search results are not read pages". `soc_caps.h:228` "#define SOC_I2S_NUM (2U)" is read here, and the file has no DAC line, so the local half stands. The datasheet quote is second-hand.
+- **P4 "with no 16 kHz rate" (B:98).** `src/amy.h:102-108` is a `#define` in a preprocessor branch ("#ifdef AMY_DAISY", "#elif defined __EMSCRIPTEN__", "#else", "#define AMY_SAMPLE_RATE 44100"). It has no 16 kHz branch. Whether the value can be changed and still build and sound right is —. "No 16 kHz rate" reads as an impossibility.
+- **★C8 and D11.** "The nearest project found" rests on two searches, and RT:53 says "a smaller one is not" read. "First candidate" is first of one read.
+- **C27 (B:49).** It drops RA-1's limit "supports only: that the order is a choice". C27 says "the value is".
+- **C30's sources.** "Read 2026-11-09" does not say how the page's board photo was read. ★C26 says its page came "through a summarising fetch", and `OB:45` says "correction agent, then this session".
+- **Stale beside the new top lines.** B:23 "proposed". Hand-off (B:165) "not yet: the importance of each assumption and the riskiest test's pass line (Q1) ... a direction (Q2 to Q5)". `story-map.md:16` and `items.md:7` "wait on Q2 to Q5". `items.md:13,35` "depends on: Q1". B:19 has a broken sentence at "DFR0975 D12 changes".
+
+### 3
+
+- **R12. "The testing machine" (D6) can be a separate rig.** The folder records the PO's idea as "a microphone and a camera as test instruments on the bench" (`OB:37`, card P731, B:155). That reading puts the listener outside the game board. D6 and O4 put it on the board's second controller. D12's "answer to Q4" settles O4 only if O4's text was what the PO read, and no words are kept.
+- **R13. The microphone can fail with the thing it measures.** It is on the same board and read by the same loop. A Python stall that starves TX also delays the RX read, so an RX overflow drops samples just when the gap happens, and the instrument then shows a jump or nothing. A gap can be hidden, and a clean tone can show a false gap. The folder names the cost ("the reading costs the run it measures") and not this common cause.
+- **R14. Gap detection is per-sample work.** At 16 kHz, 640 samples per frame must be looked at somewhere. In Python that is the per-sample cost ★C5 and Q6 call unmeasured, so the instrument may cost as much as N1. Logging raw to analyse on the Mac is 16,000 x 2 x 300 = 9,600,000 B per 5-minute game (calculated, 16-bit mono), more than the board's 8 MB PSRAM, and FEAS-13 says "any filesystem write while sound plays risks a gap".
+- **R15. A1 failing does not show that stock is not enough.** RT:32 and D11 read a failure as a need for an own task or a repository. Rivals the folder does not rule out: the pass line fails on noise (first pass, B:117), internal RAM moves Fire's field (★C28), the microphone's own cost (O4), a wiring or brown-out fault (R6). With D11, a noise failure of the 5 ms line would open a driver repository. No line separates the sound clause of the pass line from the frame clause for that branch.
+- **R16. The riskiest assumption may now be the instrument.** D12 hangs the gap count on an unidentified part with no rail, no L/R level, no threshold and no shortest detectable gap (B:80, B:82, RT:21, B:104), and nobody ran it. The Riskiest line (B:116) still names A1 and A4, A8 and A9. No assumption row covers the microphone at all, and RT:18 only names a threshold.
+- **R17. D9 "answers Q7" can be a yes to the numbers shown.** The PO confirmed a pass line under Q1. The rival reading is that the PO did not weigh state-change frames, and the sentence that says so is the recorder's.
+- **R18. D8's ten highs can mean "I won't rank these".** The folder uses it as ten assumptions that each change the decision. It gives no ranking, and Riskiest (B:116) is still "proposed".
+- **R19. AMY is first because it is the only one read.** ★C8 is one search. CircuitPython's mixer and "a smaller one" stay unread (RT:53). A smaller core or a plain own mixer in `core/` (★C11) is not ruled out as the better base, and AMY's 44.1 or 48 kHz stereo fill does not match the 16 kHz mono that D9 tests.
+- **R20. The round module "came from another seller" (C30).** The rival is that the "order history" is only DFRobot's. The spark drawer's import is described as "your DFRobot order history", and the claim names no population. The history can then say nothing about other sellers or about a gift. The pad set SD, VDD, GND, L/R, WS and SCK is also that of the common round INMP441 breakout (H, model knowledge, not opened). The folder's "—" on the chip can be closed by one look at the part and has not been.
+- **R21. The amplifier and speaker in the photos may not be the drawer's parts.** See D7 above. If the module is another MAX98357A board, R1, the rail and the pad names at RT:21 and C20 all move.
+- **R22. "Stock class fits two controllers" (★C25, RT:21) is read from source only.** Two `machine.I2S` objects beside s3lcd and the game loop were not run, and the second one's interrupts and DMA share the pool ★C28 names. A failure at the second object would be blamed on A1.
+
+### 4
+
+- **Stands on "10 H, 10" (B:11):** no noun. Several rows carry E (RT:32, 35, 36), so "H" is not their tag. The count comes from a tool.
+- **Outcome (B:19):**
+  - "CPU time per frame (ms)" has no statistic, game or event script.
+  - "Underruns per minute" has no run length.
+  - "Heap (kB)" names no pool, and ★C28 shows that internal RAM is the scarce one.
+  - "One row per sound version" against three games in A1.
+- **D9, and B:117:**
+  - "Within 5 ms" of which window. The list uses Road's 105 ms, and the other window is 66 ms.
+  - "Same fps" has no tolerance and no direction, and Road's 20 is the state-change window (the other reads 23).
+  - "No gaps at all" has no shortest gap and no instrument.
+  - "The buffered time" is 128 ms of capacity or 104 to 128 ms of coverage.
+  - "At most 4096 B" against RT:32's fail line "at 4096 B".
+- **D12:** "The gap threshold is —" has no unit named. "Delay column in ms" has no statistic (A3 uses a median over 20 hits) and no instrument. "One listening verdict" has no listener, level or length.
+- **D15:** "two listening rounds" has no duration. A4 implies five wav files.
+- **D4 and the 3 working days:** no scope after the microphone was added, and no quote.
+- **A2:** "under 10 ms" and "over 17.6 ms" leave 10 to 17.6 ms unassigned, and 17.6 ms is Fire only. BallPit is slice 0's game, and its free time is not stated: 22.1 ms from `run130-p656-smoke.log:25` (40 − 2.4 − 7.3 − 5.2 − 3.0, calculated).
+- **★C24 and P4:** "21 `src/*.c` files", "250 oscillators and 64 voices", "6 DMA blocks" are at `main` on one date, and the commit is not recorded. "Stacks of 12 and 16 KiB" does not say which task has which. "5 names tried" does not list them in the brief.
+- **★C28:** 31,744 B is one run, at start of one game, and "leaves 4,352 B" holds only if the figure was taken before the field was made. The log order (`:7` then `:8`) suggests it and does not state it. The share of a microphone channel is unquantified.
+- **C30, ★C26:** "3 SEN0526" and "no other microphone" have no drawer read date and no population for "the order history".
+- **Q7:** 168 ms and 120 ms are for a 40 ms frame only. The buffer the question decides is forced by Road, whose worst frame is 105 ms.
+- **The pin list's "not wired or run":** it has a date and no bench state. The board revision is still — (RT:47).
+
+### Pin list
+
+**Answer: no collision with the running code, and no restriction in the board record for digital use.** Two limits on that answer follow the table.
+
+`~/.local/share/spark/boards/34-85-18-42-e4-10.json` is the record of this board, and it holds only `deploys` and line 101 `"board": "firebeetle2-esp32s3"`. It has no pin data. The other two files there printed no FireBeetle match in a grep and were not read further. The restrictions were read in `~/Development/spark/boards/firebeetle2-esp32s3.json` (`BR` below), which that line names.
+
+`games/gdi.py` and `games/buttons.py` were read whole. In `games/lcd.py` a grep for `gdi\.|Pin\(|ADC|machine\.` printed only lines 201 to 204, and all four use names from `gdi`, not numbers. A grep over `games/*.py` for `PWM(`, `UART(`, `SDCard`, `Signal(`, `TouchPad`, `DAC(`, `ADC(` and `SoftSPI` printed nothing. So the code that runs uses:
+- `gdi.py:12-14` "SCLK = pins.SCLK  # 17", "MOSI = pins.MOSI  # 15", "MISO = pins.MISO  # 16"
+- `gdi.py:15-19` "DC = 3", "RST = 38", "CS = 18", "SD_CS = 9", "BL = 21"
+- `buttons.py:13` "BOOT_BUTTON = 0"
+- `pins.py:14` "ONBOARD_BUTTON = 47"
+
+None of the seven proposed pins is in those lines.
+
+| pin | proposed role | line in the running code | pad, `BR` `pins` | `BR` `pin_roles` | DFRobot wiki GDI table |
+| --- | --- | --- | --- | --- | --- |
+| GPIO12 | amplifier BCLK | none. Named only at `games/pins.py:9` "TFT_DC = 12", which nothing reads (first pass, ★C19) | `"D12": 12` | `adc2_unusable_with_wifi`: ADC only | "\| TCS   \| 12/D12  \| Touch chip select  \|" |
+| GPIO13 | amplifier LRC | none. `games/pins.py:10` "TFT_RST = 13", unread | `"D11": 13` | `adc2_unusable_with_wifi`: ADC only | "\| INT   \| 13/D11  \| INT  \|" |
+| GPIO14 | amplifier DIN | none. `games/pins.py:11` "SD_CS = 14", unread | `"D10": 14` | `adc2_unusable_with_wifi`: ADC only | no row with 14. "\| BUSY \| 4/D10 \| Tearproof pins  \|" names pad D10, which `BR` says is GPIO14 |
+| GPIO6 | amplifier SD | none, and no line in `games/pins.py` | `"A2": 6` | in no entry | no row |
+| GPIO7 | microphone SCK | none, and no line in `games/pins.py` | `"D5": 7` | in no entry | "\| FCS \|  7/D6 \| Font library chip select   \|" |
+| GPIO8 | microphone WS | none, and no line in `games/pins.py` | `"A3": 8` | in no entry | no row |
+| GPIO4 | microphone SD | none, and no line in `games/pins.py` | `"A0": 4` | in no entry | "\| BUSY \| 4/D10 \| Tearproof pins  \|" |
+
+`pin_roles` was read whole: strapping 0 and 3, `adc2_unusable_with_wifi` 11 to 20, onboard_led 21, onboard_button 47, not_wake_capable 38, 43, 44 and 47, console_uart 43 and 44, spi 15, 16, 17 and 10, i2c 1 and 2. Its note on the ADC2 list reads "on ADC2, which shares hardware with the radio", so it does not restrict a digital signal.
+
+Limits on the answer:
+1. **RT:21 says the other eight GDI lines "have no GPIO in the record: —". DFRobot's wiki gives them** (wiki.dfrobot.com/SKU_DFR0975_FireBeetle_2_Board_ESP32_S3, read by grep over the page text, 2026-11-09). By that table GPIO12, 13, 7 and 4 run to the GDI connector as TCS, INT, FCS and BUSY. The page is not consistent with `BR`: "7/D6" while `BR` has `"D5": 7` and `"D6": 18`, and "4/D10" while `BR` has `"D10": 14`. If the BUSY line is D10 and not GPIO4, then GPIO14 is on it, and that pin is in the proposal too. `~/.local/share/spark/shelf/dfr0664-tft-2in.json` says of the module's FPC pins 11 to 18: "FCS, TCS, SCL, SDA, INT, BUSY/TE, GPIO1, GPIO2 (11-18) have no net on this module", with `"verified": false`, and of the GPIO map "the wiki's GDI table disagrees on FCS/BUSY labels, so confirm on the bench by running the library's test". So this is not a collision on this display, if that unverified line is right. It is a shared line on the board and it is not in the brief. Which schematic revision matches the PO's board is — (RT:47).
+2. **Regeneration and the walk.** The list is safe only while `gdi.py` stays the map. `games/pins.py:9-11` names 12, 13 and 14 for the display, and `games/pins.py:2` says "Regenerate it; do not edit it". The walk that shares this amplifier (D16) uses GPIO7 for another part: `~/Development/spark-walks/p581-sound-joystick/firmware/pins.py` "JOY_SW = 7". That only matters if the walk's wiring stays on the board. C29 says the walk stays open.
+
+Walk lines read for the amplifier pins: "I2S_BCLK = 12", "I2S_LRC = 13", "I2S_DIN = 14", "AUDIO_SHUTDOWN = 6". The microphone's three pins have no such source line.
+
+### Searches
+
+None. Fetches, not searches: `curl` of `shorepine/amy` `src/amy.h` and `src/i2s.c` at `main`, and of the DFRobot DFR0975 wiki page, each read through `grep`.

@@ -47,6 +47,9 @@ This file stays in pixel-games while the other session refactors spark. When tha
 | 36 | The INMP441 datasheet gives VDD 1.62 V to 3.63 V, and 3.63 V is the absolute maximum, so 5 V is out. It needs 64 SCK cycles per WS frame, so `machine.I2S` receives 32-bit words. | DS-INMP441 rev 1.1, CERN copy | verified | `pdftotext` of the copy. The datasheet asks for a 100 kΩ pulldown on SD, and the module's resistor value is unread. | Yes: these facts belong in a part record. |
 | 37 | AliExpress redirected to its sign-in page in Chrome, so the search of the PO's orders did not run. | this session | raised | I closed the tab and entered nothing. The purchase and the count stay unconfirmed. | Yes: the drawer import needs a signed-in browser. |
 | 38 | The `identify` steps 3 and 4 did not run: no part record and no drawer entry exist yet. | this session | raised | Owed in the next session. | Yes: the part is still missing from the drawer. |
+| 39 | The second refuter pass says the microphone can miss the gaps it measures, because a stall that starves the output also delays the input on the same loop. | refuter, second pass | raised | The next correction round adds an assumption row. | Yes: an instrument needs its own test. |
+| 40 | GPIO12, 13 and 4 or 14 also reach the GDI connector. Only an unproven record says that this display leaves them unused. DFRobot's page and the board record disagree on D5, D6 and D10. | refuter, second pass | raised | The tone test settles the pads. | Yes: the board record and the maker's page disagree. |
+| 41 | `~/.local/share/spark/boards` holds no pin data for the FireBeetle, and the pins are in the spark repository's `boards/`. My first read failed on this. | this session | verified | `boards/firebeetle2-esp32s3.json` in the spark checkout. | Yes: name one home for board records. |
 | 34 | The second pass of the refuter waits until after Q1, so that one pass covers all changed sections. | this session | acted | Step 8 of the discovery. | No |
 
 ## Time
@@ -74,4 +77,5 @@ The figures come from each agent's completion notice. The first three ran in par
 | synthesis | Opus | 644 | 41 | 194,531 |
 | refuter | Opus | 1,022 | 38 | 236,861 |
 | corrections and reproduction | Opus | 810 | 31 | 225,071 |
-| total so far | | | 165 | 943,819 |
+| refuter, second pass | Opus | 431 | 20 | 153,754 |
+| total so far | | | 185 | 1,097,573 |
