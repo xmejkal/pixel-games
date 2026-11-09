@@ -61,3 +61,7 @@ Past tense, about their own use (account questions, n = 1) unless marked.
 - Q-U9 · When you wrote that you wanted both "naive micropython" and "optimized custom" versions, did you expect to hear a difference between them, or only to see the bench row? · decides: whether the swap is judged by a bench row alone or also by a listening test.
 - Q-U10 · When you thought of the showcase page, who listens to the board, and in which place? · decides: the maximum level, the speaker size, and whether the sound can be loud in a room.
 - Q-U11 · When you thought of the fire sound following the fire, which of these did you expect to move the sound: how big the flame is, the wind gusts, the embers, or the moment a body hits? · decides: which fire inputs the sound reads (and whether the fluid layer from P649 is waited for).
+
+## Searches
+
+- none: this lens had no web search (0 allowed, see part 2)

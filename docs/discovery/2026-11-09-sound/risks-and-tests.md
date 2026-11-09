@@ -6,20 +6,20 @@ status: open · retired · n/a because ….
 e.g. `| usability | H no test yet (A2) | a five-person prototype test | open |` -->
 | risk | evidence now | cheapest way to retire it | status |
 | --- | --- | --- | --- |
-| value <!-- REQUIRED:risk-value --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| usability <!-- REQUIRED:risk-usability --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| feasibility <!-- REQUIRED:risk-feasibility --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| viability <!-- REQUIRED:risk-viability --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| ethics and safety <!-- REQUIRED:risk-ethics --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| power and battery <!-- REQUIRED:electronics-firmware:power --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| current and stall <!-- REQUIRED:electronics-firmware:stall --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| thermal <!-- REQUIRED:electronics-firmware:thermal --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| EMC and ESD <!-- REQUIRED:electronics-firmware:emc-esd --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| sensor drift and calibration <!-- REQUIRED:electronics-firmware:sensor-drift --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| brown-out <!-- REQUIRED:electronics-firmware:brown-out --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| wake and low power <!-- REQUIRED:electronics-firmware:wake --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| the firmware–hardware contract <!-- REQUIRED:electronics-firmware:contract --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
-| supply and documents <!-- REQUIRED:electronics-firmware:supply --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
+| value <!-- REQUIRED:risk-value --> | E RA-1: nobody is blocked, and no card waits on sound. The value is the PO's wish and the showcase (#875). H ★C15: the PO's ear is untested (A4, A7) | ask Q-U1, Q-U4, Q-U9. Five wav files on the Mac for the fire (A4) | open |
+| usability <!-- REQUIRED:risk-usability --> | H ★C4 (delay, calculated), E ★C12 (bursts have no cap). E USER-8: no free button for a mute (A3, A5) | a phone video of hits for the delay, a Mac render of a ball pit pour with two caps, and Q-U6 | open |
+| feasibility <!-- REQUIRED:risk-feasibility --> | E ★C2, ★C3, ★C6, ★C7, ★C1. H ★C5: no per-sample or stock I2S run exists on this board (A1, A2, A6) | the probe in items.md: a tone beside the game loop, with no new C | open |
+| viability <!-- REQUIRED:risk-viability --> | E RA-7, ★C11: P609 #812 renames the engine, and a sound core lands in that churn. E ★C9: GPL and LGPL code into MIT repositories (A10) | a list of the names slice 2 adds, read against #812. The no-go on GPL and LGPL code | open |
+| ethics and safety <!-- REQUIRED:risk-ethics --> | H PHYS-13: the part record warns that a stopped LRCLK with BCLK running can harm the speaker. USER-14: a wrong level can hurt an ear. E PHYS-1: GAIN unconnected selects 9 dB. Loudness in a room is — | start each listening test at a low level, and drive the amplifier's shutdown pin low before the clocks stop | open |
+| power and battery <!-- REQUIRED:electronics-firmware:power --> | H ★C20: on paper the 3.3 V rail has margin, 0.58 A against 1.5 or 2 A (calculated, PHYS-6). The USB source and the VCC pad's limit are — | the board revision photo, a USB power meter at both rails (R5) | open |
+| current and stall <!-- REQUIRED:electronics-firmware:stall --> | no motor in this work | n/a | n/a because the speaker is the only moving load, and it has no stall case in this frame. Amplifier peak current sits under power and brown-out |
+| thermal <!-- REQUIRED:electronics-firmware:thermal --> | H PHYS-9: loss 0.15 W at 3.3 V and 0.45 W at 5 V (calculated, efficiency 0.8 is a guess). θJA is — | the datasheet's θJA, then a touch check after a long test (R1, bench) | open |
+| EMC and ESD <!-- REQUIRED:electronics-firmware:emc-esd --> | H PHYS-14: nothing is measured. SPI at 60 MHz (games/app.py:37) runs beside the I2S lines, and the symptom is a buzz at the frame rate or a click per `show()` | listen with the screen animating during the A1 probe (R5) | open |
+| sensor drift and calibration <!-- REQUIRED:electronics-firmware:sensor-drift --> | no sensor is in the scope (the microphone is out of scope in the Frame) | n/a | n/a because this work reads no sensor |
+| brown-out <!-- REQUIRED:electronics-firmware:brown-out --> | H PHYS-8: S3 threshold, rail ripple and the capacitance at the amplifier are all —. Backlight, SPI bursts and amplifier peaks coincide (A9) | a `machine.reset_cause()` log during a loud 1 kHz tone in the fire scene (R6). It cannot show a dip that does not trip the detector | open |
+| wake and low power <!-- REQUIRED:electronics-firmware:wake --> | E games/app.py:152-154: the games do not sleep, and the D14 hold powers the board off | n/a | n/a because the games do not use a sleep mode. The amplifier's shutdown pin stays part of the contract row |
+| the firmware–hardware contract <!-- REQUIRED:electronics-firmware:contract --> | E ★C19: three pin maps disagree, and the amplifier pins 12, 13, 14 are free in `gdi.py` and taken in `pins.py`. H ★C18: 22.05 kHz is not supported | the PO confirms the GDI cable, the pin map is written once, and a listen settles the mono channel (R0, R5) | open |
+| supply and documents <!-- REQUIRED:electronics-firmware:supply --> | E PHYS-6, PHYS-11, PHYS-12: board revision not recorded, the DFR0954 schematic says 100k and the wiki says 680k, the datasheet is a 2014 mirror. FIT0502 has no record | one photo of the board, one multimeter reading of R1, a diff against ADI Rev 16, a part record for FIT0502 (R0) | open |
 <!-- EXTEND:risk-rows --><!-- EXTEND:pair-rows -->
 
 ## Assumptions
@@ -29,13 +29,31 @@ status: open, or retired with the date of its Results row.
 e.g. `| A2 | Assignees never see new tasks | value | H ★C2 | — (decider) | query opened-within-48h | under 50 %, set 2026-10-06 | over 80 % | open |` -->
 | id | belief | type | evidence now | importance | cheapest test | pass line, dated | result that would change the decision | status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| A1 <!-- REQUIRED:assumptions --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ | — (decider) | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ | open |
+| A1 <!-- REQUIRED:assumptions --> | Stock `machine.I2S`, refilled once per frame by Python, plays with no heard gap through the games' worst frames, and costs the games no frame time (the riskiest, proposed) | feasibility | E ★C1, ★C2, ★C3. H ★C4, ★C7 (RA-3). The stock class was not run here | — (decider) | a tone from a table, written once per frame beside the game loop, on the games image, with no new C. A phone recording and a timing log | proposed 2026-11-09: Fire, BallPit and Road, 5 minutes each, 16 kHz mono, `ibuf` at most 4096 B: 0 gaps in the recording, no refill later than the buffered time in the log, and each game's `worst` within 5 ms and its fps equal to run130 (48, 57, 105 ms and 25, 24, 20) | a gap, or a frame cost over the line, at 4096 B: stock is not enough for sound beside the games, and Q3 moves to the own task |
+| A2 | The naive version fits the frame as live Python synthesis of one voice | feasibility | H ★C5 (FEAS-7, RA-4 split). No run exists | — (decider) | time a 640-sample fill of noise with a decay, three runs, `ticks_us` | proposed 2026-11-09: median under 10 ms for one voice at 16 kHz mono | over 17.6 ms (the fire's headroom, calculated): Q2 drops N1 and N2 for block tables, N3 |
+| A3 | The PO accepts the delay from a hit to its sound on the stock path | usability | H ★C4, RA-5. No test | — (decider) | a phone video of a hit at the highest frame rate the phone has, in the A1 session, then a 3-minute play | proposed 2026-11-09: median delay under 130 ms over 20 hits, and the PO says the sound lands with the hit | the PO hears it late at the depth A1 needs: Q3 moves to a shorter buffer or the own task |
+| A4 | The PO accepts one generated fire sound as "realistic" within the 3 days of D4 | value | E ★C15, ★C16. H ★C14. The ear is untested (USER-22) | — (decider) | five wav files on the Mac, A to E, made by the recipe in ★C14 | proposed 2026-11-09: by the end of round 2 the PO picks one and says it is good enough to go on the board | the PO rejects round 2: the fire sound takes its own card or more days (Q4) |
+| A5 | A cap on sounds at once sounds right in a ball pit pour | usability | E ★C12, USER-4. The hit rate in a pour is — | — (decider) | a Mac render from a hit log of one pour, with a cap of 4 and of 8 | proposed 2026-11-09: the PO picks one and does not call it a buzz | the PO rejects both: Q5's merge option replaces the cap |
+| A6 | The fire's sound can read a few numbers from the heat field at a small cost | feasibility | E ★C13. The cost of a full-field sum is — | — (decider) | a C statistic over the 160 x 120 field, timed on the board in the probe image | proposed 2026-11-09: under 0.5 ms per frame | over 2 ms: sample the field or read gusts and embers from Python |
+| A7 | The C version shows a gain that the PO values, and it sounds the same | value | H USER-15, RA-6 cause 9. No run exists | — (decider) | the same event script on both versions, and one listening pass | proposed 2026-11-09: C's CPU per frame is at most a third of the Python version's, and the PO hears no difference for the worse | no visible gain: keep the Python version as the shipped one, and the C card has no value |
+| A8 | The amplifier and the FIT0502 are loud enough on the rail the board has | usability | H ★C20 (0.6 W at 3.3 V read off a graph, 1.8 W at 5 V, datasheet-typ) | — (decider) | a bench listen with a 1 kHz tone at 3.3 V and at 5 V | proposed 2026-11-09: the PO hears it across the room they name, at a level below clipping, at one rail | not loud enough at either: a new amplifier choice or a change of rail |
+| A9 | Sound does not reset the board during a game | feasibility | H ★C20, PHYS-8. Nothing is measured | — (decider) | 10 minutes of a loud tone in the fire scene, with `machine.reset_cause()` logged | proposed 2026-11-09: 0 resets, and the same `reset_cause` as before | a brown-out: a capacitor or a rail change before any further work |
+| A10 | A sound core lands in `core/` without a rename forced by P609 #812 | viability | E ★C11, RA-7 | — (decider) | list the names slice 2 adds and read them against #812 | proposed 2026-11-09: slice 2 adds no name that #812 renames | a rename: slice 2 waits for #812, or adds a thin alias |
 
 ## Collection plan
 <!-- One row per gap. e.g. `| Do assignees open new tasks? | Q2 | Lena, from analytics | one query | this week |` -->
 | question | decision it blocks | who can answer | how | when |
 | --- | --- | --- | --- | --- |
-| ⟨fill⟩ <!-- REQUIRED:collection --> | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ | ⟨fill⟩ |
+| Which board revision is the DFR0975? <!-- REQUIRED:collection --> | budget rows, A8 | the PO, at the bench | one photo of the chip beside BOOT (PHYS-16) | before A1 |
+| Is the display on the GDI cable, and are pins 12, 13, 14 and 6 free on the board? | the pin map, A1 | the PO, at the bench | a look at the wiring | before A1 |
+| Is the amplifier on 3.3 V or on the 5 V pad, and what feeds the board? | A8, A9 | the PO, at the bench | the PO's answer and a USB power meter | before A1 |
+| Is R1 on the PO's DFR0954 100k or 680k? | the mono channel, A8 | the PO, at the bench | a multimeter, then a listen with a mono signal on left only (PHYS-11) | at A1 |
+| Do brown-outs or a buzz appear beside the display? | A9, EMC row | the PO, at the bench | A9's log, and a listen with the screen animating | at A1 |
+| Is there a ready C sound core? The search used one query | Q3, Q5 | the desk | a second search, and a read of the CircuitPython mixer, the pages behind EX-13 and the unread licences | before slice 2 |
+| What does FIT0502 do (impedance, range, sensitivity)? | A8 | the desk | a part record by `spark:research` | before A8 |
+| Does the ADI Rev 16 datasheet match the 2014 mirror? | ★C18, ★C20 | the desk | a diff of the sample-rate and power tables | before slice 0 |
+| What is a real S3 limit: I2S count, PIE use for mixing, the DAC? | the Frame's "S3 abilities" | the desk | a read of soc_caps.h and the TRM | before Q3's own-task option |
+| What does the PO compare a fire sound to, and do they hear gaps as they see freezes? | A3, A4, Q4 | the PO | Q-U4, Q-U5, Q-U7, past-tense questions | at Q1 |
 
 ## Results
 <!-- Filled on a return; may stay empty until then. One row per result: what was tested, what was seen (verbatim,
@@ -46,5 +64,9 @@ with its pointer), the pass line met or missed, what it changes. -->
 ## Budgets <!-- REQUIRED:electronics-firmware:budgets -->
 <!-- Energy per mode · peaks per rail against the source · dissipation per part, each number with its provenance and
 the rung that would settle it (electronics-firmware:R<n>). "n/a — no battery, motor, radio or regulator" is allowed. -->
-⟨fill⟩
+- Energy per mode: no battery figure. The Li-ion flag is — in the Frame, and every test here runs on USB.
+- Peaks on the 3.3 V rail: amplifier 0.227 A average at a 0.6 W sine (calculated, efficiency 0.8 is a guess, PHYS-4), module 0.355 A peak with WiFi (datasheet, WiFi off in the games, PHYS-6), sum 0.58 A against 1.5 A or 2 A by board revision (board record, H). Backlight and transients are —. Settled by a USB power meter at R5 and a `reset_cause` log at R6.
+- Peaks on the 5 V rail: 0.45 A average at 1.8 W (calculated, PHYS-4). The sine formula gives 5.37 V peak, above the 5 V rail, so the 10 % THD figure is a clipped wave and the 0.67 A peak is an over-estimate (at most 0.625 A, calculated from 5 V across 8 ohm). The FET ceiling and the USB limit are —. Settled at R5.
+- Dissipation: amplifier 0.15 W at 3.3 V and 0.45 W at 5 V (calculated, the same guess). θJA is —. Settled at R1 once θJA is read.
+- CPU, per 40 ms frame: fire 22.4 ms used, 17.6 ms free (calculated from the means in run130-p656-smoke.log:12). One voice at 16 kHz is 640 samples (calculated).
 <!-- EXTEND:risks-sections -->
