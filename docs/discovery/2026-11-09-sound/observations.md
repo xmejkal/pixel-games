@@ -52,6 +52,10 @@ This file stays in pixel-games while the other session refactors spark. When tha
 | 41 | `~/.local/share/spark/boards` holds no pin data for the FireBeetle, and the pins are in the spark repository's `boards/`. My first read failed on this. | this session | verified | `boards/firebeetle2-esp32s3.json` in `~/Development/spark`. | Yes: name one home for board records. |
 | 42 | A board listing of 900 items failed with a rate limit error while `rate_limit` still showed 3,765 points left. This is a second limit that the counter does not show. | this session | verified | Card P733 #1003 was already filed. I stopped calling the API. | Yes: list the board less often, and filter on the server. |
 | 43 | The PO asked to see the findings with diagrams. The discovery's files are too long to read for that. | the PO, 2026-11-09 | acted | https://claude.ai/artifact/E7Po7kRqDyCkAxj4GLRpCg, private to the PO. | Yes: a discovery can end with a one-page summary. |
+| 44 | My tone plan stopped the clocks before the amplifier shut down. A stopped LRCLK with BCLK running can harm the speaker. | plan check, Opus | acted | The plan now drives SD low, waits 10 ms, and then calls `deinit`. | Yes: the part record's warning did not reach the plan on its own. |
+| 45 | The plan's `reset_cause` line could not fail, because `mpremote run` soft-resets first. | plan check, Opus | acted | Replaced with `elapsed_ms` and `done` in the log. | Yes: `reset_cause` after `mpremote run` proves nothing. |
+| 46 | The byte count proves only the clock rate, because the ESP32 makes its own clocks. `write` completes with nothing connected. | plan check, Opus | acted | The plan names the listen as the only proof of the wiring. | Yes: a software pass line can hide an unwired part. |
+| 47 | The module's bias enables the amplifier by itself, so a missing SD wire stays unnoticed. | plan check, Opus | acted | The plan keeps the clocks running for 1 s with SD low, and the PO hears the tone stop. | No |
 | 34 | The second pass of the refuter waits until after Q1, so that one pass covers all changed sections. | this session | acted | Step 8 of the discovery. | No |
 
 ## Time
