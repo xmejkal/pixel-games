@@ -78,4 +78,5 @@ The figures come from each agent's completion notice. The first three ran in par
 | refuter | Opus | 1,022 | 38 | 236,861 |
 | corrections and reproduction | Opus | 810 | 31 | 225,071 |
 | refuter, second pass | Opus | 431 | 20 | 153,754 |
-| total so far | | | 185 | 1,097,573 |
+| corrections after the second pass | Sonnet | 272 | 15 | 119,366 |
+| total so far | | | 200 | 1,216,939 |
