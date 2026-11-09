@@ -6,7 +6,7 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 
 Nothing is filed, and numbers come at filing. The list holds the probe of the riskiest assumption, two desk spikes and the first stories. The other slices wait on Q2 to Q5.
 
-## The games stall for 40 to 105 ms, and nobody knows if stock I2S plays through that → one bench session with a tone beside the game loop, with no new C
+## Each game's worst single frame gap over 5 to 10 s runs from 40 to 105 ms, and nobody knows if stock I2S plays through that → one bench session with a tone beside the game loop, with no new C
 - type: spike (tests A1, the riskiest, and A2, A3, A9). It serves every option in Q3 <!-- REQUIRED:item-type -->
 - needed by: "do some research and POC for how to best work with sound" (the PO, 2026-11-09, #997) <!-- REQUIRED:needed-by -->
 - value proven by: one table in `bench.md` with the gap count, the timing log, each game's `worst` against run130 and the `reset_cause` log, read against A1's pass line <!-- REQUIRED:value-proven-by -->

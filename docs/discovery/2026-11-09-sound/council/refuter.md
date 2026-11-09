@@ -1,6 +1,6 @@
 # P729 sound discovery: refuter
 
-Read 2026-11-09 (Europe/Prague). Paths: `PS` = /Users/petr/Development/pixel-sound, `MPY` = ~/esp/micropython-v1.29.0, `IDF` = ~/esp/esp-idf-v5.5.2/components. Nothing was run on a board. Every "calculated" below comes from source read here or arithmetic done here, and none of it was run. `verification.md` is still the empty template (`- ⟨fill⟩`), so part 2 had no verification file to compare.
+Read 2026-11-09 (Europe/Prague). Paths: `PS` = /Users/petr/Development/pixel-sound, `MPY` = ~/esp/micropython-v1.29.0, `IDF` = ~/esp/esp-idf-v5.5.2/components. Nothing was run on a board. Every "calculated" below comes from source read here or arithmetic done here, and none of it was run. `verification.md` is still the empty template (its fill marker), so part 2 had no verification file to compare.
 
 Verdict counts: 6 holds (★C1, ★C2, ★C6, ★C11, ★C15, ★C18), 12 partly (★C3, ★C4, ★C5, ★C7, ★C8, ★C9, ★C10, ★C12, ★C13, ★C14, ★C16, ★C19). None refuted outright; ★C7's and ★C8's second halves come closest. None could-not-open as a whole, and the unopened sources are named at each claim.
 

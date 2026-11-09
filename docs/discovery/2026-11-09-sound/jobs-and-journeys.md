@@ -33,7 +33,7 @@ e.g. `| 2 | opens the app | E analytics, 90 days | never sees the task | not yet
 | --- | --- | --- | --- | --- | --- |
 | 1 | powers the board, and the Fire starts by itself | E games/app.py:6-8 (USER-8) | a sound at power-on has no mute and no volume | not yet | Who is in the room? (Q-U10) |
 | 2 | plays, and a body or a ball hits something | E games/effects.py:91-97, games/balls.py:45 (USER-3) | no sound today | not yet | Which moment gets the first sound? (Q-U1) |
-| 3 | hears the hit at the moment it sees it | H ★C4, RA-5 | the poll and the buffer add about 104 to 168 ms, calculated | not yet | What delay does the PO accept? (A3) |
+| 3 | hears the hit at the moment it sees it | H ★C4, RA-5 | the poll and the buffer add about 104 to 168 ms in a 40 ms frame and about 233 ms in Road's 105 ms frame, calculated | not yet | What delay does the PO accept? (A3) |
 | 4 | a ball pit pours, and many hits arrive at once | E games/balls.py:151-153 (USER-4) | a burst can be a roar or a buzz, and no cap on sounds exists | not yet | One rumble, or each ball rings? (Q5) |
 | 5 | watches the fire and hears it follow the flames | H USER-5, ★C13 | no read-back from the heat field | not yet | Which inputs move the sound? (Q-U11) |
 | 6 | a frame stalls for 40 to 105 ms | E ★C1 | a dry buffer plays silence, a gap or a click (★C6) | not yet | How much of a gap does the PO notice? (Q-U7) |
