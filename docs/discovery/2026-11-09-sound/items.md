@@ -11,7 +11,7 @@ Nothing is filed, and numbers come at filing. The list holds the probe of the ri
 - needed by: "do some research and POC for how to best work with sound" (the PO, 2026-11-09, #997) <!-- REQUIRED:needed-by -->
 - value proven by: one table in `bench.md` with the gap count (from the instrument Q9 picks), the timing log, each game's `worst` against run130 and the `reset_cause` log, read against A1's pass line <!-- REQUIRED:value-proven-by -->
 - depends on: D9 (the pass line), Q7 and Q9, the amplifier and the microphone wired on the PO's bench (the microphone's chip marking read first), the bench look in the collection plan. Size S, one session <!-- REQUIRED:depends-on -->
-- status: proposed <!-- REQUIRED:item-status -->
+- status: filed D17, P733 https://github.com/xmejkal/spark/issues/1003 <!-- REQUIRED:item-status -->
 <!-- EXTEND:item-fields -->
 
 ## The search for a ready C sound core used one query, and three pages were never opened → a desk finding with sources on what to reuse and which names to use
