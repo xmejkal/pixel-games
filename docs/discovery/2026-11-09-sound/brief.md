@@ -9,7 +9,7 @@ Stands on: the assumptions not retired in risks-and-tests.md; of which those the
 is unrated. check computes both. -->
 **Ready for:** an experiment: the A1 bench spike (D17), and design follows the spike <!-- REQUIRED:ready -->
 **Stands on:** 10 H, 10 of which would change the decision <!-- REQUIRED:debt -->
-**Decision needed:** the PO confirms this understanding for the hand-off. Q10 to Q13 go to the spike's plan <!-- REQUIRED:decision-needed -->
+**Decision needed:** none for the hand-off. Q10 to Q13 go to the plan of P733 <!-- REQUIRED:decision-needed -->
 
 **Short version.** The options are proposals, and D8 to D16 record what the PO selected. The games have no sound today, and nobody is blocked: the want is the PO's wish and a showcase (C27). The source of stock `machine.I2S` fits the owned amplifier, nobody ran it here, and it needs a C or Python fill from the game loop (★C2 (not run), ★C7). A buffer deep enough to hide the worst frame gap (105 ms in Road) also delays every new sound by up to about 168 ms in a 40 ms frame and about 233 ms in Road's 105 ms frame, calculated and not measured (★C3, ★C4). The S3 has two I2S controllers and no DAC (★C25 (no DAC is an absence)), so on the stock class the amplifier and the microphone take one controller each. AMY, an MIT C synth core that runs on the S3, joins Q3 as option P4, read and not built (★C24). The cheapest next step is one bench session with a tone beside the game loop and no new C (A1), and the microphone (D6, D12) is the chosen gap count that the stock class lacks (★C6 (dry blocks)). It is a round module that matches the INMP441 (★C26 (marking is unread)). The PO answered Q1 to Q5, Q8 and the two queue questions (D8 to D16). The queue holds Q7, Q6 and Q9 to Q15, and a look at the bench (the collection plan in risks-and-tests.md) is open.
 
@@ -160,6 +160,7 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 - D18 · the test counts gaps with both instruments: "The microphone counts gaps, and a phone recording shows whether it counts them correctly." · the PO · 2026-11-09 · selected "Both, phone as reference (Recommended)" · options considered: both, microphone only, phone only for now
 - D19 · the test forces a game restart, so the 105 ms state-change frame occurs: "The test includes that frame, so the buffer stays at 4096 B." · the PO · 2026-11-09 · selected "Yes, force a restart (Recommended)" · options considered: force a restart, play frames only
 - D20 · the 3 days hold: "Any microphone work that does not fit goes to its own card, as with the fire rounds." · the PO · 2026-11-09 · selected "Keep 3 days (Recommended)" · options considered: keep 3 days, raise the days
+- D21 · confirms the understanding for the hand-off · the PO · 2026-11-09 · "ok, go on", in reply to the request to confirm that the brief states the understanding correctly · options considered: none
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
@@ -174,7 +175,7 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 <!-- Written only after the decider confirms the understanding (a D); copies only confirmed constraints. Holds: outcome ·
 who · success and its proof · constraints (appetite, confirmed no-gos, rabbit holes) · what they said (D) against what
 we assume (H) · links to the journeys and the map · riskiest assumptions and their tests · options considered. -->
-not yet: the PO selected importance, a pass line, a direction and the cap (D8 to D16), and the queue holds Q7, Q6 and Q9 to Q15. The jobs and the remaining risk are unconfirmed <!-- REQUIRED:handoff -->
+Outcome: sound in the games, generated fire sound, and one benchmark of a naive and an optimized version behind one `Mixer` (D2, D13). Who: the PO, n = 1. Proof: spike P733 against the pass line of D9, D18 and D19, then a `bench.md` row per version with delay and one listening verdict (D12). Constraints: 3 days (D4, D20), two fire rounds and then a card (D15), stock I2S first (D11), the layout of D1, and GPL projects as inspiration only (proposal). The PO said: D5 to D21. We assume: A1 to A10, all rated high (D8). Links: [journeys](jobs-and-journeys.md), [map](story-map.md), [risks](risks-and-tests.md). Riskiest: A1, tested by P733. Options considered: N1 to N3, P1 to P4, O1 to O4, A to C, V1 to V3. <!-- REQUIRED:handoff -->
 
 ## Files
 [Jobs and journeys](jobs-and-journeys.md) · [Story map](story-map.md) · [Risks and tests](risks-and-tests.md) · [Verification](verification.md) · [Items](items.md) · council/
