@@ -56,6 +56,10 @@ This file stays in pixel-games while the other session refactors spark. When tha
 | 45 | The plan's `reset_cause` line could not fail, because `mpremote run` soft-resets first. | plan check, Opus | acted | Replaced with `elapsed_ms` and `done` in the log. | Yes: `reset_cause` after `mpremote run` proves nothing. |
 | 46 | The byte count proves only the clock rate, because the ESP32 makes its own clocks. `write` completes with nothing connected. | plan check, Opus | acted | The plan names the listen as the only proof of the wiring. | Yes: a software pass line can hide an unwired part. |
 | 47 | The module's bias enables the amplifier by itself, so a missing SD wire stays unnoticed. | plan check, Opus | acted | The plan keeps the clocks running for 1 s with SD low, and the PO hears the tone stop. | No |
+| 48 | The PO asked for spark's frontend to see the wires on the breadboard. Spark has no server or app. The nearest thing is `page.html`, one static page per build, written by `check_spine.py --keep`. | the PO's question, read of `commands/build.md:152` | verified | The PO was told the page's path and its limits. | Yes: a person looks for one place to see a project. The `page.html` of each build is easy to miss. |
+| 49 | Spark draws no breadboard picture for the amplifier. A build with `max98357a-dfr0954` and `speaker-terminal` on the FireBeetle printed `no breadboard picture: nothing says how to draw Max98357aDfr0954 in Wokwi`. | run in the scratchpad, 2026-11-09 | raised | The text sheet and the other two tabs were written. | Yes: the picture depends on a Wokwi part, but a part with no simulation still has a pin order to draw. |
+| 50 | Spark refuses a chosen I2S pad. With `I2S_BCLK` on D12 the build stopped: `the assigner places the bus, so drop \`pin\``. So spark cannot describe wiring that is already chosen or already on the bench. | second run in the scratchpad, 2026-11-09 | raised | The amplifier wiring stays the hand-made list. No sheet exists for it. | Yes: the pin map needs a way to accept a bus that the person fixed. |
+| 51 | Left alone, spark put the amplifier on other pads: BCLK on D3, LRC on A5, DIN on D12, SD on D11. My temporary file listed no display, and `games/gdi.py:15-19` uses GPIO38 (D3) for the display reset. | `firmware/pins.py` of the first scratchpad run | verified | Not used for wiring. It also shows that a sheet built without the whole board is wrong for this bench. | Yes: a build for one added module needs the parts that are already on the board. |
 | 34 | The second pass of the refuter waits until after Q1, so that one pass covers all changed sections. | this session | acted | Step 8 of the discovery. | No |
 
 ## Time
@@ -85,4 +89,5 @@ The figures come from each agent's completion notice. The first three ran in par
 | corrections and reproduction | Opus | 810 | 31 | 225,071 |
 | refuter, second pass | Opus | 431 | 20 | 153,754 |
 | corrections after the second pass | Sonnet | 272 | 15 | 119,366 |
-| total so far | | | 200 | 1,216,939 |
+| plan check of the tone | Opus | 298 | 15 | 74,145 |
+| total so far | | | 215 | 1,291,084 |
