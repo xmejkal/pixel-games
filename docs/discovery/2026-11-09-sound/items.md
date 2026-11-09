@@ -7,7 +7,7 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 Nothing is filed, and numbers come at filing. The list holds the probe of the riskiest assumption, two desk spikes and the first stories. Q2 to Q5 are answered (D10 to D14). The other slices wait on the queue (Q7, Q6 and Q9 to Q15).
 
 ## Each game's worst single frame gap over 5 to 10 s runs from 40 to 105 ms, and nobody knows if stock I2S plays through that → one bench session with a tone beside the game loop, with no new C
-- type: spike (tests A1, the riskiest, and A2, A3, A9). It serves every option in Q3 and wires the microphone, the round module that matches the INMP441 (3.3 V, SCK GPIO7, WS GPIO8, SD GPIO4) <!-- REQUIRED:item-type -->
+- type: spike (tests A1, the riskiest, and A2, A3, A9). It serves every option in Q3 and wires the microphone, the round module that matches the INMP441 (3.3 V, SCK GPIO8, WS GPIO11, SD GPIO1) <!-- REQUIRED:item-type -->
 - needed by: "do some research and POC for how to best work with sound" (the PO, 2026-11-09, #997) <!-- REQUIRED:needed-by -->
 - value proven by: one table in `bench.md` with the gap count (from the instrument Q9 picks), the timing log, each game's `worst` against run130 and the `reset_cause` log, read against A1's pass line <!-- REQUIRED:value-proven-by -->
 - depends on: D9 (the pass line), Q7 and Q9, the amplifier and the microphone wired on the PO's bench (the microphone's chip marking read first), the bench look in the collection plan. Size S, one session <!-- REQUIRED:depends-on -->
