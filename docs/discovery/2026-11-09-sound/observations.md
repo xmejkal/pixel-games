@@ -31,9 +31,11 @@ This file stays in pixel-games while the other session refactors spark. When tha
 | 19 | I set the appetite to 3 days from a general OK on my proposal. The user lens warns that 3 days can be too short for the fire rounds. | this session, USER-17 to 20 | raised | Brief question Q4 asks how many rounds fit. | No |
 | 20 | A worktree of pixel-games has no engine code until `git submodule update --init --recursive` runs. | this session | acted | I ran it before the lenses started. | No |
 | 21 | The PO's photos show the display on a flat cable to the board's GDI connector. This supports `gdi.py` as the real pin map, and not `pins.py`. | photos, 2026-11-09 | raised | It adds to row 11. `gdi.py` lines 15 to 19 name pins 3, 38, 18, 9 and 21. | Yes: same as row 11. |
-| 22 | The PO wants to use an I2S microphone, but the frame lists microphone input as out of scope. | photos, "the modules I want to use" | raised | I asked the PO what the microphone is for. The brief changes after the refuter ends. | Yes: a frame written before a look at the bench missed a part. |
+| 22 | The PO wants to use an I2S microphone, but the frame lists microphone input as out of scope. | photos, "the modules I want to use" | acted | The PO, 2026-11-09: a game input comes later, and the test instrument is worth a try. The brief changes after the refuter ends. | Yes: a frame written before a look at the bench missed a part. |
 | 23 | The photos show no model name on the microphone. Its pads read SD, VDD, GND, L/R, WS and SCK. The drawer holds 3 of `dfrobot-sen0526`, an I2S microphone, with no part record link. | photos, drawer | raised | The identity stays unproven until the PO names it. | Yes: a drawer item without a part record. |
 | 24 | The photos show no jumper wires to the amplifier or the microphone. The speaker plugs into the amplifier. | photos | raised | The pin list comes before the wiring. | No |
+| 25 | The PO's idea: a microphone and a camera as test instruments on the bench, and perhaps later part of spark. | the PO, 2026-11-09 | acted | Card P731 #1000 holds the PO's words. It is not on the board yet, see row 26. | Yes: P731. |
+| 26 | GitHub refused GraphQL calls with "API rate limit already exceeded for user ID 631808." at 11:48 +0100. The limit is shared with the other session. | this session | raised | `rate_limit` printed a reset at 12:19:16 +0100. I wait for the reset. My 2,000-item board listing used several pages. The share of each session is unknown. | Yes: board readers need a cost limit. |
 
 ## Time
 
