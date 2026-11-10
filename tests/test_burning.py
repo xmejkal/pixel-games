@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 import unittest
+from array import array
 from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -41,6 +42,11 @@ class PhysicsPluginStandIn(plugins.Plugin):
     def fixed_update(self, ms):
         self.steps = ms // 10
         self.step(self.steps)
+
+    @property
+    def out(self):
+        """The plugin's out array as read(): x, y, asleep per body (the test's places and sleepers, now)."""
+        return array("h", [v for i, (x, y) in enumerate(self.places) for v in (x, y, int(i in self.asleep))])
 
     def sleeping(self, i):
         return i in self.asleep

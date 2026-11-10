@@ -11,10 +11,11 @@ the I2S. add_pops(n) queues n pops, and the next render starts them. counts() gi
 - GrainCrackle (P751) is the fire of P750's demo g: a low flame roar (the bed, played in grains) and one bank pop per
   ember, mixed in C by engine/core/fx_grains.c from the same crackle_c.mpy, out of a sample bank (fire_bank.raw, made
   on the Mac by tools/fire_bank.py). No filter, so nothing rings or overflows.
-- FireSound (P753) is GrainCrackle's pops plus smooth noise in integer C, engine/core/fx_noise.c, in the same
-  crackle_c.mpy. follow_bodies sets one whoosh per falling burning body from its airspeed (BurningBodies). The bed
-  of noise, set by follow_field from HeatField.stats, is off (BED = False): the PO heard it as wind. So on Fire,
-  FireSound plays the pops alone, with no grain bed either. On a firmware with no stats it is a GrainCrackle.
+- FireSound (P753) is GrainCrackle's pops plus whooshes: follow_bodies sets one whoosh of smooth noise per falling
+  burning body from its airspeed (BurningBodies), in integer C, engine/core/fx_noise.c, in the same crackle_c.mpy.
+  Later, not MVP: a bed of noise that follow_field sets from HeatField.stats is off (BED = False), as the PO heard
+  it as wind. So on Fire, FireSound plays the pops alone, with no grain bed either. On a firmware with no stats it is
+  a GrainCrackle.
 - SampledCrackle is the naive path on the board, which stays working (D26, the PO chose it on 2026-11-10): Crackle
   renders a few pops once, and a sound.Mixer plays one per frame that has births. No roar, no overlap.
 
@@ -235,8 +236,8 @@ BED_BASE = 6800  # the level of a bed of TOTAL_FULL at the darkest cutoff: rms 0
 FLUTTER, FLUTTER_CAP = 100, 8  # level per row of height's change since the last step, up to 8 rows: at most 800
 WIND_LEVEL, WIND_CAP = 6, 60  # level per unit of |wind|, up to Fire's WIND of 60: at most 360
 BED_MAX = 8000  # the bed's level at most: 6800 + 800 + 360 stay under it
-SAMPLE_RATE = 16000
 # --- MVP (P753) ---
+SAMPLE_RATE = 16000
 # The whooshes (P753): a body's airspeed s is its speed against the air, in px/s. Bodies fall at up to about 1,400 px/s
 # (burning.py's FLARE numbers) and drift at most 120 px/s. All integer math in follow_bodies, tables made once.
 VOICES = 8  # whoosh voices, one per body index (FX_NOISE_VOICES)
@@ -244,9 +245,10 @@ WIND_AIR = 5  # px/s of airspeed per unit of wind: wind 60 gives 300 px/s, a sou
 S2_FLOOR = 100 * 100  # s^2 under this (100 px/s) is silent
 S2_FULL = 2000000  # s^2 at or over this (1,414 px/s) is the loudest whoosh
 WHOOSH_MAX = 3000  # one voice's level at most: 8 voices stay under 24000 of the 32768 (the bed has 8000 of its own)
-CENTRE_LOW, CENTRE_HIGH = 300, 2000  # Hz of the band-pass: s = 0 gets the low one, S2_FULL the high one
+CENTRE_LOW, CENTRE_HIGH = 300, 2000  # Hz of the band-pass: the floor gets the low one, S2_FULL the high one
 S2_SHIFT = 10  # the centre table has one coefficient per 1024 of s^2, so the square root costs no code
 V_CAP = 2047  # px/s: a speed component is cut here, so every square stays under 2^23
+STALE_BLOCKS = 8  # blocks (128 ms) with no follow_bodies call, then every whoosh fades out
 # --- Later, not MVP: the bed works and is tested, but the PO heard every noise bed as wind on the board's speaker
 # (run147, 2026-11-10: "sounds like a lot of wind in the background", and a quiet bed that flaps: "Still wind"). So
 # Fire plays the pops alone. Kept for a wind sound that follows the gusts, or a bed the PO likes later. ---
@@ -254,14 +256,15 @@ BED = False
 
 
 class FireSound(GrainCrackle):
-    """GrainCrackle's pops and a bed of filtered noise that follows the heat field (P753). follow_field(total, height,
-    wind) sets targets in ints and C glides to them over 32 ms: the level follows the total (a darker bed is not
-    quieter, a table of sqrt(CUTOFF_DARK / cutoff) keeps the loudness), plus a flutter from the change of height and a
-    little from |wind|, and the cutoff goes from CUTOFF_BRIGHT to CUTOFF_DARK as the flame grows taller. The tables are
-    made once here, the integer math is in follow_field. With a HeatField that has stats, the grain bed is off (look
-    (0, pop_gain)). With an older one, FireSound is a GrainCrackle and follow_field does nothing. stats=None asks the
-    engine; a test passes True or False. bed=False (BED, the default) keeps the noise bed off, so Fire plays the pops
-    alone."""
+    """GrainCrackle's pops and the whooshes of falling burning bodies (P753). follow_bodies(moves, ms, wind) sets one
+    voice per body in ints, from its airspeed: a faster body is louder and brighter. C glides to the targets over
+    32 ms. The tables are made once here. With no call for STALE_BLOCKS blocks, every whoosh fades out, so a scene
+    that stops calling leaves no stuck sound. With an older HeatField (no stats), FireSound is a GrainCrackle.
+    Later, not MVP: a bed of filtered noise that follows the heat field, set by follow_field(total, height, wind): the
+    level follows the total (a darker bed is not quieter, a table of sqrt(CUTOFF_DARK / cutoff) keeps the loudness),
+    plus a flutter from the change of height and a little from |wind|, and the cutoff goes from CUTOFF_BRIGHT to
+    CUTOFF_DARK as the flame grows taller. With the bed on, the grain bed is off (look (0, pop_gain)). bed=False (BED,
+    the default) keeps it off, so Fire plays the pops alone. stats=None asks the engine, a test passes True or False."""
 
     def __init__(self, seed, look=GRAIN_LOOK, bank_path=BANK_FILE, native=None, engine=None, stats=None, bed=BED):
         if native is None:
@@ -283,15 +286,16 @@ class FireSound(GrainCrackle):
             self.coefs.append(min(16384, int(32768 * (1 - math.exp(-2 * math.pi * cutoff / SAMPLE_RATE)))))
             self.gains.append(int(32768 * math.sqrt(CUTOFF_DARK / cutoff)))
         self.height = None  # the last step's, for the flutter
-        self.level = self.coef = 0  # the bed's targets now, for the probe
+        self.bed_level = self.bed_coef = 0  # the bed's targets now, for the probe
         # --- MVP (P753) --- the whooshes: Q15 2 sin(pi f / 16000) for the centre f of each s^2 >> S2_SHIFT
         self.centres = array("H")
         for k in range((S2_FULL >> S2_SHIFT) + 1):
             f = CENTRE_LOW + (CENTRE_HIGH - CENTRE_LOW) * math.sqrt(k << S2_SHIFT) / math.sqrt(S2_FULL)
             self.centres.append(min(25080, int(32768 * 2 * math.sin(math.pi * min(f, CENTRE_HIGH) / SAMPLE_RATE))))
-        self.whoosh = array("H", bytes(2 * VOICES))  # each voice's level target now, for the tests and the probe
-        self.centre = array("H", [self.centres[0]] * VOICES)  # each voice's centre target now: a fading voice keeps it
+        self.whoosh_levels = array("H", bytes(2 * VOICES))  # each voice's level target now, for the tests and the probe
+        self.centre_coefs = array("H", [self.centres[0]] * VOICES)  # each voice's centre target: a fading voice keeps it
         self.whoosh_level = 0  # the loudest of them
+        self.quiet = 0  # blocks since the last follow_bodies call, counted up to STALE_BLOCKS
 
     def follow_field(self, total, height, wind):
         """--- Later, not MVP: the bed is off, see BED --- The bed's targets from one step's stats and the wind (-60 to 60)."""
@@ -301,15 +305,16 @@ class FireSound(GrainCrackle):
         base = (min(total, TOTAL_FULL) >> 4) * BED_BASE // (TOTAL_FULL >> 4)  # the shift keeps the product under 2^30
         flutter = 0 if self.height is None else min(abs(height - self.height), FLUTTER_CAP) * FLUTTER
         self.height = height
-        self.level = min(BED_MAX, (base * self.gains[ci] >> 15) + flutter + min(abs(wind), WIND_CAP) * WIND_LEVEL)
-        self.coef = self.coefs[ci]
-        self.c.noise_bed(self.noise, self.level, self.coef)
+        self.bed_level = min(BED_MAX, (base * self.gains[ci] >> 15) + flutter + min(abs(wind), WIND_CAP) * WIND_LEVEL)
+        self.bed_coef = self.coefs[ci]
+        self.c.noise_bed(self.noise, self.bed_level, self.bed_coef)
 
     def follow_bodies(self, moves, ms, wind):
         """--- MVP (P753) --- The whooshes' targets from one frame: moves holds dx, dy in px per body (body i is voice i),
         ms is the physics time behind them and wind is the wind now (-60 to 60). A body's airspeed is its velocity
         against the air, which the wind moves at WIND_AIR px/s a unit. A body that does not move is silent, and ms 0
         changes nothing."""
+        self.quiet = 0
         if ms <= 0:
             return
         loudest = 0
@@ -322,14 +327,21 @@ class FireSound(GrainCrackle):
                 s2 = min(vx * vx + vy * vy, S2_FULL)
                 if s2 >= S2_FLOOR:
                     level = (s2 >> 4) * WHOOSH_MAX // (S2_FULL >> 4)  # the shift keeps the product under 2^30
-                    self.centre[i] = self.centres[s2 >> S2_SHIFT]
-            self.c.noise_whoosh(self.noise, i, level, self.centre[i])
-            self.whoosh[i] = level
+                    self.centre_coefs[i] = self.centres[s2 >> S2_SHIFT]
+            self.c.noise_whoosh(self.noise, i, level, self.centre_coefs[i])
+            self.whoosh_levels[i] = level
             loudest = max(loudest, level)
         self.whoosh_level = loudest
 
     def render(self, buf):
         super().render(buf)
+        if self.quiet < STALE_BLOCKS:
+            self.quiet += 1
+            if self.quiet == STALE_BLOCKS:  # no follow_bodies for 128 ms: fade every whoosh out, once
+                for i in range(VOICES):
+                    self.c.noise_whoosh(self.noise, i, 0, self.centre_coefs[i])
+                    self.whoosh_levels[i] = 0
+                self.whoosh_level = 0
         self.c.noise_mix(self.noise, buf)  # an idle noise (no bed, no whoosh) leaves buf as it is
 
 

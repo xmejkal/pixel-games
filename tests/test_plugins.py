@@ -127,6 +127,21 @@ class PhysicsPluginTest(unittest.TestCase):
         self.assertEqual(0, plugin.events())
         self.assertGreater(plugin.step_us, 0)
 
+    def test_steps_counts_the_last_fixed_update_and_only_the_sleeping_body_sleeps(self):
+        """--- MVP (P753) --- the numbers burning.follow_bodies reads: steps for the ms, sleeping(i) from the last read."""
+        plugin = plugins.PhysicsPlugin(2, False)
+        plugin.spawn(0, 10.0, 0.0, 0.0, 0.0, 200.0)  # body 1 is never spawned: asleep
+        self.assertEqual(0, plugin.steps)
+        plugin.fixed_update(3 * plugins.STEP_MS)
+        self.assertEqual(3, plugin.steps)
+        plugin.fixed_update(plugins.STEP_MS - 1)
+        self.assertEqual(0, plugin.steps)
+        plugin.fixed_update(plugins.STEP_MS)
+        self.assertEqual(1, plugin.steps)
+        plugin.read(lambda i: None)
+        self.assertEqual((False, True), (plugin.sleeping(0), plugin.sleeping(1)))
+        self.assertGreater(plugin.place(0)[1], 0)  # body 0 has fallen
+
 
 class FieldStandIn:
     def __init__(self):

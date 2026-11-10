@@ -42,6 +42,7 @@ if [ -n "$LOOK" ]; then
 else
     cp "$ROOT/games/crackle.py" "$CRACKLE_PY"
 fi
+echo "crackle_c.mpy sha256 $(shasum -a 256 "$ROOT/engine/natmod/crackle/crackle_c.mpy" | cut -d' ' -f1), engine $(git -C "$ROOT/engine" rev-parse --short HEAD)"
 mpremote cp "$ROOT/engine/natmod/crackle/crackle_c.mpy" :crackle_c.mpy + cp "$CRACKLE_PY" :crackle.py \
     + cp "$ROOT/games/fire.py" :fire.py + cp "$ROOT/games/sound.py" :sound.py
 if [ "$GAME" = BurningBodies ]; then

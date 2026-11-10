@@ -61,7 +61,7 @@ import uctypes
 from micropython import const
 from machine import I2S, Pin
 
-GAME = "Fire"  # Fire, BallPit or Road: a name in app
+GAME = "Fire"  # Fire, BallPit, Road or BurningBodies: a name in app
 TONE = 1  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3), or measures the delays (HITS)
 HITS = 0  # "auto": a hit every 2 s from 4 s on, "press": a hit at each BOOT press, 0: the tone (P746)
@@ -324,8 +324,8 @@ class TimedCrackle:
             name, render_max, median(pops) // 1000, max(pops or [0]) // 1000, len(pops), self.crackle.counts()[2]))
         if hasattr(self.crackle, "follow_field") or hasattr(self.crackle, "follow_bodies"):  # P753
             print("follow %s follow_field %d follow_bodies %d level %d coef %d whoosh %d" % (
-                name, self.field_calls, self.bodies_calls, getattr(self.crackle, "level", 0),
-                getattr(self.crackle, "coef", 0), getattr(self.crackle, "whoosh_level", 0)))
+                name, self.field_calls, self.bodies_calls, getattr(self.crackle, "bed_level", 0),
+                getattr(self.crackle, "bed_coef", 0), getattr(self.crackle, "whoosh_level", 0)))
             self.field_calls = self.bodies_calls = 0
 
 

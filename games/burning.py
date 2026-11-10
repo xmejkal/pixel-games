@@ -138,12 +138,13 @@ class BurningBodies(Fire):
         if not hasattr(crackle, "follow_bodies"):
             return
         plugin, moves, prev, has_prev = self.physics_plugin, self.moves, self.prev, self.has_prev
+        out = plugin.out  # x, y, asleep per body, read in place: no tuple a body
         for i in range(N):
-            if plugin.sleeping(i):
+            if out[3 * i + 2]:
                 moves[2 * i] = moves[2 * i + 1] = 0
                 has_prev[i] = False  # the rest place is stale once the body drops
                 continue
-            x, y = plugin.place(i)
+            x, y = out[3 * i], out[3 * i + 1]
             if has_prev[i]:
                 moves[2 * i], moves[2 * i + 1] = x - prev[2 * i], y - prev[2 * i + 1]
             else:
