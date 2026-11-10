@@ -98,8 +98,11 @@ class Engine:
                 engine.filters.append(mag_filter)
                 lib.fx_fire_set_filter(ctypes.byref(self.f), mag_filter)
 
-            def take_births(self):  # P747
-                return lib.fx_fire_take_births(ctypes.byref(self.f))
+            def take_births(self, rises=None):  # P747, P751: the binding's, with rises an array("b") or None
+                if rises is None:
+                    return lib.fx_fire_take_births(ctypes.byref(self.f), None, 0)
+                return lib.fx_fire_take_births(ctypes.byref(self.f), ctypes.c_void_p(rises.buffer_info()[0]),
+                                               len(rises))
 
             def set_base(self, on):  # P596
                 lib.fx_fire_set_base(ctypes.byref(self.f), 1 if on else 0)
