@@ -713,3 +713,39 @@ The PO's looks (2026-11-06: "shorter", "even shorter", "grow with speed", "looks
 - Round 7 (`p651-sheets/round7.png`, five versions A to E; the PO picked E, 2026-11-06: "still not great, but we can tune it later"): the burn narrower at the runner (`FIRE_RADIUS` 2, `FIRE_RADIUS_JIT` 1, was 4 and 2), more broken (`FIRE_FADE` 56, sway 1 (sway 2 crashed the board's binding; fx_fire.c reads sway as on or off, so the picture is the same), fast 200, embers 30, was 48, 1, 128, 0), no dark rim (alpha ramp `FIRE_CLEAR` 30 to `FIRE_SOLID` 150, was 10 to 150; the palette's low end orange-red 200, 60, 10, was dark red 90, 15, 10). Not yet measured on the board.
 - The PO plays it (feel slice, not yet). The Runner runs on the board after the last measurement.
 - Set `OBSTACLE_GAP` in `games/arcade.py` back to 1 before the merge (it is 1 at the merge, and 3 while the flame is tuned, so the PO jumps less).
+
+## P733 (#1003), 2026-11-10: a 440 Hz tone beside the games, through stock `machine.I2S`
+
+The spike tests A1 of the sound discovery (`docs/discovery/2026-11-09-sound/` on the branch `p729-sound-discovery`):
+stock `machine.I2S`, refilled once per frame by Python, plays with no gap and costs the games no frame time. The
+DFR0954 amplifier is on D12, D11, D10 and A2. The INMP441-type microphone is on A3, A5 and A4, L/R on GND. The
+probes are `probe733.py` (step 1) and `probe733_games.py` (steps 2 and 3). Each run is 120 s with a game restart every
+30 s (the PO shortened the plan's 300 s). 16 kHz mono, `ibuf=4096` (8 DMA buffers of 256 samples, a ring of 128 ms),
+the tone at 10000 of 32767.
+
+| run | game | tone | fps (mean of 20) | worst frame, median and max | late refills | breaks in the tone |
+| --- | --- | --- | --- | --- | --- | --- |
+| `run140-p733-games.log` entry 10 | Fire | yes | 24.05 | 50, 56 ms | 0 | none (`short` flat) |
+| entry 11 | Fire | no | 24.05 | 53, 56 ms | | |
+| entry 12 | BallPit | yes | 24.05 | 60, 73 ms | 0 | none (`short` flat) |
+| entry 13 | BallPit | no | 24.00 | 60, 77 ms | | |
+| entry 14 | Road | yes | 20.70 | 103, 116 ms | 4 | about 3 (`short` rose about 700 samples) |
+| entry 15 | Road | no | 20.55 | 108, 127 ms | | |
+| `run141-p733-mic.log` entry 16 | Fire | yes, microphone | 24.00 | 56, 62 ms | 0 | 0 heard |
+| entry 17 | BallPit | yes, microphone | 24.00 | 63, 81 ms | 0 | 0 heard |
+| entry 18 | Road | yes, microphone | 19.60 | 105, 122 ms | 7 | 3 heard, 12 ms each, at 4.9, 10.3 and 67.1 s |
+
+- Step 1 (`run139-p733-tone.log`): the PO heard the tone. 160,000 B in 5 s, the clock rate. Beep, silence, beep with SD
+  (A2) low in the middle: the PO heard the middle silent, so A2 shuts the amplifier down while the clocks run.
+- The frame-time line of D23 passes in all three games: the worst frame with the tone is within 5 ms of the control
+  run, or lower, and the mean fps is within 1 fps. Each write took under 1 ms.
+- The "no gaps at all" line of D9 fails in Road. Its own slow frames, 116 to 127 ms, are longer than the 112 ms that
+  the ring holds after a refill. A game restart costs 11 to 20 ms in the hook, so it is not the cause. The microphone's
+  3 breaks and the rise of `short` (3 buffers of 256 samples) agree. The phone recording of D18 did not run.
+- The first refill waited for room (blocking writes and a lead of 96 ms): each refill waited about 40 ms, and Fire fell
+  to 16 to 17 fps (`run140` entry 2). A `select.poll()` switch makes the writes return at once with what fits.
+- The microphone heard the tone at 3000 no louder than the quiet room (1 to 2 units), and at 10000 at 16 to 21. It
+  settles for about 1.3 s after it opens, and its constant offset counted as noise until the block mean left it out.
+  Voice and claps read 25 to 154 (`run141`, the diagnosis runs 141b to 141d).
+- Open for the design: a larger ring (8192 B, 256 ms, over D9's limit, and a sound effect up to 256 ms late), a refill
+  from C outside the game loop, or Road frames under 112 ms.

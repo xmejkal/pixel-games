@@ -9,7 +9,7 @@ replaces App.frame with a hook that refills the tone after each frame, switches 
 
 ibuf=4096 gives 8 DMA buffers of 256 samples (16 ms), a ring of 128 ms (machine_i2s.c:152). A poll switches the
 writes to not waiting (machine_i2s.c:239): each refill writes what fits in the free buffers and returns at once.
-The first version kept a lead of 96 ms with waiting writes, and each refill waited about 40 ms (run132, entry 2).
+The first version kept a lead of 96 ms with waiting writes, and each refill waited about 40 ms (run140, entry 2).
 A refill more than 112 ms after the last one can find the ring empty: that is a `late` count. `short` is the samples
 the clock expected minus the samples written. It jitters by up to one buffer (256 samples), so only a rise between
 reports by more than that means the speaker played silence.
@@ -41,7 +41,7 @@ RATE = 16000
 CYCLE = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the wave has no seam
 RING = 2048  # samples in the 8 DMA buffers of 256
 LATE_US = 112_000  # 7 buffers: a refill later than this can find the ring empty
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 
 
 # --- MVP ---
@@ -115,9 +115,9 @@ class Tone:
 BLOCK = const(64)  # samples per block mean, 1 << BLOCK_SHIFT: 4 ms, so any gap of 8 ms or more holds one whole quiet block
 BLOCK_SHIFT = const(6)
 TONE_OPEN_MS = 2500  # the tone opens this long after the microphone
-FLOOR_MS = (1500, 2500)  # the room, after the microphone settles (about 1.3 s, run133), before the tone opens
+FLOOR_MS = (1500, 2500)  # the room, after the microphone settles (about 1.3 s, run141), before the tone opens
 TONE_MS = (3000, 4000)  # the tone: it starts one ring (128 ms) after it opens, after a frame and the click
-TONE_MIN = 10  # the tone at 10000 read 16 to 20, the quiet room 1 to 2 (run133)
+TONE_MIN = 10  # the tone at 10000 read 16 to 20, the quiet room 1 to 2 (run141)
 QUIET = 0.3  # a block is quiet below floor + QUIET x (tone_mean - floor)
 BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or drop buffers without a report
 
@@ -125,7 +125,7 @@ BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or 
 @micropython.viper
 def block_mean(buf, offset: int) -> int:
     """The mean |x - m| of BLOCK int16 samples from offset (in samples), with m their mean, so the microphone's
-    constant offset does not count as sound (run133e). ptr16 reads unsigned."""
+    constant offset does not count as sound (run141e). ptr16 reads unsigned."""
     p = ptr16(buf)  # noqa: F821, a viper built-in
     s = 0
     i = offset
