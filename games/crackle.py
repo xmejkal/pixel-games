@@ -12,7 +12,7 @@ dropped. A refill callback between two bytecodes of add_pops so loses no pop and
 
 # --- MVP (P747) ---
 # roar_shift, roar_gain, pop_min, pop_max, decay_min, decay_max, tails, tail_gap, gain: see fx_crackle_init in fx_crackle.h
-CRACKLE_LOOK = (4, 48, 6000, 12000, 28400, 31600, 3, 4000, 224)
+CRACKLE_LOOK = (6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224)  # the PO chose the deep roar, try B (run145d)
 SLOTS = 8  # FX_CRACKLE_SLOTS
 PEAK = 32767  # FX_CRACKLE_PEAK
 
