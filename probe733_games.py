@@ -349,6 +349,8 @@ class Probe:
         def pressing(now_ms):
             game = box.game
             pressed = update(now_ms)  # a real press: the probe's own press below is not a hit
+            if pressed and HITS:
+                print("press %d" % now_ms)  # before any check: run143 entries 6 and 7 counted no hit
             if HITS == "press" and pressed or HITS == "auto" and self.due(now_ms):
                 self.hit()
             return pressed or (game.state == gfx.OVER and game.age >= game.OVER_MS)
