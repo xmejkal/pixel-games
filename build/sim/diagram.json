@@ -23,12 +23,39 @@
       "top": 96,
       "left": 182.4,
       "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "inmp441i2smicroundpulldownsd",
+      "top": 201.6,
+      "left": 182.4,
+      "attrs": {
+        "value": "100000"
+      }
     }
   ],
   "connections": [
     [
+      "mcu:4",
+      "joystickmodulemh:HORZ",
+      "green",
+      []
+    ],
+    [
+      "mcu:5",
+      "joystickmodulemh:VERT",
+      "green",
+      []
+    ],
+    [
       "mcu:7",
       "joystickmodulemh:SEL",
+      "green",
+      []
+    ],
+    [
+      "mcu:10",
+      "inmp441i2smicroundpulldownsd:1",
       "green",
       []
     ],
@@ -81,15 +108,9 @@
       []
     ],
     [
-      "mcu:4",
-      "joystickmodulemh:HORZ",
-      "green",
-      []
-    ],
-    [
-      "mcu:5",
-      "joystickmodulemh:VERT",
-      "green",
+      "mcu:GND.3",
+      "inmp441i2smicroundpulldownsd:2",
+      "black",
       []
     ],
     [

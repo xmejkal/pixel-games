@@ -23,5 +23,20 @@
       "GND": "GND"
     },
     "wokwiType": "wokwi-ky-040"
+  },
+  "Inmp441I2sMicRoundPulldownSD": {
+    "wokwiType": "wokwi-resistor",
+    "attrs": {
+      "value": "100000"
+    },
+    "pins": {
+      "anode": "1",
+      "cathode": "2",
+      "pin1": "1",
+      "pin2": "2"
+    }
+  },
+  "Inmp441I2sMicRound": {
+    "skip": "no Wokwi stand-in was looked for: a simulated microphone gives no sound to measure, and the bench reads the real one (pixel-games run141, run144)"
   }
 }

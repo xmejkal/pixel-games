@@ -1,0 +1,270 @@
+{
+  "schema": 1,
+  "id": "inmp441-i2s-mic-round",
+  "name": "Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread",
+  "kind": "microphone",
+  "function": [
+    {
+      "does": "input",
+      "what": "digital MEMS microphone: one I2S data line, 24-bit samples"
+    }
+  ],
+  "//": "WHICH BOARD THIS IS TRUE OF (W5). The round black board, about 14 mm across, with two rows of three pads, a microphone icon and a plated sound-port hole at the centre of the PAD SIDE, silkscreen SCK WS L/R in one row and SD VDD GND in the other (photo docs/photos/inmp441-pad-side-2026-11-10.jpg in the pixel-p758 project, 2026-11-10, board soldered to header pins in a breadboard). Sold under many names as 'INMP441 I2S microphone module'; several carriers share that name, so nothing here is claimed for a round board with other labels. ONE FACE SEEN ONLY: the chip, any resistors, capacitors or regulator are on the other face, which cannot be photographed while the board sits in the breadboard. So the chip identity is read from silkscreen and shape, not from a marking (unverified). Every chip fact below is from the chip maker's datasheet DS-INMP441-00 Rev 1.1 (InvenSense / TDK), read from a CERN course copy of it because TDK's own site did not serve the PDF (a mirror, not diffed against TDK's current file). The chip is marked NRND/obsolete by distributors. Facts the board adds (pull-downs, a regulator, whether CHIPEN is tied high) are not known.",
+  "also_known_as": [
+    "INMP441 I2S microphone module",
+    "INMP441 MEMS microphone breakout"
+  ],
+  "vendor": null,
+  "part_number": null,
+  "sku": null,
+  "sources": [
+    "https://microcontroller-course.web.cern.ch/Project_Material/resources/INMP441.pdf"
+  ],
+  "needs": [
+    {
+      "signal": "MIC_SCK",
+      "pin": "SCK",
+      "direction": "in",
+      "note": "bit clock from the host, which is the I2S master; the chip is a slave. 0.5 to 3.2 MHz Named MIC_* with no bus: spark refuses two parts that both ask for I2S_BCLK, and a bus signal takes no pinned pad. A host with one full-duplex I2S port can share the amplifier's bit clock and word select instead."
+    },
+    {
+      "signal": "MIC_WS",
+      "pin": "WS",
+      "direction": "in",
+      "note": "word select from the host; 7.8 to 50 kHz; exactly 64 SCK cycles per WS period"
+    },
+    {
+      "signal": "MIC_SD",
+      "pin": "SD",
+      "direction": "out",
+      "note": "serial data FROM the module, into the host's I2S data-in pin; tri-stated in the half-frame the chip does not use"
+    }
+  ],
+  "power": [
+    {
+      "pin": "VDD",
+      "rail": "logic",
+      "direction": "in",
+      "draws": "supply_current_ma",
+      "note": "the host's 3V3. The chip's absolute maximum is 3.63 V: never 5 V"
+    },
+    {
+      "pin": "GND",
+      "rail": "ground",
+      "direction": "in"
+    }
+  ],
+  "unused_pins": [
+    {
+      "pin": "LR",
+      "printed": "L/R",
+      "note": "NOT unused: a strap that must be tied, never left floating. Tie to GND for the LEFT slot of the I2S frame, to VDD for the RIGHT slot. No host GPIO is needed"
+    }
+  ],
+  "pin_order": [
+    "LR",
+    "WS",
+    "SCK",
+    "SD",
+    "VDD",
+    "GND"
+  ],
+  "pin_order_proof": {
+    "verified": false,
+    "source": "Read from the pad-side photo, seen from the pad side with the sound-port hole facing the viewer. The silkscreen row SCK WS L/R is printed upside down relative to the row SD VDD GND, and in the photo the pads sit above SCK, WS, L/R (left to right) and below SD, VDD, GND (left to right), so SCK is opposite SD, WS opposite VDD, L/R opposite GND. Pad 1..6 runs counter-clockwise from the top right, as the DFR0954 record does: the SCK row right to left (L/R printed, wiring name LR; then WS, SCK), then the SD row left to right (SD, VDD, GND). One face seen, one photo, taken at an angle; the pad labels are the only evidence. Confirm on the bench: with a meter, check VDD to GND for a short before power, and that pad GND is continuous with the GND pad of the host; or read the labels on the board itself in good light before wiring"
+  },
+  "footprint": "dip6",
+  "//footprint": "Two rows of three pads at 2.54 mm pitch along the row (read from the photo against the breadboard grid). The distance BETWEEN the rows is estimated at about 3 holes, 7.62 mm (dip6's default), and was not measured: measure it on the board before a PCB footprint is drawn. dip6 numbers pads down one row and back up the other, which matches pin_order above only if the rows are laid as columns.",
+  "body_mm": {
+    "width": 14.0,
+    "height": 14.0,
+    "verified": false,
+    "source": "estimated from the photo against the breadboard's 2.54 mm hole grid (no ruler in frame): a round board about 14 mm across. Board thickness and the height of the header pins are not known",
+    "why_it_matters": "every placement is arranged around it; a size from a photo is good to a millimetre or two. Measure the diameter with calipers"
+  },
+  "facts": {
+    "chip_identity": {
+      "value": "INMP441",
+      "verified": false,
+      "source": "read from the photo: silkscreen labels SCK WS L/R SD VDD GND and the round shape match the breakout sold as 'INMP441 I2S microphone module'. No chip marking is visible on the pad side and the chip is on the face that was not photographed",
+      "why_it_matters": "every chip fact below is the INMP441's; another I2S microphone (SPH0645, ICS-43434) uses the same six labels with a different word format. Read the marking on the chip, on the face opposite the pads, with a loupe"
+    },
+    "supply_range_v": {
+      "value": {
+        "min": 1.62,
+        "max": 3.63
+      },
+      "verified": false,
+      "source": "the chip's supply range, datasheet DS-INMP441-00 Rev 1.1, Table 1 (Supply Voltage VDD, 1.62 to 3.63 V), page 4. Unverified for the BOARD: a breakout may carry a regulator, and none can be seen on the pad side",
+      "why_it_matters": "decides whether the pad may be fed 5 V. Assume not: feed 3V3. Look at the other face for a 3-pin regulator",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Table 1, page 4"
+      }
+    },
+    "chip_vdd_abs_max_v": {
+      "value": 3.63,
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, Table 4 Absolute Maximum Ratings: Supply Voltage (VDD) -0.3 V to +3.63 V; digital pins -0.3 V to VDD + 0.3 V or 3.63 V, whichever is less. Stress above this may damage the chip",
+      "why_it_matters": "5 V on VDD, or on SCK, WS or L/R, exceeds the chip's rating if the board has no regulator",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Table 4, page 6"
+      }
+    },
+    "supply_current_ma": {
+      "value": 2.5,
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, Table 1, Normal Mode at VDD = 3.3 V: typ 2.2 mA, max 2.5 mA (chip only; the board's own parts are not known). Standby max 0.8 mA, power-down max 4.5 uA, but the module has no CHIPEN pad, so only normal mode and standby (SCK stopped) are reachable",
+      "why_it_matters": "summed against the 3V3 rail by the power check",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Table 1, page 4"
+      }
+    },
+    "ws_frequency_khz": {
+      "value": {
+        "min": 7.8,
+        "max": 50
+      },
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, Table 3, fWS WS frequency 7.8 to 50 kHz",
+      "why_it_matters": "the sample rate the firmware may ask of the I2S peripheral",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Table 3, page 5"
+      }
+    },
+    "sck_frequency_mhz": {
+      "value": {
+        "min": 0.5,
+        "max": 3.2
+      },
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, Table 3, fSCK 0.5 to 3.2 MHz",
+      "why_it_matters": "with 64 SCK cycles per frame this caps WS at 50 kHz",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Table 3, page 5"
+      }
+    },
+    "sck_cycles_per_ws_frame": {
+      "value": 64,
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, I2S Data Interface: 'There must be 64 SCK cycles in each WS stereo frame, or 32 SCK cycles per data-word' (fSCK = 64 x fWS)",
+      "why_it_matters": "the host's I2S slots must be 32 bits wide, not 16; a 16-bit slot clocks 32 cycles per frame and the chip is out of spec",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "I2S Data Interface, page 11"
+      }
+    },
+    "data_word_bits": {
+      "value": 24,
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, I2S Data Interface: 24 bits per channel, I2S, two's complement, MSB first, the MSB delayed one SCK cycle from the start of each half-frame, in a 32-bit slot",
+      "why_it_matters": "the firmware reads 32-bit words and shifts them (the 24 bits are the top of the word, the low 8 are zero); the sign is bit 31",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "I2S Data Interface, page 11"
+      }
+    },
+    "lr_select": {
+      "value": {
+        "low": "left",
+        "high": "right"
+      },
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, Table 6, pin 4 L/R: 'When set low, the microphone outputs its signal in the left channel of the I2S frame. When set high, the microphone outputs its signal in the right channel.'",
+      "why_it_matters": "decides which half of the WS frame carries the samples; the other half reads zero because SD is tri-stated",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Table 6, page 8"
+      }
+    },
+    "sd_tristated": {
+      "value": true,
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, Table 6 pin 2 and I2S Data Interface: SD tri-states when not actively driving its output channel, immediately after the LSB",
+      "why_it_matters": "the idle half-frame floats unless something pulls the line down: a host reading both slots sees noise in the unused one",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Table 6, page 8; I2S Data Interface, page 11"
+      }
+    },
+    "sd_pulldown_ohms": {
+      "value": 100000,
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1: the datasheet asks for a 100 kOhm pull-down on the SD trace, shown in Figure 7 (a figure for a stereo pair; the text says 100 k is sufficient)",
+      "why_it_matters": "a floating SD in the idle half-frame; this is the datasheet's request for the TRACE. Whether the board carries its own is not known (other face unseen)",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Table 6, page 8; Figure 7, page 11"
+      }
+    },
+    "startup_sck_cycles": {
+      "value": 262144,
+      "verified": true,
+      "source": "DS-INMP441-00 Rev 1.1, Theory of Operation: the output is zero for the first 2^18 SCK cycles after power-up, 85 ms at SCK = 3.072 MHz. Standby to normal takes 2^14 cycles (5 ms at 3.072 MHz)",
+      "why_it_matters": "the first samples after the clock starts are zero; discard them. The time scales with the SCK frequency, so slower SCK waits longer",
+      "cites": {
+        "document": "inmp441-ds-inmp441-00-rev1-1",
+        "at": "Theory of Operation, Power Management and Startup, page 10"
+      }
+    },
+    "board_sd_pulldown_and_lr_pull_and_decoupling": {
+      "value": null,
+      "verified": false,
+      "source": "the chip, its resistors and its capacitors are on the face of the board that was not photographed; the pad side shows only pads, silkscreen and the sound-port hole",
+      "why_it_matters": "whether L/R has its own pull (bench has L/R wired to GND, so this record cannot say what it floats to), whether SD has a pull-down, and whether CHIPEN is tied high (the pad does not exist on the six; the bench says the microphone runs). Photograph the other face out of the breadboard, or measure L/R to GND and SD to GND with the power off"
+    },
+    "bench_works_on_3v3_firebeetle2_esp32s3": {
+      "value": true,
+      "verified": false,
+      "source": "bench, pixel-games run141 and run144, 2026-11-10, as reported to this research run by the person's session; not seen by it",
+      "why_it_matters": "the board runs from the FireBeetle 2 ESP32-S3's 3V3; it supports 3V3 but proves nothing about 5 V"
+    },
+    "bench_rx_words_32bit_carry_24bits": {
+      "value": true,
+      "verified": false,
+      "source": "bench, pixel-games run141 and run144, 2026-11-10, as reported; agrees with the datasheet's 32-SCK data word carrying 24 data bits",
+      "why_it_matters": "the firmware's shift is the datasheet's, not a bench discovery"
+    },
+    "bench_lr_wired_to_gnd": {
+      "value": true,
+      "verified": false,
+      "source": "bench, pixel-games run141 and run144, 2026-11-10, as reported; with L/R low the datasheet puts the samples in the LEFT slot",
+      "why_it_matters": "the firmware reads the left slot with this wiring"
+    }
+  },
+  "host_parts": [
+    {
+      "kind": "pulldown",
+      "pin": "SD",
+      "ohms": 100000,
+      "why": "the datasheet asks for it so that SD does not float in the half-frame the chip does not drive; whether the board has its own is unknown (other face unseen). A host that reads only the slot L/R selects may ignore the other, then the pull-down does not matter"
+    }
+  ],
+  "host_requirements": [
+    "Feed VDD from the host's 3V3 and never from 5 V or VBUS: the chip's absolute maximum on VDD is 3.63 V and on the digital pins VDD + 0.3 V, and no regulator can be seen on the pad side of this board (the other face was not seen).",
+    "L/R must be tied: to GND the samples come in the LEFT slot, to VDD in the RIGHT slot. Do not leave it floating; the slot is undefined.",
+    "The host is the I2S master and must clock SCK at exactly 64 times WS (32-bit slots, both channels), SCK 0.5 to 3.2 MHz, WS 7.8 to 50 kHz. Read 32-bit words: the 24 bits are the top of each word, two's complement.",
+    "The first 2^18 SCK cycles after power-up (85 ms at 3.072 MHz) read zero; drop those samples.",
+    "SD floats in the half-frame the chip does not use. Read only the slot that L/R selects, or add the datasheet's 100 kOhm pull-down to GND on SD.",
+    "Do not leave SCK and WS running while VDD is off: the datasheet warns that it continuously turns on the ESD diodes and may affect the chip's long-term reliability.",
+    "The sound port is the small plated hole at the centre of the PAD SIDE: keep it clear of dust, tape and a breadboard surface pressed against it, or the sensitivity drops.",
+    "Pad order and the identity of the chip rest on one photo of one face. Look at the other face before the pad order is trusted for a PCB footprint."
+  ],
+  "documents": {
+    "inmp441-ds-inmp441-00-rev1-1": {
+      "url": "https://microcontroller-course.web.cern.ch/Project_Material/resources/INMP441.pdf",
+      "sha256": "ddcc8ac55f9ff15e93760b5d01814bccbef0cebbb3857e0fb3954b2b4973d150",
+      "file": "inmp441-ds-inmp441-00-rev1.1.pdf",
+      "retrieved": "2026-11-10",
+      "title": "InvenSense INMP441, Omnidirectional Microphone with Bottom Port and I2S Digital Output, DS-INMP441-00 Revision 1.1 (21 pages); a CERN course's copy of the maker's datasheet",
+      "version": "Rev 1.1"
+    }
+  },
+  "simulation": {
+    "skip": "no Wokwi stand-in was looked for: a simulated microphone gives no sound to measure, and the bench reads the real one (pixel-games run141, run144)"
+  }
+}

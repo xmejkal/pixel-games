@@ -7,6 +7,7 @@ A scenario passing over any of these proves what the FIRMWARE did, and nothing a
 the hardware the stand-in replaced or the board's part that Wokwi lacks.
 
 - **Cjmcu111RotaryEncoder** — Wokwi's KY-040: it adds an SW pin this board does not bring out, and its CLK and DT carry pull-ups to VCC that this board may not have. A pass here does not prove the lines idle high on the bench
+- **Inmp441I2sMicRound** — not simulated at all: no Wokwi stand-in was looked for: a simulated microphone gives no sound to measure, and the bench reads the real one (pixel-games run141, run144)
 - **JoystickModuleMh** — Wokwi's analog joystick. VRX mapped to HORZ and VRY to VERT by name only; the real board's axis directions are unmeasured.
 - **Max98357aDfr0954** — not simulated at all: no Wokwi part for the I2S amplifier; cues are visible in the serial log
 - **SpeakerTerminal** — not simulated at all: a terminal is wiring, not a part to simulate; the amplifier it hangs off has no Wokwi part either, and no sound reaches the simulation

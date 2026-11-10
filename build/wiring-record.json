@@ -77,6 +77,21 @@
   },
   {
    "key": [
+    "place",
+    "Inmp441I2sMicRound"
+   ],
+   "anchor": null,
+   "kind": "place",
+   "source": "Inmp441I2sMicRound",
+   "to": "",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
     "board",
     "board 3V3"
    ],
@@ -87,6 +102,25 @@
    ],
    "kind": "jumper",
    "source": "board 3V3",
+   "to": "the row of Cjmcu111RotaryEncoder VCC",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "part",
+    "Inmp441I2sMicRound VDD"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder VCC (the pad labelled VCC, next to GND)"
+   ],
+   "kind": "jumper",
+   "source": "the row of Inmp441I2sMicRound VDD",
    "to": "the row of Cjmcu111RotaryEncoder VCC",
    "tag": "",
    "value": "",
@@ -192,6 +226,83 @@
   {
    "key": [
     "board",
+    "board A3"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Inmp441I2sMicRound SCK"
+   ],
+   "kind": "jumper",
+   "source": "board A3",
+   "to": "the row of Inmp441I2sMicRound SCK",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board A4"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Inmp441I2sMicRound SD"
+   ],
+   "kind": "jumper",
+   "source": "board A4",
+   "to": "the row of Inmp441I2sMicRound SD",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "resistor",
+    "pull-down on Inmp441I2sMicRound SD",
+    "1"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Inmp441I2sMicRound SD"
+   ],
+   "kind": "leg",
+   "source": "R1 end 1 (pull-down on Inmp441I2sMicRound SD)",
+   "to": "the row of Inmp441I2sMicRound SD",
+   "tag": "R1",
+   "value": "100k\u03a9",
+   "job": "pull-down on Inmp441I2sMicRound SD",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board A5"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Inmp441I2sMicRound WS"
+   ],
+   "kind": "jumper",
+   "source": "board A5",
+   "to": "the row of Inmp441I2sMicRound WS",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
     "board D5"
    ],
    "anchor": [
@@ -271,13 +382,48 @@
     "board GND"
    ],
    "anchor": [
-    "row",
-    "part",
-    "Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor)"
+    "rail",
+    "GND"
    ],
    "kind": "jumper",
    "source": "board GND",
-   "to": "the row of Cjmcu111RotaryEncoder GND",
+   "to": "the GND rail",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": "GND"
+  },
+  {
+   "key": [
+    "part",
+    "Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor)"
+   ],
+   "anchor": [
+    "rail",
+    "GND"
+   ],
+   "kind": "jumper",
+   "source": "the row of Cjmcu111RotaryEncoder GND",
+   "to": "the GND rail",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "part",
+    "Inmp441I2sMicRound GND"
+   ],
+   "anchor": [
+    "rail",
+    "GND"
+   ],
+   "kind": "jumper",
+   "source": "the row of Inmp441I2sMicRound GND",
+   "to": "the GND rail",
    "tag": "",
    "value": "",
    "job": "",
@@ -290,13 +436,12 @@
     "JoystickModuleMh GND (the header pin at the end labelled GND)"
    ],
    "anchor": [
-    "row",
-    "part",
-    "Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor)"
+    "rail",
+    "GND"
    ],
    "kind": "jumper",
    "source": "the row of JoystickModuleMh GND",
-   "to": "the row of Cjmcu111RotaryEncoder GND",
+   "to": "the GND rail",
    "tag": "",
    "value": "",
    "job": "",
@@ -309,16 +454,34 @@
     "Max98357aDfr0954 GND"
    ],
    "anchor": [
-    "row",
-    "part",
-    "Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor)"
+    "rail",
+    "GND"
    ],
    "kind": "jumper",
    "source": "the row of Max98357aDfr0954 GND",
-   "to": "the row of Cjmcu111RotaryEncoder GND",
+   "to": "the GND rail",
    "tag": "",
    "value": "",
    "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "resistor",
+    "pull-down on Inmp441I2sMicRound SD",
+    "2"
+   ],
+   "anchor": [
+    "rail",
+    "GND"
+   ],
+   "kind": "leg",
+   "source": "R1 end 2 (pull-down on Inmp441I2sMicRound SD)",
+   "to": "the GND rail",
+   "tag": "R1",
+   "value": "100k\u03a9",
+   "job": "pull-down on Inmp441I2sMicRound SD",
    "color": null,
    "marks": ""
   },

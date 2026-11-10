@@ -4,7 +4,8 @@
     "max98357a-dfr0954",
     "speaker-terminal",
     "joystick-module-mh",
-    "cjmcu-111-rotary-encoder"
+    "cjmcu-111-rotary-encoder",
+    "inmp441-i2s-mic-round"
   ],
   "signals": [
     {
@@ -59,24 +60,21 @@
       "pin": "D13"
     },
     {
-      "name": "MIC_SCK",
+      "name": "SWITCH_BUTTON",
       "needs": [],
+      "pin": "D14"
+    },
+    {
+      "name": "MIC_SCK",
       "pin": "A3"
     },
     {
       "name": "MIC_WS",
-      "needs": [],
       "pin": "A5"
     },
     {
       "name": "MIC_SD",
-      "needs": [],
       "pin": "A4"
-    },
-    {
-      "name": "SWITCH_BUTTON",
-      "needs": [],
-      "pin": "D14"
     }
   ]
 }

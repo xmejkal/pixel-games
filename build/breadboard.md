@@ -9,6 +9,8 @@
 | 1 | 2-pin speaker terminal (JST PH) | SpeakerTerminal |  |
 | 1 | Two-axis thumb joystick module (PS2-style, 5-pin, silkscreen "MH") | JoystickModuleMh |  |
 | 1 | CJMCU-111 rotary encoder module (4-pad: GA GB VCC GND, knob fitted) | Cjmcu111RotaryEncoder |  |
+| 1 | Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread | Inmp441I2sMicRound |  |
+| 1 | 100kΩ resistor, through-hole | R1 pull-down on Inmp441I2sMicRound SD |  |
 | | what feeds SPEAKER_P: a supply from off the board, not part of this list | Max98357aDfr0954, SpeakerTerminal | |
 | | what feeds SPEAKER_N: a supply from off the board, not part of this list | Max98357aDfr0954, SpeakerTerminal | |
 | | a breadboard and jumper wires | |  |
@@ -16,6 +18,21 @@
 *have*: yours = your drawer holds it for this project · in your drawer = you own it, not held here · to get = not in your drawer · blank = this project is not on your list (`/spark:init` puts it there)
 
 ## Wiring
+
+### Changes since the last build
+
+- Move the jumper from board GND: it now goes to a free rail, which you mark GND (it went to the row of Cjmcu111RotaryEncoder GND).
+- Put Inmp441I2sMicRound in the breadboard.
+- Run a jumper from the row of Inmp441I2sMicRound VDD to the row of Cjmcu111RotaryEncoder VCC.
+- Run a jumper from board A3 to the row of Inmp441I2sMicRound SCK.
+- Run a jumper from board A4 to the row of Inmp441I2sMicRound SD.
+- Put R1 end 1 (pull-down on Inmp441I2sMicRound SD) in the row of Inmp441I2sMicRound SD.
+- Run a jumper from board A5 to the row of Inmp441I2sMicRound WS.
+- Run a jumper from the row of Cjmcu111RotaryEncoder GND to the GND rail.
+- Run a jumper from the row of Inmp441I2sMicRound GND to the GND rail.
+- Put R1 end 2 (pull-down on Inmp441I2sMicRound SD) in the GND rail.
+- Move the jumper from the row of JoystickModuleMh GND: it now goes to the GND rail (it went to the row of Cjmcu111RotaryEncoder GND).
+- Move the jumper from the row of Max98357aDfr0954 GND: it now goes to the GND rail (it went to the row of Cjmcu111RotaryEncoder GND).
 
 ### Steps
 
@@ -26,25 +43,34 @@ One connection per step. The board's pins take the rows beside them, so a board 
 3. Put SpeakerTerminal in the breadboard, each pin in its own row.
 4. Put JoystickModuleMh in the breadboard, each pin in its own row.
 5. Put Cjmcu111RotaryEncoder in the breadboard, each pin in its own row.
-6. Run a jumper from board 3V3 to the row of Cjmcu111RotaryEncoder VCC.
-7. Run a jumper from the row of JoystickModuleMh VCC (second pin from the GND end, printed +5V) to the row of Cjmcu111RotaryEncoder VCC.
-8. Run a jumper from the row of Max98357aDfr0954 VCC to the row of Cjmcu111RotaryEncoder VCC.
-9. Run a jumper from board A0 to the row of JoystickModuleMh VRX.
-10. Run a jumper from board A1 to the row of JoystickModuleMh VRY.
-11. Run a jumper from board A2 to the row of Max98357aDfr0954 SD.
-12. Run a jumper from board D5 to the row of JoystickModuleMh SW.
-13. Run a jumper from board D10 to the row of Max98357aDfr0954 DIN.
-14. Run a jumper from board D11 to the row of Max98357aDfr0954 LRC.
-15. Run a jumper from board D12 to the row of Max98357aDfr0954 BCLK.
-16. Run a jumper from board GND to the row of Cjmcu111RotaryEncoder GND.
-17. Run a jumper from the row of JoystickModuleMh GND (the header pin at the end labelled GND) to the row of Cjmcu111RotaryEncoder GND.
-18. Run a jumper from the row of Max98357aDfr0954 GND to the row of Cjmcu111RotaryEncoder GND.
-19. Run a jumper from board SCL to the row of Cjmcu111RotaryEncoder GB.
-20. Run a jumper from board SDA to the row of Cjmcu111RotaryEncoder GA.
-21. Run a jumper from the row of SpeakerTerminal SPK_N to the row of Max98357aDfr0954 SPK_N.
-22. Connect the SPEAKER_N supply, from off the board, to the row of Max98357aDfr0954 SPK_N. Check its voltage first (Before you power it).
-23. Run a jumper from the row of SpeakerTerminal SPK_P to the row of Max98357aDfr0954 SPK_P.
-24. Connect the SPEAKER_P supply, from off the board, to the row of Max98357aDfr0954 SPK_P. Check its voltage first (Before you power it).
+6. Put Inmp441I2sMicRound in the breadboard, each pin in its own row.
+7. Run a jumper from board 3V3 to the row of Cjmcu111RotaryEncoder VCC.
+8. Run a jumper from the row of Inmp441I2sMicRound VDD to the row of Cjmcu111RotaryEncoder VCC.
+9. Run a jumper from the row of JoystickModuleMh VCC (second pin from the GND end, printed +5V) to the row of Cjmcu111RotaryEncoder VCC.
+10. Run a jumper from the row of Max98357aDfr0954 VCC to the row of Cjmcu111RotaryEncoder VCC.
+11. Run a jumper from board A0 to the row of JoystickModuleMh VRX.
+12. Run a jumper from board A1 to the row of JoystickModuleMh VRY.
+13. Run a jumper from board A2 to the row of Max98357aDfr0954 SD.
+14. Run a jumper from board A3 to the row of Inmp441I2sMicRound SCK.
+15. Run a jumper from board A4 to the row of Inmp441I2sMicRound SD.
+16. Put R1 (100kΩ pull-down on Inmp441I2sMicRound SD), end 1, in the row of Inmp441I2sMicRound SD.
+17. Run a jumper from board A5 to the row of Inmp441I2sMicRound WS.
+18. Run a jumper from board D5 to the row of JoystickModuleMh SW.
+19. Run a jumper from board D10 to the row of Max98357aDfr0954 DIN.
+20. Run a jumper from board D11 to the row of Max98357aDfr0954 LRC.
+21. Run a jumper from board D12 to the row of Max98357aDfr0954 BCLK.
+22. Run a jumper from board GND to a free rail. Mark it GND.
+23. Run a jumper from the row of Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor) to the GND rail.
+24. Run a jumper from the row of Inmp441I2sMicRound GND to the GND rail.
+25. Run a jumper from the row of JoystickModuleMh GND (the header pin at the end labelled GND) to the GND rail.
+26. Run a jumper from the row of Max98357aDfr0954 GND to the GND rail.
+27. Put R1 (100kΩ pull-down on Inmp441I2sMicRound SD), end 2, in the GND rail.
+28. Run a jumper from board SCL to the row of Cjmcu111RotaryEncoder GB.
+29. Run a jumper from board SDA to the row of Cjmcu111RotaryEncoder GA.
+30. Run a jumper from the row of SpeakerTerminal SPK_N to the row of Max98357aDfr0954 SPK_N.
+31. Connect the SPEAKER_N supply, from off the board, to the row of Max98357aDfr0954 SPK_N. Check its voltage first (Before you power it).
+32. Run a jumper from the row of SpeakerTerminal SPK_P to the row of Max98357aDfr0954 SPK_P.
+33. Connect the SPEAKER_P supply, from off the board, to the row of Max98357aDfr0954 SPK_P. Check its voltage first (Before you power it).
 
 ### Diagram
 
@@ -57,62 +83,85 @@ flowchart LR
     n2["board A0"]
     n3["board A1"]
     n4["board A2"]
-    n5["board D5"]
-    n6["board D10"]
-    n7["board D11"]
-    n8["board D12"]
-    n9["board GND"]
-    n10["board SCL"]
-    n11["board SDA"]
+    n5["board A3"]
+    n6["board A4"]
+    n7["board A5"]
+    n8["board D5"]
+    n9["board D10"]
+    n10["board D11"]
+    n11["board D12"]
+    n12["board GND"]
+    n13["board SCL"]
+    n14["board SDA"]
   end
   subgraph g2["Cjmcu111RotaryEncoder"]
-    n12["Cjmcu111RotaryEncoder VCC"]
-    n13["Cjmcu111RotaryEncoder GND"]
-    n14["Cjmcu111RotaryEncoder GB"]
-    n15["Cjmcu111RotaryEncoder GA"]
+    n15["Cjmcu111RotaryEncoder VCC"]
+    n16["Cjmcu111RotaryEncoder GND"]
+    n17["Cjmcu111RotaryEncoder GB"]
+    n18["Cjmcu111RotaryEncoder GA"]
   end
-  subgraph g3["JoystickModuleMh"]
-    n16["JoystickModuleMh VCC"]
-    n17["JoystickModuleMh VRX"]
-    n18["JoystickModuleMh VRY"]
-    n19["JoystickModuleMh SW"]
-    n20["JoystickModuleMh GND"]
+  subgraph g3["Inmp441I2sMicRound"]
+    n19["Inmp441I2sMicRound VDD"]
+    n20["Inmp441I2sMicRound SCK"]
+    n21["Inmp441I2sMicRound SD"]
+    n22["Inmp441I2sMicRound WS"]
+    n23["Inmp441I2sMicRound GND"]
   end
-  subgraph g4["Max98357aDfr0954"]
-    n21["Max98357aDfr0954 VCC"]
-    n22["Max98357aDfr0954 SD"]
-    n23["Max98357aDfr0954 DIN"]
-    n24["Max98357aDfr0954 LRC"]
-    n25["Max98357aDfr0954 BCLK"]
-    n26["Max98357aDfr0954 GND"]
-    n27["Max98357aDfr0954 SPK_N"]
-    n28["Max98357aDfr0954 SPK_P"]
+  subgraph g4["JoystickModuleMh"]
+    n24["JoystickModuleMh VCC"]
+    n25["JoystickModuleMh VRX"]
+    n26["JoystickModuleMh VRY"]
+    n27["JoystickModuleMh SW"]
+    n28["JoystickModuleMh GND"]
   end
-  subgraph g5["SpeakerTerminal"]
-    n29["SpeakerTerminal SPK_N"]
-    n30["SpeakerTerminal SPK_P"]
+  subgraph g5["Max98357aDfr0954"]
+    n29["Max98357aDfr0954 VCC"]
+    n30["Max98357aDfr0954 SD"]
+    n31["Max98357aDfr0954 DIN"]
+    n32["Max98357aDfr0954 LRC"]
+    n33["Max98357aDfr0954 BCLK"]
+    n34["Max98357aDfr0954 GND"]
+    n35["Max98357aDfr0954 SPK_N"]
+    n36["Max98357aDfr0954 SPK_P"]
   end
-  n31["SPEAKER_N supply"]
-  n32["SPEAKER_P supply"]
-  n1 ---|"6"| n12
-  n16 ---|"7"| n12
-  n21 ---|"8"| n12
-  n2 ---|"9"| n17
-  n3 ---|"10"| n18
-  n4 ---|"11"| n22
-  n5 ---|"12"| n19
-  n6 ---|"13"| n23
-  n7 ---|"14"| n24
-  n8 ---|"15"| n25
-  n9 ---|"16"| n13
-  n20 ---|"17"| n13
-  n26 ---|"18"| n13
-  n10 ---|"19"| n14
-  n11 ---|"20"| n15
-  n29 ---|"21"| n27
-  n31 ---|"22"| n27
-  n30 ---|"23"| n28
-  n32 ---|"24"| n28
+  subgraph g6["R1"]
+    n37["R1 end 1"]
+    n38["R1 end 2"]
+  end
+  subgraph g7["SpeakerTerminal"]
+    n39["SpeakerTerminal SPK_N"]
+    n40["SpeakerTerminal SPK_P"]
+  end
+  n41["GND rail"]
+  n42["SPEAKER_N supply"]
+  n43["SPEAKER_P supply"]
+  n1 ---|"7"| n15
+  n19 ---|"8"| n15
+  n24 ---|"9"| n15
+  n29 ---|"10"| n15
+  n2 ---|"11"| n25
+  n3 ---|"12"| n26
+  n4 ---|"13"| n30
+  n5 ---|"14"| n20
+  n6 ---|"15"| n21
+  n37 ---|"16"| n21
+  n7 ---|"17"| n22
+  n8 ---|"18"| n27
+  n9 ---|"19"| n31
+  n10 ---|"20"| n32
+  n11 ---|"21"| n33
+  n12 ---|"22"| n41
+  n16 ---|"23"| n41
+  n23 ---|"24"| n41
+  n28 ---|"25"| n41
+  n34 ---|"26"| n41
+  n38 ---|"27"| n41
+  n13 ---|"28"| n17
+  n14 ---|"29"| n18
+  n39 ---|"30"| n35
+  n42 ---|"31"| n35
+  n40 ---|"32"| n36
+  n43 ---|"33"| n36
 ```
 
 breadboard.json and breadboard.svg not written: nothing says how to draw Max98357aDfr0954 in Wokwi.
@@ -121,19 +170,22 @@ breadboard.json and breadboard.svg not written: nothing says how to draw Max9835
 
 After the steps, each line is one point: its ends must be joined, and nothing else.
 
-1. board 3V3 · Cjmcu111RotaryEncoder VCC (the pad labelled VCC, next to GND) · JoystickModuleMh VCC (second pin from the GND end, printed +5V) · Max98357aDfr0954 VCC
+1. board 3V3 · Cjmcu111RotaryEncoder VCC (the pad labelled VCC, next to GND) · Inmp441I2sMicRound VDD · JoystickModuleMh VCC (second pin from the GND end, printed +5V) · Max98357aDfr0954 VCC
 2. board A0 · JoystickModuleMh VRX (middle pin)
 3. board A1 · JoystickModuleMh VRY (fourth pin from the GND end)
 4. board A2 · Max98357aDfr0954 SD
-5. board D5 · JoystickModuleMh SW (the pin at the end labelled SW)
-6. board D10 · Max98357aDfr0954 DIN
-7. board D11 · Max98357aDfr0954 LRC
-8. board D12 · Max98357aDfr0954 BCLK
-9. board GND · Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor) · JoystickModuleMh GND (the header pin at the end labelled GND) · Max98357aDfr0954 GND
-10. board SCL · Cjmcu111RotaryEncoder GB (the pad labelled GB, next to GA)
-11. board SDA · Cjmcu111RotaryEncoder GA (the pad labelled GA, at the end of the 4-pad row away from the lone tan ceramic capacitor)
-12. Max98357aDfr0954 SPK_N · SpeakerTerminal SPK_N · the SPEAKER_N supply, from off the board, not part of the parts list
-13. Max98357aDfr0954 SPK_P · SpeakerTerminal SPK_P · the SPEAKER_P supply, from off the board, not part of the parts list
+5. board A3 · Inmp441I2sMicRound SCK
+6. board A4 · Inmp441I2sMicRound SD · R1 (100kΩ pull-down on Inmp441I2sMicRound SD), end 1
+7. board A5 · Inmp441I2sMicRound WS
+8. board D5 · JoystickModuleMh SW (the pin at the end labelled SW)
+9. board D10 · Max98357aDfr0954 DIN
+10. board D11 · Max98357aDfr0954 LRC
+11. board D12 · Max98357aDfr0954 BCLK
+12. board GND · Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor) · Inmp441I2sMicRound GND · JoystickModuleMh GND (the header pin at the end labelled GND) · Max98357aDfr0954 GND · R1 (100kΩ pull-down on Inmp441I2sMicRound SD), end 2 — more ends than one breadboard row holds: join board GND to a rail and put the others on that rail
+13. board SCL · Cjmcu111RotaryEncoder GB (the pad labelled GB, next to GA)
+14. board SDA · Cjmcu111RotaryEncoder GA (the pad labelled GA, at the end of the 4-pad row away from the lone tan ceramic capacitor)
+15. Max98357aDfr0954 SPK_N · SpeakerTerminal SPK_N · the SPEAKER_N supply, from off the board, not part of the parts list
+16. Max98357aDfr0954 SPK_P · SpeakerTerminal SPK_P · the SPEAKER_P supply, from off the board, not part of the parts list
 
 Not wired:
 
@@ -144,9 +196,6 @@ Not wired:
 - GDI_CS: board D6, nothing wired to it yet (the requirements add this signal)
 - GDI_SD_CS: board D7, nothing wired to it yet (the requirements add this signal)
 - GDI_BL: board D13, nothing wired to it yet (the requirements add this signal)
-- MIC_SCK: board A3, nothing wired to it yet (the requirements add this signal)
-- MIC_WS: board A5, nothing wired to it yet (the requirements add this signal)
-- MIC_SD: board A4, nothing wired to it yet (the requirements add this signal)
 - SWITCH_BUTTON: board D14, nothing wired to it yet (the requirements add this signal)
 
 ## Before you power it
@@ -177,5 +226,14 @@ Not wired:
 - CJMCU-111 rotary encoder module (4-pad: GA GB VCC GND, knob fitted): Shop pages for 'CJMCU-111' describe two different boards: Leybold's text and a search summary list 5 pins (GND + SW DT CLK, KY-040 style) while both shops' photos show 4 pads labelled GA GB VCC GND. Wire from the silkscreen on the unit, never from a CLK/DT/SW diagram: reading the row from the wrong end puts GND on GA and VCC on GB.
 - CJMCU-111 rotary encoder module (4-pad: GA GB VCC GND, knob fitted): Debounce in firmware (the contacts are mechanical and an on-board capacitor, if it is a filter, has an unknown value), and decode both channels together: A alone cannot tell the direction. Count per detent on the bench before trusting a figure: shops give 20 detents and 20 pulses per turn, not the edges per detent.
 - CJMCU-111 rotary encoder module (4-pad: GA GB VCC GND, knob fitted): The board ships with the 4-pin header loose in the bag (Funduino: unsoldered). Solder it, shaft side up or down as the enclosure needs, and do not push sideways on the shaft: the sheet warns against lateral force.
+- Inmp441I2sMicRound LR: NOT unused: a strap that must be tied, never left floating. Tie to GND for the LEFT slot of the I2S frame, to VDD for the RIGHT slot. No host GPIO is needed
+- Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: Feed VDD from the host's 3V3 and never from 5 V or VBUS: the chip's absolute maximum on VDD is 3.63 V and on the digital pins VDD + 0.3 V, and no regulator can be seen on the pad side of this board (the other face was not seen).
+- Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: L/R must be tied: to GND the samples come in the LEFT slot, to VDD in the RIGHT slot. Do not leave it floating; the slot is undefined.
+- Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: The host is the I2S master and must clock SCK at exactly 64 times WS (32-bit slots, both channels), SCK 0.5 to 3.2 MHz, WS 7.8 to 50 kHz. Read 32-bit words: the 24 bits are the top of each word, two's complement.
+- Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: The first 2^18 SCK cycles after power-up (85 ms at 3.072 MHz) read zero; drop those samples.
+- Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: SD floats in the half-frame the chip does not use. Read only the slot that L/R selects, or add the datasheet's 100 kOhm pull-down to GND on SD.
+- Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: Do not leave SCK and WS running while VDD is off: the datasheet warns that it continuously turns on the ESD diodes and may affect the chip's long-term reliability.
+- Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: The sound port is the small plated hole at the centre of the PAD SIDE: keep it clear of dust, tape and a breadboard surface pressed against it, or the sensitivity drops.
+- Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: Pad order and the identity of the chip rest on one photo of one face. Look at the other face before the pad order is trusted for a PCB footprint.
 
-Each record whole, with what it asks of the board: `parts.py --show cjmcu-111-rotary-encoder`, `parts.py --show joystick-module-mh`, `parts.py --show max98357a-dfr0954`, `parts.py --show speaker-terminal`.
+Each record whole, with what it asks of the board: `parts.py --show cjmcu-111-rotary-encoder`, `parts.py --show inmp441-i2s-mic-round`, `parts.py --show joystick-module-mh`, `parts.py --show max98357a-dfr0954`, `parts.py --show speaker-terminal`.
