@@ -4,14 +4,15 @@ P733 steps 2 and 3: the 440 Hz tone beside the game loop, refilled once per fram
     mpremote run probe733_games.py      # GAME, TONE, MIC and SECONDS set by sed before each run
 
 TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
-replaces App.frame with a hook that refills the tone after each frame, switches to a new copy of the game every 60 s
+replaces App.frame with a hook that refills the tone after each frame, switches to a new copy of the game every 30 s
 (the heavy frame of D19), and presses BOOT on the game-over screen, so the game plays most of the time.
 
 ibuf=4096 gives 8 DMA buffers of 256 samples (16 ms), a ring of 128 ms (machine_i2s.c:152). A poll switches the
 writes to not waiting (machine_i2s.c:239): each refill writes what fits in the free buffers and returns at once.
 The first version kept a lead of 96 ms with waiting writes, and each refill waited about 40 ms (run132, entry 2).
 A refill more than 112 ms after the last one can find the ring empty: that is a `late` count. `short` is the samples
-the clock expected minus the samples written. It rises only when the speaker plays silence.
+the clock expected minus the samples written. It jitters by up to one buffer (256 samples), so only a rise between
+reports by more than that means the speaker played silence.
 
 Lines: `sound <game> between_max <ms> write_max <ms> late <n> short <samples>` every 5 s, `switch <n> <ms>`, and
 at the end `written <samples> short <samples>`, then `done`. The App prints its own fps and time lines.
@@ -33,8 +34,8 @@ from machine import I2S, Pin
 GAME = "Fire"  # Fire, BallPit or Road: a name in app
 TONE = 1  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3)
-SECONDS = 300
-SWITCH_MS = 60_000
+SECONDS = 120
+SWITCH_MS = 30_000
 REPORT_MS = 5000
 RATE = 16000
 CYCLE = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the wave has no seam
@@ -63,7 +64,8 @@ class Tone:
         self.between_max, self.write_max = 0, 0
 
     def open(self):
-        """The I2S, then a fill, then the amplifier on. It runs delay_ms after the first refill, once the game is built."""
+        """The I2S, a fill, then the amplifier on, delay_ms after the first refill. The first fill writes nothing,
+        because the ESP-IDF queue starts empty, so the tone starts one ring (128 ms) later (i2s_common.c:1325)."""
         import select
 
         self.i2s = I2S(0, sck=Pin(12), ws=Pin(13), sd=Pin(14), mode=I2S.TX, bits=16, format=I2S.MONO, rate=RATE,
@@ -99,8 +101,8 @@ class Tone:
         self.fill()
 
     def short(self):
-        """The samples the clock expected minus the samples written: a rise means the speaker played silence."""
-        return time.ticks_diff(time.ticks_ms(), self.opened_ms) * RATE // 1000 - self.written
+        """The samples the clock expected minus the samples written. It jitters by one buffer at each refill."""
+        return time.ticks_diff(time.ticks_ms(), self.opened_ms) * (RATE // 1000) - self.written  # no long int
 
     def close(self):
         """PHYS-13 order: the amplifier off before the clocks stop. The 10 ms is a margin with no datasheet figure."""
@@ -113,7 +115,7 @@ class Tone:
 BLOCK = const(64)  # samples per block mean, 1 << BLOCK_SHIFT: 4 ms, so any gap of 8 ms or more holds one whole quiet block
 BLOCK_SHIFT = const(6)
 FLOOR_MS = (500, 1500)  # the room, after the microphone's start-up zeros (2^18 SCK, 256 ms, DS-INMP441), before the tone opens at 1500
-TONE_MS = (1700, 2700)  # the tone, after the amplifier's click
+TONE_MS = (2000, 3000)  # the tone: it opens at 1500, starts one ring (128 ms) later, after a frame and the click
 QUIET = 0.3  # a block is quiet below floor + QUIET x (tone_mean - floor)
 BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or drop buffers without a report
 
