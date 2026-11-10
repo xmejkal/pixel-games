@@ -1,0 +1,42 @@
+=== entry 1 Road ibuf 8192 hits 0 seconds 120, start 2026-11-10 13:20:01 +0100
+TONE = 0 is the control run: the same ga
+GAME = "Road"  # Fire, BallPit or Road: 
+TONE = 1  # 0: the control run, no I2S
+MIC = 1  # 1: the microphone counts the 
+HITS = 0  # "auto": a hit every 2 s from
+IBUF = 8192  # TX DMA bytes: 8 buffers o
+SECONDS = 120
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6295424
+frame tft
+ready
+game road
+mic dma_free 82787 largest 31744
+mic slot empty tone_mean 9 floor 1
+written 24064 short 448
+done
+=== entry 1 end 2026-11-10 13:20:09 +0100 exit 0
+=== entry 1 again (it stopped: mic slot empty tone_mean 9 floor 1), start 2026-11-10 13:22:13 +0100
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6295424
+frame tft
+ready
+game road
+mic dma_free 82787 largest 31744
+mic slot empty tone_mean 9 floor 1
+written 23552 short 368
+done
+=== entry 1 again end 2026-11-10 13:22:21 +0100 exit 0
+=== entry 1c: the same check at 4096 B, 8 s, 2026-11-10 13:22:31 +0100
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6299424
+frame tft
+ready
+game road
+mic dma_free 82787 largest 31744
+mic slot empty tone_mean 9 floor 1
+written 24064 short 336
+done
