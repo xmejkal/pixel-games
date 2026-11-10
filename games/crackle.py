@@ -184,11 +184,19 @@ class GrainCrackle:
                 pass
         check_grain_look(look)
         t = ticks()
-        size = os.stat(bank_path)[6]
-        self.bank = engine.SoundBank(size) if hasattr(engine, "SoundBank") else bytearray(size)
+        nbytes = os.stat(bank_path)[6]
+        self.bank = None
+        if hasattr(engine, "SoundBank"):
+            try:
+                self.bank = engine.SoundBank(nbytes)  # outside the GC heap: a bytearray made each collection 7.6 ms
+            except MemoryError:
+                pass  # no PSRAM: the heap's bytearray, slower collections
+        if self.bank is None:
+            self.bank = bytearray(nbytes)
         with open(bank_path, "rb") as f:
-            f.readinto(self.bank)
-        print("bank load %d ms, %d bytes, %s" % (ticks() - t, size, getattr(self.bank, "where", "heap")))
+            if f.readinto(self.bank) != nbytes:
+                raise OSError("a short read of " + bank_path)
+        print("bank load %d ms, %d bytes, %s" % (ticks() - t, nbytes, getattr(self.bank, "where", "heap")))
         self.c = native
         self.state = bytearray(native.GRAINS_SIZE)
         native.grains_init(self.state, seed, array("i", look), array("i", FIRE_BANK_INDEX))

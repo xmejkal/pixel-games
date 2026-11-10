@@ -21,13 +21,18 @@ RATE, BLOCK = 16000, 256  # sound.py's RATE and REFILL_SAMPLES
 FRAME_BLOCKS = 2  # about one Fire frame of 40 ms between two add_pops
 
 
-def play(crackle, seconds, seed=747, burst=0.01):
+def play(crackle, seconds, seed=747, burst=0.01, rises=False):
     """seconds of blocks, with a few births before every second block, as Fire's frames add them (about 3.9 a
-    second), and in burst of them a test's 9 at once, which fills every slot (Fire adds at most 2 a frame)."""
+    second), and in burst of them a test's 9 at once, which fills every slot (Fire adds at most 2 a frame). With
+    rises, each birth also has an ember rise of 2 to 5, as the kernel gives (P751)."""
     rng, out, buf = random.Random(seed), array("h"), array("h", bytes(2 * BLOCK))
     for k in range(seconds * RATE // BLOCK):
         if k % FRAME_BLOCKS == 0:
-            crackle.add_pops(9 if rng.random() < burst else 1 if rng.random() < 0.16 else 0)
+            n = 9 if rng.random() < burst else 1 if rng.random() < 0.16 else 0
+            if rises:
+                crackle.add_pops(n, array("b", (rng.randrange(2, 6) for _ in range(min(n, 8)))))
+            else:
+                crackle.add_pops(n)
         crackle.render(buf)
         out.extend(buf)
     return out
@@ -86,7 +91,7 @@ class GrainCrackleTest(unittest.TestCase):
     def setUpClass(cls):
         bank = os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw")
         cls.crackle = GrainCrackle(747, bank_path=bank, native=GrainsModule())
-        cls.out = play(cls.crackle, 15, burst=0)
+        cls.out = play(cls.crackle, 15, burst=0, rises=True)
 
     def test_the_bank_matches_its_index(self):
         last = FIRE_BANK_INDEX[-3] + FIRE_BANK_INDEX[-2]

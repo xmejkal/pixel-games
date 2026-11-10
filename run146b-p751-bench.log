@@ -1,4 +1,4 @@
-=== gc.collect, best of 5, on the P751 firmware (17:3x): without 96 us, with the 247 KB bank in engine.SoundBank (psram) 102 us; load 179 ms
+=== gc.collect, best of 5, on the P751 firmware (about 17:28 +0100, before entry 5d): without 96 us, with the 247 KB bank in engine.SoundBank (psram) 102 us; load 179 ms
 === entry 5d VOICE GrainCrackle REFILL CallbackRefill IBUF 2048 start 17:29:41
 bank load 214 ms, 246960 bytes, psram
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}

@@ -4,7 +4,7 @@ demo g (pixel-sound docs/discovery/2026-11-09-sound/p750/round2/gen.py), then mi
     python3 tools/fire_bank.py [recording.wav]   # 16 kHz mono; default: games/fire16k.wav, the CC0 recording
 
 It writes games/fire_bank.raw (int16, little endian: the bed, then the pops) and games/fire_bank.py (the index).
-The recording is "Fire Crackling" by AntumDeluge (CC0), see games/fire16k.SOURCE.txt. Pure Python, about a minute.
+The recording is "Fire Crackling" by AntumDeluge (CC0), see games/fire16k.SOURCE.txt. Pure Python, under a second.
 
 After the PO's ear on the demos ("a stream of water"): the small crackles are sparse, short and noisy, the pops
 crack with a sharp click and a low Q, and a low flame roar (60 to 200 Hz) lies under the grains.
@@ -22,7 +22,7 @@ SR = 16000
 BED_S = 6
 POP_MAX = 2400  # 150 ms
 SIZES = (0.15, 0.5, 0.9)  # the three pop sizes, as ember rise speeds q
-SNAPS = 3  # woody pops of each size, and one recording grain
+POPS_PER_SIZE = 3  # woody pops of each size, and one recording grain
 POP_PEAKS = tuple(int(3000 + 19000 * q * q) for q in SIZES)
 BED_RMS = 3800
 LIMIT = 0.9 * 32767
@@ -193,7 +193,7 @@ def main(path):
     grain_pops.sort(key=lambda p: p[0])
     rg, pops = random.Random(11), []  # (samples, size)
     for size, q in enumerate(SIZES):
-        for _ in range(SNAPS):
+        for _ in range(POPS_PER_SIZE):
             pops.append((pop(q, rg), size))
         pops.append((grain_pops[int(q * (len(grain_pops) - 0.01))][1][:POP_MAX], size))
     bank, index, off = array("h", bed), [n], n
