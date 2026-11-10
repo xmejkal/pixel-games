@@ -753,3 +753,33 @@ the tone at 10000 of 32767.
   0 to 5, so BallPit passed the check (tone at least 4 times the floor) by 21 against 20: the margin is thin.
 - Open for the design: a larger ring (8192 B, 256 ms, over D9's limit, and a sound effect up to 256 ms late), a refill
   from C outside the game loop, or Road frames under 112 ms.
+
+## P746 (#1025), 2026-11-10: Road at 8192 B, and the delay from a hit to its sound
+
+The spike follows P733 and D24 (the PO: "Deeper buffer first"). `probe733_games.py` gains `IBUF` (the TX ring in
+bytes), `HITS` (`"auto"`: a beep every 2 s, `"press"`: a beep at each BOOT press) and a `Beeper`: silence between
+beeps of 60 ms at 20000. The microphone measures the delay from the start of the frame that sees the hit to the
+beep, in its own sample clock. Road, 16 kHz mono, no game restarts in the hit runs.
+
+| run | ring | hits | delay, median and max | the PO |
+| --- | --- | --- | --- | --- |
+| `run143-p746-delay.log` entry 2 | 4096 B (8 x 16 ms) | 21 auto | 117, 125 ms (one early onset at 23 ms) | |
+| entry 3 | 8192 B (16 x 16 ms) | 21 auto | 243, 251 ms (one early onset at 44 ms) | |
+| entry 5 | 4096 B | 10 presses | 112, 125 ms | "they came with the press" |
+| entry 8 | 8192 B | 28 presses, 19 heard | 245 ms median (first hit 383 ms) | "there is a delay" |
+
+- A3's line (median under 130 ms, and the PO's ear, confirmed 2026-11-10) passes at 4096 B and fails at 8192 B. The
+  delays match the prediction of (buffers - 1) x 16 ms plus 0 to 16 ms: 112 to 128 ms and 240 to 256 ms. The ring is
+  always full of silence, so a beep waits behind all of it.
+- So a refill once per frame cannot pass both lines in Road: 4096 B has Road's gaps (P733), and 8192 B is too late.
+  The cause is the refill rate, not the ring size. The next step is a refill that does not wait for a frame.
+- The run of Road with the tone at 8192 B did not run (`run142-p746-road.log`): the microphone heard the tone at 9,
+  under its minimum of 10, also at 4096 B, where it heard 20 to 21 at 12:47. The microphone or the speaker probably
+  moved. After the PO heard the delay at 8192 B, this run could change nothing, so it was skipped.
+- In the press runs at 8192 B, entries 6 and 7 saw no press at all, and entry 8 saw 31. The cause is not known. The
+  probe now prints each press before any check. In entry 8, 9 of 28 hits found no beep within 400 ms, mostly when
+  the PO pressed less than half a second apart. The hit line does not tell why.
+- The microphone's clock is right: alone, it lags 0 to 192 samples (`run143d`). The first smoke printed negative
+  `lost` in the hit line, because inside a read it counted a block twice, so the hit line no longer prints it.
+- The microphone's receive ring holds about 240 ms (16 buffers of 16 ms): a read every 500 ms lost half of the
+  samples (`run143c`).
