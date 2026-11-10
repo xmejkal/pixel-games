@@ -106,6 +106,10 @@ class FirePlugin(Plugin):
     the s3lcd frame, opaque or blended over what the frame holds. Without the engine, field is None and it draws
     nothing. --- MVP (P633) ---"""
 
+    # --- MVP (P747) --- a Crackle of crackle.py, or None for no sound. A class attribute, so the field of each new
+    # game adds its embers to it: one pop per birth, the pops with the sparks on screen
+    crackle = None
+
     def __init__(self, look, seed):
         self.field, self.blend = None, False
         if engine is not None:
@@ -130,6 +134,8 @@ class FirePlugin(Plugin):
             t = time.ticks_us()
             self.field.step(steps, self.wind)
             self.step_us += time.ticks_diff(time.ticks_us(), t)
+            if self.crackle is not None:  # P747
+                self.crackle.add_pops(self.field.take_births())
 
     def draw(self, cv):
         """The field into the frame: blended at its heat's alpha over what the frame holds, or opaque."""

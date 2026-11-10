@@ -1,9 +1,11 @@
 """
-P733 steps 2 and 3, P746 and P748: a sound beside the game loop, fed by a driver of games/sound.py through stock
+P733 steps 2 and 3, P746, P748 and P747: a sound beside the game loop, fed by a driver of games/sound.py through stock
 machine.I2S, and heard by a microphone.
 
     mpremote cp games/sound.py :sound.py
-    mpremote run probe733_games.py      # GAME, TONE, MIC, HITS, REFILL, IBUF and SECONDS set by sed before each run
+    mpremote run probe733_games.py      # GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE and SECONDS set by sed before each run
+
+tools/crackle.sh runs it with a crackle (P747): it builds crackle_c.mpy and copies it and games/crackle.py first.
 
 It changes no file in games/. It replaces App.frame with a hook that runs after each frame: the per-frame refill, the
 microphone's read, the 5 s report, a switch to a new copy of the game every 30 s (the heavy frame of D19, none with
@@ -35,6 +37,13 @@ event. The beep waits behind the ring. An onset is the first of 3 loud blocks in
 total are -1 for an auto hit), the refill gap before the refill that took the beep, and the loudest block in the
 window. Also `hit <n> missed loud <n>`, `skip <n>` for a hit while the last one waits, and at the end `hits <n> median
 <ms> max <ms> missed <n> total_median <ms>`. No game restarts in these runs.
+
+VOICE (P747) is what the driver renders: "tone", "silent" (a Mixer with no play: the control run of the I2S), or
+"Crackle" or "NativeCrackle", a class name in crackle. A crackle gets the Fire field's embers through
+fire.FirePlugin.crackle, one pop per birth. Lines: `first pop <ms>` (from the open to the first render that starts a
+pop) once, and every 5 s `crackle <game> render_max <us> pop_median <ms> pop_max <ms> pops <n> dropped <n>`.
+`pop` is the time from add_pops to the start of the render that starts that pop. The pop itself starts 1 to 128
+samples into that render, and the ring holds it for up to 64 ms (IBUF 2048) before the speaker.
 """
 
 import math
@@ -53,6 +62,7 @@ MIC = 0  # 1: the microphone counts the gaps (step 3), or measures the delays (H
 HITS = 0  # "auto": a hit every 2 s from 4 s on, "press": a hit at each BOOT press, 0: the tone (P746)
 REFILL = "FrameRefill"  # or "CallbackRefill": a driver's class name in sound (P748)
 IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 2048 gives 4 buffers, 64 ms
+VOICE = "tone"  # "silent", "Crackle" or "NativeCrackle" (P747)
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -253,6 +263,41 @@ class Mic:
         self.i2s.deinit()
 
 
+class TimedCrackle:
+    """A crackle with the probe's clocks (P747): add_pops stamps each new pop's time, render times itself and takes
+    the stamps that its started count passes. The stamp goes in before the pops, so a render between the two never
+    passes a pop with no stamp."""
+
+    pending = None
+
+    def __init__(self, crackle):
+        self.crackle, self.stamps, self.pops_us = crackle, [], []
+        self.render_max = self.renders = 0
+        self.first = None  # ticks_us of the first render that started a pop
+
+    def add_pops(self, n):
+        if n:
+            self.stamps.append((self.crackle.counts()[0] + n, time.ticks_us()))
+            self.crackle.add_pops(n)
+
+    def render(self, buf):
+        t = time.ticks_us()
+        self.crackle.render(buf)
+        self.render_max = max(self.render_max, time.ticks_diff(time.ticks_us(), t))
+        _, started, dropped = self.crackle.counts()
+        while self.stamps and self.stamps[0][0] <= started + dropped:
+            self.pops_us.append(time.ticks_diff(t, self.stamps.pop(0)[1]))
+            if self.first is None:
+                self.first = t
+
+    def report(self, name):
+        """The 5 s line, then a new window."""
+        pops, self.pops_us = self.pops_us, []
+        render_max, self.render_max = self.render_max, 0
+        print("crackle %s render_max %d pop_median %d pop_max %d pops %d dropped %d" % (
+            name, render_max, median(pops) // 1000, max(pops or [0]) // 1000, len(pops), self.crackle.counts()[2]))
+
+
 class Probe:
     """The hook around App.frame: the sound's open and per-frame refill, the microphone's read, the 5 s report, the
     switch every 30 s (none with HITS), the press on game over, the push stamps, the hits, and the end."""
@@ -260,6 +305,11 @@ class Probe:
     def __init__(self):
         self.sd = Pin(6, Pin.OUT, value=0)  # the amplifier stays off through the display setup
         self.mixer, self.refill, self.mic = sound.Mixer(), None, None
+        self.first_pop_shown = False
+        if VOICE in ("Crackle", "NativeCrackle"):  # P747
+            import crackle
+            import fire
+            self.mixer = fire.FirePlugin.crackle = TimedCrackle(getattr(crackle, VOICE)(747))
         self.tone = array("h", (int(AMPLITUDE * math.sin(2 * math.pi * 11 * i / CYCLE)) for i in range(CYCLE)))
         self.beep = array("h", (int(BEEP * min(1, i / FADE, (BEEP_SAMPLES - i) / FADE) * math.sin(2 * math.pi * 440 * i / RATE))
                                 for i in range(BEEP_SAMPLES)))
@@ -282,8 +332,9 @@ class Probe:
         i2s = I2S(0, sck=Pin(12), ws=Pin(13), sd=Pin(14), mode=I2S.TX, bits=16, format=I2S.MONO, rate=RATE, ibuf=IBUF)
         self.refill = r = getattr(sound, REFILL)(self.mixer, i2s, self.sd, RING)
         print("align %d" % (uctypes.addressof(r.block) % 16))
-        if not HITS:
+        if not HITS and VOICE == "tone":
             self.mixer.play(self.tone, loop=True)
+        self.opened_us = time.ticks_us()  # P747: the first pop's clock
         self.opened_ms = self.sent_at = time.ticks_ms()  # the first `sent` window starts here, not at the first frame
         r.open()
         if self.mic:
@@ -307,6 +358,9 @@ class Probe:
             print("stall %d pushes %d" % (time.ticks_diff(time.ticks_us(), r.last) // 1000, self.pushes))
         if m:
             m.read()
+        if not self.first_pop_shown and getattr(self.mixer, "first", None) is not None:
+            self.first_pop_shown = True
+            print("first pop %d" % (time.ticks_diff(self.mixer.first, self.opened_us) // 1000))
         if time.ticks_diff(now, self.report) >= REPORT_MS:
             r = self.refill
             if r:
@@ -319,6 +373,8 @@ class Probe:
                 self.written_at, self.sent_at = r.written, now
             if m:
                 m.report(box.game.name)
+            if isinstance(self.mixer, TimedCrackle):
+                self.mixer.report(box.game.name)
             self.report = now
         if self.next_switch is not None and time.ticks_diff(now, self.next_switch) >= 0:
             self.next_switch = time.ticks_add(self.next_switch, SWITCH_MS)
