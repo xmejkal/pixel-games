@@ -164,28 +164,41 @@ class GrainCrackle:
     """The grains in C: crackle_c.mpy's grains_ functions. The bank is read once into a bytearray (print: its load
     time), and the state is a bytearray too, so the C keeps no pointer. native is the module, crackle_c on the board
     and a Mac stand-in in tests (engine/tests/grains_lib.py). ImportError when crackle_c.mpy is not on the board.
-    add_pops, render and counts are NativeCrackle's."""
+    render and counts are NativeCrackle's. --- MVP (P751) --- The bank lives in an engine.SoundBank, outside the GC
+    heap, which a collection would otherwise walk for 7.6 ms; a firmware without one, and the Mac, get a bytearray.
+    takes_rises tells FirePlugin that add_pops takes the births' rises."""
 
     pending = None
+    takes_rises = True
 
-    def __init__(self, seed, look=GRAIN_LOOK, bank_path=BANK_FILE, native=None):
+    def __init__(self, seed, look=GRAIN_LOOK, bank_path=BANK_FILE, native=None, engine=None):
         import os
         from fire_bank import FIRE_BANK_INDEX
 
         if native is None:
             import crackle_c as native
+        if engine is None:
+            try:
+                import engine
+            except ImportError:
+                pass
         check_grain_look(look)
         t = ticks()
-        self.bank = bytearray(os.stat(bank_path)[6])
+        size = os.stat(bank_path)[6]
+        self.bank = engine.SoundBank(size) if hasattr(engine, "SoundBank") else bytearray(size)
         with open(bank_path, "rb") as f:
             f.readinto(self.bank)
-        print("bank load %d ms, %d bytes" % (ticks() - t, len(self.bank)))
+        print("bank load %d ms, %d bytes, %s" % (ticks() - t, size, getattr(self.bank, "where", "heap")))
         self.c = native
         self.state = bytearray(native.GRAINS_SIZE)
         native.grains_init(self.state, seed, array("i", look), array("i", FIRE_BANK_INDEX))
 
-    def add_pops(self, n):
-        self.c.grains_add_pops(self.state, n)
+    def add_pops(self, n, rises=None):
+        """rises: an array("b") of the births' ember rises (2 to 5), or None."""
+        if rises is None:
+            self.c.grains_add_pops(self.state, n)
+        else:
+            self.c.grains_add_pops(self.state, n, rises)
 
     def render(self, buf):
         self.c.grains_render(self.state, self.bank, buf)

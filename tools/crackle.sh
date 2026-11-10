@@ -2,7 +2,8 @@
 # The crackle's try loop (P747): one command from a saved engine/core/fx_crackle.c to the sound on the board.
 # It builds crackle_c.mpy, copies it with games/crackle.py, games/fire.py and games/sound.py, and runs
 # probe733_games.py on Fire with CallbackRefill for SECONDS (10 by default). The board needs firmware with
-# HeatField.take_births (P747), and the amplifier wired as in P733. Its last line gives the seconds from the start of
+# HeatField.take_births (P747; P751: with rises and engine.SoundBank, else GrainCrackle falls back to a bytearray), and
+# the amplifier wired as in P733. Its last line gives the seconds from the start of
 # this script to the first pop.
 #
 #     tools/crackle.sh [seconds] [voice] [look]   # voice: NativeCrackle (default), SampledCrackle or GrainCrackle

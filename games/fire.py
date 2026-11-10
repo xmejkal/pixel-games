@@ -112,6 +112,9 @@ class FirePlugin(Plugin):
 
     def __init__(self, look, seed):
         self.field, self.blend = None, False
+        # --- MVP (P751) --- the births' ember rises, for a crackle that takes them; None when this firmware's
+        # take_births has no argument
+        self.rises = array("b", bytes(8))
         if engine is not None:
             self.field = engine.HeatField(W, H, seed)
             self.field.set_look(*look)
@@ -135,7 +138,20 @@ class FirePlugin(Plugin):
             self.field.step(steps, self.wind)
             self.step_us += time.ticks_diff(time.ticks_us(), t)
             if self.crackle is not None:  # P747
-                self.crackle.add_pops(self.field.take_births())
+                self.add_births()
+
+    def add_births(self):
+        """One pop per birth. A crackle with takes_rises (GrainCrackle) also gets each birth's rise, if the engine's
+        take_births takes the array (P751); the other crackles, and an older firmware, get the count alone."""
+        if self.rises is not None and getattr(self.crackle, "takes_rises", False):
+            try:
+                n = self.field.take_births(self.rises)
+            except TypeError:  # raised before the count resets, so no birth is lost
+                self.rises = None
+            else:
+                self.crackle.add_pops(n, self.rises)
+                return
+        self.crackle.add_pops(self.field.take_births())
 
     def draw(self, cv):
         """The field into the frame: blended at its heat's alpha over what the frame holds, or opaque."""

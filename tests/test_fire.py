@@ -239,6 +239,60 @@ class FireTest(unittest.TestCase):
         self.assertEqual([look], fire.engine.looks)  # once
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the fire reached the frame
 
+    def births(self, crackle, old_engine=False):  # --- MVP (P751) --- 8 s of Fire into crackle: its add_pops calls
+        if old_engine:  # a HeatField whose take_births takes no argument, as before P751
+            real = fire.engine.HeatField
+
+            class OldField(real):
+                def take_births(self):
+                    return real.take_births(self)
+
+            fire.engine.HeatField = OldField
+        fire.FirePlugin.crackle = crackle
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                play(fire.Fire(), 200, 0, Tft())
+        finally:
+            fire.FirePlugin.crackle = None
+
+    def test_a_crackle_that_takes_rises_gets_each_births_rise_2_to_5(self):  # --- MVP (P751) ---
+        class Taking:
+            takes_rises = True
+
+            def __init__(self):
+                self.calls = []
+
+            def add_pops(self, n, rises=None):
+                self.calls.append((n, None if rises is None else list(rises)))
+
+        c = Taking()
+        self.births(c)
+        self.assertGreater(sum(n for n, _ in c.calls), 8)
+        for n, rises in c.calls:
+            self.assertEqual([0] * (8 - min(n, 8)), rises[min(n, 8):])
+            self.assertTrue(all(2 <= r <= 5 for r in rises[:min(n, 8)]), rises)
+
+    def test_other_crackles_and_an_old_engine_get_the_count_alone(self):  # --- MVP (P751) ---
+        class Counting:
+            def __init__(self):
+                self.calls = []
+
+            def add_pops(self, n):
+                self.calls.append(n)
+
+        class Taking(Counting):
+            takes_rises = True
+
+            def add_pops(self, n, rises=None):
+                self.calls.append((n, rises))
+
+        plain = Counting()
+        self.births(plain)
+        self.assertGreater(sum(plain.calls), 8)
+        old = Taking()
+        self.births(old, old_engine=True)
+        self.assertTrue(old.calls and all(rises is None for _, rises in old.calls), old.calls)
+
     def test_a_tap_moves_to_the_next_mode(self):
         """P608: the scene starts linear, and a tap walks the three modes, each setting its filter. Only the picture
         mode paints the sky (here black: the Mac has no art) and blends."""

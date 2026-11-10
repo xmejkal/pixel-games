@@ -272,15 +272,19 @@ class TimedCrackle:
 
     def __init__(self, crackle):
         self.crackle, self.stamps, self.pops_us = crackle, [], []
+        self.takes_rises = getattr(crackle, "takes_rises", False)  # P751
         self.render_max = self.renders = 0
         self.first = None  # ticks_us of the first render that started a pop
 
-    def add_pops(self, n):
+    def add_pops(self, n, rises=None):
         if n:
             popped, t = self.crackle.counts()[0], time.ticks_us()
             for k in range(1, n + 1):
                 self.stamps.append((popped + k, t))  # one stamp per pop, so `pops` counts pops
-            self.crackle.add_pops(n)
+            if rises is None:
+                self.crackle.add_pops(n)
+            else:
+                self.crackle.add_pops(n, rises)
 
     def render(self, buf):
         t = time.ticks_us()

@@ -111,6 +111,35 @@ class GrainCrackleTest(unittest.TestCase):
         c.render(array("h", bytes(2 * BLOCK)))
         self.assertEqual(c.counts(), (9, 8, 1))
 
+    def test_the_bank_goes_into_the_engines_sound_bank_when_it_has_one(self):  # --- MVP (P751) ---
+        class SoundBank(bytearray):
+            where = "psram"
+
+        class Engine:
+            pass
+
+        raw = os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw")
+        Engine.SoundBank = SoundBank
+        with_bank = GrainCrackle(1, bank_path=raw, native=GrainsModule(), engine=Engine)
+        self.assertIsInstance(with_bank.bank, SoundBank)
+        self.assertEqual(self.crackle.bank, with_bank.bank)
+        without = GrainCrackle(1, bank_path=raw, native=GrainsModule(), engine=object())
+        self.assertIs(bytearray, type(without.bank))
+
+    def test_rises_make_the_biggest_pop_louder_and_none_is_as_before(self):  # --- MVP (P751) ---
+        raw = os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw")
+        loud = quiet = 0
+        for seed in range(1, 41):
+            for rises, kind in ((array("b", [5]), 1), (None, 0)):
+                c = GrainCrackle(seed, look=(0, 32768), bank_path=raw, native=GrainsModule())
+                c.add_pops(1, rises)
+                out = array("h", bytes(2 * BLOCK))
+                c.render(out)
+                peak = max(map(abs, out))
+                loud, quiet = (loud + peak, quiet) if kind else (loud, quiet + peak)
+        self.assertGreater(loud, 1.5 * quiet)  # a drawn pop is mostly small
+        self.assertTrue(GrainCrackle.takes_rises)
+
     def test_a_look_out_of_range_is_refused(self):
         check_grain_look(GRAIN_LOOK)
         for bad in ((-1, 0), (0, 32769), (1,)):
