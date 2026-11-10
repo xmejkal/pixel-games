@@ -794,3 +794,36 @@ beep, in its own sample clock. Road, 16 kHz mono, no game restarts in the hit ru
   `lost` in the hit line, because inside a read it counted a block twice, so the hit line no longer prints it.
 - The microphone's receive ring holds about 240 ms (16 buffers of 16 ms): a read every 500 ms lost half of the
   samples (`run143c`).
+
+## P748 (#1028), 2026-11-10: one Mixer, a per-frame and a callback refill, measured in Road
+
+`games/sound.py` gives the games one `Mixer` (`play(sound)`, `render(buf)`) and two drivers that feed the I2S ring.
+`FrameRefill` refills once per frame (the naive path, D26). `CallbackRefill` refills from the stock `I2S.irq` callback,
+about every 16 ms (D25). `probe733_games.py` uses the module, and `REFILL` picks the driver. The log is
+`run144-p748-mixer.log`. Road and Fire, 16 kHz mono, 120 s per entry, the microphone on in every entry.
+
+| entry | driver, ring | sound | result |
+| --- | --- | --- | --- |
+| 1 | none | none | 18.7 fps, worst frame 134 ms: the cost control |
+| 2 | `FrameRefill`, 4096 B | 58 auto hits | delay median 134 ms, max 143 ms, 0 missed, 9 late refills |
+| 3d | `CallbackRefill`, 2048 B | tone at 6000 | 18.9 fps, worst 126 ms, 0 gaps, handler wait at most 27 ms, 0 late |
+| 4 | `CallbackRefill`, 2048 B | 58 auto hits | delay median 70 ms, max 78 ms, 0 missed, handler wait at most 22 ms |
+| 5b | `CallbackRefill`, 2048 B | 72 presses, beep at 6000 | 20 heard: delay median 76 ms, push to beep median 101 ms. The PO: "With the press" |
+| 6d | `CallbackRefill`, 2048 B | tone at 6000, Fire | 24.0 fps, worst 62 ms, 0 gaps, handler wait at most 29 ms, 0 late |
+
+- The callback passes all four lines that the plan set before the runs. Gaps (D9): none in Road or Fire, no open
+  gap, and every 5 s line sent at least 99.7 % of the expected blocks. Delay (A3): 70 ms, under the 90 ms goal. Cost
+  (D23): Road within 1 fps and 5 ms of the control. Handler wait: at most 29 ms, under the ring minus two blocks (32
+  ms). No `stall` line came in any entry.
+- The per-frame driver's delay rose from P746's 117 ms to 134 ms. A probable cause, not checked: `FrameRefill` keeps
+  the unwritten rest of a block, so a new sound can wait up to 16 ms more.
+- The microphone read 32-bit words from entry 3b on. The 16-bit read kept the top 16 of its 24 bits, so every level
+  was divided by 256, and the tone at 10000 read 4 to 17 against a room of 0. With 24 bits it read 1985 to 4630
+  against about 200 (`run144i`, `run144j`). The level at the microphone varies a lot between runs: the tone at 3000
+  read 351 against 268 (entry 3c), so the gap runs used 6000.
+- Entries 3b and 6b heard gaps at 113 to 119 s and at 40 to 54 s, and 6b lost USB at 15:08:38. The PO touched the
+  speaker, the microphone and the cable then, because the tone at 10000 was "really annoying". In those windows the
+  driver was never late, and an empty ring plays silence (`auto_clear` is on), so a real gap would also count as late.
+- In entry 5b, 52 of 72 hits found no beep: the soft beep at 6000 read 576 to 1243, under the onset threshold of
+  1200. The 20 heard hits give the delay. Push to frame (`seen`) was 1 to 52 ms, median about 25 ms.
+- `align 0` in every entry: the refill block is aligned to 16 bytes (D27).
