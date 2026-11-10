@@ -98,6 +98,9 @@ class Engine:
                 engine.filters.append(mag_filter)
                 lib.fx_fire_set_filter(ctypes.byref(self.f), mag_filter)
 
+            def take_births(self):  # P747
+                return lib.fx_fire_take_births(ctypes.byref(self.f))
+
             def set_base(self, on):  # P596
                 lib.fx_fire_set_base(ctypes.byref(self.f), 1 if on else 0)
 
