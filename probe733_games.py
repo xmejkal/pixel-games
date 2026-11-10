@@ -18,7 +18,7 @@ Lines: `sound <game> between_max <ms> write_max <ms> late <n> short <samples>` e
 at the end `written <samples> short <samples>`, then `done`. The App prints its own fps and time lines.
 
 Step 3, MIC = 1 (D18, D22: a separate run): the microphone on the second controller hears the speaker and counts the
-gaps in the tone. It opens on the first frame, and the tone opens 1.5 s later, so the run measures the room first.
+gaps in the tone. It opens on the first frame, and the tone opens 2.5 s later, so the run measures the room first.
 Lines: `mic dma_free <B> largest <B>` before it opens, `gap <ms since the microphone opened> <length ms>`, and
 `mic <game> gaps <n> lost <samples> blind <n> tone_mean <n> floor <n>` every 5 s.
 """
@@ -41,7 +41,7 @@ RATE = 16000
 CYCLE = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the wave has no seam
 RING = 2048  # samples in the 8 DMA buffers of 256
 LATE_US = 112_000  # 7 buffers: a refill later than this can find the ring empty
-AMPLITUDE = 3000  # of 32767, quiet
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
 
 
 # --- MVP ---
@@ -114,8 +114,10 @@ class Tone:
 
 BLOCK = const(64)  # samples per block mean, 1 << BLOCK_SHIFT: 4 ms, so any gap of 8 ms or more holds one whole quiet block
 BLOCK_SHIFT = const(6)
-FLOOR_MS = (500, 1500)  # the room, after the microphone's start-up zeros (2^18 SCK, 256 ms, DS-INMP441), before the tone opens at 1500
-TONE_MS = (2000, 3000)  # the tone: it opens at 1500, starts one ring (128 ms) later, after a frame and the click
+TONE_OPEN_MS = 2500  # the tone opens this long after the microphone
+FLOOR_MS = (1500, 2500)  # the room, after the microphone settles (about 1.3 s, run133), before the tone opens
+TONE_MS = (3000, 4000)  # the tone: it starts one ring (128 ms) after it opens, after a frame and the click
+TONE_MIN = 10  # the tone at 10000 read 16 to 20, the quiet room 1 to 2 (run133)
 QUIET = 0.3  # a block is quiet below floor + QUIET x (tone_mean - floor)
 BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or drop buffers without a report
 
@@ -205,7 +207,7 @@ class Mic:
 
     def calibrate(self):
         self.floor, self.tone_mean = median(self.floors), median(self.tones)
-        if self.tone_mean < 4 * self.floor or self.tone_mean < 200:
+        if self.tone_mean < 4 * self.floor or self.tone_mean < TONE_MIN:
             print("mic slot empty tone_mean %d floor %d" % (self.tone_mean, self.floor))
             raise Done
         self.threshold = self.floor + QUIET * (self.tone_mean - self.floor)
@@ -273,7 +275,7 @@ def main():
     import app
 
     sd = Pin(6, Pin.OUT, value=0)  # the amplifier stays off through the display setup
-    tone = Tone(sd, 1500 if MIC else 0) if TONE else None
+    tone = Tone(sd, TONE_OPEN_MS if MIC else 0) if TONE else None
     probe = Probe(tone)
     frame = app.App.frame
 
