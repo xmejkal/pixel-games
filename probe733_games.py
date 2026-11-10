@@ -17,9 +17,10 @@ can find the ring empty: that is a `late` count. `short` is the samples the cloc
 It moves by up to one ring with no break, so only a larger rise means that the speaker played silence.
 
 Lines every 5 s: `sound <game> sent <n> of <expected> between_max <ms> lag_max <ms> late <n> short <samples> pushes
-<n>`. `sent` counts the refills since the last line, and `expected` is one per 16 ms. `lag_max` is between_max minus
-one buffer: how long the handler waited. `pushes` counts the raw BOOT interrupts since the start. Also `switch <n>
-<ms>`, `align <n>` at open (the block's address modulo 16, which must be 0, D27), and at the end `written <samples>
+<n>`. `sent` counts the blocks of 256 samples written since the last line (since the open, in the first line), and
+`expected` is one per 16 ms. `lag_max` is between_max minus one buffer: how long the handler waited. A `late` refill
+has a lag over the ring minus two buffers. `pushes` counts the raw BOOT interrupts since the start. The callback chain
+has no restart: a lost schedule stops it, and the probe prints `stall <ms> pushes <n>` once. Also `switch <n> <ms>`, `align <n>` at open (the block's address modulo 16, which must be 0, D27), and at the end `written <samples>
 short <samples>`, then `done`. The App prints its own fps and time lines.
 
 MIC = 1 (D18, D22): the microphone on the second controller hears the speaker. It opens on the first frame, and the
@@ -80,7 +81,8 @@ TONE_OPEN_MS = 2500  # the sound opens this long after the microphone
 FLOOR_MS = (1500, 2500)  # the room, after the microphone settles (about 1.3 s, run141), before the sound opens
 TONE_MS = (3000, 4000)  # the tone: it starts one ring after it opens, after a frame and the click
 TONE_MIN = 10  # the tone at 10000 read 16 to 21, the room 0 to 5 (run141): the 4 x floor margin is thin
-QUIET = 0.3  # a block is quiet below floor + QUIET x (tone_mean - floor)
+BEEP_MIN = 20  # the onset threshold with HITS: over a click or speech, under the beep at 20000 (the tone at 10000 read 16 to 21)
+QUIET = 0.3 # a block is quiet below floor + QUIET x (tone_mean - floor)
 BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or drop buffers without a report
 
 
@@ -230,7 +232,7 @@ class Mic:
     def calibrate(self):
         if HITS:
             self.floor = median(self.floors)
-            self.threshold = max(4 * self.floor, TONE_MIN)
+            self.threshold = max(4 * self.floor, BEEP_MIN)
             return
         self.floor, self.tone_mean = median(self.floors), median(self.tones)
         if self.tone_mean < 4 * self.floor or self.tone_mean < TONE_MIN:
@@ -258,9 +260,9 @@ class Probe:
         self.mixer, self.refill, self.mic = sound.Mixer(), None, None
         self.tone = array("h", (int(AMPLITUDE * math.sin(2 * math.pi * 11 * i / CYCLE)) for i in range(CYCLE)))
         self.beep = array("h", (int(BEEP * math.sin(2 * math.pi * 440 * i / RATE)) for i in range(BEEP_SAMPLES)))
-        self.switches = self.pushes = self.skips = self.sent = 0
-        self.push_us = None
-        self.start = self.report = self.next_switch = self.next_hit = self.open_at = self.opened_ms = None
+        self.switches = self.pushes = self.skips = self.written_at = 0
+        self.push_us, self.stalled = None, False
+        self.start = self.report = self.next_switch = self.next_hit = self.open_at = self.opened_ms = self.sent_at = None
 
     def first(self, box, now):
         self.start = self.report = now
@@ -279,7 +281,7 @@ class Probe:
         print("align %d" % (uctypes.addressof(r.block) % 16))
         if not HITS:
             self.mixer.play(self.tone, loop=True)
-        self.opened_ms = time.ticks_ms()
+        self.opened_ms = self.sent_at = time.ticks_ms()  # the first `sent` window starts here, not at the first frame
         r.open()
         if self.mic:
             self.mic.refill = r
@@ -297,16 +299,21 @@ class Probe:
                 self.open()
         elif isinstance(r, sound.FrameRefill):
             r.refill()
+        elif not self.stalled and time.ticks_diff(time.ticks_us(), r.last) > 2000 * RING_MS:
+            self.stalled = True  # a lost schedule ends the callback chain for good (refuter): report, never write again
+            print("stall %d pushes %d" % (time.ticks_diff(time.ticks_us(), r.last) // 1000, self.pushes))
         if m:
             m.read()
         if time.ticks_diff(now, self.report) >= REPORT_MS:
             r = self.refill
             if r:
+                between_max = r.between_max // 1000
+                r.reset()  # first: a callback during the print below keeps its between for the next line
                 print("sound %s sent %d of %d between_max %d lag_max %d late %d short %d pushes %d" % (
-                    box.game.name, r.sent_count - self.sent, time.ticks_diff(now, self.report) // BUFFER_MS,
-                    r.between_max // 1000, r.between_max // 1000 - BUFFER_MS, r.late, self.short(), self.pushes))
-                self.sent = r.sent_count
-                r.reset()
+                    box.game.name, (r.written - self.written_at) // sound.REFILL_SAMPLES,
+                    time.ticks_diff(now, self.sent_at) // BUFFER_MS, between_max, between_max - BUFFER_MS, r.late,
+                    self.short(), self.pushes))
+                self.written_at, self.sent_at = r.written, now
             if m:
                 m.report(box.game.name)
             self.report = now
