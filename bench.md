@@ -935,4 +935,20 @@ glides to them in about 32 ms. Each run is 120 s with `CallbackRefill` 2048 B. T
 - On the Mac, wind -60 against +60 changes a whoosh level 3.4 times. The test asserts at least 1.41 times, and its sign: a body with dx above 0 is louder at wind -60.
 - Before fix C, `BurningBodies.follow_bodies` cost about 0.8 ms a frame (step 8.30 to 9.1 ms, run148). It now reads the physics `out` array in place. New numbers come in run149.
 
-<!-- run149 rows go here -->
+After the review (engine 1c15d73, `crackle_c.mpy` sha256 90d7503d, `-O2` on `fx_noise_mix` only, the stuck-whoosh fix
+and the `out` read), 120 s each. `HeatField.stats()` timing is in run147e: 392 to 497 us a call.
+
+| entry | log | game, voice | result |
+| --- | --- | --- | --- |
+| 7 | run149a | Fire, GrainCrackle | 24 fps, worst 74 ms, step 7.0 ms, late 1, render at most 465 us, 0 dropped |
+| 8 | run149b | Fire, FireSound | 24 fps, worst 70 ms, step 7.1 ms, late 0, render at most 693 us, 0 dropped |
+| 9 | run149c | BurningBodies, GrainCrackle | 23.4 fps, worst 84 ms, step 9.5 ms, late 0, render at most 443 us |
+| 10 | run149d | BurningBodies, FireSound | 23.05 fps, worst 89 ms, step 11.7 ms, late 0, render at most 979 us, 119 follow_bodies calls a window |
+
+- Entries 8 and 10 pass every line against 7 and 9, with thin margins on BurningBodies: render 979 us against 1000,
+  and worst 89 ms against 84 + 5.
+- `-O2` on the one function renders slower than the whole module at `-O2` (entry 6: at most 891 us; Fire 623 us). The
+  refuter's per-path cost is real, but this fix did not lower it. A faster mix (voices in an outer loop, state in
+  locals) is a later row.
+- The step on BurningBodies grows from 9.5 to 11.7 ms with the whooshes, against about 0.8 ms in run148. Both runs pass
+  the fps line. The cost of `follow_bodies` in Python is a later row too.

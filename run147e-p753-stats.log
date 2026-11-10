@@ -1,0 +1,2 @@
+# run147e (P753), 2026-11-10 21:23 CET: HeatField.stats() on the board, Fire's look, 60 steps then 10 timed calls, firmware from engine 1c15d73
+stats (657587, 89) us [497, 444, 428, 422, 413, 406, 407, 400, 400, 392]
