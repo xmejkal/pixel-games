@@ -781,6 +781,15 @@ beep, in its own sample clock. Road, 16 kHz mono, no game restarts in the hit ru
 - In the press runs at 8192 B, entries 6 and 7 saw no press at all, and entry 8 saw 31. The cause is not known. The
   probe now prints each press before any check. In entry 8, 9 of 28 hits found no beep within the probe's 400 ms,
   4 of them in the first 5 hits, with presses over 1 s apart. The cause is not known.
+- Limits of the measure (the refuter, 2026-11-10), fixed in the next spike, which reruns it:
+  - The delay counts from the frame that reads the press, not from the push. Road's frames add up to 50 to 120 ms
+    before that, so the PO heard press-to-sound times longer than the table's, and A3's 130 ms line compares two
+    different spans. The next probe stamps the hit in the button's interrupt (`Button.edge`).
+  - One 4 ms block over the threshold counts as an onset, with a thin margin (threshold 10, the beep about 18). That
+    explains the misses and the early onsets better than the press timing does. Next: two or three blocks in a row,
+    a rising edge, the loudest block printed per hit, and the 400 ms window set from the ring size.
+  - The probe dropped 3 of the 31 presses in entry 8 without a print, because a hit waited for its beep.
+  - `between` in a hit line is the previous frame's refill gap, not the one that wrote the beep.
 - The microphone's clock is right: alone, it lags 0 to 192 samples (`run143d`). The first smoke printed negative
   `lost` in the hit line, because inside a read it counted a block twice, so the hit line no longer prints it.
 - The microphone's receive ring holds about 240 ms (16 buffers of 16 ms): a read every 500 ms lost half of the
