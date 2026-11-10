@@ -11,20 +11,28 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: crackle_lib
 
-from crackle import CRACKLE_LOOK, PEAK, SAMPLED_POPS, Crackle, SampledCrackle, check_look  # noqa: E402
+from crackle import (CRACKLE_LOOK, GRAIN_LOOK, PEAK, SAMPLED_POPS, Crackle, GrainCrackle, SampledCrackle,  # noqa: E402
+                     check_grain_look, check_look)
 from crackle_lib import HAVE_CLANG, CCrackle  # noqa: E402
+from fire_bank import FIRE_BANK_INDEX  # noqa: E402
+from grains_lib import GrainsModule  # noqa: E402
 
 RATE, BLOCK = 16000, 256  # sound.py's RATE and REFILL_SAMPLES
 FRAME_BLOCKS = 2  # about one Fire frame of 40 ms between two add_pops
 
 
-def play(crackle, seconds, seed=747, burst=0.01):
+def play(crackle, seconds, seed=747, burst=0.01, rises=False):
     """seconds of blocks, with a few births before every second block, as Fire's frames add them (about 3.9 a
-    second), and in burst of them a test's 9 at once, which fills every slot (Fire adds at most 2 a frame)."""
+    second), and in burst of them a test's 9 at once, which fills every slot (Fire adds at most 2 a frame). With
+    rises, each birth also has an ember rise of 2 to 5, as the kernel gives (P751)."""
     rng, out, buf = random.Random(seed), array("h"), array("h", bytes(2 * BLOCK))
     for k in range(seconds * RATE // BLOCK):
         if k % FRAME_BLOCKS == 0:
-            crackle.add_pops(9 if rng.random() < burst else 1 if rng.random() < 0.16 else 0)
+            n = 9 if rng.random() < burst else 1 if rng.random() < 0.16 else 0
+            if rises:
+                crackle.add_pops(n, array("b", (rng.randrange(2, 6) for _ in range(min(n, 8)))))
+            else:
+                crackle.add_pops(n)
         crackle.render(buf)
         out.extend(buf)
     return out
@@ -72,6 +80,76 @@ class CrackleTest(unittest.TestCase):
         self.assertEqual(play(python, 10), play(c, 10))
         self.assertEqual(python.counts(), c.counts())
         self.assertGreater(python.counts()[2], 0)  # the bursts of 9 dropped some, the same in both
+
+
+@unittest.skipUnless(HAVE_CLANG, "clang is needed")
+class GrainCrackleTest(unittest.TestCase):
+    """P751's pass lines on the Mac: on 15 s with Fire's births, RMS 1500 to 2500, under 0.1 % of samples at the clamp,
+    and every 16 ms block's RMS above 200 (the bed never silent)."""
+
+    @classmethod
+    def setUpClass(cls):
+        bank = os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw")
+        cls.crackle = GrainCrackle(747, bank_path=bank, native=GrainsModule())
+        cls.out = play(cls.crackle, 15, burst=0, rises=True)
+
+    def test_the_bank_matches_its_index(self):
+        last = FIRE_BANK_INDEX[-3] + FIRE_BANK_INDEX[-2]
+        self.assertEqual(len(self.crackle.bank), 2 * last)
+        self.assertLess(len(self.crackle.bank), 256 * 1024)
+
+    def test_rms_is_1500_to_2500(self):
+        rms = (sum(v * v for v in self.out) / len(self.out)) ** 0.5
+        self.assertTrue(1500 <= rms <= 2500, rms)
+
+    def test_under_a_tenth_of_a_percent_is_clamped(self):
+        self.assertLess(sum(abs(v) >= PEAK for v in self.out) / len(self.out), 0.001)
+
+    def test_the_bed_is_never_silent(self):
+        blocks = [self.out[k:k + 256] for k in range(0, len(self.out), 256)]
+        self.assertGreater(min((sum(v * v for v in b) / 256) ** 0.5 for b in blocks), 200)
+
+    def test_each_birth_starts_one_pop_and_a_burst_drops_the_rest(self):
+        c = GrainCrackle(1, bank_path=os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw"),
+                         native=GrainsModule())
+        c.add_pops(9)
+        c.render(array("h", bytes(2 * BLOCK)))
+        self.assertEqual(c.counts(), (9, 8, 1))
+
+    def test_the_bank_goes_into_the_engines_sound_bank_when_it_has_one(self):  # --- MVP (P751) ---
+        class SoundBank(bytearray):
+            where = "psram"
+
+        class Engine:
+            pass
+
+        raw = os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw")
+        Engine.SoundBank = SoundBank
+        with_bank = GrainCrackle(1, bank_path=raw, native=GrainsModule(), engine=Engine)
+        self.assertIsInstance(with_bank.bank, SoundBank)
+        self.assertEqual(self.crackle.bank, with_bank.bank)
+        without = GrainCrackle(1, bank_path=raw, native=GrainsModule(), engine=object())
+        self.assertIs(bytearray, type(without.bank))
+
+    def test_rises_make_the_biggest_pop_louder_and_none_is_as_before(self):  # --- MVP (P751) ---
+        raw = os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw")
+        loud = quiet = 0
+        for seed in range(1, 41):
+            for rises, kind in ((array("b", [5]), 1), (None, 0)):
+                c = GrainCrackle(seed, look=(0, 32768), bank_path=raw, native=GrainsModule())
+                c.add_pops(1, rises)
+                out = array("h", bytes(2 * BLOCK))
+                c.render(out)
+                peak = max(map(abs, out))
+                loud, quiet = (loud + peak, quiet) if kind else (loud, quiet + peak)
+        self.assertGreater(loud, 1.5 * quiet)  # a drawn pop is mostly small
+        self.assertTrue(GrainCrackle.takes_rises)
+
+    def test_a_look_out_of_range_is_refused(self):
+        check_grain_look(GRAIN_LOOK)
+        for bad in ((-1, 0), (0, 32769), (1,)):
+            with self.assertRaises(ValueError):
+                check_grain_look(bad)
 
 
 if __name__ == "__main__":

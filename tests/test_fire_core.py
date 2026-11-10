@@ -25,7 +25,7 @@ FIRE_C = os.path.join(os.path.dirname(HERE), "engine", "core", "fx_fire.c")
 W, H = 160, 120  # games/fire.py's field: the panel is 240 x 320
 SEED, STEPS = 595, 50
 SMALL_W, SMALL_H = 24, 18  # the reference steps in Python: a small field keeps the run short
-MAP_W, MAP_H, MAX_SPOTS, MAX_EMBERS = 256, 32, 16, 24  # FX_FIRE_MAP_W, FX_FIRE_MAP_H, FX_FIRE_MAX_SPOTS and EMBERS
+MAP_W, MAP_H, MAX_SPOTS, MAX_EMBERS, MAX_RISES = 256, 32, 16, 24, 8  # FX_FIRE_MAP_W, _MAP_H, _MAX_SPOTS, _EMBERS, _RISES
 PART1 = (31, 0, 0, 0, 1, 0, 0, 0)  # the look at init: decay, cool, sway, spots, spread, fast, embers, fade
 ALL_ON = (33, 90, 1, 5, 4, 120, 200, 21)  # decay 33 lifts sums past the hottest cell read, so the bound is reached too
 PART2_AT_31 = (31, 24, 1, 12, 16, 0, 0, 0)  # part 2's look at decay 31, where the bound does nothing
@@ -43,6 +43,7 @@ class Field(ctypes.Structure):
     _fields_ += [("base", ctypes.c_int32)]  # --- MVP (P596) ---
     _fields_ += [("filter", ctypes.c_int32)]  # --- MVP (P608) ---
     _fields_ += [("born", ctypes.c_int32)]  # --- MVP (P747) ---
+    _fields_ += [("born_rise", ctypes.c_int32 * MAX_RISES)]  # --- MVP (P751) ---
 
 
 NEAREST, LINEAR = 0, 1  # FX_FIRE_NEAREST and FX_FIRE_LINEAR (P608)
@@ -526,16 +527,50 @@ class FireCoreTest(unittest.TestCase):
         for _ in range(STEPS):
             self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
             seen += sum(1 for heat in f.ember_heat if heat == 255 - 12)  # a new ember has cooled one step
-        births = self.lib.fx_fire_take_births(ctypes.byref(f))
-        self.assertEqual((seen, 0), (births, self.lib.fx_fire_take_births(ctypes.byref(f))))
+        births = self.lib.fx_fire_take_births(ctypes.byref(f), None, 0)
+        self.assertEqual((seen, 0), (births, self.lib.fx_fire_take_births(ctypes.byref(f), None, 0)))
         self.assertGreater(births, 0)
+
+    def take(self, f, n):  # --- MVP (P751) ---
+        rises = (ctypes.c_int8 * n)(*[-1] * n)
+        return self.lib.fx_fire_take_births(ctypes.byref(f), rises, n), list(rises)
+
+    def test_take_births_writes_each_births_rise_2_to_5_then_0_and_resets(self):  # --- MVP (P751) ---
+        f, heat = self.field(SMALL_W, SMALL_H, look=ALL_ON)
+        for step in range(6):
+            self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
+        births, rises = self.take(f, 8)
+        self.assertTrue(0 < births <= 8, births)
+        self.assertTrue(all(2 <= r <= 5 for r in rises[:births]), rises)
+        self.assertEqual([0] * (8 - births), rises[births:])
+        self.assertEqual((0, [0] * 4), self.take(f, 4))
+
+    def test_more_than_8_births_count_all_and_keep_8_rises(self):  # --- MVP (P751) ---
+        f, heat = self.field(SMALL_W, SMALL_H, look=(31, 0, 0, 0, 1, 0, 255, 0))
+        for step in range(20):
+            self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
+            for i in range(MAX_EMBERS):
+                f.ember_heat[i] = 0  # free every slot, so the next draw is a birth
+        births, rises = self.take(f, 12)
+        self.assertGreater(births, 8)
+        self.assertTrue(all(2 <= r <= 5 for r in rises[:8]), rises)
+        self.assertEqual([0] * 4, rises[8:])  # the 9th birth on has no rise
+        self.assertEqual(0, f.born)
+
+    def test_take_births_with_no_array_or_a_short_one_only_counts(self):  # --- MVP (P751) ---
+        f, heat = self.field(SMALL_W, SMALL_H, look=ALL_ON)
+        for step in range(30):
+            self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
+        births = f.born
+        self.assertEqual((births, 2), (self.take(f, 2)[0], len(self.take(f, 2)[1])))
+        self.assertEqual(0, f.born)
 
     def test_a_draw_with_every_ember_slot_taken_is_no_birth(self):  # --- MVP (P747) ---
         f, _ = self.field(SMALL_W, SMALL_H, look=(31, 0, 0, 0, 1, 0, 255, 0))
         for i in range(MAX_EMBERS):
             f.ember_x[i], f.ember_y[i], f.ember_heat[i] = 5 * 256, 5 * 256, 200
         self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
-        self.assertEqual(0, self.lib.fx_fire_take_births(ctypes.byref(f)))
+        self.assertEqual(0, self.lib.fx_fire_take_births(ctypes.byref(f), None, 0))
 
     def test_init_zeroes_the_field_and_a_seed_of_0_is_1(self):
         f, heat = self.field(SMALL_W, SMALL_H, seed=0)

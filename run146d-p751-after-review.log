@@ -1,0 +1,47 @@
+cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.NHUJye4w7k/crackle.py :crackle.py
+cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+Up to date: fire.py
+cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+Up to date: sound.py
+cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+Up to date: fire_bank.py
+fire_bank.raw is on the board
+bank load 219 ms, 246960 bytes, psram
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6029408
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+align 0
+first pop 91
+loop 12 s from the script's start to the first pop
+fire linear fps 24 step 6.42 draw 6.47
+fps fire 24
+time fire step 7.3 paint 9.6 send 4.0 gc 2.4 fps 24 worst 58 slowest 49 = step 7 paint 38 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.8 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 149280 glyphs 18
+sound fire sent 317 of 316 between_max 45 lag_max 29 late 0 short -208 pushes 0
+crackle fire render_max 415 pop_median 12 pop_max 26 pops 16 dropped 0
+fire linear fps 24 step 6.57 draw 6.48
+fps fire 24
+time fire step 7.4 paint 10.0 send 4.1 gc 2.4 fps 24 worst 66 slowest 48 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 150416 glyphs 18
+sound fire sent 314 of 313 between_max 48 lag_max 32 late 1 short -272 pushes 0
+crackle fire render_max 441 pop_median 11 pop_max 26 pops 22 dropped 0
+fire linear fps 24 step 6.53 draw 6.49
+fps fire 24
+time fire step 7.5 paint 10.0 send 4.3 gc 2.4 fps 24 worst 66 slowest 49 = step 7 paint 38 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 150448 glyphs 19
+sound fire sent 312 of 313 between_max 44 lag_max 28 late 1 short 16 pushes 0
+crackle fire render_max 455 pop_median 13 pop_max 25 pops 20 dropped 0
+written 320512 short 144
+done

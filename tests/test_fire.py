@@ -98,8 +98,11 @@ class Engine:
                 engine.filters.append(mag_filter)
                 lib.fx_fire_set_filter(ctypes.byref(self.f), mag_filter)
 
-            def take_births(self):  # P747
-                return lib.fx_fire_take_births(ctypes.byref(self.f))
+            def take_births(self, rises=None):  # P747, P751: the binding's, with rises an array("b") or None
+                if rises is None:
+                    return lib.fx_fire_take_births(ctypes.byref(self.f), None, 0)
+                return lib.fx_fire_take_births(ctypes.byref(self.f), ctypes.c_void_p(rises.buffer_info()[0]),
+                                               len(rises))
 
             def set_base(self, on):  # P596
                 lib.fx_fire_set_base(ctypes.byref(self.f), 1 if on else 0)
@@ -235,6 +238,60 @@ class FireTest(unittest.TestCase):
                     fire.FADE)
         self.assertEqual([look], fire.engine.looks)  # once
         self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))  # the fire reached the frame
+
+    def births(self, crackle, old_engine=False):  # --- MVP (P751) --- 8 s of Fire into crackle: its add_pops calls
+        if old_engine:  # a HeatField whose take_births takes no argument, as before P751
+            real = fire.engine.HeatField
+
+            class OldField(real):
+                def take_births(self):
+                    return real.take_births(self)
+
+            fire.engine.HeatField = OldField
+        fire.FirePlugin.crackle = crackle
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                play(fire.Fire(), 200, 0, Tft())
+        finally:
+            fire.FirePlugin.crackle = None
+
+    def test_a_crackle_that_takes_rises_gets_each_births_rise_2_to_5(self):  # --- MVP (P751) ---
+        class Taking:
+            takes_rises = True
+
+            def __init__(self):
+                self.calls = []
+
+            def add_pops(self, n, rises=None):
+                self.calls.append((n, None if rises is None else list(rises)))
+
+        c = Taking()
+        self.births(c)
+        self.assertGreater(sum(n for n, _ in c.calls), 8)
+        for n, rises in c.calls:
+            self.assertEqual([0] * (8 - min(n, 8)), rises[min(n, 8):])
+            self.assertTrue(all(2 <= r <= 5 for r in rises[:min(n, 8)]), rises)
+
+    def test_other_crackles_and_an_old_engine_get_the_count_alone(self):  # --- MVP (P751) ---
+        class Counting:
+            def __init__(self):
+                self.calls = []
+
+            def add_pops(self, n):
+                self.calls.append(n)
+
+        class Taking(Counting):
+            takes_rises = True
+
+            def add_pops(self, n, rises=None):
+                self.calls.append((n, rises))
+
+        plain = Counting()
+        self.births(plain)
+        self.assertGreater(sum(plain.calls), 8)
+        old = Taking()
+        self.births(old, old_engine=True)
+        self.assertTrue(old.calls and all(rises is None for _, rises in old.calls), old.calls)
 
     def test_a_tap_moves_to_the_next_mode(self):
         """P608: the scene starts linear, and a tap walks the three modes, each setting its filter. Only the picture

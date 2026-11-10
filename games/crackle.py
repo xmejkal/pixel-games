@@ -8,6 +8,9 @@ the I2S. add_pops(n) queues n pops, and the next render starts them. counts() gi
 - NativeCrackle runs the same integer math in C, engine/core/fx_crackle.c, loaded from crackle_c.mpy with no firmware
   rebuild: 0.4 ms a block. A Mac test wants it equal to Crackle sample for sample, so a change to one is a change to
   both, by fx_crackle.h's rules: every value under 2^30, signed values shift only with >>, no / or %.
+- GrainCrackle (P751) is the fire of P750's demo g: a low flame roar (the bed, played in grains) and one bank pop per
+  ember, mixed in C by engine/core/fx_grains.c from the same crackle_c.mpy, out of a sample bank (fire_bank.raw, made
+  on the Mac by tools/fire_bank.py). No filter, so nothing rings or overflows.
 - SampledCrackle is the naive path on the board, which stays working (D26, the PO chose it on 2026-11-10): Crackle
   renders a few pops once, and a sound.Mixer plays one per frame that has births. No roar, no overlap.
 
@@ -26,6 +29,11 @@ SAMPLED_POPS = 4
 SAMPLED_SAMPLES = 2560  # 160 ms: by the look's ranges, a pop and its click end by about sample 2200
 SLOTS = 8  # FX_CRACKLE_SLOTS
 PEAK = 32767  # FX_CRACKLE_PEAK
+
+# --- MVP (P751) ---
+# bed_gain, pop_gain: see fx_grains_init in fx_grains.h, Q15 (32768 is the bank as it is)
+GRAIN_LOOK = (32768, 32768)
+BANK_FILE = "fire_bank.raw"
 
 
 def check_look(look):
@@ -138,6 +146,73 @@ class NativeCrackle:
 
     def counts(self):
         return self.c.counts(self.state)
+
+
+def check_grain_look(look):
+    """fx_grains_init's look ranges. ValueError if not."""
+    if not (len(look) == 2 and all(0 <= v <= 32768 for v in look)):
+        raise ValueError("a look out of fx_grains_init's ranges: %r" % (look,))
+
+
+def ticks():
+    """Milliseconds from a clock: MicroPython's on the board, the Mac's otherwise."""
+    import time
+    return time.ticks_ms() if hasattr(time, "ticks_ms") else int(time.monotonic() * 1000)
+
+
+class GrainCrackle:
+    """The grains in C: crackle_c.mpy's grains_ functions. The bank is read once into a bytearray (print: its load
+    time), and the state is a bytearray too, so the C keeps no pointer. native is the module, crackle_c on the board
+    and a Mac stand-in in tests (engine/tests/grains_lib.py). ImportError when crackle_c.mpy is not on the board.
+    render and counts are NativeCrackle's. --- MVP (P751) --- The bank lives in an engine.SoundBank, outside the GC
+    heap, which a collection would otherwise walk for 7.6 ms; a firmware without one, and the Mac, get a bytearray.
+    takes_rises tells FirePlugin that add_pops takes the births' rises."""
+
+    pending = None
+    takes_rises = True
+
+    def __init__(self, seed, look=GRAIN_LOOK, bank_path=BANK_FILE, native=None, engine=None):
+        import os
+        from fire_bank import FIRE_BANK_INDEX
+
+        if native is None:
+            import crackle_c as native
+        if engine is None:
+            try:
+                import engine
+            except ImportError:
+                pass
+        check_grain_look(look)
+        t = ticks()
+        nbytes = os.stat(bank_path)[6]
+        self.bank = None
+        if hasattr(engine, "SoundBank"):
+            try:
+                self.bank = engine.SoundBank(nbytes)  # outside the GC heap: a bytearray made each collection 7.6 ms
+            except MemoryError:
+                pass  # no PSRAM: the heap's bytearray, slower collections
+        if self.bank is None:
+            self.bank = bytearray(nbytes)
+        with open(bank_path, "rb") as f:
+            if f.readinto(self.bank) != nbytes:
+                raise OSError("a short read of " + bank_path)
+        print("bank load %d ms, %d bytes, %s" % (ticks() - t, nbytes, getattr(self.bank, "where", "heap")))
+        self.c = native
+        self.state = bytearray(native.GRAINS_SIZE)
+        native.grains_init(self.state, seed, array("i", look), array("i", FIRE_BANK_INDEX))
+
+    def add_pops(self, n, rises=None):
+        """rises: an array("b") of the births' ember rises (2 to 5), or None."""
+        if rises is None:
+            self.c.grains_add_pops(self.state, n)
+        else:
+            self.c.grains_add_pops(self.state, n, rises)
+
+    def render(self, buf):
+        self.c.grains_render(self.state, self.bank, buf)
+
+    def counts(self):
+        return self.c.grains_counts(self.state)
 
 
 class SampledCrackle:
