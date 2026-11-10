@@ -9,7 +9,7 @@
 #     tools/crackle.sh [seconds] [voice] [look]   # voice: NativeCrackle (default), SampledCrackle or GrainCrackle
 #
 # A look, such as "6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK in the crackle.py that this
-# run copies. That copy stays on the board until the next copy.
+# run copies (GRAIN_LOOK for GrainCrackle, such as "0, 32768": bed gain, pop gain). That copy stays on the board until the next copy.
 # GrainCrackle (P751) also needs the bank on the board: games/fire_bank.raw (about 250 KB, about 60 s to copy) goes
 # only when `mpremote fs sha256sum` shows the board's copy differs.
 # --- MVP (P747, P751) ---
@@ -30,8 +30,10 @@ PATH=$TOOLS:$PATH make -s -C "$ROOT/engine/natmod/crackle" ARCH=xtensawin CROSS=
 sed -e 's/^GAME = .*/GAME = "Fire"/' -e 's/^REFILL = .*/REFILL = "CallbackRefill"/' -e 's/^IBUF = .*/IBUF = 2048/' \
     -e "s/^VOICE = .*/VOICE = \"$VOICE\"/" -e "s/^SECONDS = .*/SECONDS = $SECONDS_RUN/" \
     "$ROOT/probe733_games.py" > "$PROBE"
+LOOK_NAME=CRACKLE_LOOK
+[ "$VOICE" = GrainCrackle ] && LOOK_NAME=GRAIN_LOOK
 if [ -n "$LOOK" ]; then
-    sed "s|^CRACKLE_LOOK = .*|CRACKLE_LOOK = ($LOOK)|" "$ROOT/games/crackle.py" > "$CRACKLE_PY"
+    sed "s|^$LOOK_NAME = .*|$LOOK_NAME = ($LOOK)|" "$ROOT/games/crackle.py" > "$CRACKLE_PY"
 else
     cp "$ROOT/games/crackle.py" "$CRACKLE_PY"
 fi

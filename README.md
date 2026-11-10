@@ -94,7 +94,7 @@ Runs now:
   the pops come with the sparks. `NativeCrackle` renders it in C (`engine/core/fx_crackle.c`), loaded from
   `crackle_c.mpy` with no firmware rebuild: at most 0.41 ms per 16 ms block, and Fire keeps 24 fps (bench.md, P747).
   `SampledCrackle` is the plain Python path: four pre-rendered pops through the `Mixer`. Since P751, `GrainCrackle` plays
-  the sound the PO chose in P750: grains of a CC0 fire recording and woody pops from a bank rendered on the Mac
+  one woody pop per ember, in sync with the sparks, over a low flame roar, from a bank rendered on the Mac
   (`tools/fire_bank.py`), kept in `engine.SoundBank` outside the GC heap. The fastest embers (rise 4 and 5) get larger pops. Only the bench probe
   (`probe733_games.py`) turns the sound on today. Try a change to the C crackle with `tools/crackle.sh`.
 - The HUD is drawn once into a strip and blitted each frame (P599).

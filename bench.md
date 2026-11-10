@@ -876,8 +876,9 @@ math and equals the C sample for sample on the Mac. `SampledCrackle` is the naiv
 
 ## P751 (#1033), 2026-11-10: the fire sound of P750's demo g, from a sample bank
 
-`tools/fire_bank.py` renders P750 round 2's demo g on the Mac into a bank of 247 KB (246960 bytes): a 6 s bed (grains of a CC0 fire
-recording, sparse small crackles, a low fluttering roar) and 12 woody pops. On the board, `GrainCrackle` mixes grains
+`tools/fire_bank.py` renders P750 round 2's demo g on the Mac into a bank of 247 KB (246960 bytes): a 6 s bed and 12 woody pops. At
+first the bed held grains of a CC0 fire recording, sparse small crackles and a low fluttering roar (entries 5d to 5d2).
+After the PO's ear, it holds only the roar (run146e). On the board, `GrainCrackle` mixes grains
 of the bed and one pop per ember birth in C (`engine/core/fx_grains.c`, in `crackle_c.mpy`). A fast ember (rise 4 or
 5) gets a larger pop. The bank lives in `engine.SoundBank`, outside the GC heap. Fire, `CallbackRefill` 2048 B, 120 s.
 
@@ -895,5 +896,10 @@ of the bed and one pop per ember birth in C (`engine/core/fx_grains.c`, in `crac
   `heap_caps_malloc` is not in the GC heap, so the collector skips it (the plan's refuter found no flag for this in
   v1.29.0's `py/gc.c`). The bank loads in 179 to 226 ms.
 - The flash needed no buttons this time: `mpremote bootloader` reached download mode (USB 0x1001).
-- The PO's ear on the board's speaker is still open.
+- The PO's ear on the board's speaker (run146e, 2026-11-10 19:25 to 20:20): "No, not yet", with the pops "out of sync"
+  and the bed "still water or wind". Embers show from their first kernel step, so the delay was not the cause. The bed's
+  own crackles (3 to 15 a second, against 2 to 4 births a second) came with no spark on screen. With the bed off
+  (`GRAIN_LOOK = (0, 32768)`), the PO: "Yes, in sync now", "The cracks are good already, snynced". The PO then chose a
+  bed of the roar alone. The roar does not follow the video ("That doesnt seem to be synced with the video"), which is
+  P753's first slice. Render at most 467 us, 0 dropped in all runs of run146e.
 
