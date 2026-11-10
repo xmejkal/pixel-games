@@ -866,7 +866,7 @@ math and equals the C sample for sample on the Mac. `SampledCrackle` is the naiv
   it. A `FrameRefill` write now renders at most one ring. The PO chose pre-rendered pops as the naive path, and on
   `SampledCrackle`: "sounds weird, but never mind lets leave the simple one like that, advanced versions will be cool".
 - 5a, the control, counted 8 late refills, and 5b none. Both sit near the line: `lag_max` reached 32 ms in 5a and
-  29 ms in 5b, against a late refill at 48 ms minus one block. The game switches every 30 s cause the worst frames.
+  29 ms in 5b, and a refill whose wait passes 32 ms (the ring minus two blocks) counts as late. The game switches every 30 s cause the worst frames.
 - Later, not MVP: a pop whose loudness follows its spark's size (the kernel gives each ember a size), the flames in C,
   and the S3's vector instructions where a measurement shows the need (D27).
 
