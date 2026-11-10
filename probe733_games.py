@@ -1,31 +1,39 @@
 """
-P733 steps 2 and 3: the 440 Hz tone beside the game loop, refilled once per frame by Python, through stock machine.I2S.
+P733 steps 2 and 3, P746 and P748: a sound beside the game loop, fed by a driver of games/sound.py through stock
+machine.I2S, and heard by a microphone.
 
-    mpremote run probe733_games.py      # GAME, TONE, MIC and SECONDS set by sed before each run
+    mpremote cp games/sound.py :sound.py
+    mpremote run probe733_games.py      # GAME, TONE, MIC, HITS, REFILL, IBUF and SECONDS set by sed before each run
 
-TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
-replaces App.frame with a hook that refills the tone after each frame, switches to a new copy of the game every 30 s
-(the heavy frame of D19), and presses BOOT on the game-over screen, so the game plays most of the time.
+It changes no file in games/. It replaces App.frame with a hook that runs after each frame: the per-frame refill, the
+microphone's read, the 5 s report, a switch to a new copy of the game every 30 s (the heavy frame of D19, none with
+HITS), and a press of BOOT on the game-over screen, so the game plays most of the time. TONE = 0 is the control run:
+the same game and presses, with no I2S.
 
-ibuf=4096 gives 8 DMA buffers of 256 samples (16 ms), a ring of 128 ms (machine_i2s.c:152). A poll switches the
-writes to not waiting (machine_i2s.c:239): each refill writes what fits in the free buffers and returns at once.
-The first version kept a lead of 96 ms with waiting writes, and each refill waited about 40 ms (run140, entry 2).
-A refill more than 112 ms after the last one can find the ring empty: that is a `late` count. `short` is the samples
-the clock expected minus the samples written. It moves by up to about 300 samples with no break, so only a rise
-between reports by more than that means the speaker played silence.
+REFILL picks the driver by its class name (P748). FrameRefill refills once per frame, after a poll that makes the
+writes return at once. CallbackRefill refills from the stock I2S.irq callback, about every 16 ms. IBUF sets the ring:
+2048 bytes are 4 DMA buffers of 256 samples, 64 ms (machine_i2s.c:152). A refill later than the ring minus one buffer
+can find the ring empty: that is a `late` count. `short` is the samples the clock expected minus the samples written.
+It moves by up to one ring with no break, so only a larger rise means that the speaker played silence.
 
-Lines: `sound <game> between_max <ms> write_max <ms> late <n> short <samples>` every 5 s, `switch <n> <ms>`, and
-at the end `written <samples> short <samples>`, then `done`. The App prints its own fps and time lines.
+Lines every 5 s: `sound <game> sent <n> of <expected> between_max <ms> lag_max <ms> late <n> short <samples> pushes
+<n>`. `sent` counts the refills since the last line, and `expected` is one per 16 ms. `lag_max` is between_max minus
+one buffer: how long the handler waited. `pushes` counts the raw BOOT interrupts since the start. Also `switch <n>
+<ms>`, `align <n>` at open (the block's address modulo 16, which must be 0, D27), and at the end `written <samples>
+short <samples>`, then `done`. The App prints its own fps and time lines.
 
-Step 3, MIC = 1 (D18, D22: a separate run): the microphone on the second controller hears the speaker and counts the
-gaps in the tone. It opens on the first frame, and the tone opens 2.5 s later, so the run measures the room first.
-Lines: `mic dma_free <B> largest <B>` before it opens, `gap <ms since the microphone opened> <length ms>`, and
-`mic <game> gaps <n> lost <samples> blind <n> tone_mean <n> floor <n>` every 5 s.
+MIC = 1 (D18, D22): the microphone on the second controller hears the speaker. It opens on the first frame, and the
+sound opens 2.5 s later, so the run measures the room first. Lines: `mic dma_free <B> largest <B>` before it opens,
+`gap <ms since the microphone opened> <length ms>`, and `mic <game> gaps <n> open <ms> lost <samples> blind <n>
+tone_mean <n> floor <n>` every 5 s and at the end. `open` is the length of a gap that has not ended yet, so a dead
+callback shows.
 
-P746, HITS = "auto" or "press" (with MIC = 1): silence instead of the tone, and a beep at each hit, a game event. The
-refill keeps the ring full of silence, so a beep waits behind the whole ring. The microphone measures the delay from
-the start of the frame that sees the hit to the beep: `hit <n> delay <ms> between <ms>`, or `hit <n> missed`
-(`lost` stays in the 5 s line: inside a read it counts a block twice), and at the end `hits <n> median <ms> max <ms> missed <n>`. No game restarts in these runs. IBUF sets the ring.
+HITS = "auto" or "press" (with MIC = 1, P746): silence instead of the tone, and a 60 ms beep at each hit, a game
+event. The beep waits behind the ring. An onset is the first of 3 loud blocks in a row after a quiet block. Lines:
+`hit <n> seen <ms> delay <ms> total <ms> between <ms> loud <n>`: push to frame, frame to beep, push to beep (seen and
+total are -1 for an auto hit), the refill gap before the refill that took the beep, and the loudest block in the
+window. Also `hit <n> missed loud <n>`, `skip <n>` for a hit while the last one waits, and at the end `hits <n> median
+<ms> max <ms> missed <n> total_median <ms>`. No game restarts in these runs.
 """
 
 import math
@@ -33,6 +41,8 @@ import time
 from array import array
 
 import micropython
+import sound
+import uctypes
 from micropython import const
 from machine import I2S, Pin
 
@@ -40,20 +50,23 @@ GAME = "Fire"  # Fire, BallPit or Road: a name in app
 TONE = 1  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3), or measures the delays (HITS)
 HITS = 0  # "auto": a hit every 2 s from 4 s on, "press": a hit at each BOOT press, 0: the tone (P746)
-IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 8192 gives 16 buffers, 256 ms
+REFILL = "FrameRefill"  # or "CallbackRefill": a driver's class name in sound (P748)
+IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 2048 gives 4 buffers, 64 ms
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
-RATE = 16000
-CYCLE = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the wave has no seam
+RATE = sound.RATE
 RING = IBUF // 2  # samples in the TX DMA buffers
-LATE_US = (IBUF // 512 - 1) * 16_000  # all buffers but one: a refill later than this can find the ring empty
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
+RING_MS = RING // (RATE // 1000)
+BUFFER_MS = sound.REFILL_SAMPLES // (RATE // 1000)  # 16
+CYCLE = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the looping tone has no seam
+AMPLITUDE = 10000 if MIC else 3000  # of 32767: the microphone heard 3000 no louder than the room (run141); the PO finds 10000 annoying
 BEEP = 20000  # a beep's amplitude: the tone at 10000 read 16 to 21 against a room of 0 to 5, too close for an onset
 BEEP_SAMPLES = 960  # 60 ms
 HIT_EVERY_MS = 2000
-HIT_FROM_MS = 4000  # after the beeper opens (2.5 s) and the microphone's floor is set
-ONSET_MS = 400  # a hit with no beep heard in this time is missed
+HIT_FROM_MS = 4000  # after the sound opens (2.5 s) and the microphone's floor is set
+ONSET_MS = 2 * RING_MS + 200  # a hit with no beep heard in this time is missed: the beep waits up to one ring
+ONSET_BLOCKS = 3  # loud blocks in a row that make an onset
 
 
 # --- MVP ---
@@ -61,103 +74,11 @@ class Done(Exception):
     """Raised in the hook to end app.run(): at SECONDS, or when the microphone hears no tone."""
 
 
-class Tone:
-    """The 440 Hz tone. Each refill fills the free DMA buffers without waiting. It counts the refills that came too late."""
-
-    def __init__(self, sd, delay_ms=0):
-        self.sd, self.i2s, self.delay_ms, self.open_at = sd, None, delay_ms, None
-        # the table holds CYCLE + RING samples or more, the longest slice a write takes
-        cycles = RING // CYCLE + 2
-        self.table = memoryview(array("h", (int(AMPLITUDE * math.sin(2 * math.pi * 11 * i / CYCLE)) for i in range(cycles * CYCLE))))
-        self.written = self.phase = self.late = self.last = self.between = 0
-        self.opened_ms = None
-        self.reset()
-
-    def reset(self):
-        self.between_max, self.write_max = 0, 0
-
-    def open(self):
-        """The I2S, a fill, then the amplifier on, delay_ms after the first refill. The first fill writes nothing,
-        because the ESP-IDF queue starts empty, so the tone starts one ring (128 ms) later (i2s_common.c:1325)."""
-        import select
-
-        self.i2s = I2S(0, sck=Pin(12), ws=Pin(13), sd=Pin(14), mode=I2S.TX, bits=16, format=I2S.MONO, rate=RATE,
-                       ibuf=IBUF)
-        self.poll = select.poll()
-        self.poll.register(self.i2s, select.POLLOUT)
-        self.poll.poll(0)  # a poll switches the I2S to writes that return at once (extmod/machine_i2s.c:622)
-        self.last, self.opened_ms = time.ticks_us(), time.ticks_ms()
-        self.fill()
-        self.sd.value(1)
-
-    def fill(self):
-        """Write what fits in the free DMA buffers, from the current phase."""
-        t = time.ticks_us()
-        n = (self.i2s.write(self.table[self.phase:self.phase + RING]) or 0) // 2
-        self.write_max = max(self.write_max, time.ticks_diff(time.ticks_us(), t))
-        self.written += n
-        self.phase = (self.phase + n) % CYCLE
-
-    def refill(self):
-        if self.i2s is None:
-            now = time.ticks_ms()
-            if self.open_at is None:
-                self.open_at = time.ticks_add(now, self.delay_ms)
-            if time.ticks_diff(now, self.open_at) >= 0:
-                self.open()
-            return
-        now = time.ticks_us()
-        self.between = between = time.ticks_diff(now, self.last)
-        self.last = now
-        self.between_max = max(self.between_max, between)
-        if between > LATE_US:
-            self.late += 1
-        self.fill()
-
-    def short(self):
-        """The samples the clock expected minus the samples written. It jitters by one buffer at each refill."""
-        return time.ticks_diff(time.ticks_ms(), self.opened_ms) * (RATE // 1000) - self.written  # no long int
-
-    def close(self):
-        """PHYS-13 order: the amplifier off before the clocks stop. The 10 ms is a margin with no datasheet figure."""
-        self.sd.value(0)
-        time.sleep_ms(10)
-        if self.i2s:
-            self.i2s.deinit()
-
-
-class Beeper(Tone):
-    """Silence, and a beep at each hit: the sound of a game event (P746). The refill keeps the ring full of silence,
-    so a beep waits behind the whole ring: the delay that A3 measures."""
-
-    def __init__(self, sd, delay_ms=0):
-        super().__init__(sd, delay_ms)
-        self.table = memoryview(array("h", (int(BEEP * math.sin(2 * math.pi * 440 * i / RATE)) for i in range(BEEP_SAMPLES))))
-        self.silence = memoryview(bytearray(2 * RING))
-        self.left = 0
-
-    def hit(self):
-        self.left, self.phase = BEEP_SAMPLES, 0
-
-    def fill(self):
-        """The rest of a beep first, then silence in all the free DMA buffers, without waiting."""
-        t = time.ticks_us()
-        n = 0
-        if self.left:
-            n = (self.i2s.write(self.table[self.phase:self.phase + self.left]) or 0) // 2
-            self.left -= n
-            self.phase += n
-        if not self.left:
-            n += (self.i2s.write(self.silence) or 0) // 2
-        self.write_max = max(self.write_max, time.ticks_diff(time.ticks_us(), t))
-        self.written += n
-
-
-BLOCK = const(64)  # samples per block mean, 1 << BLOCK_SHIFT: 4 ms, so any gap of 8 ms or more holds one whole quiet block
-BLOCK_SHIFT = const(6)
-TONE_OPEN_MS = 2500  # the tone opens this long after the microphone
-FLOOR_MS = (1500, 2500)  # the room, after the microphone settles (about 1.3 s, run141), before the tone opens
-TONE_MS = (3000, 4000)  # the tone: it starts one ring (128 ms) after it opens, after a frame and the click
+MIC_BLOCK = const(64)  # samples per block mean, 1 << MIC_BLOCK_SHIFT: 4 ms, so any gap of 8 ms or more holds one whole quiet block
+MIC_BLOCK_SHIFT = const(6)
+TONE_OPEN_MS = 2500  # the sound opens this long after the microphone
+FLOOR_MS = (1500, 2500)  # the room, after the microphone settles (about 1.3 s, run141), before the sound opens
+TONE_MS = (3000, 4000)  # the tone: it starts one ring after it opens, after a frame and the click
 TONE_MIN = 10  # the tone at 10000 read 16 to 21, the room 0 to 5 (run141): the 4 x floor margin is thin
 QUIET = 0.3  # a block is quiet below floor + QUIET x (tone_mean - floor)
 BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or drop buffers without a report
@@ -165,19 +86,19 @@ BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or 
 
 @micropython.viper
 def block_mean(buf, offset: int) -> int:
-    """The mean |x - m| of BLOCK int16 samples from offset (in samples), with m their mean, so the microphone's
+    """The mean |x - m| of MIC_BLOCK int16 samples from offset (in samples), with m their mean, so the microphone's
     constant offset does not count as sound (run141f). ptr16 reads unsigned."""
     p = ptr16(buf)  # noqa: F821, a viper built-in
     s = 0
     i = offset
-    end = offset + BLOCK
+    end = offset + MIC_BLOCK
     while i < end:
         x = p[i]
         if x >= 32768:
             x -= 65536
         s += x
         i += 1
-    m = s >> BLOCK_SHIFT
+    m = s >> MIC_BLOCK_SHIFT
     s = 0
     i = offset
     while i < end:
@@ -189,7 +110,7 @@ def block_mean(buf, offset: int) -> int:
             x = 0 - x
         s += x
         i += 1
-    return s >> BLOCK_SHIFT
+    return s >> MIC_BLOCK_SHIFT
 
 
 def median(values):
@@ -223,7 +144,10 @@ class Mic:
         self.last = self.opened_us
         self.floors, self.tones, self.threshold, self.quiet_from = [], [], None, None
         self.floor = self.tone_mean = 0
-        self.hits, self.delays, self.missed, self.pending, self.between = 0, [], 0, None, 0
+        self.refill = None  # set when the sound opens: the hit line reads its play_between
+        self.hits, self.delays, self.totals, self.missed, self.pending = 0, [], [], 0, None
+        self.seen = self.loud = self.run = self.run_from = 0
+        self.quiet = self.rising = False
 
     def read(self):
         now = time.ticks_us()
@@ -235,16 +159,19 @@ class Mic:
             if not n:
                 return
             self.fill += n
-            whole = self.fill // (2 * BLOCK)
+            whole = self.fill // (2 * MIC_BLOCK)
             for k in range(whole):
-                self.add_mean(block_mean(self.buf, k * BLOCK))
-            rest = self.fill - whole * 2 * BLOCK
-            self.buf[:rest] = self.buf[whole * 2 * BLOCK:self.fill]
+                self.add_mean(block_mean(self.buf, k * MIC_BLOCK))
+            rest = self.fill - whole * 2 * MIC_BLOCK
+            self.buf[:rest] = self.buf[whole * 2 * MIC_BLOCK:self.fill]
             self.fill = rest
 
+    def now_ms(self):
+        return self.samples // (RATE // 1000)  # no long int
+
     def add_mean(self, mean):
-        t = self.samples // (RATE // 1000)  # ms, with no long int
-        self.samples += BLOCK
+        t = self.now_ms()
+        self.samples += MIC_BLOCK
         if self.threshold is None:
             if FLOOR_MS[0] <= t < FLOOR_MS[1]:
                 self.floors.append(mean)
@@ -264,22 +191,40 @@ class Mic:
             print("gap %d %d" % (self.quiet_from, t - self.quiet_from))
             self.quiet_from = None
 
-    def hit(self, at_us, between):
-        """A hit at at_us (ticks_us): its time in the microphone's sample clock, in ms."""
+    def open_gap(self):
+        """The length of a gap that has not ended yet, or 0."""
+        return 0 if self.quiet_from is None else self.now_ms() - self.quiet_from
+
+    def hit(self, at_us, seen):
+        """A hit at at_us (ticks_us): its time in the microphone's sample clock, in ms. seen is push to frame, or -1."""
         self.hits += 1
-        self.pending, self.between = time.ticks_diff(at_us, self.opened_us) // 1000, between
+        self.pending, self.seen, self.loud = time.ticks_diff(at_us, self.opened_us) // 1000, seen, 0
 
     def onset(self, t, mean):
-        """The first block from the pending hit's time that reaches the threshold is its beep."""
+        """A beep's onset is the first of ONSET_BLOCKS loud blocks in a row after a quiet block (a rising edge), at or
+        after the pending hit's time. The loudest block in the window goes into the hit line."""
+        if mean < self.threshold:
+            self.run, self.quiet = 0, True
+        else:
+            if not self.run:
+                self.run_from, self.rising = t, self.quiet
+            self.run += 1
+            self.quiet = False
         if self.pending is None or t < self.pending:
             return
-        if mean >= self.threshold:
-            self.delays.append(t - self.pending)
-            print("hit %d delay %d between %d" % (self.hits, t - self.pending, self.between // 1000))
+        self.loud = max(self.loud, mean)
+        if self.run == ONSET_BLOCKS and self.rising and self.run_from >= self.pending:
+            delay = self.run_from - self.pending
+            total = delay + self.seen if self.seen >= 0 else -1
+            self.delays.append(delay)
+            if total >= 0:
+                self.totals.append(total)
+            print("hit %d seen %d delay %d total %d between %d loud %d" % (
+                self.hits, self.seen, delay, total, self.refill.play_between // 1000, self.loud))
             self.pending = None
         elif t - self.pending > ONSET_MS:
             self.missed += 1
-            print("hit %d missed" % self.hits)
+            print("hit %d missed loud %d" % (self.hits, self.loud))
             self.pending = None
 
     def calibrate(self):
@@ -296,41 +241,75 @@ class Mic:
     def lost(self):
         return time.ticks_diff(time.ticks_us(), self.opened_us) // 1000 * (RATE // 1000) - self.samples - self.fill // 2
 
+    def report(self, name):
+        print("mic %s gaps %d open %d lost %d blind %d tone_mean %d floor %d" % (
+            name, self.gaps, self.open_gap(), self.lost(), self.blind, self.tone_mean, self.floor))
+
     def close(self):
         self.i2s.deinit()
 
 
 class Probe:
-    """The hook around App.frame: the tone's refill, the microphone's read, the 5 s report, the switch every 30 s
-    (none with HITS), the press on game over, the hits, and the end."""
+    """The hook around App.frame: the sound's open and per-frame refill, the microphone's read, the 5 s report, the
+    switch every 30 s (none with HITS), the press on game over, the push stamps, the hits, and the end."""
 
-    def __init__(self, tone):
-        self.tone, self.mic, self.switches = tone, None, 0
-        self.start = self.report = self.next_switch = self.next_hit = None
+    def __init__(self):
+        self.sd = Pin(6, Pin.OUT, value=0)  # the amplifier stays off through the display setup
+        self.mixer, self.refill, self.mic = sound.Mixer(), None, None
+        self.tone = array("h", (int(AMPLITUDE * math.sin(2 * math.pi * 11 * i / CYCLE)) for i in range(CYCLE)))
+        self.beep = array("h", (int(BEEP * math.sin(2 * math.pi * 440 * i / RATE)) for i in range(BEEP_SAMPLES)))
+        self.switches = self.pushes = self.skips = self.sent = 0
+        self.push_us = None
+        self.start = self.report = self.next_switch = self.next_hit = self.open_at = self.opened_ms = None
+
+    def first(self, box, now):
+        self.start = self.report = now
+        self.next_switch = None if HITS else time.ticks_add(now, SWITCH_MS)
+        self.next_hit = time.ticks_add(now, HIT_FROM_MS)
+        self.open_at = time.ticks_add(now, TONE_OPEN_MS if MIC else 0)
+        self.press_on_over(box)
+        self.stamp_pushes(box)
+        if MIC:
+            self.mic = Mic()
+
+    def open(self):
+        """The I2S, the driver, a first write, then the amplifier on (Refill.open)."""
+        i2s = I2S(0, sck=Pin(12), ws=Pin(13), sd=Pin(14), mode=I2S.TX, bits=16, format=I2S.MONO, rate=RATE, ibuf=IBUF)
+        self.refill = r = getattr(sound, REFILL)(self.mixer, i2s, self.sd, RING)
+        print("align %d" % (uctypes.addressof(r.block) % 16))
+        if not HITS:
+            self.mixer.play(self.tone, loop=True)
+        self.opened_ms = time.ticks_ms()
+        r.open()
+        if self.mic:
+            self.mic.refill = r
+
+    def short(self):
+        """The samples the clock expected minus the samples written."""
+        return time.ticks_diff(time.ticks_ms(), self.opened_ms) * (RATE // 1000) - self.refill.written  # no long int
 
     def after(self, box, now):
         if self.start is None:
-            self.start = self.report = now
-            self.next_switch = None if HITS else time.ticks_add(now, SWITCH_MS)
-            self.next_hit = time.ticks_add(now, HIT_FROM_MS)
-            self.press_on_over(box)
-            if MIC:
-                self.mic = Mic()
-        if self.tone:
-            self.tone.refill()
-        m = self.mic
+            self.first(box, now)
+        r, m = self.refill, self.mic
+        if r is None:
+            if TONE and time.ticks_diff(now, self.open_at) >= 0:
+                self.open()
+        elif isinstance(r, sound.FrameRefill):
+            r.refill()
         if m:
             m.read()
         if time.ticks_diff(now, self.report) >= REPORT_MS:
-            self.report = now
-            t = self.tone
-            if t and t.i2s:
-                print("sound %s between_max %d write_max %d late %d short %d" % (
-                    box.game.name, t.between_max // 1000, t.write_max // 1000, t.late, t.short()))
-                t.reset()
+            r = self.refill
+            if r:
+                print("sound %s sent %d of %d between_max %d lag_max %d late %d short %d pushes %d" % (
+                    box.game.name, r.sent_count - self.sent, time.ticks_diff(now, self.report) // BUFFER_MS,
+                    r.between_max // 1000, r.between_max // 1000 - BUFFER_MS, r.late, self.short(), self.pushes))
+                self.sent = r.sent_count
+                r.reset()
             if m:
-                print("mic %s gaps %d lost %d blind %d tone_mean %d floor %d" % (
-                    box.game.name, m.gaps, m.lost(), m.blind, m.tone_mean, m.floor))
+                m.report(box.game.name)
+            self.report = now
         if self.next_switch is not None and time.ticks_diff(now, self.next_switch) >= 0:
             self.next_switch = time.ticks_add(self.next_switch, SWITCH_MS)
             t = time.ticks_us()
@@ -340,6 +319,23 @@ class Probe:
         if time.ticks_diff(now, self.start) >= SECONDS * 1000:
             raise Done
 
+    def stamp_pushes(self, box):
+        """The push's own time (P746). This handler replaces Button.edge, which app.run registered on BOOT, and counts
+        the push for Button.update as Button.edge does. It keeps the first stamp until a frame takes it, so a release
+        bounce does not move it. It is a scheduled handler too (no hard interrupt on this port), so it is late by the
+        current C call, but earlier than the frame that reads the push."""
+        import buttons
+
+        fire = box.fire
+
+        def edge(pin):
+            fire.pushes += 1
+            self.pushes += 1
+            if self.push_us is None:
+                self.push_us = time.ticks_us()
+
+        Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP).irq(edge, Pin.IRQ_FALLING)
+
     def press_on_over(self, box):
         """Nobody presses BOOT, and a game waits on its game-over screen for a press (gfx.Game.step)."""
         import gfx
@@ -348,11 +344,16 @@ class Probe:
 
         def pressing(now_ms):
             game = box.game
+            now_us = time.ticks_us()
             pressed = update(now_ms)  # a real press: the probe's own press below is not a hit
+            stamp, self.push_us = self.push_us, None
+            seen = -1 if stamp is None else time.ticks_diff(now_us, stamp) // 1000
             if pressed and HITS:
                 print("press %d" % now_ms)  # before any check: run143 entries 6 and 7 counted no hit
-            if HITS == "press" and pressed or HITS == "auto" and self.due(now_ms):
-                self.hit()
+            if HITS == "press" and pressed:
+                self.hit(now_us, seen)
+            elif HITS == "auto" and self.due(now_ms):
+                self.hit(now_us, -1)
             return pressed or (game.state == gfx.OVER and game.age >= game.OVER_MS)
 
         box.fire.update = pressing
@@ -363,21 +364,42 @@ class Probe:
         self.next_hit = time.ticks_add(self.next_hit, HIT_EVERY_MS)
         return True
 
-    def hit(self):
-        """Stamped at the start of the frame that sees it. Skipped until the beeper opens and the floor is set, and
-        while the last hit waits for its beep."""
-        m, t = self.mic, self.tone
-        if m and t and t.i2s and m.threshold is not None and m.pending is None:
-            m.hit(time.ticks_us(), t.between)
-            t.hit()
+    def hit(self, now_us, seen):
+        """Stamped at the start of the frame that sees it. Not counted until the sound opens and the floor is set. A hit
+        while the last one waits for its beep is a skip."""
+        m = self.mic
+        if not (m and self.refill and m.threshold is not None):
+            return
+        if m.pending is not None:
+            self.skips += 1
+            print("skip %d" % self.skips)
+            return
+        m.hit(now_us, seen)
+        self.mixer.play(self.beep)
+
+    def close(self):
+        if self.refill:
+            self.refill.close()
+        else:
+            self.sd.value(0)
+        if self.mic:
+            self.mic.close()
+
+    def summary(self):
+        r, m = self.refill, self.mic
+        if r:
+            print("written %d short %d" % (r.written, self.short()))
+        if m:
+            m.report(GAME)
+            if HITS:
+                print("hits %d median %d max %d missed %d total_median %d" % (
+                    m.hits, median(m.delays), max(m.delays or [0]), m.missed, median(m.totals)))
 
 
 def main():
     import app
 
-    sd = Pin(6, Pin.OUT, value=0)  # the amplifier stays off through the display setup
-    tone = (Beeper if HITS else Tone)(sd, TONE_OPEN_MS if MIC else 0) if TONE else None
-    probe = Probe(tone)
+    probe = Probe()
     frame = app.App.frame
 
     def hooked(self):
@@ -390,15 +412,8 @@ def main():
     except Done:
         pass
     finally:
-        if tone:
-            tone.close()
-        if probe.mic:
-            probe.mic.close()
-    if tone and tone.i2s:
-        print("written %d short %d" % (tone.written, tone.short()))
-    m = probe.mic
-    if m and HITS:
-        print("hits %d median %d max %d missed %d" % (m.hits, median(m.delays), max(m.delays or [0]), m.missed))
+        probe.close()
+    probe.summary()
     print("done")
 # --- MVP ---
 
