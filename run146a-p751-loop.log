@@ -1,0 +1,47 @@
+cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.VL4SRWtwwv/crackle.py :crackle.py
+cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+Up to date: fire.py
+cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+Up to date: sound.py
+cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+cp /Users/petr/Development/pixel-p751/games/fire_bank.raw :fire_bank.raw
+bank load 226 ms, 246960 bytes
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6038720
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+align 0
+first pop 69
+loop 65 s from the script's start to the first pop
+fire linear fps 23 step 6.71 draw 6.47
+fps fire 23
+time fire step 7.5 paint 10.3 send 4.7 gc 5.3 fps 23 worst 75 slowest 53 = step 6 paint 42 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 34 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 396912 glyphs 17
+sound fire sent 316 of 315 between_max 46 lag_max 30 late 0 short -160 pushes 0
+crackle fire render_max 419 pop_median 11 pop_max 28 pops 16 dropped 0
+fire linear fps 23 step 6.83 draw 6.48
+fps fire 23
+time fire step 7.5 paint 10.5 send 4.8 gc 5.4 fps 23 worst 73 slowest 51 = step 6 paint 41 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 33 over 0 title 0
+avg fire static 0.1 paint 7.0 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap fire alloc 396624 glyphs 18
+sound fire sent 314 of 314 between_max 58 lag_max 42 late 2 short -32 pushes 0
+crackle fire render_max 421 pop_median 11 pop_max 39 pops 21 dropped 0
+fire linear fps 23 step 6.83 draw 6.47
+fps fire 23
+time fire step 7.6 paint 10.4 send 4.5 gc 5.4 fps 23 worst 74 slowest 58 = step 13 paint 41 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 35 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 397248 glyphs 19
+sound fire sent 316 of 316 between_max 59 lag_max 43 late 4 short -16 pushes 0
+crackle fire render_max 411 pop_median 11 pop_max 39 pops 22 dropped 0
+written 320256 short 80
+done
+=== gc.collect on the board, best of 5 (mpremote exec, 17:17): without a bank 93 us, with a 247 KB bytearray 7657 us, with 90 KB 2879 us
