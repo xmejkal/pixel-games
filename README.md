@@ -93,7 +93,9 @@ Runs now:
   I2S callback. The fire's crackle is a soft, deep roar and one pop per ember birth (`HeatField.take_births()`), so
   the pops come with the sparks. `NativeCrackle` renders it in C (`engine/core/fx_crackle.c`), loaded from
   `crackle_c.mpy` with no firmware rebuild: at most 0.41 ms per 16 ms block, and Fire keeps 24 fps (bench.md, P747).
-  `SampledCrackle` is the plain Python path: four pre-rendered pops through the `Mixer`. Only the bench probe
+  `SampledCrackle` is the plain Python path: four pre-rendered pops through the `Mixer`. Since P751, `GrainCrackle` plays
+  the sound the PO chose in P750: grains of a CC0 fire recording and woody pops from a bank rendered on the Mac
+  (`tools/fire_bank.py`), kept in `engine.SoundBank` outside the GC heap. Fast embers get larger pops. Only the bench probe
   (`probe733_games.py`) turns the sound on today. Try a change to the C crackle with `tools/crackle.sh`.
 - The HUD is drawn once into a strip and blitted each frame (P599).
 - Fourteen games. Four are effect scenes: fire, the ball pit, bodies on fire and rain. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.

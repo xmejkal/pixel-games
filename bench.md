@@ -874,3 +874,26 @@ math and equals the C sample for sample on the Mac. `SampledCrackle` is the naiv
 - Later, not MVP: a pop whose loudness follows its spark's size (the kernel gives each ember a size), the flames in C,
   and the S3's vector instructions where a measurement shows the need (D27).
 
+## P751 (#1033), 2026-11-10: the fire sound of P750's demo g, from a sample bank
+
+`tools/fire_bank.py` renders P750 round 2's demo g on the Mac into a bank of 241 KB: a 6 s bed (grains of a CC0 fire
+recording, sparse small crackles, a low fluttering roar) and 12 woody pops. On the board, `GrainCrackle` mixes grains
+of the bed and one pop per ember birth in C (`engine/core/fx_grains.c`, in `crackle_c.mpy`). A fast ember (rise 4 or
+5) gets a larger pop. The bank lives in `engine.SoundBank`, outside the GC heap. Fire, `CallbackRefill` 2048 B, 120 s.
+
+| entry | log | bank | result |
+| --- | --- | --- | --- |
+| loop | run146a | bytearray in the GC heap | plays, but fps 23, gc 5.3 ms a frame, late 4 |
+| gc | run146a, run146b | 247 KB | `gc.collect()` 93 us with no bank, 7657 us with a bytearray, 102 us with a `SoundBank` |
+| 5d | run146b | `SoundBank` (PSRAM) | 24.00 fps, worst 85 ms, gc 2.4 ms, late 0, render at most 464 us, pop delay median 9 ms, max 27 ms, 0 dropped |
+| 5d2 | run146c | `SoundBank` (PSRAM) | 24 fps, worst 81 ms, late 1, render at most 463 us, pop delay max 27 ms, 0 dropped |
+
+- Against P747's control (run145b 5a: 24.00 fps, worst 77 ms, late 1), 5d2 passes every line. 5d misses the worst
+  frame line by 3 ms in one 5 s window (85 ms, with the frame's own phases at 50 ms, so the time went between frames).
+  The other worst frames are 52 to 74 ms in both runs, as in the control (52 to 77 ms).
+- A bytearray bank cost 7.6 ms at each collection, and the game collects every 5 frames. Memory from
+  `heap_caps_malloc` is not in the GC heap, so the collector skips it (the plan's refuter found no flag for this in
+  v1.29.0's `py/gc.c`). The bank loads in 179 to 226 ms.
+- The flash needed no buttons this time: `mpremote bootloader` reached download mode (USB 0x1001).
+- The PO's ear on the board's speaker is still open.
+
