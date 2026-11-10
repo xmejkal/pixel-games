@@ -11,7 +11,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: crackle_lib
 
-from crackle import CRACKLE_LOOK, PEAK, Crackle  # noqa: E402
+from crackle import CRACKLE_LOOK, PEAK, SAMPLED_POPS, Crackle, SampledCrackle  # noqa: E402
 from crackle_lib import HAVE_CLANG, CCrackle  # noqa: E402
 
 RATE, BLOCK = 16000, 256  # sound.py's RATE and REFILL_SAMPLES
@@ -42,6 +42,21 @@ class CrackleTest(unittest.TestCase):
 
     def test_the_peak_stays_under_90_percent(self):
         self.assertLessEqual(max(map(abs, play(Crackle(5), 10, burst=0))), PEAK * 9 // 10)
+
+    def test_sampled_pops_end_inside_their_samples(self):
+        for pop in SampledCrackle(747).pops:
+            self.assertGreater(max(map(abs, pop)), 0)
+            self.assertEqual(max(map(abs, pop[-200:])), 0)
+
+    def test_sampled_crackle_plays_one_pop_a_frame(self):
+        c, buf = SampledCrackle(747), array("h", bytes(2 * BLOCK))
+        c.add_pops(2)
+        c.render(buf)
+        self.assertEqual((c.counts(), list(buf)), ((2, 1, 1), list(c.pops[0][:BLOCK])))
+        for _ in range(SAMPLED_POPS):
+            c.add_pops(1)
+        c.render(buf)
+        self.assertEqual((c.counts(), list(buf)), ((6, 2, 4), list(c.pops[0][:BLOCK])))  # the 4th wraps to pop 0
 
     @unittest.skipUnless(HAVE_CLANG, "clang is needed")
     def test_python_equals_c_sample_for_sample(self):

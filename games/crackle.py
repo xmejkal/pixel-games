@@ -1,18 +1,29 @@
 """The fire's crackle (P747): a soft roar and one pop per ember, so the pops come with the sparks on screen.
 
-Both classes meet the Mixer contract of sound.py (render(buf), pending), so a Refill driver feeds either to the I2S.
-add_pops(n) queues n pops, and the next render starts them. Crackle is plain Python: the naive path, which stays
-working (D26), and the reference. NativeCrackle runs the same integer math in C, engine/core/fx_crackle.c, loaded from
-crackle_c.mpy with no firmware rebuild. A Mac test wants the two equal sample for sample, so a change to one is a change
-to both, by fx_crackle.h's rules: every value under 2^30, signed values shift only with >>, no / or %.
+All three classes meet the Mixer contract of sound.py (render(buf), pending), so a Refill driver feeds any of them to
+the I2S. add_pops(n) queues n pops, and the next render starts them. counts() gives (popped, started, dropped).
+
+- Crackle is plain Python and the reference. It takes 21 ms for 16 ms of sound on the board (run145b), so on the board
+  it only renders SampledCrackle's pops.
+- NativeCrackle runs the same integer math in C, engine/core/fx_crackle.c, loaded from crackle_c.mpy with no firmware
+  rebuild: 0.4 ms a block. A Mac test wants it equal to Crackle sample for sample, so a change to one is a change to
+  both, by fx_crackle.h's rules: every value under 2^30, signed values shift only with >>, no / or %.
+- SampledCrackle is the naive path on the board, which stays working (D26, the PO chose it on 2026-11-10): Crackle
+  renders a few pops once, and a sound.Mixer plays one per frame that has births. No roar, no overlap.
 
 The pop queue has two counters with one writer each: add_pops only adds to popped, render only adds to started and
 dropped. A refill callback between two bytecodes of add_pops so loses no pop and plays none twice.
 """
 
+from array import array
+
 # --- MVP (P747) ---
-# roar_shift, roar_gain, pop_min, pop_max, decay_min, decay_max, tails, tail_gap, gain: see fx_crackle_init in fx_crackle.h
+# roar_shift, roar_gain, pop_min, pop_max, decay_min, decay_max, tails, tail_gap, gain: see fx_crackle_init in
+# fx_crackle.h
 CRACKLE_LOOK = (6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224)  # the PO chose the deep roar, try B (run145d)
+SAMPLED_LOOK = (6, 0, 6000, 12000, 28400, 31600, 1, 1600, 224)  # no roar, one click after the burst
+SAMPLED_POPS = 4
+SAMPLED_SAMPLES = 2560  # 160 ms: by the look's ranges, a pop and its click end by about sample 2200
 SLOTS = 8  # FX_CRACKLE_SLOTS
 PEAK = 32767  # FX_CRACKLE_PEAK
 
@@ -116,3 +127,41 @@ class NativeCrackle:
 
     def counts(self):
         return self.c.counts(self.state)
+
+
+class SampledCrackle:
+    """The naive path on the board: SAMPLED_POPS pops rendered once by Crackle with SAMPLED_LOOK (about 0.2 s each on the
+    board, at start), then a sound.Mixer that plays the next one when a frame adds births. The Mixer has one voice, so the
+    births of one frame make one pop, and a new pop cuts the last: started counts the pops played, dropped the rest."""
+
+    def __init__(self, seed, look=None):
+        import sound
+
+        maker, self.pops = Crackle(seed, SAMPLED_LOOK), []
+        for _ in range(SAMPLED_POPS):
+            pop = array("h", bytes(2 * SAMPLED_SAMPLES))
+            maker.add_pops(1)
+            maker.render(pop)
+            self.pops.append(pop)
+        self.mixer, self.next = sound.Mixer(), 0
+        self.popped = self.started = self.dropped = 0
+
+    @property
+    def pending(self):
+        return self.mixer.pending
+
+    def add_pops(self, n):
+        if n:
+            self.popped += n
+            self.mixer.play(self.pops[self.next])
+            self.next = (self.next + 1) % SAMPLED_POPS
+
+    def render(self, buf):
+        waiting = self.popped - self.started - self.dropped
+        if waiting:
+            self.started += 1
+            self.dropped += waiting - 1
+        self.mixer.render(buf)
+
+    def counts(self):
+        return self.popped, self.started, self.dropped

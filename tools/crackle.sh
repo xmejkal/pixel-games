@@ -4,7 +4,7 @@
 # the C crackle for SECONDS (10 by default). The board needs firmware with HeatField.take_births (P747), and the
 # amplifier wired as in P733. Its last line gives the seconds from the start of this script to the first pop.
 #
-#     tools/crackle.sh [seconds] [voice] [look]   # voice: NativeCrackle (default) or Crackle
+#     tools/crackle.sh [seconds] [voice] [look]   # voice: NativeCrackle (default) or SampledCrackle
 #
 # A look, such as "4, 0, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK for this run only.
 # --- MVP (P747) ---

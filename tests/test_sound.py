@@ -113,6 +113,12 @@ class RefillTest(unittest.TestCase):
         refill.refill()
         self.assertEqual(i2s.out, list(range(1, 2 * REFILL_SAMPLES + 1)))
 
+    def test_frame_refill_renders_at_most_one_ring_a_write(self):  # P747
+        mixer, i2s = Mixer(), FakeI2S()  # a ring that never fills, as when the mixer is slower than real time
+        refill = FrameRefill(mixer, i2s, FakePin(), 4 * REFILL_SAMPLES)
+        refill.write()
+        self.assertEqual(refill.written, 4 * REFILL_SAMPLES)
+
     def test_callback_refill_writes_once_per_sent_and_none_after_close(self):
         mixer, i2s, sd = Mixer(), FakeI2S(), FakePin()
         refill = CallbackRefill(mixer, i2s, sd, 4 * REFILL_SAMPLES)
