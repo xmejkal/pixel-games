@@ -1,4 +1,4 @@
-=== run133 P733 step 3, slot check: Fire, TONE 1, MIC 1, 20 s, 2026-11-10 12:28:08 +0100
+=== run141 P733 step 3, slot check: Fire, TONE 1, MIC 1, 20 s, 2026-11-10 12:28:08 +0100
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301712
@@ -11,7 +11,7 @@ mic dma_free 55347 largest 31744
 mic slot empty tone_mean 2 floor 10
 written 24064 short 320
 done
-=== run133b diagnosis: both slots, 32-bit stereo raw words, 2026-11-10 12:28:45 +0100
+=== run141b diagnosis: both slots, 32-bit stereo raw words, 2026-11-10 12:28:45 +0100
 startup slot 0 mean 4581 nonzero 6008 of 6144
 startup slot 1 mean 0 nonzero 0 of 6144
 startup first words 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0
@@ -22,7 +22,7 @@ tone slot 0 mean 2 nonzero 24569 of 24576
 tone slot 1 mean 0 nonzero 0 of 24576
 tone first words 0xffffec00 0x0 0xffff41e0 0x0 0x71e0 0x0 0xffff6600 0x0
 done
-=== run133c level test: 0-10 s the PO speaks or claps, 10-15 s tone 3000, 15-20 s tone 10000, 2026-11-10 12:30:28 +0100
+=== run141c level test: 0-10 s the PO speaks or claps, 10-15 s tone 3000, 15-20 s tone 10000, 2026-11-10 12:30:28 +0100
 t     0 tone     0 level  2670 p2p 16334 n 8192 ############################################################
 t   647 tone     0 level    68 p2p   403 n 9728 #################
 t  1312 tone     0 level    54 p2p   331 n 9728 #############
@@ -54,7 +54,7 @@ t 18112 tone 10000 level    16 p2p    78 n 9728 ####
 t 18784 tone 10000 level    16 p2p    76 n 9728 ####
 t 19456 tone 10000 level    16 p2p    77 n 9728 ####
 done
-=== run133d level test at 1000 Hz: 0-3 s quiet, 3-8 s tone 3000, 8-13 s tone 10000, 2026-11-10 12:31:11 +0100
+=== run141d level test at 1000 Hz: 0-3 s quiet, 3-8 s tone 3000, 8-13 s tone 10000, 2026-11-10 12:31:11 +0100
 t     1 tone     0 level  3037 p2p 26368 n 8192 ############################################################
 t   648 tone     0 level    62 p2p   349 n 9728 ###############
 t  1313 tone     0 level     1 p2p    14 n 9728 
@@ -76,7 +76,7 @@ t 11393 tone 10000 level    20 p2p    91 n 9728 #####
 t 12065 tone 10000 level    20 p2p    92 n 9728 #####
 t 12744 tone 10000 level    20 p2p    88 n 9728 #####
 done
-=== run133e slot check after the changes: Fire, TONE 1, MIC 1, 20 s, 2026-11-10 12:33:19 +0100
+=== run141e slot check after the changes: Fire, TONE 1, MIC 1, 20 s, 2026-11-10 12:33:19 +0100
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301472
@@ -89,7 +89,7 @@ mic dma_free 55323 largest 31744
 mic slot empty tone_mean 18 floor 5
 written 23552 short 448
 done
-=== run133f slot check with the offset left out: Fire, TONE 1, MIC 1, 20 s, 2026-11-10 12:34:08 +0100
+=== run141f slot check with the offset left out: Fire, TONE 1, MIC 1, 20 s, 2026-11-10 12:34:08 +0100
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301024
@@ -135,7 +135,7 @@ TONE = 1  # 0: the control run, no I2S
 MIC = 1  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301024
@@ -337,7 +337,7 @@ TONE = 1  # 0: the control run, no I2S
 MIC = 1  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301168
@@ -529,7 +529,7 @@ TONE = 1  # 0: the control run, no I2S
 MIC = 1  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301056

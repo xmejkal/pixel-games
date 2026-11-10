@@ -1245,7 +1245,7 @@ TONE = 1  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301056
@@ -1423,7 +1423,7 @@ TONE = 0  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6306752
@@ -1577,7 +1577,7 @@ TONE = 1  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301168
@@ -1745,7 +1745,7 @@ TONE = 0  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6306896
@@ -1889,7 +1889,7 @@ TONE = 1  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6301024
@@ -2037,7 +2037,7 @@ TONE = 0  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3)
 SECONDS = 120
 SWITCH_MS = 30_000
-AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run133)
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6306752

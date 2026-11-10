@@ -1,10 +1,10 @@
-=== run131 P733 step 1, 2026-11-10 12:06:21 +0100
+=== run139 P733 step 1, 2026-11-10 12:06:21 +0100
 bytes 160000 B
 longest_write 32 ms
 elapsed_ms 6044 ms
 done
 PO, 2026-11-10 12:06 +0100: "Nice, I can hear a sound". Stop before the end: not yet confirmed.
-=== run131b P733 step 1b, SD on/off/on, 2026-11-10 12:07:46 +0100
+=== run139b P733 step 1b, SD on/off/on, 2026-11-10 12:07:46 +0100
 sd 1 147192533
 sd 0 147195540
 sd 1 147198564
