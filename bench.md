@@ -826,4 +826,4 @@ about every 16 ms (D25). `probe733_games.py` uses the module, and `REFILL` picks
   driver was never late, and an empty ring plays silence (`auto_clear` is on), so a real gap would also count as late.
 - In entry 5b, 52 of 72 hits found no beep: the soft beep at 6000 read 576 to 1243, under the onset threshold of
   1200. The 20 heard hits give the delay. Push to frame (`seen`) was 1 to 52 ms, median about 25 ms.
-- `align 0` in every entry: the refill block is aligned to 16 bytes (D27).
+- `align 0` in all 18 entries that opened the sound: the refill block is aligned to 16 bytes (D27).
