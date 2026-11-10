@@ -903,3 +903,25 @@ of the bed and one pop per ember birth in C (`engine/core/fx_grains.c`, in `crac
   bed of the roar alone. The roar does not follow the video ("That doesnt seem to be synced with the video"), which is
   P753's first slice. Render at most 467 us, 0 dropped in all runs of run146e.
 
+
+## P753 (#1036), 2026-11-10: the fire's bed and the bodies' whooshes
+
+`FireSound` (`games/crackle.py`) plays P751's pops and adds noise in integer C (`engine/core/fx_noise.c`): a noise bed
+that follows the heat field, and 8 whoosh voices, one per burning body, that follow its airspeed. Python sets targets and C
+glides to them in about 32 ms. Each run is 120 s with `CallbackRefill` 2048 B. The control is `GrainCrackle` on the same game.
+
+| entry | log | game and voice | result |
+| --- | --- | --- | --- |
+| 1 | run147a | Fire, GrainCrackle | 24 fps, worst 86 ms, late 2, render at most 456 us, 0 dropped |
+| 2 | run147b | Fire, FireSound at -Os | 24 fps, worst 75 ms, late 1, render at most 514 us, 0 dropped |
+| 3 | run147c | Fire, FireSound at -O2 | 24 fps, worst 68 ms, late 1, render at most 623 us, 0 dropped |
+| 4 | run148a | BurningBodies, GrainCrackle | 23.25 fps, worst 82 ms, late 0, render at most 445 us |
+| 5 | run148b | BurningBodies, FireSound at -Os | 23 fps, worst 81 ms, late 0, render 948 to 1054 us (fails the 1000 us line) |
+| 6 | run148c | BurningBodies, FireSound at -O2 | 23.1 fps, worst 82 ms, late 0, render at most 891 us |
+
+- The fps is the mean of the 5 s lines, the worst frame is the largest `worst`, `late` is the largest of the 5 s lines, and the render time is the largest `render_max`. BurningBodies has embers off, so it has no pops and no dropped line.
+- `HeatField.stats(threshold=48)` returns `(total, height)`. At first it took 1.5 ms a call on the board, because `memcpy` ran as a call per word. Reading whole words and a loop of 4 words a turn brought it to 393 to 498 us a call (board, 2026-11-10).
+- The natmod builds at -O2. At -Os the 8 voices made render 948 to 1054 us a block, over the 1000 us line. At -O2 it is at most 891 us.
+- The PO's ear on the board: the noise bed on Fire "sounds like a lot of wind in the background". A quiet bed that flaps with the flame height was "Still wind". So `BED = False`: Fire plays the pops alone, and the bed code stays, marked Later, not MVP. The whooshes on BurningBodies: "Cool, keep it".
+- Pass lines against the control on the same game: mean fps within 1 (entries 3 and 6 pass), worst frame within 5 ms (entries 2, 3, 6 pass), `late` no more than the control's (pass), render at most 1000 us (entries 2, 3, 6 pass, entry 5 fails), 0 dropped pops on Fire (pass).
+- On the Mac, wind -60 against +60 changes a whoosh level 3.4 times. The test asserts at least 1.41 times.

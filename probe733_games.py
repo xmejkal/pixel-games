@@ -44,8 +44,9 @@ crackle gets the Fire field's embers through fire.FirePlugin.crackle, one pop pe
 pop) once, and every 5 s `crackle <game> render_max <us> pop_median <ms> pop_max <ms> pops <n> dropped <n>`.
 `pop` is the delay from add_pops to the start of the render that starts that pop, one per pop. The pop itself starts 1 to 128
 samples into that render, and the ring holds it for up to 64 ms (IBUF 2048) before the speaker.
-FireSound (P753) also follows the heat field (and, with GAME BurningBodies, the bodies' airspeed): TimedCrackle forwards
-follow_field and follow_bodies to it and counts the calls, and a line with every 5 s line,
+FireSound (P753) plays the pops, and with GAME BurningBodies one whoosh per body by its airspeed. Its noise bed, which
+follows the heat field, is off (crackle.BED), so Fire plays the pops alone. TimedCrackle forwards follow_field (only with
+the bed on) and follow_bodies to it and counts the calls, and adds a line to every 5 s line,
 `follow <game> follow_field <n> follow_bodies <n> level <n> coef <n> whoosh <n>`: the calls of the window, the bed's
 targets now and the loudest whoosh's level now.
 """

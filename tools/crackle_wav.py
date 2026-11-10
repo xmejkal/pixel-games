@@ -6,7 +6,8 @@ peak and the share of samples at the clamp.
     python3 tools/crackle_wav.py out.wav [seconds] [--crackle | --python | --fire-sound]
 
 --fire-sound (P753) is FireSound with the real heat field of engine/core/fx_fire.c on Fire's look: a step every 40 ms
-with the gusts of FirePlugin, its births as pops with their rises, and its stats for the bed.
+with the gusts of FirePlugin, its births as pops with their rises, and its stats for the bed. The bed is off (crackle.BED), so the WAV holds the
+pops alone.
 --- MVP (P747, P751, P753) ---"""
 
 import ctypes

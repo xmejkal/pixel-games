@@ -1,6 +1,6 @@
 """The fire's crackle (P747): a soft roar and one pop per ember, so the pops come with the sparks on screen.
 
-All three classes meet the Mixer contract of sound.py (render(buf), pending), so a Refill driver feeds any of them to
+All the classes meet the Mixer contract of sound.py (render(buf), pending), so a Refill driver feeds any of them to
 the I2S. add_pops(n) queues n pops, and the next render starts them. counts() gives (popped, started, dropped).
 
 - Crackle is plain Python and the reference. It takes 21 ms for 16 ms of sound on the board (run145b), so on the board
@@ -11,9 +11,10 @@ the I2S. add_pops(n) queues n pops, and the next render starts them. counts() gi
 - GrainCrackle (P751) is the fire of P750's demo g: a low flame roar (the bed, played in grains) and one bank pop per
   ember, mixed in C by engine/core/fx_grains.c from the same crackle_c.mpy, out of a sample bank (fire_bank.raw, made
   on the Mac by tools/fire_bank.py). No filter, so nothing rings or overflows.
-- FireSound (P753) is GrainCrackle's pops plus a smooth bed that follows the heat field: engine/core/fx_noise.c, in the
-  same crackle_c.mpy. follow_field(total, height, wind) sets the bed's level and brightness from numbers that
-  HeatField.stats gives, in ints. On a firmware with no stats it is a GrainCrackle: the grain bed stays.
+- FireSound (P753) is GrainCrackle's pops plus smooth noise in integer C, engine/core/fx_noise.c, in the same
+  crackle_c.mpy. follow_bodies sets one whoosh per falling burning body from its airspeed (BurningBodies). The bed
+  of noise, set by follow_field from HeatField.stats, is off (BED = False): the PO heard it as wind. So on Fire,
+  FireSound plays the pops alone, with no grain bed either. On a firmware with no stats it is a GrainCrackle.
 - SampledCrackle is the naive path on the board, which stays working (D26, the PO chose it on 2026-11-10): Crackle
   renders a few pops once, and a sound.Mixer plays one per frame that has births. No roar, no overlap.
 
@@ -219,8 +220,8 @@ class GrainCrackle:
         return self.c.grains_counts(self.state)
 
 
-# --- MVP (P753) ---
-# FireSound's constants, from engine/core/fx_noise.h and the Mac twin of step 0 (a scratch script that ran the real
+# --- Later, not MVP: the bed's constants and follow_field work and are tested, but BED is off (see BED below) ---
+# FireSound's bed constants, from engine/core/fx_noise.h and the Mac twin of step 0 (a scratch script that ran the real
 # fx_fire.c on Fire's look and on BurningBodies' look, 5,000 steps each, stats at threshold 48):
 # Fire: total 554,000 to 829,000 (5 % to 95 %: 598,000 to 776,000), height 71 to 120 rows (median 103, often the full
 # 120), height's step change 1 row at the median, 6 at the 95th percentile, 34 at most. 23 % of the power of that change
@@ -235,6 +236,7 @@ FLUTTER, FLUTTER_CAP = 100, 8  # level per row of height's change since the last
 WIND_LEVEL, WIND_CAP = 6, 60  # level per unit of |wind|, up to Fire's WIND of 60: at most 360
 BED_MAX = 8000  # the bed's level at most: 6800 + 800 + 360 stay under it
 SAMPLE_RATE = 16000
+# --- MVP (P753) ---
 # The whooshes (P753): a body's airspeed s is its speed against the air, in px/s. Bodies fall at up to about 1,400 px/s
 # (burning.py's FLARE numbers) and drift at most 120 px/s. All integer math in follow_bodies, tables made once.
 VOICES = 8  # whoosh voices, one per body index (FX_NOISE_VOICES)
@@ -292,7 +294,7 @@ class FireSound(GrainCrackle):
         self.whoosh_level = 0  # the loudest of them
 
     def follow_field(self, total, height, wind):
-        """The bed's targets from one step's stats and the wind (-60 to 60)."""
+        """--- Later, not MVP: the bed is off, see BED --- The bed's targets from one step's stats and the wind (-60 to 60)."""
         if not self.has_bed:
             return
         ci = min(max((height - HEIGHT_LOW) * (STEPS - 1) // (HEIGHT_HIGH - HEIGHT_LOW), 0), STEPS - 1)
