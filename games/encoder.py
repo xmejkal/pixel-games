@@ -5,9 +5,10 @@ machine.Encoder decodes both channels in the ESP32-S3's pulse counter (PCNT), so
 loses no step (MicroPython v1.29, ports/esp32/modules/machine.py). Esp32 pin interrupts are soft and run late (see
 buttons.py), so a decoder in Python could miss steps. The pins are pins.ENC_A and pins.ENC_B, from spark's
 requirements.json, each with the internal pull-up (pins.ENC_A_PULL). How many edges fall in one detent is not
-published (the part record cjmcu-111-rotary-encoder): the bench measures it, and the caller passes it.
+published (the part record cjmcu-111-rotary-encoder), so the bench measured it.
 """
 
+EDGES_PER_DETENT = 4  # the PO's CJMCU-111, 2026-11-10 (run150): 20 clicks back read 80 edges, 4 per click
 FILTER_NS = 12000  # the counter's glitch filter at its maximum, 1023 ticks of 80 MHz: drops contact spikes under 12 us
 
 
