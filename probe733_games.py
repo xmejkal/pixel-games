@@ -62,7 +62,8 @@ RING_MS = RING // (RATE // 1000)
 BUFFER_MS = sound.REFILL_SAMPLES // (RATE // 1000)  # 16
 CYCLE = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the looping tone has no seam
 AMPLITUDE = 10000 if MIC else 3000  # of 32767: the microphone heard 3000 no louder than the room (run141); the PO finds 10000 annoying
-BEEP = 20000  # a beep's amplitude: the tone at 10000 read 16 to 21 against a room of 0 to 5, too close for an onset
+BEEP = 6000  # a beep's amplitude: 20000 was "really annoying" (the PO); the 24-bit microphone hears 6000 well over the room
+FADE = 80  # samples of fade in and out, 5 ms, so a beep does not click
 BEEP_SAMPLES = 960  # 60 ms
 HIT_EVERY_MS = 2000
 HIT_FROM_MS = 4000  # after the sound opens (2.5 s) and the microphone's floor is set
@@ -84,7 +85,8 @@ TONE_MS = (3000, 4000)  # the tone: it starts one ring after it opens, after a f
 # Levels are 24-bit block means. run144i: the tone at 10000 about 2840, the room 250 to 700. The 16-bit reads gave
 # the same divided by 256: the tone 6 to 21, beeps 25 to 33, claps up to 11.
 TONE_MIN = 1000  # keeps a dead line out: with a floor of 0, 0 passed 4 x floor
-BEEP_MIN = 4000  # the onset threshold with HITS: over a clap (about 2800), under a beep at 20000 (about 6400 to 8400)
+BEEP_MIN = 1200  # the onset threshold with HITS: over the room (191 to 700), under a beep at 6000 (about 1900 to 2500,
+# scaled from 20000's 6400 to 8400). A clap (about 2800) also passes, so the hit line's `loud` tells the two apart
 QUIET = 0.3 # a block is quiet below floor + QUIET x (tone_mean - floor)
 BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or drop buffers without a report
 
@@ -259,7 +261,8 @@ class Probe:
         self.sd = Pin(6, Pin.OUT, value=0)  # the amplifier stays off through the display setup
         self.mixer, self.refill, self.mic = sound.Mixer(), None, None
         self.tone = array("h", (int(AMPLITUDE * math.sin(2 * math.pi * 11 * i / CYCLE)) for i in range(CYCLE)))
-        self.beep = array("h", (int(BEEP * math.sin(2 * math.pi * 440 * i / RATE)) for i in range(BEEP_SAMPLES)))
+        self.beep = array("h", (int(BEEP * min(1, i / FADE, (BEEP_SAMPLES - i) / FADE) * math.sin(2 * math.pi * 440 * i / RATE))
+                                for i in range(BEEP_SAMPLES)))
         self.switches = self.pushes = self.skips = self.written_at = 0
         self.push_us, self.stalled = None, False
         self.start = self.report = self.next_switch = self.next_hit = self.open_at = self.opened_ms = self.sent_at = None
