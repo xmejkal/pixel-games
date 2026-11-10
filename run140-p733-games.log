@@ -1,0 +1,2157 @@
+=== entry 1 Fire tone 0, start 2026-11-10 12:09:51 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Fire"  # Fire, BallPit or Road: a name in app
+TONE = 0  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6307424
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 24 step 6.39 draw 6.44
+fps fire 24
+time fire step 6.9 paint 9.3 send 4.3 gc 2.1 fps 24 worst 55 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 132192 glyphs 18
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.3 gc 2.1 fps 24 worst 53 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133632 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.2 send 4.1 gc 2.1 fps 24 worst 52 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133568 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.4 gc 2.1 fps 24 worst 52 slowest 46 = step 7 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 133872 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.5 send 4.3 gc 2.1 fps 24 worst 53 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133520 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.6 gc 2.1 fps 24 worst 53 slowest 47 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133872 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.4 gc 2.1 fps 24 worst 59 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133520 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.8 send 4.6 gc 2.1 fps 24 worst 52 slowest 48 = step 6 paint 38 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 133520 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.2 send 4.2 gc 2.1 fps 24 worst 55 slowest 53 = step 13 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133520 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.2 gc 2.1 fps 24 worst 53 slowest 47 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 133568 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.5 gc 2.1 fps 24 worst 52 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133568 glyphs 19
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 16
+fps fire 24
+time fire step 6.9 paint 9.4 send 4.4 gc 2.1 fps 24 worst 48 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 13.0 fx 0.2 hud 4.8 over 0.0 title 0.0
+heap fire alloc 132544 glyphs 19
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.4 gc 2.1 fps 24 worst 53 slowest 48 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133472 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.7 gc 2.1 fps 24 worst 53 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133360 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.3 send 4.1 gc 2.1 fps 24 worst 53 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133520 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.3 gc 2.1 fps 24 worst 53 slowest 48 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133408 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.2 gc 2.1 fps 24 worst 53 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133408 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.2 send 4.3 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133360 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.2 gc 2.1 fps 24 worst 53 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 133360 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.5 gc 2.1 fps 24 worst 53 slowest 48 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133360 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.0 send 4.3 gc 2.1 fps 24 worst 47 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.0 over 0.0 title 0.0
+heap fire alloc 132528 glyphs 19
+fire linear fps 24 step 6.44 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.5 gc 2.1 fps 24 worst 53 slowest 48 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133472 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fire internal largest 31744
+fire field internal
+game fire
+switch 2 16
+=== entry 1 stopped 2026-11-10 12:12:07 +0100 at the PO's ask (heard nothing: a control run). Restart with the tone run first per game, entries from 2.
+=== entry 2 Fire tone 1, start 2026-11-10 12:12:11 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Fire"  # Fire, BallPit or Road: a name in app
+TONE = 1  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6301648
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 15 step 8.68 draw 6.40
+fps fire 15
+time fire step 9.2 paint 10.6 send 3.3 gc 2.1 fps 15 worst 122 slowest 51 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.6 over 0.0 title 0.0
+heap fire alloc 139296 glyphs 19
+sound fire between_max 115 write_max 95 dry 6 lead_min 0
+fire linear fps 16 step 8.56 draw 6.40
+fps fire 16
+time fire step 9.1 paint 10.0 send 3.3 gc 2.1 fps 16 worst 96 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139680 glyphs 19
+sound fire between_max 91 write_max 43 dry 6 lead_min 71
+fire linear fps 16 step 8.73 draw 6.40
+fps fire 16
+time fire step 9.3 paint 9.9 send 3.3 gc 2.1 fps 16 worst 96 slowest 51 = step 13 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 139824 glyphs 20
+sound fire between_max 90 write_max 43 dry 6 lead_min 85
+fire linear fps 16 step 8.74 draw 6.40
+fps fire 16
+time fire step 9.3 paint 10.2 send 3.3 gc 2.1 fps 16 worst 96 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 20
+sound fire between_max 91 write_max 43 dry 6 lead_min 65
+fire linear fps 16 step 8.66 draw 6.40
+fps fire 16
+time fire step 9.2 paint 10.3 send 3.3 gc 2.1 fps 16 worst 96 slowest 51 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap fire alloc 139824 glyphs 20
+sound fire between_max 91 write_max 43 dry 6 lead_min 76
+fire linear fps 16 step 8.63 draw 6.40
+fps fire 16
+time fire step 9.2 paint 9.9 send 3.3 gc 2.1 fps 16 worst 96 slowest 51 = step 13 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 140096 glyphs 20
+sound fire between_max 98 write_max 43 dry 7 lead_min 0
+fire linear fps 17 step 8.56 draw 6.40
+fps fire 17
+time fire step 9.1 paint 9.7 send 3.3 gc 2.2 fps 17 worst 96 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 139536 glyphs 20
+sound fire between_max 90 write_max 39 dry 7 lead_min 89
+fire linear fps 17 step 8.65 draw 6.40
+fps fire 17
+time fire step 9.2 paint 9.5 send 3.3 gc 2.2 fps 17 worst 96 slowest 50 = step 13 paint 33 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 26 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 139312 glyphs 20
+sound fire between_max 87 write_max 38 dry 7 lead_min 144
+fire linear fps 17 step 8.65 draw 6.40
+fps fire 17
+time fire step 9.2 paint 9.9 send 3.3 gc 2.2 fps 17 worst 96 slowest 49 = step 13 paint 33 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 25 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 139312 glyphs 20
+sound fire between_max 90 write_max 38 dry 7 lead_min 93
+fire linear fps 17 step 8.56 draw 6.40
+fps fire 17
+time fire step 9.1 paint 9.6 send 3.3 gc 2.2 fps 17 worst 80 slowest 51 = step 13 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 139648 glyphs 20
+sound fire between_max 90 write_max 39 dry 7 lead_min 89
+fire linear fps 17 step 8.58 draw 6.40
+fps fire 17
+time fire step 9.1 paint 9.7 send 3.3 gc 2.2 fps 17 worst 96 slowest 51 = step 13 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 139360 glyphs 20
+sound fire between_max 88 write_max 38 dry 7 lead_min 117
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 16
+sound fire between_max 90 write_max 38 dry 7 lead_min 83
+fire linear fps 17 step 8.44 draw 6.40
+fps fire 17
+time fire step 9.0 paint 9.8 send 3.3 gc 2.1 fps 17 worst 80 slowest 51 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 12.7 fx 0.2 hud 5.7 over 0.0 title 0.0
+heap fire alloc 140496 glyphs 21
+sound fire between_max 91 write_max 37 dry 7 lead_min 71
+fire linear fps 17 step 8.56 draw 6.40
+fps fire 17
+time fire step 9.1 paint 9.8 send 3.3 gc 2.2 fps 17 worst 80 slowest 50 = step 13 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 140160 glyphs 21
+sound fire between_max 110 write_max 38 dry 8 lead_min 0
+fire linear fps 21 step 7.14 draw 6.43
+fps fire 21
+time fire step 7.7 paint 10.0 send 3.3 gc 2.2 fps 21 worst 96 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139376 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 338
+fire linear fps 22 step 7.07 draw 6.43
+fps fire 22
+time fire step 7.6 paint 9.8 send 3.3 gc 2.2 fps 22 worst 73 slowest 51 = step 13 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139984 glyphs 21
+sound fire between_max 73 write_max 26 dry 8 lead_min 365
+fire linear fps 22 step 7.07 draw 6.42
+fps fire 22
+time fire step 7.6 paint 9.8 send 3.3 gc 2.2 fps 22 worst 80 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 341
+fire linear fps 22 step 7.08 draw 6.43
+fps fire 22
+time fire step 7.6 paint 10.2 send 3.4 gc 2.2 fps 22 worst 79 slowest 50 = step 13 paint 33 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.2 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 21
+sound fire between_max 83 write_max 26 dry 8 lead_min 202
+fire linear fps 22 step 7.13 draw 6.42
+fps fire 22
+time fire step 7.7 paint 9.8 send 3.3 gc 2.2 fps 22 worst 80 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 338
+fire linear fps 22 step 7.13 draw 6.42
+fps fire 22
+time fire step 7.7 paint 9.9 send 3.3 gc 2.2 fps 22 worst 80 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 342
+fire linear fps 22 step 7.13 draw 6.43
+fps fire 22
+time fire step 7.7 paint 10.0 send 3.3 gc 2.2 fps 22 worst 79 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 341
+fire linear fps 21 step 7.13 draw 6.43
+fps fire 21
+time fire step 7.7 paint 10.0 send 3.3 gc 2.2 fps 21 worst 80 slowest 52 = step 13 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 75 write_max 26 dry 8 lead_min 336
+fire linear fps 22 step 7.13 draw 6.43
+fps fire 22
+time fire step 7.7 paint 9.8 send 3.3 gc 2.2 fps 22 worst 80 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 342
+fire internal largest 31744
+fire field internal
+game fire
+switch 2 17
+sound fire between_max 74 write_max 26 dry 8 lead_min 341
+fire linear fps 22 step 7.01 draw 6.43
+fps fire 22
+time fire step 7.5 paint 10.2 send 3.3 gc 2.2 fps 22 worst 80 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 12.8 fx 0.2 hud 5.9 over 0.0 title 0.0
+heap fire alloc 140000 glyphs 21
+sound fire between_max 75 write_max 26 dry 8 lead_min 322
+fire linear fps 22 step 7.08 draw 6.43
+fps fire 22
+time fire step 7.6 paint 10.0 send 3.3 gc 2.2 fps 22 worst 72 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139984 glyphs 21
+sound fire between_max 72 write_max 26 dry 8 lead_min 368
+fire linear fps 22 step 7.07 draw 6.43
+fps fire 22
+time fire step 7.6 paint 9.8 send 3.3 gc 2.2 fps 22 worst 80 slowest 53 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 341
+fire linear fps 22 step 7.07 draw 6.43
+fps fire 22
+time fire step 7.6 paint 10.1 send 3.3 gc 2.2 fps 22 worst 80 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 140160 glyphs 21
+sound fire between_max 75 write_max 26 dry 8 lead_min 323
+fire linear fps 22 step 7.13 draw 6.43
+fps fire 22
+time fire step 7.7 paint 10.1 send 3.3 gc 2.2 fps 22 worst 80 slowest 54 = step 13 paint 38 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 338
+fire linear fps 21 step 7.13 draw 6.43
+fps fire 21
+time fire step 7.7 paint 10.0 send 3.3 gc 2.2 fps 21 worst 80 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 340
+fire linear fps 22 step 7.14 draw 6.43
+fps fire 22
+time fire step 7.7 paint 10.1 send 3.3 gc 2.2 fps 22 worst 79 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 343
+fire linear fps 22 step 7.08 draw 6.42
+fps fire 22
+time fire step 7.6 paint 10.1 send 3.3 gc 2.2 fps 22 worst 79 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 337
+fire linear fps 22 step 7.13 draw 6.43
+fps fire 22
+time fire step 7.7 paint 10.2 send 3.3 gc 2.2 fps 22 worst 79 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 21
+sound fire between_max 87 write_max 26 dry 8 lead_min 134
+fire linear fps 21 step 7.14 draw 6.43
+fps fire 21
+time fire step 7.7 paint 9.9 send 3.3 gc 2.2 fps 21 worst 96 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 139376 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 340
+fire linear fps 22 step 7.02 draw 6.43
+fps fire 22
+time fire step 7.6 paint 9.9 send 3.3 gc 2.1 fps 22 worst 73 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 140368 glyphs 21
+sound fire between_max 85 write_max 26 dry 8 lead_min 173
+fire internal largest 31744
+fire field internal
+game fire
+switch 3 17
+sound fire between_max 74 write_max 26 dry 8 lead_min 338
+fire linear fps 22 step 7.01 draw 6.43
+fps fire 22
+time fire step 7.5 paint 10.1 send 3.3 gc 2.2 fps 22 worst 80 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 12.8 fx 0.2 hud 6.0 over 0.0 title 0.0
+heap fire alloc 140000 glyphs 21
+sound fire between_max 75 write_max 26 dry 8 lead_min 327
+fire linear fps 22 step 7.08 draw 6.43
+fps fire 22
+time fire step 7.6 paint 9.9 send 3.3 gc 2.2 fps 22 worst 72 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139984 glyphs 21
+sound fire between_max 73 write_max 26 dry 8 lead_min 368
+fire linear fps 22 step 7.08 draw 6.43
+fps fire 22
+time fire step 7.6 paint 10.1 send 3.3 gc 2.2 fps 22 worst 80 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 338
+fire linear fps 22 step 7.13 draw 6.43
+fps fire 22
+time fire step 7.7 paint 10.2 send 3.3 gc 2.2 fps 22 worst 79 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 21
+sound fire between_max 87 write_max 26 dry 8 lead_min 134
+fire linear fps 21 step 7.13 draw 6.43
+fps fire 21
+time fire step 7.7 paint 9.8 send 3.3 gc 2.2 fps 21 worst 96 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 343
+fire linear fps 22 step 7.13 draw 6.43
+fps fire 22
+time fire step 7.7 paint 10.0 send 3.3 gc 2.2 fps 22 worst 80 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 343
+fire linear fps 22 step 7.13 draw 6.43
+fps fire 22
+time fire step 7.7 paint 10.1 send 3.3 gc 2.2 fps 22 worst 79 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 76 write_max 26 dry 8 lead_min 309
+fire linear fps 21 step 7.19 draw 6.42
+fps fire 21
+time fire step 7.7 paint 10.2 send 3.3 gc 2.2 fps 21 worst 80 slowest 54 = step 13 paint 38 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.2 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 74 write_max 26 dry 8 lead_min 341
+fire linear fps 22 step 7.08 draw 6.43
+fps fire 22
+time fire step 7.6 paint 10.1 send 3.3 gc 2.2 fps 22 worst 80 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 21
+sound fire between_max 79 write_max 26 dry 8 lead_min 268
+fire linear fps 21 step 7.14 draw 6.43
+fps fire 21
+time fire step 7.7 paint 10.1 send 3.3 gc 2.2 fps 21 worst 80 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 139376 glyphs 21
+sound fire between_max 75 write_max 26 dry 8 lead_min 321
+fire linear fps 22 step 7.08 draw 6.43
+fps fire 22
+time fire step 7.6 paint 10.3 send 3.3 gc 2.2 fps 22 worst 80 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 21
+sound fire between_max 87 write_max 26 dry 8 lead_min 135
+fire internal largest 31744
+fire field internal
+game fire
+switch 4 16
+sound fire between_max 75 write_max 26 dry 8 lead_min 324
+fire linear fps 22 step 7.01 draw 6.43
+fps fire 22
+time fire step 7.6 paint 10.2 send 3.3 gc 2.2 fps 22 worst 80 slowest 54 = step 13 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 12.6 fx 0.2 hud 5.7 over 0.0 title 0.0
+heap fire alloc 140000 glyphs 21
+sound fire between_max 72 write_max 26 dry 8 lead_min 373
+fire linear fps 22 step 7.08 draw 6.43
+fps fire 22
+time fire step 7.6 paint 9.9 send 3.3 gc 2.2 fps 22 worst 72 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139984 glyphs 21
+sound fire between_max 72 write_max 26 dry 8 lead_min 368
+=== entry 2 stopped 2026-11-10 12:16:35 +0100 at the PO's yes: the refill write blocks about 40 ms per frame (write_max 38-43), Fire 16-17 fps against 24. Fix: non-blocking writes, then step 2 again.
+=== smoke after b2497b0, Fire tone 1, 30 s, 2026-11-10 12:18:30 +0100
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6301536
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 6.9 paint 9.6 send 4.4 gc 2.2 fps 24 worst 58 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 138864 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 80
+fire linear fps 24 step 6.49 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.0 gc 2.1 fps 24 worst 56 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 19
+sound fire between_max 76 write_max 0 late 0 short 176
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.5 gc 2.2 fps 24 worst 59 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 79 write_max 0 late 0 short 48
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.5 gc 2.1 fps 24 worst 57 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 19
+sound fire between_max 77 write_max 0 late 0 short 208
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.5 gc 2.2 fps 24 worst 59 slowest 47 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 0
+written 480000 short 192
+done
+=== step 2 again after b2497b0, entries from 3, 2026-11-10 12:19:17 +0100
+=== entry 3 Fire tone 1, start 2026-11-10 12:19:22 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Fire"  # Fire, BallPit or Road: a name in app
+TONE = 1  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6301536
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 6.9 paint 9.7 send 4.4 gc 2.2 fps 24 worst 59 slowest 47 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 138864 glyphs 19
+sound fire between_max 79 write_max 0 late 0 short 80
+fire linear fps 24 step 6.55 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.9 send 4.5 gc 2.2 fps 24 worst 60 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 139808 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 176
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.3 gc 2.2 fps 24 worst 56 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 76 write_max 0 late 0 short 16
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.3 gc 2.1 fps 24 worst 56 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 19
+sound fire between_max 75 write_max 0 late 0 short -16
+fire linear fps 24 step 6.55 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.5 send 4.3 gc 2.2 fps 24 worst 58 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 96
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.6 gc 2.1 fps 24 worst 56 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 19
+sound fire between_max 76 write_max 0 late 0 short 208
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.1 gc 2.1 fps 24 worst 56 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 139920 glyphs 19
+sound fire between_max 76 write_max 0 late 0 short 144
+fire linear fps 24 step 6.49 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.3 gc 2.1 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 139920 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short -16
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.5 gc 2.2 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 176
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.5 gc 2.1 fps 24 worst 50 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 139920 glyphs 19
+sound fire between_max 69 write_max 0 late 0 short 16
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.4 gc 2.1 fps 24 worst 56 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 139968 glyphs 19
+sound fire between_max 76 write_max 0 late 0 short 208
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 17
+sound fire between_max 80 write_max 0 late 0 short 96
+fps fire 24
+time fire step 6.9 paint 9.9 send 4.6 gc 2.1 fps 24 worst 57 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 13.0 fx 0.2 hud 5.4 over 0.0 title 0.0
+heap fire alloc 139776 glyphs 19
+fire linear fps 24 step 6.40 draw 6.45
+sound fire between_max 77 write_max 0 late 0 short 80
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.6 gc 2.1 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+sound fire between_max 78 write_max 0 late 0 short 16
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.5 gc 2.1 fps 24 worst 57 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+sound fire between_max 78 write_max 0 late 0 short 208
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.1 gc 2.1 fps 24 worst 59 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+sound fire between_max 78 write_max 0 late 0 short 16
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.2 gc 2.1 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+sound fire between_max 78 write_max 0 late 0 short 160
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.4 gc 2.1 fps 24 worst 57 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+sound fire between_max 78 write_max 0 late 0 short 32
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.6 gc 2.2 fps 24 worst 57 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139584 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+sound fire between_max 77 write_max 0 late 0 short 64
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.5 gc 2.1 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 19
+fire linear fps 24 step 6.55 draw 6.44
+sound fire between_max 78 write_max 0 late 0 short 160
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.3 gc 2.1 fps 24 worst 58 slowest 47 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+sound fire between_max 78 write_max 0 late 0 short 192
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.5 gc 2.2 fps 24 worst 59 slowest 47 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 139536 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+sound fire between_max 79 write_max 0 late 0 short 224
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.5 gc 2.2 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139536 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+sound fire between_max 78 write_max 0 late 0 short 224
+fire internal largest 31744
+fire field internal
+game fire
+switch 2 17
+sound fire between_max 78 write_max 0 late 0 short 96
+fire linear fps 24 step 6.44 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.3 gc 2.1 fps 24 worst 57 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 12.9 fx 0.2 hud 5.6 over 0.0 title 0.0
+heap fire alloc 139936 glyphs 19
+sound fire between_max 77 write_max 0 late 0 short 112
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.2 gc 2.1 fps 24 worst 59 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 19
+sound fire between_max 83 write_max 0 late 0 short 160
+fire linear fps 24 step 6.55 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.4 gc 2.2 fps 24 worst 63 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 48
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.7 gc 2.1 fps 24 worst 49 slowest 47 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 140080 glyphs 19
+sound fire between_max 69 write_max 0 late 0 short 176
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.3 gc 2.2 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 96
+fire linear fps 24 step 6.55 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.9 send 4.4 gc 2.1 fps 24 worst 57 slowest 48 = step 6 paint 38 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 19
+sound fire between_max 77 write_max 0 late 0 short 208
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.4 gc 2.1 fps 24 worst 58 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 139968 glyphs 19
+sound fire between_max 69 write_max 0 late 0 short 240
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.3 gc 2.1 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 140272 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short -16
+fire linear fps 24 step 6.49 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.3 gc 2.1 fps 24 worst 57 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 139920 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 176
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.9 send 4.7 gc 2.2 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 96
+fire linear fps 24 step 6.49 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.2 gc 2.2 fps 24 worst 59 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 79 write_max 0 late 0 short 32
+fire internal largest 31744
+fire field internal
+game fire
+switch 3 17
+sound fire between_max 84 write_max 0 late 0 short 192
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.4 gc 2.1 fps 24 worst 57 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 13.0 fx 0.2 hud 5.1 over 0.0 title 0.0
+heap fire alloc 139936 glyphs 19
+sound fire between_max 77 write_max 0 late 0 short 96
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.9 send 4.4 gc 2.1 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 19
+sound fire between_max 92 write_max 0 late 0 short 176
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.6 gc 2.2 fps 24 worst 72 slowest 49 = step 6 paint 39 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 31 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 79 write_max 0 late 0 short 144
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.4 gc 2.1 fps 24 worst 58 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 140032 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 64
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.2 gc 2.2 fps 24 worst 58 slowest 47 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 79 write_max 0 late 0 short 144
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.3 gc 2.1 fps 24 worst 57 slowest 49 = step 6 paint 39 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 31 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 140320 glyphs 19
+sound fire between_max 77 write_max 0 late 0 short 96
+fire linear fps 24 step 6.55 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.4 gc 2.2 fps 24 worst 59 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 79 write_max 0 late 0 short 144
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.5 gc 2.1 fps 24 worst 58 slowest 49 = step 6 paint 39 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 31 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 140320 glyphs 19
+sound fire between_max 78 write_max 0 late 0 short 208
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.2 gc 2.2 fps 24 worst 57 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 139696 glyphs 19
+sound fire between_max 77 write_max 0 late 0 short 176
+fire linear fps 24 step 6.44 draw 6.45
+fps fire 24
+time fire step 7.0 paint 8.3 send 3.6 gc 2.2 fps 24 worst 45 slowest 38 = step 6 paint 28 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 20 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 1.3 over 0.0 title 0.0
+heap fire alloc 138912 glyphs 19
+sound fire between_max 71 write_max 0 late 0 short 112
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.1 send 4.1 gc 2.1 fps 24 worst 57 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.1 over 0.0 title 0.0
+heap fire alloc 139920 glyphs 19
+sound fire between_max 77 write_max 0 late 0 short 224
+fire internal largest 31744
+fire field internal
+game fire
+switch 4 17
+sound fire between_max 76 write_max 0 late 0 short 96
+fps fire 24
+time fire step 6.9 paint 9.9 send 4.6 gc 2.1 fps 24 worst 57 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 13.0 fx 0.2 hud 5.6 over 0.0 title 0.0
+heap fire alloc 139776 glyphs 19
+fire linear fps 24 step 6.40 draw 6.45
+sound fire between_max 78 write_max 0 late 0 short 192
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.6 gc 2.1 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+sound fire between_max 78 write_max 0 late 0 short 144
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.6 gc 2.1 fps 24 worst 50 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 139760 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+sound fire between_max 70 write_max 0 late 0 short 144
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.4 gc 2.1 fps 24 worst 57 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 139920 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+sound fire between_max 77 write_max 0 late 0 short 192
+fps fire 24
+time fire step 7.0 paint 9.8 send 4.5 gc 2.2 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 139584 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+sound fire between_max 78 write_max 0 late 0 short 144
+fps fire 24
+time fire step 7.0 paint 9.2 send 4.2 gc 2.1 fps 24 worst 58 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.2 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 19
+fire linear fps 24 step 6.49 draw 6.44
+sound fire between_max 78 write_max 0 late 0 short 32
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.3 gc 2.2 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 139536 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+sound fire between_max 77 write_max 0 late 0 short 128
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.2 gc 2.1 fps 24 worst 58 slowest 47 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 139872 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+sound fire between_max 78 write_max 0 late 0 short 224
+fps fire 24
+time fire step 7.0 paint 9.1 send 4.1 gc 2.1 fps 24 worst 57 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.1 over 0.0 title 0.0
+heap fire alloc 139808 glyphs 19
+fire linear fps 24 step 6.44 draw 6.44
+sound fire between_max 78 write_max 0 late 0 short 64
+fps fire 24
+time fire step 7.0 paint 9.9 send 4.5 gc 2.2 fps 24 worst 58 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 139648 glyphs 19
+fire linear fps 24 step 6.55 draw 6.44
+sound fire between_max 78 write_max 0 late 0 short 224
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.6 gc 2.1 fps 24 worst 54 slowest 48 = step 6 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 139808 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+sound fire between_max 69 write_max 0 late 0 short 128
+fire internal largest 31744
+fire field internal
+game fire
+switch 5 17
+written 4800000 short 608
+done
+=== entry 3 end 2026-11-10 12:24:29 +0100 exit 0
+=== entry 4 Fire tone 0, start 2026-11-10 12:24:29 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Fire"  # Fire, BallPit or Road: a name in app
+TONE = 0  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6307264
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.5 gc 2.1 fps 24 worst 55 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 132448 glyphs 18
+fire linear fps 24 step 6.49 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.4 send 4.4 gc 2.1 fps 24 worst 55 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 133552 glyphs 18
+fire linear fps 24 step 6.44 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.6 gc 2.1 fps 24 worst 55 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133440 glyphs 18
+Traceback (most recent call last):
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/main.py", line 622, in main
+    handler_func(state, args)
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/commands.py", line 515, in do_run
+    _do_execbuffer(state, buf, args.follow)
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/commands.py", line 489, in _do_execbuffer
+    ret, ret_err = state.transport.follow(timeout=None, data_consumer=stdout_write_bytes)
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/transport_serial.py", line 220, in follow
+    data = self.read_until(1, b"\x04", timeout=timeout, data_consumer=data_consumer)
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/transport_serial.py", line 158, in read_until
+    if self.is_pty or self.serial.inWaiting() > 0:
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/serial/serialutil.py", line 594, in inWaiting
+    return self.in_waiting
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/serial/serialposix.py", line 549, in in_waiting
+    s = fcntl.ioctl(self.fd, TIOCINQ, TIOCM_zero_str)
+OSError: [Errno 6] Device not configured
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/petr/.pyenv/versions/3.10.0/bin/mpremote", line 8, in <module>
+    sys.exit(main())
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/main.py", line 644, in main
+    do_disconnect(state)
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/commands.py", line 89, in do_disconnect
+    state.transport.close()
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/transport_serial.py", line 132, in close
+    raise er
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/mpremote/transport_serial.py", line 125, in close
+    self.serial.rts = False
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/serial/serialutil.py", line 463, in rts
+    self._update_rts_state()
+  File "/Users/petr/.pyenv/versions/3.10.0/lib/python3.10/site-packages/serial/serialposix.py", line 708, in _update_rts_state
+    fcntl.ioctl(self.fd, TIOCMBIC, TIOCM_RTS_str)
+OSError: [Errno 6] Device not configured
+=== entry 4 end 2026-11-10 12:24:52 +0100 exit 1
+=== entry 5 BallPit tone 1, start 2026-11-10 12:24:52 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "BallPit"  # Fire, BallPit or Road: a name in app
+TONE = 1  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+mpremote: failed to access /dev/cu.usbmodem1101 (it may be in use by another program)
+=== entry 5 end 2026-11-10 12:24:52 +0100 exit 1
+=== entry 6 BallPit tone 0, start 2026-11-10 12:24:52 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "BallPit"  # Fire, BallPit or Road: a name in app
+TONE = 0  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+mpremote: failed to access /dev/cu.usbmodem1101 (it may be in use by another program)
+=== entry 6 end 2026-11-10 12:24:52 +0100 exit 1
+=== entry 7 Road tone 1, start 2026-11-10 12:24:52 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Road"  # Fire, BallPit or Road: a name in app
+TONE = 1  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+mpremote: failed to access /dev/cu.usbmodem1101 (it may be in use by another program)
+=== entry 7 end 2026-11-10 12:24:52 +0100 exit 1
+=== entry 8 Road tone 0, start 2026-11-10 12:24:52 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Road"  # Fire, BallPit or Road: a name in app
+TONE = 0  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+mpremote: failed to access /dev/cu.usbmodem1101 (it may be in use by another program)
+=== entry 8 end 2026-11-10 12:24:52 +0100 exit 1
+=== all done 2026-11-10 12:24:52 +0100
+=== USB lost at 12:24:52 in entry 4 (OSError Errno 6 Device not configured); entries 5-8 did not run. Board back at 12:25:04. Cause unknown. Restart with the five missing runs, entries from 9.
+=== the PO, 12:2x: "i've also plugged in the microphone and repugged usb" (the cause of the USB loss)
+=== entry 9 Fire tone 0, start 2026-11-10 12:25:30 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Fire"  # Fire, BallPit or Road: a name in app
+TONE = 0  # 0: the control run, no I2S
+MIC = 0  # step 2
+SECONDS = 300
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6307264
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.5 gc 2.1 fps 24 worst 55 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 132448 glyphs 18
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.8 send 4.6 gc 2.1 fps 24 worst 55 slowest 52 = step 13 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 133808 glyphs 19
+fire linear fps 24 step 6.49 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.3 send 4.4 gc 2.1 fps 24 worst 53 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133808 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.4 gc 2.1 fps 24 worst 47 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 133920 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.1 send 4.0 gc 2.1 fps 24 worst 54 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.1 over 0.0 title 0.0
+heap fire alloc 133856 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.6 gc 2.1 fps 24 worst 53 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 134160 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.2 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133808 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.3 send 4.2 gc 2.1 fps 24 worst 56 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 133808 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.6 gc 2.1 fps 24 worst 47 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133808 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.4 gc 2.1 fps 24 worst 54 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 133856 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.7 gc 2.1 fps 24 worst 47 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133808 glyphs 19
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 16
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.2 gc 2.1 fps 24 worst 54 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 13.2 fx 0.2 hud 5.3 over 0.0 title 0.0
+heap fire alloc 132880 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.3 gc 2.1 fps 24 worst 54 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133920 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.5 send 4.4 gc 2.1 fps 24 worst 58 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133808 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.4 gc 2.1 fps 24 worst 54 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 134208 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.5 send 4.4 gc 2.1 fps 24 worst 56 slowest 47 = step 7 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133856 glyphs 19
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 7.0 paint 8.2 send 3.4 gc 2.1 fps 24 worst 41 slowest 33 = step 6 paint 23 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 15 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 1.2 over 0.0 title 0.0
+heap fire alloc 133232 glyphs 19
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 7.0 paint 8.7 send 3.9 gc 2.1 fps 24 worst 47 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 1.7 over 0.0 title 0.0
+heap fire alloc 132864 glyphs 19
+fire linear fps 24 step 6.49 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.8 send 4.6 gc 2.1 fps 24 worst 54 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133600 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.5 gc 2.1 fps 24 worst 54 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133920 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.4 gc 2.1 fps 24 worst 54 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 133600 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.6 gc 2.1 fps 24 worst 54 slowest 46 = step 7 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 134160 glyphs 19
+=== entry 9 stopped 2026-11-10 12:27:41 +0100 at the PO's ask for shorter runs: 120 s each, a switch every 30 s, all six runs again.
+=== step 2 again after the 10000 tone and 120 s runs (23b5ee5), entries from 10, 2026-11-10 12:34:51 +0100
+=== entry 10 Fire tone 1, start 2026-11-10 12:34:51 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Fire"  # Fire, BallPit or Road: a name in app
+TONE = 1  # 0: the control run, no I2S
+MIC = 0  # 1: the microphone counts the gaps (step 3)
+SECONDS = 120
+SWITCH_MS = 30_000
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6301056
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 25 step 6.34 draw 6.44
+fps fire 25
+time fire step 6.9 paint 8.8 send 3.9 gc 2.2 fps 25 worst 54 slowest 40 = step 6 paint 30 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 22 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 1.9 over 0.0 title 0.0
+heap fire alloc 139136 glyphs 17
+sound fire between_max 73 write_max 0 late 0 short 176
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.6 gc 2.1 fps 24 worst 48 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 140672 glyphs 19
+sound fire between_max 67 write_max 0 late 0 short 208
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.5 send 4.5 gc 2.1 fps 24 worst 52 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 140512 glyphs 19
+sound fire between_max 71 write_max 0 late 0 short 128
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.1 gc 2.1 fps 24 worst 52 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 140912 glyphs 19
+sound fire between_max 72 write_max 0 late 0 short 176
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.5 gc 2.1 fps 24 worst 51 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 140512 glyphs 19
+sound fire between_max 71 write_max 0 late 0 short 112
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 17
+sound fire between_max 72 write_max 0 late 0 short 48
+fire linear fps 24 step 6.40 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.4 gc 2.2 fps 24 worst 50 slowest 45 = step 7 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 13.2 fx 0.3 hud 5.2 over 0.0 title 0.0
+heap fire alloc 139472 glyphs 19
+sound fire between_max 76 write_max 0 late 0 short 192
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.5 gc 2.1 fps 24 worst 56 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 140624 glyphs 19
+sound fire between_max 66 write_max 0 late 0 short 240
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.6 send 4.6 gc 2.1 fps 24 worst 50 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 140512 glyphs 19
+sound fire between_max 69 write_max 0 late 0 short 160
+fire linear fps 24 step 6.44 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.7 gc 2.1 fps 24 worst 50 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 140864 glyphs 19
+sound fire between_max 70 write_max 0 late 0 short 192
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.4 gc 2.1 fps 24 worst 48 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 140560 glyphs 19
+sound fire between_max 66 write_max 0 late 0 short 64
+fire internal largest 31744
+fire field internal
+game fire
+switch 2 17
+sound fire between_max 69 write_max 0 late 0 short 192
+fire linear fps 24 step 6.40 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.4 gc 2.2 fps 24 worst 50 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 13.2 fx 0.2 hud 5.0 over 0.0 title 0.0
+heap fire alloc 139472 glyphs 19
+sound fire between_max 70 write_max 0 late 0 short 16
+fire linear fps 24 step 6.44 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.3 gc 2.1 fps 24 worst 50 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 140624 glyphs 19
+sound fire between_max 70 write_max 0 late 0 short 224
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.4 send 4.3 gc 2.1 fps 24 worst 50 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 140560 glyphs 19
+sound fire between_max 71 write_max 0 late 0 short 32
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.5 gc 2.1 fps 24 worst 50 slowest 47 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 140672 glyphs 19
+sound fire between_max 70 write_max 0 late 0 short 192
+fire linear fps 24 step 6.49 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.6 send 4.4 gc 2.1 fps 24 worst 50 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 140512 glyphs 19
+sound fire between_max 70 write_max 0 late 0 short 80
+fire internal largest 31744
+fire field internal
+game fire
+switch 3 17
+sound fire between_max 70 write_max 0 late 0 short 16
+fire linear fps 24 step 6.40 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.5 gc 2.2 fps 24 worst 50 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 13.1 fx 0.2 hud 4.9 over 0.0 title 0.0
+heap fire alloc 139776 glyphs 20
+sound fire between_max 74 write_max 0 late 0 short 128
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.2 send 4.1 gc 2.1 fps 24 worst 54 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.2 over 0.0 title 0.0
+heap fire alloc 140976 glyphs 20
+sound fire between_max 70 write_max 0 late 0 short 32
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.6 send 4.4 gc 2.1 fps 24 worst 51 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 140816 glyphs 20
+sound fire between_max 71 write_max 0 late 0 short 224
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.4 gc 2.1 fps 24 worst 50 slowest 46 = step 6 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 140928 glyphs 20
+sound fire between_max 70 write_max 0 late 0 short 224
+fire linear fps 24 step 6.44 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.9 gc 2.1 fps 24 worst 55 slowest 53 = step 13 paint 36 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 140864 glyphs 20
+sound fire between_max 66 write_max 0 late 0 short 0
+fire internal largest 31744
+fire field internal
+game fire
+switch 4 17
+written 1920000 short 496
+done
+=== entry 10 end 2026-11-10 12:36:58 +0100 exit 0
+=== entry 11 Fire tone 0, start 2026-11-10 12:36:58 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Fire"  # Fire, BallPit or Road: a name in app
+TONE = 0  # 0: the control run, no I2S
+MIC = 0  # 1: the microphone counts the gaps (step 3)
+SECONDS = 120
+SWITCH_MS = 30_000
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6306752
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 6.9 paint 9.4 send 4.3 gc 2.1 fps 24 worst 56 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133328 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.8 send 4.7 gc 2.1 fps 24 worst 52 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 134432 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.6 send 4.5 gc 2.1 fps 24 worst 56 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 134320 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.7 send 4.6 gc 2.1 fps 24 worst 53 slowest 45 = step 7 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 134672 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.3 send 4.5 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 133376 glyphs 19
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 17
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.3 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 13.1 fx 0.2 hud 5.2 over 0.0 title 0.0
+heap fire alloc 133392 glyphs 19
+fire linear fps 24 step 6.45 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.3 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 134480 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.4 send 4.3 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 134320 glyphs 19
+fire linear fps 24 step 6.50 draw 6.44
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.6 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 134432 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.5 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 134320 glyphs 19
+fire internal largest 31744
+fire field internal
+game fire
+switch 2 17
+fire linear fps 25 step 6.33 draw 6.45
+fps fire 25
+time fire step 6.9 paint 9.0 send 4.5 gc 2.1 fps 25 worst 52 slowest 43 = step 6 paint 33 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 13.1 fx 0.2 hud 4.2 over 0.0 title 0.0
+heap fire alloc 133760 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.4 gc 2.1 fps 24 worst 52 slowest 44 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap fire alloc 134672 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.0 send 4.1 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.1 over 0.0 title 0.0
+heap fire alloc 134368 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.8 send 4.7 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 134672 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.1 send 4.2 gc 2.1 fps 24 worst 53 slowest 44 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.2 over 0.0 title 0.0
+heap fire alloc 134368 glyphs 19
+fire internal largest 31744
+fire field internal
+game fire
+switch 3 17
+fire linear fps 24 step 6.40 draw 6.44
+fps fire 24
+time fire step 7.0 paint 9.5 send 4.5 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 13.2 fx 0.2 hud 5.0 over 0.0 title 0.0
+heap fire alloc 133344 glyphs 19
+fire linear fps 24 step 6.44 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.2 send 4.4 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 134496 glyphs 19
+fire linear fps 24 step 6.45 draw 6.45
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.5 gc 2.1 fps 24 worst 53 slowest 46 = step 6 paint 35 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 134320 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.7 send 4.6 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 134432 glyphs 19
+fire linear fps 24 step 6.50 draw 6.45
+fps fire 24
+time fire step 7.1 paint 9.6 send 4.4 gc 2.1 fps 24 worst 53 slowest 45 = step 6 paint 34 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 134320 glyphs 19
+fire internal largest 31744
+fire field internal
+game fire
+switch 4 17
+done
+=== entry 11 end 2026-11-10 12:39:04 +0100 exit 0
+=== entry 12 BallPit tone 1, start 2026-11-10 12:39:04 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "BallPit"  # Fire, BallPit or Road: a name in app
+TONE = 1  # 0: the control run, no I2S
+MIC = 0  # 1: the microphone counts the gaps (step 3)
+SECONDS = 120
+SWITCH_MS = 30_000
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6301168
+frame tft
+ready
+game balls
+fps balls 24
+time balls step 2.5 paint 8.0 send 5.0 gc 2.8 fps 24 worst 61 slowest 47 = step 2 paint 41 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 36 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap balls alloc 202512 glyphs 20
+sound balls between_max 88 write_max 0 late 0 short 80
+balls n 10 fps 24 step 1.89 draw 4.25 hits 50
+fps balls 24
+time balls step 2.5 paint 7.5 send 5.2 gc 2.8 fps 24 worst 60 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap balls alloc 202944 glyphs 20
+sound balls between_max 87 write_max 0 late 0 short 80
+balls n 10 fps 24 step 1.89 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.1 send 5.0 gc 2.8 fps 24 worst 53 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap balls alloc 202768 glyphs 20
+sound balls between_max 80 write_max 0 late 0 short 112
+balls n 10 fps 24 step 1.89 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.6 send 5.5 gc 2.8 fps 24 worst 60 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap balls alloc 202816 glyphs 20
+sound balls between_max 87 write_max 0 late 0 short 208
+balls n 10 fps 24 step 1.89 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.4 send 5.1 gc 2.8 fps 24 worst 60 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap balls alloc 202944 glyphs 20
+sound balls between_max 87 write_max 0 late 0 short 208
+balls n 10 fps 24 step 1.89 draw 4.25 hits 0
+game balls
+switch 1 18
+sound balls between_max 89 write_max 0 late 0 short 224
+balls n 10 fps 24 step 1.87 draw 4.26 hits 50
+fps balls 24
+time balls step 2.5 paint 7.8 send 5.3 gc 2.8 fps 24 worst 58 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 8.8 fx 0.2 hud 6.3 over 0.0 title 0.0
+heap balls alloc 202960 glyphs 20
+sound balls between_max 85 write_max 0 late 0 short 96
+balls n 10 fps 24 step 1.88 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.6 send 5.3 gc 2.8 fps 24 worst 59 slowest 49 = step 2 paint 43 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 38 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap balls alloc 203376 glyphs 20
+sound balls between_max 95 write_max 0 late 0 short 16
+balls n 10 fps 24 step 1.90 draw 4.24 hits 0
+fps balls 24
+time balls step 2.5 paint 7.5 send 4.9 gc 2.8 fps 24 worst 67 slowest 46 = step 2 paint 40 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 34 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap balls alloc 202704 glyphs 20
+sound balls between_max 88 write_max 0 late 0 short 144
+balls n 10 fps 24 step 1.88 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.3 send 4.9 gc 2.8 fps 24 worst 59 slowest 48 = step 2 paint 42 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 37 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap balls alloc 203136 glyphs 20
+sound balls between_max 86 write_max 0 late 0 short 208
+balls n 10 fps 24 step 1.89 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.6 send 4.8 gc 2.8 fps 24 worst 63 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap balls alloc 202704 glyphs 20
+sound balls between_max 89 write_max 0 late 0 short 240
+game balls
+switch 2 18
+sound balls between_max 86 write_max 0 late 0 short 112
+balls n 10 fps 24 step 1.87 draw 4.26 hits 50
+fps balls 24
+time balls step 2.5 paint 7.7 send 5.3 gc 2.8 fps 24 worst 58 slowest 48 = step 2 paint 42 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 8.8 fx 0.2 hud 5.6 over 0.0 title 0.0
+heap balls alloc 202960 glyphs 20
+sound balls between_max 85 write_max 0 late 0 short 32
+balls n 10 fps 24 step 1.89 draw 4.24 hits 0
+fps balls 24
+time balls step 2.5 paint 7.3 send 4.8 gc 2.8 fps 24 worst 62 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap balls alloc 203136 glyphs 20
+sound balls between_max 89 write_max 0 late 0 short 0
+balls n 10 fps 25 step 1.86 draw 4.23 hits 0
+fps balls 25
+time balls step 2.5 paint 5.8 send 3.5 gc 2.9 fps 25 worst 40 slowest 30 = step 2 paint 24 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 19 over 0 title 0
+avg balls static 0.1 paint 4.4 fx 0.1 hud 1.2 over 0.0 title 0.0
+heap balls alloc 202240 glyphs 20
+sound balls between_max 55 write_max 0 late 0 short 144
+balls n 10 fps 24 step 1.88 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.2 send 4.7 gc 2.8 fps 24 worst 57 slowest 48 = step 2 paint 42 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 36 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap balls alloc 202960 glyphs 20
+sound balls between_max 84 write_max 0 late 0 short 96
+balls n 10 fps 24 step 1.89 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.5 send 5.4 gc 2.8 fps 24 worst 53 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap balls alloc 202960 glyphs 20
+sound balls between_max 79 write_max 0 late 0 short 80
+game balls
+switch 3 18
+sound balls between_max 86 write_max 0 late 0 short 192
+balls n 10 fps 24 step 1.88 draw 4.26 hits 50
+fps balls 24
+time balls step 2.5 paint 7.9 send 5.6 gc 2.8 fps 24 worst 55 slowest 53 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 41 over 0 title 0
+avg balls static 0.1 paint 8.7 fx 0.2 hud 6.0 over 0.0 title 0.0
+heap balls alloc 202960 glyphs 20
+sound balls between_max 82 write_max 0 late 0 short 224
+balls n 10 fps 24 step 1.89 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.6 send 5.2 gc 2.8 fps 24 worst 53 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap balls alloc 202752 glyphs 20
+sound balls between_max 79 write_max 0 late 0 short 144
+balls n 10 fps 24 step 1.91 draw 4.25 hits 0
+fps balls 24
+time balls step 2.6 paint 8.4 send 5.1 gc 2.9 fps 24 worst 62 slowest 53 = step 2 paint 47 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 41 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 3.7 over 0.0 title 0.0
+heap balls alloc 202624 glyphs 20
+sound balls between_max 100 write_max 0 late 0 short 96
+balls n 10 fps 24 step 1.90 draw 4.25 hits 0
+fps balls 24
+time balls step 2.5 paint 7.2 send 4.6 gc 2.8 fps 24 worst 73 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap balls alloc 202752 glyphs 20
+sound balls between_max 85 write_max 0 late 0 short 144
+balls n 10 fps 24 step 1.89 draw 4.24 hits 0
+fps balls 24
+time balls step 2.5 paint 7.4 send 4.6 gc 2.8 fps 24 worst 61 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap balls alloc 202704 glyphs 20
+sound balls between_max 88 write_max 0 late 0 short 64
+game balls
+switch 4 18
+written 1920512 short 512
+done
+=== entry 12 end 2026-11-10 12:41:09 +0100 exit 0
+=== entry 13 BallPit tone 0, start 2026-11-10 12:41:09 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "BallPit"  # Fire, BallPit or Road: a name in app
+TONE = 0  # 0: the control run, no I2S
+MIC = 0  # 1: the microphone counts the gaps (step 3)
+SECONDS = 120
+SWITCH_MS = 30_000
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6306896
+frame tft
+ready
+game balls
+balls n 10 fps 24 step 1.87 draw 4.25 hits 50
+fps balls 24
+time balls step 2.5 paint 7.7 send 5.3 gc 2.7 fps 24 worst 60 slowest 49 = step 2 paint 43 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 38 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap balls alloc 196736 glyphs 20
+balls n 10 fps 24 step 1.88 draw 4.24 hits 0
+fps balls 24
+time balls step 2.5 paint 7.3 send 4.8 gc 2.7 fps 24 worst 58 slowest 49 = step 2 paint 43 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 38 over 0 title 0
+avg balls static 0.1 paint 4.4 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap balls alloc 196960 glyphs 20
+balls n 10 fps 24 step 1.90 draw 4.23 hits 0
+fps balls 24
+time balls step 2.6 paint 7.4 send 5.2 gc 2.8 fps 24 worst 70 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.4 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap balls alloc 196496 glyphs 20
+balls n 10 fps 24 step 1.89 draw 4.24 hits 0
+fps balls 24
+time balls step 2.6 paint 7.5 send 5.1 gc 2.7 fps 24 worst 60 slowest 52 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 41 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap balls alloc 196912 glyphs 20
+balls n 10 fps 24 step 1.89 draw 4.23 hits 0
+fps balls 24
+time balls step 2.6 paint 7.5 send 5.0 gc 2.8 fps 24 worst 61 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap balls alloc 196544 glyphs 20
+game balls
+switch 1 17
+fps balls 24
+time balls step 2.5 paint 7.5 send 5.0 gc 2.7 fps 24 worst 59 slowest 52 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 41 over 0 title 0
+avg balls static 0.1 paint 8.8 fx 0.2 hud 5.6 over 0.0 title 0.0
+heap balls alloc 196592 glyphs 20
+balls n 10 fps 24 step 1.87 draw 4.25 hits 50
+fps balls 24
+time balls step 2.5 paint 7.6 send 4.9 gc 2.7 fps 24 worst 59 slowest 49 = step 2 paint 43 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 38 over 0 title 0
+avg balls static 0.1 paint 4.4 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap balls alloc 196768 glyphs 20
+balls n 10 fps 24 step 1.90 draw 4.23 hits 0
+fps balls 24
+time balls step 2.6 paint 7.6 send 5.0 gc 2.8 fps 24 worst 71 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap balls alloc 196064 glyphs 20
+balls n 10 fps 24 step 1.90 draw 4.24 hits 0
+fps balls 24
+time balls step 2.5 paint 7.0 send 4.7 gc 2.7 fps 24 worst 59 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap balls alloc 196768 glyphs 20
+balls n 10 fps 24 step 1.89 draw 4.24 hits 0
+fps balls 24
+time balls step 2.6 paint 7.4 send 5.1 gc 2.8 fps 24 worst 59 slowest 51 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap balls alloc 196352 glyphs 20
+balls n 10 fps 24 step 1.89 draw 4.24 hits 0
+game balls
+switch 2 17
+balls n 10 fps 24 step 1.87 draw 4.24 hits 50
+fps balls 24
+time balls step 2.5 paint 7.8 send 5.4 gc 2.7 fps 24 worst 59 slowest 52 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 41 over 0 title 0
+avg balls static 0.1 paint 8.8 fx 0.2 hud 5.6 over 0.0 title 0.0
+heap balls alloc 196736 glyphs 20
+balls n 10 fps 24 step 1.88 draw 4.24 hits 0
+fps balls 24
+time balls step 2.6 paint 7.5 send 4.9 gc 2.7 fps 24 worst 59 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap balls alloc 196960 glyphs 20
+balls n 10 fps 24 step 1.90 draw 4.23 hits 0
+fps balls 24
+time balls step 2.6 paint 7.4 send 4.9 gc 2.8 fps 24 worst 65 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.4 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap balls alloc 196544 glyphs 20
+balls n 10 fps 24 step 1.89 draw 4.24 hits 0
+fps balls 24
+time balls step 2.6 paint 7.8 send 5.0 gc 2.8 fps 24 worst 60 slowest 52 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap balls alloc 196960 glyphs 20
+balls n 10 fps 24 step 1.90 draw 4.24 hits 0
+fps balls 24
+time balls step 2.6 paint 7.4 send 5.0 gc 2.8 fps 24 worst 77 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap balls alloc 196544 glyphs 20
+game balls
+switch 3 17
+balls n 10 fps 24 step 1.88 draw 4.24 hits 50
+fps balls 24
+time balls step 2.5 paint 7.8 send 5.4 gc 2.7 fps 24 worst 59 slowest 52 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 41 over 0 title 0
+avg balls static 0.1 paint 8.8 fx 0.2 hud 4.2 over 0.0 title 0.0
+heap balls alloc 196736 glyphs 20
+balls n 10 fps 24 step 1.88 draw 4.23 hits 0
+fps balls 24
+time balls step 2.6 paint 7.2 send 4.7 gc 2.7 fps 24 worst 54 slowest 52 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 41 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap balls alloc 196912 glyphs 20
+balls n 10 fps 24 step 1.90 draw 4.23 hits 0
+fps balls 24
+time balls step 2.6 paint 7.4 send 4.9 gc 2.8 fps 24 worst 72 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 4.4 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap balls alloc 196544 glyphs 20
+balls n 10 fps 24 step 1.89 draw 4.24 hits 0
+fps balls 24
+time balls step 2.6 paint 7.8 send 5.0 gc 2.8 fps 24 worst 60 slowest 52 = step 2 paint 46 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap balls alloc 196960 glyphs 20
+balls n 10 fps 24 step 1.91 draw 4.23 hits 0
+fps balls 24
+time balls step 2.6 paint 7.6 send 5.0 gc 2.8 fps 24 worst 69 slowest 51 = step 2 paint 45 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 40 over 0 title 0
+avg balls static 0.1 paint 4.4 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap balls alloc 196256 glyphs 20
+game balls
+switch 4 17
+done
+=== entry 13 end 2026-11-10 12:43:13 +0100 exit 0
+=== entry 14 Road tone 1, start 2026-11-10 12:43:13 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Road"  # Fire, BallPit or Road: a name in app
+TONE = 1  # 0: the control run, no I2S
+MIC = 0  # 1: the microphone counts the gaps (step 3)
+SECONDS = 120
+SWITCH_MS = 30_000
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6301024
+frame tft
+ready
+game road
+fps road 22
+time road step 0.8 paint 35.1 send 3.6 gc 2.4 fps 22 worst 105 slowest 103 = step 14 paint 67 send 20 gc 12
+phases road static 17 paint 24 fx 4 hud 26 over 20 title 35
+avg road static 11.8 paint 15.4 fx 0.2 hud 1.3 over 0.4 title 5.8
+heap road alloc 219600 glyphs 24
+sound road between_max 105 write_max 0 late 0 short 240
+fps road 20
+time road step 0.8 paint 36.9 send 4.9 gc 2.6 fps 20 worst 97 slowest 84 = step 1 paint 61 send 20 gc 0
+phases road static 16 paint 25 fx 7 hud 10 over 24 title 0
+avg road static 11.1 paint 22.3 fx 0.3 hud 1.6 over 1.5 title 0.0
+heap road alloc 140400 glyphs 25
+sound road between_max 97 write_max 0 late 0 short 256
+fps road 19
+time road step 1.1 paint 39.6 send 6.3 gc 2.8 fps 19 worst 112 slowest 110 = step 14 paint 74 send 20 gc 12
+phases road static 16 paint 25 fx 7 hud 10 over 25 title 0
+avg road static 11.2 paint 22.6 fx 0.7 hud 1.7 over 3.2 title 0.0
+heap road alloc 223952 glyphs 26
+sound road between_max 112 write_max 0 late 1 short 96
+fps road 21
+time road step 0.7 paint 36.2 send 3.5 gc 2.7 fps 21 worst 102 slowest 82 = step 1 paint 60 send 20 gc 0
+phases road static 11 paint 25 fx 6 hud 10 over 23 title 0
+avg road static 11.0 paint 22.3 fx 0.2 hud 1.6 over 0.8 title 0.0
+heap road alloc 140704 glyphs 26
+sound road between_max 85 write_max 0 late 1 short 176
+fps road 20
+time road step 1.0 paint 38.1 send 5.2 gc 2.7 fps 20 worst 105 slowest 89 = step 16 paint 69 send 3 gc 13
+phases road static 22 paint 25 fx 4 hud 10 over 24 title 0
+avg road static 11.4 paint 22.5 fx 0.5 hud 1.7 over 2.0 title 0.0
+heap road alloc 190512 glyphs 28
+sound road between_max 105 write_max 0 late 1 short 128
+game road
+switch 1 13
+sound road between_max 103 write_max 0 late 1 short 48
+fps road 22
+time road step 0.9 paint 35.3 send 3.8 gc 2.8 fps 22 worst 110 slowest 108 = step 16 paint 71 send 20 gc 13
+phases road static 18 paint 25 fx 4 hud 12 over 24 title 34
+avg road static 21.6 paint 35.3 fx 0.5 hud 2.7 over 2.2 title 5.9
+heap road alloc 221792 glyphs 28
+sound road between_max 110 write_max 0 late 1 short 32
+fps road 20
+time road step 0.8 paint 36.9 send 4.7 gc 2.6 fps 20 worst 100 slowest 83 = step 1 paint 61 send 20 gc 0
+phases road static 14 paint 25 fx 7 hud 27 over 20 title 0
+avg road static 11.1 paint 22.2 fx 0.3 hud 1.9 over 1.3 title 0.0
+heap road alloc 166496 glyphs 28
+sound road between_max 86 write_max 0 late 1 short 112
+fps road 20
+time road step 0.9 paint 37.8 send 5.3 gc 2.7 fps 20 worst 100 slowest 98 = step 16 paint 61 send 20 gc 13
+phases road static 16 paint 25 fx 7 hud 11 over 22 title 0
+avg road static 11.1 paint 22.4 fx 0.5 hud 1.6 over 2.0 title 0.0
+heap road alloc 220352 glyphs 28
+sound road between_max 100 write_max 0 late 1 short 128
+fps road 20
+time road step 0.9 paint 38.0 send 4.9 gc 2.7 fps 20 worst 106 slowest 104 = step 16 paint 66 send 20 gc 13
+phases road static 16 paint 25 fx 7 hud 10 over 26 title 0
+avg road static 11.2 paint 22.5 fx 0.5 hud 1.6 over 2.1 title 0.0
+heap road alloc 217232 glyphs 28
+sound road between_max 106 write_max 0 late 1 short 224
+fps road 22
+time road step 0.8 paint 36.1 send 3.5 gc 2.6 fps 22 worst 70 slowest 59 = step 1 paint 37 send 21 gc 0
+phases road static 11 paint 25 fx 2 hud 12 over 0 title 0
+avg road static 11.0 paint 23.0 fx 0.2 hud 1.7 over 0.0 title 0.0
+heap road alloc 166496 glyphs 28
+sound road between_max 70 write_max 0 late 1 short 48
+game road
+switch 2 13
+sound road between_max 113 write_max 0 late 2 short 144
+fps road 22
+time road step 0.7 paint 34.7 send 3.3 gc 2.7 fps 22 worst 62 slowest 54 = step 0 paint 27 send 26 gc 0
+phases road static 17 paint 25 fx 7 hud 11 over 24 title 34
+avg road static 20.9 paint 34.4 fx 0.5 hud 2.6 over 1.9 title 5.8
+heap road alloc 141488 glyphs 28
+sound road between_max 82 write_max 0 late 2 short 128
+fps road 20
+time road step 0.9 paint 38.0 send 4.8 gc 2.7 fps 20 worst 99 slowest 96 = step 16 paint 60 send 20 gc 13
+phases road static 16 paint 25 fx 6 hud 11 over 22 title 0
+avg road static 11.1 paint 22.5 fx 0.4 hud 1.7 over 2.0 title 0.0
+heap road alloc 210816 glyphs 28
+sound road between_max 99 write_max 0 late 2 short 224
+fps road 20
+time road step 0.9 paint 37.9 send 5.3 gc 2.7 fps 20 worst 108 slowest 106 = step 15 paint 69 send 20 gc 13
+phases road static 19 paint 25 fx 7 hud 10 over 22 title 0
+avg road static 11.2 paint 22.5 fx 0.5 hud 1.6 over 2.0 title 0.0
+heap road alloc 188832 glyphs 28
+sound road between_max 108 write_max 0 late 2 short 16
+fps road 20
+time road step 0.9 paint 37.6 send 5.3 gc 2.7 fps 20 worst 109 slowest 107 = step 16 paint 70 send 20 gc 13
+phases road static 18 paint 25 fx 7 hud 10 over 23 title 0
+avg road static 11.2 paint 22.2 fx 0.5 hud 1.6 over 2.0 title 0.0
+heap road alloc 213120 glyphs 28
+sound road between_max 109 write_max 0 late 2 short 96
+fps road 20
+time road step 0.9 paint 37.8 send 4.9 gc 2.7 fps 20 worst 116 slowest 101 = step 16 paint 64 send 20 gc 13
+phases road static 16 paint 25 fx 7 hud 10 over 24 title 0
+avg road static 11.2 paint 22.3 fx 0.5 hud 1.6 over 2.0 title 0.0
+heap road alloc 223232 glyphs 28
+sound road between_max 116 write_max 0 late 3 short 400
+game road
+switch 3 13
+sound road between_max 107 write_max 0 late 3 short 464
+fps road 22
+time road step 0.9 paint 35.4 send 3.8 gc 2.8 fps 22 worst 103 slowest 101 = step 16 paint 64 send 20 gc 13
+phases road static 19 paint 25 fx 6 hud 11 over 23 title 34
+avg road static 21.7 paint 35.5 fx 0.6 hud 2.5 over 2.2 title 6.0
+heap road alloc 222944 glyphs 28
+sound road between_max 103 write_max 0 late 3 short 480
+fps road 21
+time road step 0.8 paint 36.8 send 4.7 gc 2.6 fps 21 worst 99 slowest 84 = step 1 paint 62 send 20 gc 0
+phases road static 15 paint 25 fx 7 hud 11 over 20 title 0
+avg road static 11.1 paint 22.3 fx 0.3 hud 1.6 over 1.3 title 0.0
+heap road alloc 165568 glyphs 28
+sound road between_max 87 write_max 0 late 3 short 480
+fps road 22
+time road step 0.8 paint 35.8 send 3.1 gc 2.6 fps 22 worst 64 slowest 48 = step 1 paint 42 send 4 gc 0
+phases road static 11 paint 25 fx 2 hud 12 over 0 title 0
+avg road static 11.1 paint 22.7 fx 0.2 hud 1.7 over 0.0 title 0.0
+heap road alloc 222960 glyphs 28
+sound road between_max 64 write_max 0 late 3 short 464
+fps road 19
+time road step 1.0 paint 38.9 send 5.6 gc 2.8 fps 19 worst 113 slowest 111 = step 16 paint 74 send 20 gc 13
+phases road static 16 paint 25 fx 7 hud 9 over 24 title 0
+avg road static 11.2 paint 23.0 fx 0.6 hud 1.8 over 2.2 title 0.0
+heap road alloc 141392 glyphs 28
+sound road between_max 113 write_max 0 late 4 short 736
+fps road 22
+time road step 0.7 paint 35.4 send 3.0 gc 2.5 fps 22 worst 79 slowest 48 = step 0 paint 45 send 3 gc 0
+phases road static 13 paint 24 fx 0 hud 11 over 0 title 0
+avg road static 11.1 paint 22.5 fx 0.1 hud 1.6 over 0.0 title 0.0
+heap road alloc 241248 glyphs 28
+sound road between_max 65 write_max 0 late 4 short 608
+game road
+switch 4 13
+written 1920000 short 1040
+done
+=== entry 14 end 2026-11-10 12:45:17 +0100 exit 0
+=== entry 15 Road tone 0, start 2026-11-10 12:45:17 +0100
+TONE = 0 is the control run: the same game, restarts and presses, with no tone. It changes no file in games/: it
+GAME = "Road"  # Fire, BallPit or Road: a name in app
+TONE = 0  # 0: the control run, no I2S
+MIC = 0  # 1: the microphone counts the gaps (step 3)
+SECONDS = 120
+SWITCH_MS = 30_000
+AMPLITUDE = 10000  # of 32767: at 3000 the microphone heard the tone no louder than the room (run141)
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6306752
+frame tft
+ready
+game road
+fps road 22
+time road step 0.8 paint 35.3 send 3.8 gc 2.3 fps 22 worst 106 slowest 104 = step 14 paint 69 send 20 gc 11
+phases road static 17 paint 25 fx 4 hud 26 over 20 title 34
+avg road static 11.8 paint 15.4 fx 0.1 hud 1.3 over 0.4 title 6.0
+heap road alloc 214400 glyphs 24
+fps road 20
+time road step 0.8 paint 37.2 send 4.9 gc 2.6 fps 20 worst 98 slowest 84 = step 1 paint 62 send 20 gc 0
+phases road static 15 paint 25 fx 7 hud 10 over 25 title 0
+avg road static 11.2 paint 22.5 fx 0.3 hud 1.5 over 1.5 title 0.0
+heap road alloc 134176 glyphs 25
+fps road 20
+time road step 1.0 paint 38.3 send 4.9 gc 2.5 fps 20 worst 114 slowest 112 = step 14 paint 77 send 20 gc 11
+phases road static 17 paint 25 fx 7 hud 10 over 24 title 0
+avg road static 11.3 paint 22.8 fx 0.5 hud 1.6 over 2.0 title 0.0
+heap road alloc 212896 glyphs 28
+fps road 20
+time road step 1.0 paint 37.6 send 4.7 gc 2.6 fps 20 worst 108 slowest 107 = step 15 paint 70 send 20 gc 12
+phases road static 19 paint 24 fx 7 hud 10 over 23 title 0
+avg road static 11.2 paint 22.2 fx 0.5 hud 1.6 over 2.0 title 0.0
+heap road alloc 135344 glyphs 28
+fps road 20
+time road step 1.0 paint 37.5 send 5.3 gc 2.5 fps 20 worst 115 slowest 113 = step 15 paint 77 send 20 gc 12
+phases road static 19 paint 24 fx 7 hud 10 over 21 title 0
+avg road static 11.3 paint 22.2 fx 0.4 hud 1.5 over 1.9 title 0.0
+heap road alloc 239616 glyphs 28
+game road
+switch 1 11
+fps road 22
+time road step 0.9 paint 35.1 send 4.0 gc 2.5 fps 22 worst 100 slowest 98 = step 14 paint 63 send 20 gc 11
+phases road static 17 paint 25 fx 4 hud 10 over 24 title 32
+avg road static 21.8 paint 35.9 fx 0.5 hud 2.5 over 2.3 title 5.9
+heap road alloc 215568 glyphs 28
+fps road 21
+time road step 0.8 paint 37.1 send 4.2 gc 2.5 fps 21 worst 94 slowest 84 = step 1 paint 62 send 20 gc 0
+phases road static 14 paint 24 fx 7 hud 10 over 25 title 0
+avg road static 11.3 paint 22.3 fx 0.3 hud 1.6 over 1.4 title 0.0
+heap road alloc 184096 glyphs 28
+fps road 20
+time road step 1.0 paint 37.8 send 5.3 gc 2.5 fps 20 worst 110 slowest 95 = step 15 paint 59 send 20 gc 13
+phases road static 15 paint 24 fx 7 hud 28 over 24 title 0
+avg road static 11.2 paint 22.2 fx 0.5 hud 1.7 over 2.0 title 0.0
+heap road alloc 216560 glyphs 28
+fps road 20
+time road step 1.1 paint 37.8 send 5.1 gc 2.7 fps 20 worst 112 slowest 98 = step 14 paint 63 send 20 gc 11
+phases road static 15 paint 24 fx 7 hud 9 over 24 title 0
+avg road static 11.2 paint 22.2 fx 0.5 hud 1.5 over 2.3 title 0.0
+heap road alloc 137728 glyphs 28
+fps road 19
+time road step 1.0 paint 39.4 send 6.7 gc 2.6 fps 19 worst 127 slowest 98 = step 14 paint 62 send 20 gc 11
+phases road static 15 paint 25 fx 7 hud 10 over 24 title 0
+avg road static 11.2 paint 22.2 fx 0.8 hud 1.5 over 3.6 title 0.0
+heap road alloc 191984 glyphs 28
+game road
+switch 2 12
+fps road 22
+time road step 0.8 paint 34.7 send 3.5 gc 2.5 fps 22 worst 62 slowest 53 = step 0 paint 50 send 3 gc 0
+phases road static 17 paint 25 fx 7 hud 11 over 23 title 33
+avg road static 21.5 paint 35.5 fx 0.4 hud 2.5 over 1.1 title 5.7
+heap road alloc 160272 glyphs 28
+fps road 22
+time road step 0.8 paint 36.2 send 4.0 gc 2.5 fps 22 worst 74 slowest 60 = step 0 paint 38 send 21 gc 0
+phases road static 11 paint 25 fx 2 hud 10 over 0 title 0
+avg road static 11.1 paint 23.0 fx 0.2 hud 1.8 over 0.0 title 0.0
+heap road alloc 160240 glyphs 28
+fps road 20
+time road step 1.0 paint 37.8 send 5.3 gc 2.5 fps 20 worst 111 slowest 109 = step 15 paint 73 send 20 gc 13
+phases road static 15 paint 24 fx 7 hud 11 over 24 title 0
+avg road static 11.2 paint 22.5 fx 0.4 hud 1.5 over 2.0 title 0.0
+heap road alloc 208848 glyphs 28
+fps road 20
+time road step 1.0 paint 37.4 send 5.3 gc 2.5 fps 20 worst 99 slowest 95 = step 14 paint 59 send 20 gc 11
+phases road static 15 paint 24 fx 7 hud 10 over 21 title 0
+avg road static 11.2 paint 22.2 fx 0.5 hud 1.6 over 1.9 title 0.0
+heap road alloc 232128 glyphs 28
+fps road 20
+time road step 1.0 paint 37.6 send 5.3 gc 2.5 fps 20 worst 103 slowest 102 = step 15 paint 65 send 20 gc 13
+phases road static 15 paint 24 fx 4 hud 10 over 24 title 0
+avg road static 11.2 paint 22.4 fx 0.4 hud 1.6 over 1.9 title 0.0
+heap road alloc 233792 glyphs 28
+game road
+switch 3 12
+fps road 22
+time road step 0.9 paint 35.3 send 3.8 gc 2.5 fps 22 worst 100 slowest 98 = step 14 paint 63 send 20 gc 11
+phases road static 17 paint 25 fx 4 hud 11 over 23 title 33
+avg road static 21.7 paint 35.6 fx 0.5 hud 2.5 over 2.2 title 6.0
+heap road alloc 213360 glyphs 28
+fps road 19
+time road step 1.0 paint 39.0 send 7.1 gc 2.7 fps 19 worst 103 slowest 101 = step 15 paint 64 send 20 gc 12
+phases road static 16 paint 24 fx 7 hud 10 over 26 title 0
+avg road static 11.3 paint 21.9 fx 0.6 hud 1.5 over 3.5 title 0.0
+heap road alloc 189360 glyphs 28
+fps road 21
+time road step 0.9 paint 36.5 send 4.3 gc 2.6 fps 21 worst 108 slowest 94 = step 14 paint 59 send 20 gc 11
+phases road static 15 paint 25 fx 7 hud 11 over 20 title 0
+avg road static 11.1 paint 22.3 fx 0.3 hud 1.6 over 1.1 title 0.0
+heap road alloc 138528 glyphs 28
+fps road 20
+time road step 0.9 paint 37.4 send 4.9 gc 2.6 fps 20 worst 122 slowest 111 = step 14 paint 75 send 20 gc 11
+phases road static 15 paint 25 fx 4 hud 11 over 25 title 0
+avg road static 11.2 paint 22.4 fx 0.4 hud 1.6 over 1.7 title 0.0
+heap road alloc 166160 glyphs 28
+fps road 21
+time road step 0.8 paint 36.8 send 4.5 gc 2.4 fps 21 worst 110 slowest 84 = step 1 paint 62 send 20 gc 0
+phases road static 15 paint 25 fx 7 hud 10 over 20 title 0
+avg road static 11.1 paint 22.5 fx 0.3 hud 1.6 over 1.2 title 0.0
+heap road alloc 191488 glyphs 28
+game road
+switch 4 12
+done
+=== entry 15 end 2026-11-10 12:47:21 +0100 exit 0
+=== all done 2026-11-10 12:53:36 +0100
