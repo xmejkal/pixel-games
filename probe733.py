@@ -18,11 +18,12 @@ from array import array
 
 from machine import I2S, Pin
 
+# --- MVP ---
 RATE = 16000
-SAMPLES = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the loop has no seam
+CYCLE = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the loop has no seam
 AMPLITUDE = 3000  # of 32767, to start quiet
 
-wave = array("h", (int(AMPLITUDE * math.sin(2 * math.pi * 11 * i / SAMPLES)) for i in range(SAMPLES)))
+wave = array("h", (int(AMPLITUDE * math.sin(2 * math.pi * 11 * i / CYCLE)) for i in range(CYCLE)))
 
 
 def play(i2s, ms):
