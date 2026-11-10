@@ -836,3 +836,41 @@ about every 16 ms (D25). `probe733_games.py` uses the module, and `REFILL` picks
 - Later, not MVP (the "Later" marker in `games/sound.py`): more than one voice summed, a volume, a C mixer with the
   same `render(buf)` (P747), and a C task on the second core (D27).
 - `align 0` in all 18 entries that opened the sound: the refill block is aligned to 16 bytes (D27).
+
+## P747 (#1027), 2026-11-10: the fire's crackle in C, with one pop per ember
+
+`games/crackle.py` gives Fire a crackle: a deep, quiet roar and one pop per ember that the kernel births
+(`HeatField.take_births()`, new in this image). `NativeCrackle` renders it in C (`engine/core/fx_crackle.c`) from
+`crackle_c.mpy`, a native module that loads with no firmware rebuild. The plain Python `Crackle` is the same integer
+math and equals the C sample for sample on the Mac. `SampledCrackle` is the naive path on the board. The probe's
+`VOICE` picks the sound. Fire, 16 kHz mono, 120 s per entry with a new game every 30 s, no microphone.
+
+| entry | log | driver, ring | voice | result |
+| --- | --- | --- | --- | --- |
+| loop | run145a | `CallbackRefill`, 2048 B | `NativeCrackle`, 10 s | 12 s from a saved C file to the first pop, 24 fps, late 0 |
+| 5a | run145b | `CallbackRefill`, 2048 B | silent `Mixer` | 24.00 fps, worst 77 ms, 1 late: the control |
+| 5b | run145b | `CallbackRefill`, 2048 B | `NativeCrackle` | 24.00 fps, worst 77 ms, 0 late, render at most 413 us, pop wait median 11 ms, max 27 ms, 0 dropped |
+| 5c | run145b | `FrameRefill`, 4096 B | `Crackle` (Python) | hung: no frame after `align 0`, stopped by hand |
+| roar A, B | run145c, d | `CallbackRefill`, 2048 B | `NativeCrackle`, 20 s each | A no roar, B roar at about 40 Hz, a quarter of the level. The PO chose B |
+| 5c | run145e | `FrameRefill`, 4096 B | `SampledCrackle` | 24.15 fps, worst 70 ms, 0 late, render at most 2.3 ms, pop wait median 12 ms, max 42 ms, 3 dropped |
+
+- 5b passes every line that the plan set before the runs: fps and worst frame equal to the control, no more late
+  refills than the control, a render under 1 ms, no dropped pop, and a pop wait (from `add_pops` to the render that
+  starts it) of median 11 ms and max 27 ms against 20 and 48 ms. The ring then holds a pop up to 64 ms more. These
+  runs had the old roar. The roar's numbers change no work per sample, and run145d (the deep roar, 20 s) rendered in
+  at most 408 us. The probe then took one wait per `add_pops` call, not per pop (the refuter), so the logs hold no
+  pop count. It now takes one per pop.
+- The PO's ear: the pops come with the sparks "kinda, its not synchronized with their size", because "some are
+  brighter and bigger". Every ember is born the same in the kernel today, and each pop's loudness is random. The old
+  roar (`roar_shift` 4, `roar_gain` 48) sounded like "background noise like wind or river". On the Mac, the roar
+  alone measured RMS 1637 and the whole 15 s WAV 1620, with other seeds, so the roar was most of the sound.
+- The Python `Crackle` takes 20.9 to 22.7 ms for 256 samples (16 ms of sound) on the board (the last line of
+  run145b), about 50 times the C's slowest render. The first
+  5c hung because `FrameRefill` rendered until the ring was full, and a renderer slower than real time never fills
+  it. A `FrameRefill` write now renders at most one ring. The PO chose pre-rendered pops as the naive path, and on
+  `SampledCrackle`: "sounds weird, but never mind lets leave the simple one like that, advanced versions will be cool".
+- 5a, the control, counted 1 late refill, and 5b none (the probe prints a running total). Both sit near the line: `lag_max` reached 32 ms in 5a and
+  29 ms in 5b, and a refill whose wait passes 32 ms (the ring minus two blocks) counts as late. The game switches every 30 s cause the worst frames.
+- Later, not MVP: a pop whose loudness follows its spark's size (the kernel gives each ember a size), the flames in C,
+  and the S3's vector instructions where a measurement shows the need (D27).
+

@@ -1,0 +1,45 @@
+GEN build-xtensawin/crackle_c.config.h
+CC crackle_mod.c
+CC ../../core/fx_crackle.c
+LINK build-xtensawin/crackle_mod.o
+arch:         EM_XTENSA
+text size:    1021
+rodata size:  96
+bss size:     0
+GOT entries:  11
+GEN crackle_c.mpy
+cp /Users/petr/Development/pixel-p747/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+Up to date: crackle_c.mpy
+cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.ZhLUlYx0rS/crackle.py :crackle.py
+cp /Users/petr/Development/pixel-p747/games/fire.py :fire.py
+Up to date: fire.py
+cp /Users/petr/Development/pixel-p747/games/sound.py :sound.py
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6293584
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+align 0
+first pop 69
+loop 11 s from the script's start to the first pop
+fire linear fps 24 step 6.47 draw 6.47
+fps fire 24
+time fire step 7.2 paint 10.0 send 4.4 gc 2.3 fps 24 worst 53 slowest 51 = step 7 paint 41 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 33 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 148464 glyphs 18
+sound fire sent 314 of 313 between_max 44 lag_max 28 late 0 short -192 pushes 0
+crackle fire render_max 373 pop_median 11 pop_max 26 pops 16 dropped 0
+fire linear fps 24 step 6.52 draw 6.48
+fps fire 24
+time fire step 7.3 paint 10.0 send 4.3 gc 2.3 fps 24 worst 57 slowest 50 = step 7 paint 39 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 32 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 148304 glyphs 18
+sound fire sent 315 of 314 between_max 41 lag_max 25 late 0 short -288 pushes 0
+crackle fire render_max 406 pop_median 8 pop_max 23 pops 13 dropped 0
+written 161024 short 96
+done

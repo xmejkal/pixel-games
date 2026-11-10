@@ -9,8 +9,8 @@ stays working (D26). CallbackRefill refills from the stock I2S.irq callback, so 
 The stock callback (MicroPython v1.29.0): after i2s.irq(handler), write(buf) returns at once, and a FreeRTOS task
 copies buf into the DMA ring as room frees (ports/esp32/machine_i2s.c:241). When all of buf is in, the task schedules
 the handler (:274). The handler runs at the next bytecode boundary, never inside a C call such as a display send or
-gc.collect(). The task's queue holds one buffer, so only the handler writes. No game imports this module yet. Only
-probe733_games.py does.
+gc.collect(). The task's queue holds one buffer, so only the handler writes. No game imports this module yet: only
+probe733_games.py and crackle.py's SampledCrackle (P747) do.
 """
 
 import time
@@ -103,10 +103,13 @@ class Refill:
 
 class FrameRefill(Refill):
     """Once per frame, from the game loop: the naive path (D26). A poll makes the writes return at once with what fits
-    (extmod/machine_i2s.c:622), so refill() fills the free DMA buffers and keeps the rest of its block for the next."""
+    (extmod/machine_i2s.c:622), so refill() fills the free DMA buffers and keeps the rest of its block for the next.
+    A write renders at most one ring of blocks, so a mixer slower than real time slows the game but never locks it
+    (P747: the Python Crackle took 21 ms a block, and Fire never finished a frame)."""
 
     def __init__(self, mixer, i2s, sd, ring_samples):
         super().__init__(mixer, i2s, sd, ring_samples)
+        self.ring_blocks = max(1, ring_samples // REFILL_SAMPLES)  # P747
         self.rest = 0  # samples at the end of the block not yet written
         self.poll = None
 
@@ -124,7 +127,7 @@ class FrameRefill(Refill):
         self.write()
 
     def write(self):
-        while True:
+        for _ in range(self.ring_blocks):
             if not self.rest:
                 self.mixer.render(self.block)
                 self.rest = REFILL_SAMPLES

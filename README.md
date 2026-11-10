@@ -12,7 +12,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `art/` | the painted art: one set per game, the brush and the export |
 | `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
 | `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang). The engine's own tests run with the same command in `engine/` |
-| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene on the Mac to a PNG (needs clang and Pillow) |
+| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene on the Mac to a PNG (needs clang and Pillow). `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
 | `p537-finding.md` | the options for smooth motion, ranked, with a plan in slices |
@@ -88,6 +88,13 @@ Runs now:
   ```
 
   A new effect is one more subclass of `effects.Effect` (`update(x, y)`, `reset()`), and its callers do not change.
+- Sound (P748, P747, `games/sound.py`, `games/crackle.py`): a `Mixer` renders 16 kHz mono samples, and a driver
+  feeds them to the amplifier through stock `machine.I2S`: `FrameRefill` once per frame, or `CallbackRefill` from the
+  I2S callback. The fire's crackle is a soft, deep roar and one pop per ember birth (`HeatField.take_births()`), so
+  the pops come with the sparks. `NativeCrackle` renders it in C (`engine/core/fx_crackle.c`), loaded from
+  `crackle_c.mpy` with no firmware rebuild: at most 0.41 ms per 16 ms block, and Fire keeps 24 fps (bench.md, P747).
+  `SampledCrackle` is the plain Python path: four pre-rendered pops through the `Mixer`. Only the bench probe
+  (`probe733_games.py`) turns the sound on today. Try a change to the C crackle with `tools/crackle.sh`.
 - The HUD is drawn once into a strip and blitted each frame (P599).
 - Fourteen games. Four are effect scenes: fire, the ball pit, bodies on fire and rain. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.

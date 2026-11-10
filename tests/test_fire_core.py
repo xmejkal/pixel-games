@@ -42,6 +42,7 @@ class Field(ctypes.Structure):
                                                                    "ember_heat")]
     _fields_ += [("base", ctypes.c_int32)]  # --- MVP (P596) ---
     _fields_ += [("filter", ctypes.c_int32)]  # --- MVP (P608) ---
+    _fields_ += [("born", ctypes.c_int32)]  # --- MVP (P747) ---
 
 
 NEAREST, LINEAR = 0, 1  # FX_FIRE_NEAREST and FX_FIRE_LINEAR (P608)
@@ -518,6 +519,23 @@ class FireCoreTest(unittest.TestCase):
         f.ember_x[1], f.ember_heat[1] = 10 * 256, 0
         self.lib.fx_fire_scroll(ctypes.byref(f), -4)
         self.assertEqual((6 * 256 + 7, 10 * 256), (f.ember_x[0], f.ember_x[1]))
+
+    def test_take_births_counts_each_new_ember_once(self):  # --- MVP (P747) ---
+        f, _ = self.field(SMALL_W, SMALL_H, look=ALL_ON)
+        seen = 0
+        for _ in range(STEPS):
+            self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
+            seen += sum(1 for heat in f.ember_heat if heat == 255 - 12)  # a new ember has cooled one step
+        births = self.lib.fx_fire_take_births(ctypes.byref(f))
+        self.assertEqual((seen, 0), (births, self.lib.fx_fire_take_births(ctypes.byref(f))))
+        self.assertGreater(births, 0)
+
+    def test_a_draw_with_every_ember_slot_taken_is_no_birth(self):  # --- MVP (P747) ---
+        f, _ = self.field(SMALL_W, SMALL_H, look=(31, 0, 0, 0, 1, 0, 255, 0))
+        for i in range(MAX_EMBERS):
+            f.ember_x[i], f.ember_y[i], f.ember_heat[i] = 5 * 256, 5 * 256, 200
+        self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
+        self.assertEqual(0, self.lib.fx_fire_take_births(ctypes.byref(f)))
 
     def test_init_zeroes_the_field_and_a_seed_of_0_is_1(self):
         f, heat = self.field(SMALL_W, SMALL_H, seed=0)
