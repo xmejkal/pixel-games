@@ -5,11 +5,13 @@
 # HeatField.take_births (P747), and the amplifier wired as in P733. Its last line gives the seconds from the start of
 # this script to the first pop.
 #
-#     tools/crackle.sh [seconds] [voice] [look]   # voice: NativeCrackle (default) or SampledCrackle
+#     tools/crackle.sh [seconds] [voice] [look]   # voice: NativeCrackle (default), SampledCrackle or GrainCrackle
 #
 # A look, such as "6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK in the crackle.py that this
 # run copies. That copy stays on the board until the next copy.
-# --- MVP (P747) ---
+# GrainCrackle (P751) also needs the bank on the board: games/fire_bank.raw (about 250 KB, about 60 s to copy) goes
+# only when `mpremote fs sha256sum` shows the board's copy differs.
+# --- MVP (P747, P751) ---
 set -eo pipefail
 START=$(date +%s)
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -34,6 +36,12 @@ else
 fi
 mpremote cp "$ROOT/engine/natmod/crackle/crackle_c.mpy" :crackle_c.mpy + cp "$CRACKLE_PY" :crackle.py \
     + cp "$ROOT/games/fire.py" :fire.py + cp "$ROOT/games/sound.py" :sound.py
+if [ "$VOICE" = GrainCrackle ]; then
+    mpremote cp "$ROOT/games/fire_bank.py" :fire_bank.py
+    HERE_SUM=$(shasum -a 256 "$ROOT/games/fire_bank.raw" | cut -d' ' -f1)
+    BOARD_SUM=$(mpremote fs sha256sum :fire_bank.raw 2>/dev/null | tr -d '[:space:]' || true)
+    case $BOARD_SUM in *"$HERE_SUM"*) echo "fire_bank.raw is on the board" ;; *) mpremote cp "$ROOT/games/fire_bank.raw" :fire_bank.raw ;; esac
+fi
 mpremote run "$PROBE" | while IFS= read -r line; do
     echo "$line"
     case $line in "first pop "*) echo "loop $(( $(date +%s) - START )) s from the script's start to the first pop" ;; esac

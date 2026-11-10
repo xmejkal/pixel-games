@@ -39,8 +39,8 @@ window. Also `hit <n> missed loud <n>`, `skip <n>` for a hit while the last one 
 <ms> max <ms> missed <n> total_median <ms>`. No game restarts in these runs.
 
 VOICE (P747) is what the driver renders: "tone", "silent" (a Mixer with no play: the control run of the I2S), or
-"Crackle", "NativeCrackle" or "SampledCrackle", a class name in crackle. A crackle gets the Fire field's embers through
-fire.FirePlugin.crackle, one pop per birth. Lines: `first pop <ms>` (from the open to the first render that starts a
+"Crackle", "NativeCrackle", "SampledCrackle" or "GrainCrackle" (P751), a class name in crackle. A crackle gets the
+Fire field's embers through fire.FirePlugin.crackle, one pop per birth. Lines: `first pop <ms>` (from the open to the first render that starts a
 pop) once, and every 5 s `crackle <game> render_max <us> pop_median <ms> pop_max <ms> pops <n> dropped <n>`.
 `pop` is the delay from add_pops to the start of the render that starts that pop, one per pop. The pop itself starts 1 to 128
 samples into that render, and the ring holds it for up to 64 ms (IBUF 2048) before the speaker.
@@ -62,7 +62,7 @@ MIC = 0  # 1: the microphone counts the gaps (step 3), or measures the delays (H
 HITS = 0  # "auto": a hit every 2 s from 4 s on, "press": a hit at each BOOT press, 0: the tone (P746)
 REFILL = "FrameRefill"  # or "CallbackRefill": a driver's class name in sound (P748)
 IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 2048 gives 4 buffers, 64 ms
-VOICE = "tone"  # "silent", "Crackle", "NativeCrackle" or "SampledCrackle" (P747)
+VOICE = "tone"  # "silent", "Crackle", "NativeCrackle", "SampledCrackle" or "GrainCrackle" (P747, P751)
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -308,7 +308,7 @@ class Probe:
         self.sd = Pin(6, Pin.OUT, value=0)  # the amplifier stays off through the display setup
         self.mixer, self.refill, self.mic = sound.Mixer(), None, None
         self.first_pop_shown = False
-        if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle"):  # P747
+        if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle"):  # P747, P751
             import crackle
             import fire
             self.mixer = fire.FirePlugin.crackle = TimedCrackle(getattr(crackle, VOICE)(747))

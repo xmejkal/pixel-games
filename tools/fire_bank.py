@@ -24,7 +24,7 @@ POP_MAX = 2400  # 150 ms
 SIZES = (0.15, 0.5, 0.9)  # the three pop sizes, as ember rise speeds q
 SNAPS = 3  # woody pops of each size, and one recording grain
 POP_PEAKS = tuple(int(3000 + 19000 * q * q) for q in SIZES)
-BED_RMS = 1800
+BED_RMS = 3800
 LIMIT = 0.9 * 32767
 
 
