@@ -39,11 +39,14 @@ window. Also `hit <n> missed loud <n>`, `skip <n>` for a hit while the last one 
 <ms> max <ms> missed <n> total_median <ms>`. No game restarts in these runs.
 
 VOICE (P747) is what the driver renders: "tone", "silent" (a Mixer with no play: the control run of the I2S), or
-"Crackle", "NativeCrackle", "SampledCrackle" or "GrainCrackle" (P751), a class name in crackle. A crackle gets the
-Fire field's embers through fire.FirePlugin.crackle, one pop per birth. Lines: `first pop <ms>` (from the open to the first render that starts a
+"Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle" (P751) or "FireSound" (P753), a class name in crackle. A
+crackle gets the Fire field's embers through fire.FirePlugin.crackle, one pop per birth. Lines: `first pop <ms>` (from the open to the first render that starts a
 pop) once, and every 5 s `crackle <game> render_max <us> pop_median <ms> pop_max <ms> pops <n> dropped <n>`.
 `pop` is the delay from add_pops to the start of the render that starts that pop, one per pop. The pop itself starts 1 to 128
 samples into that render, and the ring holds it for up to 64 ms (IBUF 2048) before the speaker.
+FireSound (P753) also follows the heat field (and, with GAME BurningBodies, the bodies' airspeed): TimedCrackle forwards
+follow_field and follow_bodies to it and counts the calls, and a line with every 5 s line,
+`follow <game> follow_field <n> follow_bodies <n> level <n> coef <n>`: the calls of the window and the bed's targets now.
 """
 
 import math
@@ -62,7 +65,7 @@ MIC = 0  # 1: the microphone counts the gaps (step 3), or measures the delays (H
 HITS = 0  # "auto": a hit every 2 s from 4 s on, "press": a hit at each BOOT press, 0: the tone (P746)
 REFILL = "FrameRefill"  # or "CallbackRefill": a driver's class name in sound (P748)
 IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 2048 gives 4 buffers, 64 ms
-VOICE = "tone"  # "silent", "Crackle", "NativeCrackle", "SampledCrackle" or "GrainCrackle" (P747, P751)
+VOICE = "tone"  # "silent", "Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle" or "FireSound" (P747, P751, P753)
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -273,6 +276,13 @@ class TimedCrackle:
     def __init__(self, crackle):
         self.crackle, self.stamps, self.pops_us = crackle, [], []
         self.takes_rises = getattr(crackle, "takes_rises", False)  # P751
+        # --- MVP (P753) --- follow_field and follow_bodies exist only when the inner crackle has them, so FirePlugin's
+        # hasattr sees what it would on the crackle itself
+        self.field_calls = self.bodies_calls = 0
+        if hasattr(crackle, "follow_field"):
+            self.follow_field = self.forward_field
+        if hasattr(crackle, "follow_bodies"):
+            self.follow_bodies = self.forward_bodies
         self.render_max = self.renders = 0
         self.first = None  # ticks_us of the first render that started a pop
 
@@ -285,6 +295,14 @@ class TimedCrackle:
                 self.crackle.add_pops(n)
             else:
                 self.crackle.add_pops(n, rises)
+
+    def forward_field(self, total, height, wind):
+        self.field_calls += 1
+        self.crackle.follow_field(total, height, wind)
+
+    def forward_bodies(self, moves, ms, wind):
+        self.bodies_calls += 1
+        self.crackle.follow_bodies(moves, ms, wind)
 
     def render(self, buf):
         t = time.ticks_us()
@@ -302,6 +320,11 @@ class TimedCrackle:
         render_max, self.render_max = self.render_max, 0
         print("crackle %s render_max %d pop_median %d pop_max %d pops %d dropped %d" % (
             name, render_max, median(pops) // 1000, max(pops or [0]) // 1000, len(pops), self.crackle.counts()[2]))
+        if hasattr(self.crackle, "follow_field") or hasattr(self.crackle, "follow_bodies"):  # P753
+            print("follow %s follow_field %d follow_bodies %d level %d coef %d" % (
+                name, self.field_calls, self.bodies_calls, getattr(self.crackle, "level", 0),
+                getattr(self.crackle, "coef", 0)))
+            self.field_calls = self.bodies_calls = 0
 
 
 class Probe:
@@ -312,7 +335,7 @@ class Probe:
         self.sd = Pin(6, Pin.OUT, value=0)  # the amplifier stays off through the display setup
         self.mixer, self.refill, self.mic = sound.Mixer(), None, None
         self.first_pop_shown = False
-        if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle"):  # P747, P751
+        if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle", "FireSound"):  # P747, P751, P753
             import crackle
             import fire
             self.mixer = fire.FirePlugin.crackle = TimedCrackle(getattr(crackle, VOICE)(747))

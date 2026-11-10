@@ -104,6 +104,12 @@ class Engine:
                 return lib.fx_fire_take_births(ctypes.byref(self.f), ctypes.c_void_p(rises.buffer_info()[0]),
                                                len(rises))
 
+            def stats(self, threshold=48):  # --- MVP (P753) --- the binding's: (total, height)
+                total, height = ctypes.c_int32(), ctypes.c_int32()
+                lib.fx_fire_stats(ctypes.byref(self.f), threshold, ctypes.byref(total), ctypes.byref(height))
+                engine.stats_calls += 1
+                return total.value, height.value
+
             def set_base(self, on):  # P596
                 lib.fx_fire_set_base(ctypes.byref(self.f), 1 if on else 0)
 
@@ -130,6 +136,7 @@ class Engine:
 
         self.HeatField, self.targets, self.looks, self.burns, self.filters = HeatField, [], [], [], []
         self.scrolls, self.alphas, self.palettes = [], [], []  # P602, P639
+        self.stats_calls = 0  # P753
 
     def largest_free_internal(self):
         return 123456
@@ -292,6 +299,49 @@ class FireTest(unittest.TestCase):
         old = Taking()
         self.births(old, old_engine=True)
         self.assertTrue(old.calls and all(rises is None for _, rises in old.calls), old.calls)
+
+    def test_a_crackle_with_follow_field_gets_the_stats_and_the_wind_once_per_step(self):  # --- MVP (P753) ---
+        class Following:
+            def __init__(self):
+                self.calls, self.pops = [], 0
+
+            def add_pops(self, n):
+                self.pops += n
+
+            def follow_field(self, total, height, wind):
+                self.calls.append((total, height, wind))
+
+        c = Following()
+        self.births(c)
+        self.assertGreater(len(c.calls), 100)  # 200 frames of 40 ms: a step each, a frame now and then takes none
+        self.assertEqual(len(c.calls), fire.engine.stats_calls)  # one stats() per follow_field
+        for total, height, wind in c.calls:
+            self.assertTrue(all(type(v) is int for v in (total, height, wind)))
+            self.assertTrue(0 <= total <= 255 * fire.W * fire.H and 0 <= height <= fire.H)
+            self.assertTrue(-fire.WIND <= wind <= fire.WIND)
+        self.assertGreater(c.calls[-1][0], 100000)  # a burning field, not a cold one
+        self.assertTrue(any(w != 0 for _, _, w in c.calls))
+
+    def test_no_stats_call_without_follow_field_or_on_a_firmware_without_stats(self):  # --- MVP (P753) ---
+        class Counting:
+            def add_pops(self, n):
+                pass
+
+        self.births(Counting())
+        self.assertEqual(0, fire.engine.stats_calls)
+
+        class Following(Counting):
+            def follow_field(self, total, height, wind):
+                raise AssertionError("an old firmware has no stats")
+
+        real = fire.engine.HeatField
+
+        class OldField(real):
+            stats = property(lambda self: (_ for _ in ()).throw(AttributeError("stats")))
+
+        fire.engine.HeatField = OldField
+        self.births(Following())
+        self.assertEqual(0, fire.engine.stats_calls)
 
     def test_a_tap_moves_to_the_next_mode(self):
         """P608: the scene starts linear, and a tap walks the three modes, each setting its filter. Only the picture

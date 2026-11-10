@@ -115,6 +115,8 @@ class FirePlugin(Plugin):
         # --- MVP (P751) --- the births' ember rises, for a crackle that takes them; None when this firmware's
         # take_births has no argument
         self.rises = array("b", bytes(8))
+        # --- MVP (P753) --- whether the crackle follows the field's stats, checked once at the first step
+        self.follows = None
         if engine is not None:
             self.field = engine.HeatField(W, H, seed)
             self.field.set_look(*look)
@@ -139,6 +141,7 @@ class FirePlugin(Plugin):
             self.step_us += time.ticks_diff(time.ticks_us(), t)
             if self.crackle is not None:  # P747
                 self.add_births()
+                self.follow_stats()
 
     def add_births(self):
         """One pop per birth. A crackle with takes_rises (GrainCrackle) also gets each birth's rise, if the engine's
@@ -152,6 +155,15 @@ class FirePlugin(Plugin):
                 self.crackle.add_pops(n, self.rises)
                 return
         self.crackle.add_pops(self.field.take_births())
+
+    def follow_stats(self):
+        """--- MVP (P753) --- A crackle with follow_field (FireSound) gets the field's stats and the wind, once per step
+        batch. Whether it and the field have the methods is checked once."""
+        if self.follows is None:
+            self.follows = hasattr(self.crackle, "follow_field") and hasattr(self.field, "stats")
+        if self.follows:
+            total, height = self.field.stats()
+            self.crackle.follow_field(total, height, self.wind)
 
     def draw(self, cv):
         """The field into the frame: blended at its heat's alpha over what the frame holds, or opaque."""

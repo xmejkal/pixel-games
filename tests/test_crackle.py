@@ -11,8 +11,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: crackle_lib
 
-from crackle import (CRACKLE_LOOK, GRAIN_LOOK, PEAK, SAMPLED_POPS, Crackle, GrainCrackle, SampledCrackle,  # noqa: E402
-                     check_grain_look, check_look)
+from crackle import (BED_MAX, CRACKLE_LOOK, GRAIN_LOOK, PEAK, SAMPLED_POPS, STEPS, TOTAL_FULL,  # noqa: E402
+                     Crackle, FireSound, GrainCrackle, SampledCrackle, check_grain_look, check_look)
 from crackle_lib import HAVE_CLANG, CCrackle  # noqa: E402
 from fire_bank import FIRE_BANK_INDEX  # noqa: E402
 from grains_lib import GrainsModule  # noqa: E402
@@ -150,6 +150,118 @@ class GrainCrackleTest(unittest.TestCase):
         for bad in ((-1, 0), (0, 32769), (1,)):
             with self.assertRaises(ValueError):
                 check_grain_look(bad)
+
+
+BANK = os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw")
+
+
+def rms(x):
+    return (sum(v * v for v in x) / len(x)) ** 0.5
+
+
+@unittest.skipUnless(HAVE_CLANG, "clang is needed")
+class FireSoundTest(unittest.TestCase):
+    """P753's bed on the Mac: follow_field sets the bed from stats in ints, C renders it onto the grain pops."""
+
+    def sound(self, stats=True, seed=747):
+        return FireSound(seed, bank_path=BANK, native=GrainsModule(), stats=stats)
+
+    def bed(self, total, height, wind=0, blocks=40):
+        """The rms of the bed alone (no pops) after it has glided to the targets of these stats."""
+        c = self.sound()
+        c.follow_field(total, height, wind)
+        out = array("h")
+        for _ in range(blocks):
+            buf = array("h", bytes(2 * BLOCK))
+            c.render(buf)
+            out.extend(buf)
+        return rms(out[len(out) // 2:]), c
+
+    def test_with_stats_the_grain_bed_is_off_and_without_them_it_stays(self):
+        silent = self.sound()
+        buf = array("h", bytes(2 * BLOCK))
+        silent.render(buf)
+        self.assertEqual(bytes(2 * BLOCK), bytes(buf))  # no pops, no targets: nothing
+        old = self.sound(stats=False)
+        old.follow_field(700000, 100, 0)  # does nothing
+        plain = GrainCrackle(747, bank_path=BANK, native=GrainsModule())
+        a, b = array("h", bytes(2 * BLOCK)), array("h", bytes(2 * BLOCK))
+        for _ in range(20):
+            old.render(a)
+            plain.render(b)
+            self.assertEqual(list(a), list(b))
+        self.assertGreater(rms(a), 100)
+        self.assertEqual((old.level, old.coef), (0, 0))
+
+    def test_stats_come_from_the_engine_when_not_given(self):
+        class WithStats:
+            class HeatField:
+                def stats(self):
+                    pass
+
+        class Without:
+            class HeatField:
+                pass
+
+        self.assertTrue(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=WithStats).has_bed)
+        self.assertFalse(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=Without).has_bed)
+        self.assertFalse(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=object()).has_bed)
+
+    def test_a_bigger_total_is_louder_and_a_taller_flame_is_darker(self):
+        small, _ = self.bed(100000, 90)
+        big, _ = self.bed(700000, 90)
+        self.assertGreater(big, 3 * small)
+        _, low = self.bed(700000, 60)
+        _, tall = self.bed(700000, 120)
+        self.assertGreater(low.coef, 2 * tall.coef)  # 900 Hz against 250 Hz: the coefficient follows
+
+    def test_a_darker_bed_is_not_quieter(self):
+        bright, _ = self.bed(700000, 60)
+        dark, _ = self.bed(700000, 120)
+        self.assertLess(abs(bright - dark) / dark, 0.15)
+        self.assertTrue(1600 < dark < 4000, dark)
+
+    def test_height_change_and_wind_add_level_up_to_the_budget(self):
+        c = self.sound()
+        c.follow_field(700000, 90, 0)
+        c.follow_field(700000, 93, 0)  # 3 rows up: a flutter of 300
+        moved = c.level
+        c.follow_field(700000, 93, 0)  # the same height: none
+        self.assertEqual(moved - c.level, 300)
+        calm = c.level
+        c.follow_field(700000, 93, 60)
+        self.assertEqual(c.level - calm, 360)
+        c.follow_field(700000, 93, -60)
+        self.assertEqual(c.level - calm, 360)
+        c.follow_field(10 ** 9, 0, 60)
+        c.follow_field(10 ** 9, 120, 255)
+        self.assertLessEqual(c.level, BED_MAX)
+
+    def test_the_targets_are_ints_in_range_for_any_stats(self):
+        c = self.sound()
+        rg = random.Random(1)
+        for _ in range(2000):
+            c.follow_field(rg.choice((0, 1, TOTAL_FULL, 10 ** 9, rg.randrange(0, 1200000))), rg.randrange(-5, 140),
+                           rg.randrange(-255, 256))
+            self.assertTrue(type(c.level) is int and type(c.coef) is int)
+            self.assertTrue(0 <= c.level <= BED_MAX and 0 <= c.coef <= 16384, (c.level, c.coef))
+        self.assertEqual(STEPS, len(c.coefs))
+        self.assertTrue(all(c.coefs[i] >= c.coefs[i + 1] for i in range(STEPS - 1)))  # taller is darker
+
+    def test_fire_like_stats_with_pops_stay_loud_and_clamp_under_a_tenth_of_a_percent(self):
+        c = self.sound()
+        rg, out, buf = random.Random(753), array("h"), array("h", bytes(2 * BLOCK))
+        total, height = 700000, 100
+        for k in range(15 * RATE // BLOCK):
+            if k % FRAME_BLOCKS == 0:  # a step: the stats drift, an ember is born now and then
+                total = min(830000, max(550000, total + rg.randrange(-9000, 9000)))
+                height = min(120, max(70, height + rg.randrange(-6, 7)))
+                c.follow_field(total, height, rg.randrange(-60, 61))
+                c.add_pops(1 if rg.random() < 0.16 else 0, array("b", [rg.randrange(2, 6)]))
+            c.render(buf)
+            out.extend(buf)
+        self.assertTrue(1500 <= rms(out) <= 3500, rms(out))
+        self.assertLess(sum(abs(v) >= PEAK for v in out) / len(out), 0.001)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,9 @@ the I2S. add_pops(n) queues n pops, and the next render starts them. counts() gi
 - GrainCrackle (P751) is the fire of P750's demo g: a low flame roar (the bed, played in grains) and one bank pop per
   ember, mixed in C by engine/core/fx_grains.c from the same crackle_c.mpy, out of a sample bank (fire_bank.raw, made
   on the Mac by tools/fire_bank.py). No filter, so nothing rings or overflows.
+- FireSound (P753) is GrainCrackle's pops plus a smooth bed that follows the heat field: engine/core/fx_noise.c, in the
+  same crackle_c.mpy. follow_field(total, height, wind) sets the bed's level and brightness from numbers that
+  HeatField.stats gives, in ints. On a firmware with no stats it is a GrainCrackle: the grain bed stays.
 - SampledCrackle is the naive path on the board, which stays working (D26, the PO chose it on 2026-11-10): Crackle
   renders a few pops once, and a sound.Mixer plays one per frame that has births. No roar, no overlap.
 
@@ -18,6 +21,7 @@ The pop queue has two counters with one writer each: add_pops only adds to poppe
 dropped. A refill callback between two bytecodes of add_pops so loses no pop and plays none twice.
 """
 
+import math
 from array import array
 
 # --- MVP (P747) ---
@@ -213,6 +217,73 @@ class GrainCrackle:
 
     def counts(self):
         return self.c.grains_counts(self.state)
+
+
+# --- MVP (P753) ---
+# FireSound's constants, from engine/core/fx_noise.h and the Mac twin of step 0 (a scratch script that ran the real
+# fx_fire.c on Fire's look and on BurningBodies' look, 5,000 steps each, stats at threshold 48):
+# Fire: total 554,000 to 829,000 (5 % to 95 %: 598,000 to 776,000), height 71 to 120 rows (median 103, often the full
+# 120), height's step change 1 row at the median, 6 at the 95th percentile, 34 at most. 23 % of the power of that change
+# is at 1 to 5 Hz (25 steps a second), 74 % above 5 Hz. BurningBodies: total 0 to 118,000 (95 %: 67,000), height 0 to
+# 120, change 24 to 31 rows at the 95th percentile, 34 % of the power at 1 to 5 Hz.
+TOTAL_FULL = 800000  # a total at or over this is the loudest bed: Fire sits at 0.7 to 1.0 of it, bodies at 0 to 0.15
+HEIGHT_LOW, HEIGHT_HIGH = 60, 120  # rows: a flame this low has the brightest bed, this tall the darkest
+STEPS = 64  # the cutoff and gain tables
+CUTOFF_DARK, CUTOFF_BRIGHT = 250, 900  # Hz of the bed's two low-passes
+BED_BASE = 6800  # the level of a bed of TOTAL_FULL at the darkest cutoff: rms 0.36 of it, peaks 1.5 of it (fx_noise.h)
+FLUTTER, FLUTTER_CAP = 100, 8  # level per row of height's change since the last step, up to 8 rows: at most 800
+WIND_LEVEL, WIND_CAP = 6, 60  # level per unit of |wind|, up to Fire's WIND of 60: at most 360
+BED_MAX = 8000  # the bed's level at most: 6800 + 800 + 360 stay under it
+SAMPLE_RATE = 16000
+
+
+class FireSound(GrainCrackle):
+    """GrainCrackle's pops and a bed of filtered noise that follows the heat field (P753). follow_field(total, height,
+    wind) sets targets in ints and C glides to them over 32 ms: the level follows the total (a darker bed is not
+    quieter, a table of sqrt(CUTOFF_DARK / cutoff) keeps the loudness), plus a flutter from the change of height and a
+    little from |wind|, and the cutoff goes from CUTOFF_BRIGHT to CUTOFF_DARK as the flame grows taller. The tables are
+    made once here, the integer math is in follow_field. With a HeatField that has stats, the grain bed is off (look
+    (0, pop_gain)). With an older one, FireSound is a GrainCrackle and follow_field does nothing. stats=None asks the
+    engine; a test passes True or False."""
+
+    def __init__(self, seed, look=GRAIN_LOOK, bank_path=BANK_FILE, native=None, engine=None, stats=None):
+        if native is None:
+            import crackle_c as native
+        if stats is None:
+            if engine is None:
+                try:
+                    import engine
+                except ImportError:
+                    pass
+            stats = hasattr(getattr(engine, "HeatField", None), "stats")
+        self.has_bed = stats
+        super().__init__(seed, (0, look[1]) if stats else look, bank_path, native, engine)
+        self.noise = bytearray(native.NOISE_SIZE)
+        native.noise_init(self.noise, seed)
+        self.coefs, self.gains = array("H"), array("H")
+        for ci in range(STEPS):
+            cutoff = CUTOFF_BRIGHT - (CUTOFF_BRIGHT - CUTOFF_DARK) * ci // (STEPS - 1)
+            self.coefs.append(min(16384, int(32768 * (1 - math.exp(-2 * math.pi * cutoff / SAMPLE_RATE)))))
+            self.gains.append(int(32768 * math.sqrt(CUTOFF_DARK / cutoff)))
+        self.height = None  # the last step's, for the flutter
+        self.level = self.coef = 0  # the bed's targets now, for the probe
+
+    def follow_field(self, total, height, wind):
+        """The bed's targets from one step's stats and the wind (-60 to 60)."""
+        if not self.has_bed:
+            return
+        ci = min(max((height - HEIGHT_LOW) * (STEPS - 1) // (HEIGHT_HIGH - HEIGHT_LOW), 0), STEPS - 1)
+        base = (min(total, TOTAL_FULL) >> 4) * BED_BASE // (TOTAL_FULL >> 4)  # the shift keeps the product under 2^30
+        flutter = 0 if self.height is None else min(abs(height - self.height), FLUTTER_CAP) * FLUTTER
+        self.height = height
+        self.level = min(BED_MAX, (base * self.gains[ci] >> 15) + flutter + min(abs(wind), WIND_CAP) * WIND_LEVEL)
+        self.coef = self.coefs[ci]
+        self.c.noise_bed(self.noise, self.level, self.coef)
+
+    def render(self, buf):
+        super().render(buf)
+        if self.has_bed:
+            self.c.noise_mix(self.noise, buf)
 
 
 class SampledCrackle:

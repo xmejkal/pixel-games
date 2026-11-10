@@ -572,6 +572,47 @@ class FireCoreTest(unittest.TestCase):
         self.lib.fx_fire_step(ctypes.byref(f), 1, 0)
         self.assertEqual(0, self.lib.fx_fire_take_births(ctypes.byref(f), None, 0))
 
+    def stats(self, f, threshold=48):  # --- MVP (P753) ---
+        total, height = ctypes.c_int32(), ctypes.c_int32()
+        self.lib.fx_fire_stats(ctypes.byref(f), threshold, ctypes.byref(total), ctypes.byref(height))
+        return total.value, height.value
+
+    @staticmethod
+    def reference_stats(heat, w, h, threshold):
+        """Total: the sum of the cells. Height: h - row of the first row from the top with 4 cells at threshold or over."""
+        for row in range(h):
+            if sum(1 for v in heat[row * w:(row + 1) * w] if v >= threshold) >= 4:
+                return sum(heat), h - row
+        return sum(heat), 0
+
+    def test_stats_match_the_reference_on_random_fields_of_any_width(self):  # --- MVP (P753) ---
+        rg = random.Random(753)
+        for _ in range(200):
+            w, h, threshold = rg.randrange(1, 30), rg.randrange(1, 12), rg.choice((0, 1, 48, 255))
+            f, heat = self.field(w, h)
+            density = rg.choice((0.05, 0.3, 1.0))
+            heat[:] = [rg.randrange(256) if rg.random() < density else 0 for _ in range(w * h)]
+            self.assertEqual(self.reference_stats(list(heat), w, h, threshold), self.stats(f, threshold), (w, h))
+
+    def test_stats_of_a_cold_field_a_lone_ember_and_a_full_field(self):  # --- MVP (P753) ---
+        f, heat = self.field(8, 5)
+        self.assertEqual((0, 0), self.stats(f))
+        heat[2 * 8 + 3] = 255  # one hot cell is no flame
+        self.assertEqual((255, 0), self.stats(f))
+        heat[2 * 8 + 4:2 * 8 + 7] = [48, 49, 200]  # a row of 4 at or over 48: height h - row
+        self.assertEqual((255 + 48 + 49 + 200, 3), self.stats(f))
+        self.assertEqual((255 + 48 + 49 + 200, 3), self.stats(f, 48))
+        self.assertEqual((255 + 48 + 49 + 200, 0), self.stats(f, 50))  # only 2 cells are 50 or over
+        heat[:] = [255] * 40
+        self.assertEqual((255 * 40, 5), self.stats(f))
+
+    def test_stats_leave_the_field_alone(self):  # --- MVP (P753) ---
+        f, heat = self.field(SMALL_W, SMALL_H, look=ALL_ON)
+        self.lib.fx_fire_step(ctypes.byref(f), 20, 0)
+        before = bytes(heat)
+        self.stats(f)
+        self.assertEqual(before, bytes(heat))
+
     def test_init_zeroes_the_field_and_a_seed_of_0_is_1(self):
         f, heat = self.field(SMALL_W, SMALL_H, seed=0)
         self.assertEqual([0] * (SMALL_W * SMALL_H), list(heat))
