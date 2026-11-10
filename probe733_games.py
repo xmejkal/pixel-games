@@ -174,6 +174,8 @@ class Mic:
     def add_mean(self, mean):
         t = self.now_ms()
         self.samples += MIC_BLOCK
+        if not TONE:  # the control run: the microphone's cost, with no tone to calibrate on
+            return
         if self.threshold is None:
             if FLOOR_MS[0] <= t < FLOOR_MS[1]:
                 self.floors.append(mean)
