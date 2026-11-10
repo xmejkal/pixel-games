@@ -96,7 +96,7 @@ Runs now:
   `SampledCrackle` is the plain Python path: four pre-rendered pops through the `Mixer`. Since P751, `GrainCrackle` plays
   one woody pop per ember, in sync with the sparks, over a low flame roar, from a bank rendered on the Mac
   (`tools/fire_bank.py`), kept in `engine.SoundBank` outside the GC heap. The fastest embers (rise 4 and 5) get larger pops. Only the bench probe
-  (`probe733_games.py`) turns the sound on today. Try a change to the C crackle with `tools/crackle.sh`.
+  (`probe733_games.py`) turns the sound on today. Try a change to the C crackle with `tools/crackle.sh`. Since P753, `FireSound` adds integer noise in C (`engine/core/fx_noise.c`): each falling burning body of `BurningBodies` whooshes by its airspeed, and Fire plays the pops alone, because the PO heard the noise bed as wind. Try it with `GAME=BurningBodies tools/crackle.sh 30 FireSound`.
 - The HUD is drawn once into a strip and blitted each frame (P599).
 - Fourteen games. Four are effect scenes: fire, the ball pit, bodies on fire and rain. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.

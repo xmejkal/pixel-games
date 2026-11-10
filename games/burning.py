@@ -79,6 +79,9 @@ class BurningBodies(Fire):
         random.seed(SEED)
         self.physics_plugin = PhysicsPlugin(N, plugins.engine is not None)
         self.played_ms = 0
+        self.prev = array("h", [0] * (2 * N))  # --- MVP (P753) --- each body's x, y at the last frame it moved
+        self.has_prev = [False] * N  # False after drop(i) and while asleep: that frame's move is 0
+        self.moves = array("h", [0] * (2 * N))  # dx, dy per body in this frame, in px
         self.slept = [None] * N  # played_ms when each body fell asleep, None while it moves
         self.rest_y = [0] * N  # each body's plane: the y its top rests at, where it flares
         super().setup()  # the field first: Fire.setup draws no random number, so the drops below get today's
@@ -104,6 +107,7 @@ class BurningBodies(Fire):
         self.rest_y[i] = HEIGHT - BODY - random.randrange(40)
         self.physics_plugin.spawn(i, x, y, vx, 0, self.rest_y[i])
         self.slept[i] = None
+        self.has_prev[i] = False  # P753
         self.effects.bodies[i].reset()
 
     def sleep(self, i):
@@ -122,9 +126,31 @@ class BurningBodies(Fire):
         self.add_us(0, plugin.take_step_us())
         t = time.ticks_us()
         plugin.read(self.sleep)
+        self.follow_bodies()
         self.effects.dispatch(self.handlers)
         self.effects.update()
         self.add(0, t)
+
+    def follow_bodies(self):
+        """--- MVP (P753) --- A crackle with follow_bodies (FireSound) gets each body's move in px since the last frame,
+        the ms of the physics steps behind it and the wind, once a frame. A body that is asleep, or new, moves 0."""
+        crackle = self.fire_plugin.crackle
+        if not hasattr(crackle, "follow_bodies"):
+            return
+        plugin, moves, prev, has_prev = self.physics_plugin, self.moves, self.prev, self.has_prev
+        out = plugin.out  # x, y, asleep per body, read in place: no tuple a body
+        for i in range(N):
+            if out[3 * i + 2]:
+                moves[2 * i] = moves[2 * i + 1] = 0
+                has_prev[i] = False  # the rest place is stale once the body drops
+                continue
+            x, y = out[3 * i], out[3 * i + 1]
+            if has_prev[i]:
+                moves[2 * i], moves[2 * i + 1] = x - prev[2 * i], y - prev[2 * i + 1]
+            else:
+                moves[2 * i] = moves[2 * i + 1] = 0
+            prev[2 * i], prev[2 * i + 1], has_prev[i] = x, y, True
+        crackle.follow_bodies(moves, plugin.steps * plugins.STEP_MS, self.fire_plugin.wind)
 
     def flare(self, body, speed):
         """A hit at FLARE_MIN or faster burns a disc at the body's x, as read, and its plane: it has bounced up since,

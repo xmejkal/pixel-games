@@ -63,11 +63,13 @@ class PhysicsPlugin(Plugin):
         self.spawn = self.bodies.spawn
         self.world = (DT, gravity, restitution, friction)
         self.clock = StepClock(STEP_MS, STEP_CAP)
+        self.steps = 0  # --- MVP (P753) --- the steps of the last fixed_update, for the bodies' whooshes
         self.out, self.drained = array("h", [0] * (3 * n)), array("i", [0] * (3 * MAX_EVENTS))
 
     def fixed_update(self, ms):
         t = time.ticks_us()
-        self.step(self.clock.take(ms))
+        self.steps = self.clock.take(ms)
+        self.step(self.steps)
         self.step_us += time.ticks_diff(time.ticks_us(), t)
 
     def step(self, steps):
@@ -90,6 +92,10 @@ class PhysicsPlugin(Plugin):
     def place(self, i):
         """Body i's top left corner in px, as read."""
         return self.out[3 * i], self.out[3 * i + 1]
+
+    def sleeping(self, i):
+        """--- MVP (P753) --- Whether body i was asleep at the last read."""
+        return self.out[3 * i + 2] != 0
 
     def draw(self, cv, size, colours):
         """Each body as a box of side size px, body i in colours[i]."""

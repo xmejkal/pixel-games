@@ -903,3 +903,52 @@ of the bed and one pop per ember birth in C (`engine/core/fx_grains.c`, in `crac
   bed of the roar alone. The roar does not follow the video ("That doesnt seem to be synced with the video"), which is
   P753's first slice. Render at most 467 us, 0 dropped in all runs of run146e.
 
+
+## P753 (#1036), 2026-11-10: the fire's bed and the bodies' whooshes
+
+`FireSound` (`games/crackle.py`) plays P751's pops and adds noise in integer C (`engine/core/fx_noise.c`): a noise bed
+that follows the heat field, and 8 whoosh voices, one per burning body, that follow its airspeed. Python sets targets and C
+glides to them in about 32 ms. Each run is 120 s with `CallbackRefill` 2048 B. The control is `GrainCrackle` on the same game.
+
+| entry | log | game and voice | result |
+| --- | --- | --- | --- |
+| 1 | run147a | Fire, GrainCrackle | 24 fps, worst 86 ms, late 2, render at most 456 us, 0 dropped |
+| 2 | run147b | Fire, FireSound at -Os, bed off | 24 fps, worst 75 ms, late 1, render at most 514 us, 0 dropped |
+| 3 | run147c | Fire, FireSound at -O2, bed off | 24 fps, worst 68 ms, late 1, render at most 623 us, 0 dropped |
+| 4 | run148a | BurningBodies, GrainCrackle | 23.25 fps, worst 82 ms, late 0, render at most 445 us |
+| 5 | run148b | BurningBodies, FireSound at -Os | 23 fps, worst 81 ms, late 0, render 948 to 1054 us (fails the 1000 us line) |
+| 6 | run148c | BurningBodies, FireSound at -O2 | 23.1 fps, worst 82 ms, late 0, render at most 891 us |
+
+- The fps is the mean of the 5 s lines, the worst frame is the largest `worst`, `late` is the largest of the 5 s lines, and the render time is the largest `render_max`. BurningBodies has embers off, so it has no pops and no dropped line.
+- Entries 2 and 3 ran with the bed off (`BED = False`, so `follow_field` is 0 in their lines). The PO's ear test of the bed is run147d-p753-bed-ear.log.
+- `HeatField.stats(threshold=48)` returns `(total, height)`. At first it took 1.5 ms a call on the board, because `memcpy` ran as a call per word. Reading whole words and a loop of 4 words a turn brought it to 393 to 498 us a call (board, 2026-11-10, logged in run147e).
+- Entries 3 and 6 built the whole natmod at -O2. At -Os the 8 voices made render 948 to 1054 us a block, over the 1000 us line. At -O2 it is at most 891 us. But -O2 on the whole module added about 100 us to a Fire block where nothing whooshes (entry 3 against entry 2). So the build now gives -O2 to `fx_noise_mix` alone, and the rest stays at -Os. Its numbers come in run149.
+- The PO's ear on the board: the noise bed on Fire "sounds like a lot of wind in the background". A quiet bed that flaps with the flame height was "Still wind". So `BED = False`: Fire plays the pops alone, and the bed code stays, marked Later, not MVP. The whooshes on BurningBodies: "Cool, keep it".
+- Pass lines against the control on the same game:
+  - Mean fps within 1: entries 2, 3, 5, 6 pass.
+  - Worst frame within 5 ms: entries 2, 3, 5, 6 pass.
+  - `late` no more than the control's: pass.
+  - Render at most 1000 us: entries 2, 3, 6 pass, entry 5 fails.
+  - 0 dropped pops on Fire: pass.
+  - Under 0.1 % of samples at the clamp: the Mac test `test_fire_like_stats_with_pops_stay_loud_and_clamp_under_a_tenth_of_a_percent` asserts it. No 15 s WAV share is measured yet.
+  - The probe counts `follow_*` calls above 0: on Fire `follow_field` and `follow_bodies` show 0, because the bed is off. On BurningBodies `follow_bodies` shows about 119 a window.
+- On the Mac, wind -60 against +60 changes a whoosh level 3.4 times. The test asserts at least 1.41 times, and its sign: a body with dx above 0 is louder at wind -60.
+- Before fix C, `BurningBodies.follow_bodies` cost about 0.8 ms a frame (step 8.30 to 9.1 ms, run148). It now reads the physics `out` array in place. New numbers come in run149.
+
+After the review (engine 1c15d73, `crackle_c.mpy` sha256 90d7503d, `-O2` on `fx_noise_mix` only, the stuck-whoosh fix
+and the `out` read), 120 s each. `HeatField.stats()` timing is in run147e: 392 to 497 us a call.
+
+| entry | log | game, voice | result |
+| --- | --- | --- | --- |
+| 7 | run149a | Fire, GrainCrackle | 24 fps, worst 74 ms, step 7.0 ms, late 1, render at most 465 us, 0 dropped |
+| 8 | run149b | Fire, FireSound | 24 fps, worst 70 ms, step 7.1 ms, late 0, render at most 693 us, 0 dropped |
+| 9 | run149c | BurningBodies, GrainCrackle | 23.4 fps, worst 84 ms, step 9.5 ms, late 0, render at most 443 us |
+| 10 | run149d | BurningBodies, FireSound | 23.05 fps, worst 89 ms, step 11.7 ms, late 0, render at most 979 us, 119 follow_bodies calls a window |
+
+- Entries 8 and 10 pass every line against 7 and 9, with thin margins on BurningBodies: render 979 us against 1000,
+  and worst 89 ms against 84 + 5.
+- `-O2` on the one function renders slower than the whole module at `-O2` (entry 6: at most 891 us; Fire 623 us). The
+  refuter's per-path cost is real, but this fix did not lower it. A faster mix (voices in an outer loop, state in
+  locals) is a later row.
+- The step on BurningBodies grows from 9.5 to 11.7 ms with the whooshes, against about 0.8 ms in run148. Both runs pass
+  the fps line. The cost of `follow_bodies` in Python is a later row too.

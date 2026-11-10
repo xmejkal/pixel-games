@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 import unittest
+from array import array
 from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -36,10 +37,19 @@ class PhysicsPluginStandIn(plugins.Plugin):
 
     def __init__(self, places):
         self.n, self.places, self.asleep, self.spawned = len(places), places, set(), []
-        self.next, self.drained = [], []
+        self.next, self.drained, self.steps = [], [], 0
 
     def fixed_update(self, ms):
-        self.step(ms // 10)
+        self.steps = ms // 10
+        self.step(self.steps)
+
+    @property
+    def out(self):
+        """The plugin's out array as read(): x, y, asleep per body (the test's places and sleepers, now)."""
+        return array("h", [v for i, (x, y) in enumerate(self.places) for v in (x, y, int(i in self.asleep))])
+
+    def sleeping(self, i):
+        return i in self.asleep
 
     def spawn(self, i, *args):
         self.spawned.append(i)
@@ -239,6 +249,61 @@ class BurningTest(unittest.TestCase):
         self.assertEqual(1, len(fire.engine.burns))
         self.frame(game, 4)  # under a step: 0 steps, and still a step call, which clears the events
         self.assertEqual(1, len(fire.engine.burns))
+
+    # --- MVP (P753) --- the bodies' whooshes: the moves, the ms and the wind reach a crackle once a frame
+    class Follower:
+        def __init__(self):
+            self.calls = []
+
+        def follow_bodies(self, moves, ms, wind):
+            self.calls.append((list(moves), ms, wind))
+
+    def follower(self, game):
+        game.fire_plugin.crackle = follower = self.Follower()  # on the instance: the class attribute stays None
+        return follower
+
+    def test_the_crackle_gets_the_moves_the_ms_and_the_wind_once_a_frame(self):
+        game = self.scene()
+        follower = self.follower(game)
+        game.fire_plugin.wind = -33
+        places = game.physics_plugin.places
+        self.frame(game, 40)  # first frame: no last position, so 0 moves
+        self.assertEqual([([0] * 2 * burning.N, 40, -33)], follower.calls)
+        places[2] = (5, -90)
+        self.frame(game, 40)
+        self.assertEqual(2, len(follower.calls))
+        moves, ms, wind = follower.calls[1]
+        self.assertEqual((5, 10, 40, -33), (moves[4], moves[5], ms, wind))
+        self.assertEqual(0, sum(abs(v) for k, v in enumerate(moves) if k not in (4, 5)))
+        self.frame(game, 4)  # 0 steps: 0 ms (the crackle ignores it)
+        self.assertEqual(0, follower.calls[2][1])
+
+    def test_drop_forgets_the_last_position_and_a_sleeper_moves_0(self):
+        game = self.scene()
+        follower = self.follower(game)
+        places = game.physics_plugin.places
+        self.frame(game, 40)
+        places[1] = (50, 100)
+        self.frame(game, 40)
+        self.assertEqual((50, 200), tuple(follower.calls[1][0][2:4]))
+        game.drop(1)  # a respawn: the next frame's move is 0, not the jump
+        places[1] = (7, -30)
+        self.frame(game, 40)
+        self.assertEqual((0, 0), tuple(follower.calls[2][0][2:4]))
+        places[1] = (9, -20)
+        self.frame(game, 40)
+        self.assertEqual((2, 10), tuple(follower.calls[3][0][2:4]))
+        game.physics_plugin.asleep = {1}
+        self.frame(game, 40)
+        self.assertEqual((0, 0), tuple(follower.calls[4][0][2:4]))
+        game.physics_plugin.asleep = set()
+        places[1] = (300, 200)  # woke up far away
+        self.frame(game, 40)
+        self.assertEqual((0, 0), tuple(follower.calls[5][0][2:4]))
+
+    def test_a_crackle_without_follow_bodies_is_left_alone(self):
+        game = self.scene()
+        self.frame(game, 40)  # FirePlugin.crackle is None: no call, no error
 
     def test_a_sleeping_body_rests_before_its_drop(self):
         game = self.scene()

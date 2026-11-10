@@ -11,7 +11,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "engine", "tests"))  # pixel-engine: crackle_lib
 
-from crackle import (CRACKLE_LOOK, GRAIN_LOOK, PEAK, SAMPLED_POPS, Crackle, GrainCrackle, SampledCrackle,  # noqa: E402
+from crackle import (BED_MAX, CRACKLE_LOOK, GRAIN_LOOK, PEAK, SAMPLED_POPS, STALE_BLOCKS, STEPS,  # noqa: E402
+                     TOTAL_FULL, VOICES, WHOOSH_MAX, WIND_AIR, Crackle, FireSound, GrainCrackle, SampledCrackle,
                      check_grain_look, check_look)
 from crackle_lib import HAVE_CLANG, CCrackle  # noqa: E402
 from fire_bank import FIRE_BANK_INDEX  # noqa: E402
@@ -150,6 +151,229 @@ class GrainCrackleTest(unittest.TestCase):
         for bad in ((-1, 0), (0, 32769), (1,)):
             with self.assertRaises(ValueError):
                 check_grain_look(bad)
+
+
+BANK = os.path.join(os.path.dirname(HERE), "games", "fire_bank.raw")
+
+
+def rms(x):
+    return (sum(v * v for v in x) / len(x)) ** 0.5
+
+
+@unittest.skipUnless(HAVE_CLANG, "clang is needed")
+class FireSoundTest(unittest.TestCase):
+    """P753's bed on the Mac: follow_field sets the bed from stats in ints, C renders it onto the grain pops."""
+
+    def sound(self, stats=True, seed=747):
+        return FireSound(seed, bank_path=BANK, native=GrainsModule(), stats=stats, bed=True)
+
+    def bed(self, total, height, wind=0, blocks=40):
+        """The rms of the bed alone (no pops) after it has glided to the targets of these stats."""
+        c = self.sound()
+        c.follow_field(total, height, wind)
+        out = array("h")
+        for _ in range(blocks):
+            buf = array("h", bytes(2 * BLOCK))
+            c.render(buf)
+            out.extend(buf)
+        return rms(out[len(out) // 2:]), c
+
+    def test_with_stats_the_grain_bed_is_off_and_without_them_it_stays(self):
+        silent = self.sound()
+        buf = array("h", bytes(2 * BLOCK))
+        silent.render(buf)
+        self.assertEqual(bytes(2 * BLOCK), bytes(buf))  # no pops, no targets: nothing
+        old = self.sound(stats=False)
+        old.follow_field(700000, 100, 0)  # does nothing
+        plain = GrainCrackle(747, bank_path=BANK, native=GrainsModule())
+        a, b = array("h", bytes(2 * BLOCK)), array("h", bytes(2 * BLOCK))
+        for _ in range(20):
+            old.render(a)
+            plain.render(b)
+            self.assertEqual(list(a), list(b))
+        self.assertGreater(rms(a), 100)
+        self.assertEqual((old.bed_level, old.bed_coef), (0, 0))
+
+    def test_stats_come_from_the_engine_when_not_given(self):
+        class WithStats:
+            class HeatField:
+                def stats(self):
+                    pass
+
+        class Without:
+            class HeatField:
+                pass
+
+        self.assertTrue(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=WithStats, bed=True).has_bed)
+        self.assertFalse(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=WithStats).has_bed)  # BED off
+        self.assertFalse(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=Without).has_bed)
+        self.assertFalse(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=object()).has_bed)
+
+    def test_a_bigger_total_is_louder_and_a_taller_flame_is_darker(self):
+        small, _ = self.bed(100000, 90)
+        big, _ = self.bed(700000, 90)
+        self.assertGreater(big, 3 * small)
+        _, low = self.bed(700000, 60)
+        _, tall = self.bed(700000, 120)
+        self.assertGreater(low.bed_coef, 2 * tall.bed_coef)  # 900 Hz against 250 Hz: the coefficient follows
+
+    def test_a_darker_bed_is_not_quieter(self):
+        bright, _ = self.bed(700000, 60)
+        dark, _ = self.bed(700000, 120)
+        self.assertLess(abs(bright - dark) / dark, 0.15)
+        self.assertTrue(1600 < dark < 4000, dark)
+
+    def test_height_change_and_wind_add_level_up_to_the_budget(self):
+        c = self.sound()
+        c.follow_field(700000, 90, 0)
+        c.follow_field(700000, 93, 0)  # 3 rows up: a flutter of 300
+        moved = c.bed_level
+        c.follow_field(700000, 93, 0)  # the same height: none
+        self.assertEqual(moved - c.bed_level, 300)
+        calm = c.bed_level
+        c.follow_field(700000, 93, 60)
+        self.assertEqual(c.bed_level - calm, 360)
+        c.follow_field(700000, 93, -60)
+        self.assertEqual(c.bed_level - calm, 360)
+        c.follow_field(10 ** 9, 0, 60)
+        c.follow_field(10 ** 9, 120, 255)
+        self.assertLessEqual(c.bed_level, BED_MAX)
+
+    def test_the_targets_are_ints_in_range_for_any_stats(self):
+        c = self.sound()
+        rg = random.Random(1)
+        for _ in range(2000):
+            c.follow_field(rg.choice((0, 1, TOTAL_FULL, 10 ** 9, rg.randrange(0, 1200000))), rg.randrange(-5, 140),
+                           rg.randrange(-255, 256))
+            self.assertTrue(type(c.bed_level) is int and type(c.bed_coef) is int)
+            self.assertTrue(0 <= c.bed_level <= BED_MAX and 0 <= c.bed_coef <= 16384, (c.bed_level, c.bed_coef))
+        self.assertEqual(STEPS, len(c.coefs))
+        self.assertTrue(all(c.coefs[i] >= c.coefs[i + 1] for i in range(STEPS - 1)))  # taller is darker
+
+    def test_fire_like_stats_with_pops_stay_loud_and_clamp_under_a_tenth_of_a_percent(self):
+        c = self.sound()
+        rg, out, buf = random.Random(753), array("h"), array("h", bytes(2 * BLOCK))
+        total, height = 700000, 100
+        for k in range(15 * RATE // BLOCK):
+            if k % FRAME_BLOCKS == 0:  # a step: the stats drift, an ember is born now and then
+                total = min(830000, max(550000, total + rg.randrange(-9000, 9000)))
+                height = min(120, max(70, height + rg.randrange(-6, 7)))
+                c.follow_field(total, height, rg.randrange(-60, 61))
+                c.add_pops(1 if rg.random() < 0.16 else 0, array("b", [rg.randrange(2, 6)]))
+            c.render(buf)
+            out.extend(buf)
+        self.assertTrue(1500 <= rms(out) <= 3500, rms(out))
+        self.assertLess(sum(abs(v) >= PEAK for v in out) / len(out), 0.001)
+
+
+class WhooshTest(unittest.TestCase):
+    """--- MVP (P753) --- follow_bodies: one voice per body, set from the moves in ints, with the bed off."""
+
+    def sound(self):
+        return FireSound(753, bank_path=BANK, native=GrainsModule(), stats=True)  # BED off
+
+    def moves(self, *pairs):
+        out = array("h", bytes(4 * VOICES))
+        for i, (dx, dy) in enumerate(pairs):
+            out[2 * i], out[2 * i + 1] = dx, dy
+        return out
+
+    def test_a_falling_body_is_louder_and_brighter_than_a_slow_one(self):
+        c = self.sound()
+        c.follow_bodies(self.moves((0, 2), (0, 5), (0, 14)), 10, 0)  # 200, 500, 1,400 px/s
+        self.assertEqual(0, c.whoosh_levels[3])
+        levels = list(c.whoosh_levels)
+        self.assertTrue(0 < levels[0] < levels[1] < levels[2] <= WHOOSH_MAX, levels)
+        self.assertEqual(c.whoosh_levels[2], c.whoosh_level)
+        self.assertTrue(c.centre_coefs[0] < c.centre_coefs[1] < c.centre_coefs[2] <= 25080, list(c.centre_coefs[:3]))
+
+    def test_voice_i_stays_with_body_i(self):
+        c = self.sound()
+        c.follow_bodies(self.moves((0, 0), (0, 0), (0, 10)), 10, 0)
+        self.assertEqual([0, 0], [c.whoosh_levels[0], c.whoosh_levels[1]])
+        self.assertGreater(c.whoosh_levels[2], 0)
+        out = array("h", bytes(2 * BLOCK))
+        for _ in range(40):
+            c.follow_bodies(self.moves((0, 0), (0, 0), (0, 10)), 10, 0)  # a call a block: it does not fade
+            c.render(out)
+        self.assertGreater(rms(out), 50)  # voice 2 sounds with the bed off
+        c.follow_bodies(self.moves((0, 10), (0, 0), (0, 0)), 10, 0)
+        self.assertGreater(c.whoosh_levels[0], 0)
+        self.assertEqual(0, c.whoosh_levels[2])  # and voice 2 fades out, 0 is its target
+
+    def test_ms_0_changes_nothing_and_a_still_body_is_silent(self):
+        c = self.sound()
+        c.follow_bodies(self.moves((0, 10)), 10, 0)
+        before = (list(c.whoosh_levels), list(c.centre_coefs))
+        c.follow_bodies(self.moves((0, 0)), 0, 60)
+        self.assertEqual(before, (list(c.whoosh_levels), list(c.centre_coefs)))
+        c.follow_bodies(self.moves((0, 0)), 10, 60)  # at rest in the wind: nothing moves, nothing whooshes
+        self.assertEqual(0, c.whoosh_level)
+
+    def test_wind_against_the_drift_changes_the_level_by_3_dB(self):
+        """The Mac pass line of P753: the same vx and vy, wind -60 against +60, a level ratio of at least 1.41. A body
+        with dx > 0 is louder at wind -60 (the air moves against it), and the mirror body at wind +60."""
+        self.assertEqual(300, 60 * WIND_AIR)
+        for dx, loud, quiet in ((1, -60, 60), (-1, 60, -60)):
+            levels = {}
+            for wind in (loud, quiet):
+                c = self.sound()
+                c.follow_bodies(self.moves((dx, 1)), 10, wind)  # 100 px/s each way: the wind adds or takes 300 px/s
+                levels[wind] = c.whoosh_levels[0]
+            self.assertGreater(levels[quiet], 0)
+            self.assertGreaterEqual(levels[loud] / levels[quiet], 1.41, (dx, levels))
+
+    def test_with_no_follow_bodies_call_for_8_blocks_the_whooshes_fade_out_once(self):
+        c = self.sound()
+        buf = array("h", bytes(2 * BLOCK))
+        c.follow_bodies(self.moves((0, 14), (3, 8)), 10, 0)  # one fast move
+        c.render(buf)
+        self.assertGreater(rms(buf), 50)
+        for _ in range(STALE_BLOCKS):
+            c.render(buf)
+        self.assertEqual((0, [0] * VOICES), (c.whoosh_level, list(c.whoosh_levels)))
+        for _ in range(100):
+            c.render(buf)
+        self.assertEqual(bytes(2 * BLOCK), bytes(buf))  # the pops alone: no pop was queued, so nothing
+        c.follow_bodies(self.moves((0, 14)), 10, 0)  # a new call wakes it again
+        c.render(buf)
+        self.assertGreater(rms(buf), 50)
+
+    def test_a_call_every_2_blocks_keeps_the_whoosh(self):
+        c = self.sound()
+        buf = array("h", bytes(2 * BLOCK))
+        for k in range(100):
+            if k % 2 == 0:
+                c.follow_bodies(self.moves((0, 14)), 10, 0)
+            c.render(buf)
+        self.assertGreater(rms(buf), 50)
+        self.assertGreater(c.whoosh_level, 0)
+
+    def test_the_lowest_centre_stays_above_the_header_floor(self):
+        self.assertGreaterEqual(min(self.sound().centres), 3000)  # FX_NOISE_F_MIN
+
+    def test_levels_and_centres_stay_in_range_for_random_inputs(self):
+        c = self.sound()
+        rg = random.Random(753)
+        for _ in range(3000):
+            moves = array("h", [rg.choice((0, 1, -1, 14, 32767, -32768, rg.randrange(-40, 41))) for _ in range(2 * VOICES)])
+            c.follow_bodies(moves, rg.choice((0, 1, 10, 40, 80, 1000)), rg.randrange(-255, 256))
+            self.assertTrue(all(0 <= v <= WHOOSH_MAX for v in c.whoosh_levels), list(c.whoosh_levels))
+            self.assertTrue(all(0 <= v <= 25080 for v in c.centre_coefs), list(c.centre_coefs))
+            self.assertTrue(type(c.whoosh_level) is int and c.whoosh_level == max(c.whoosh_levels))
+        buf = array("h", bytes(2 * BLOCK))
+        for _ in range(20):
+            c.render(buf)  # the C takes every target
+
+    def test_a_loud_burst_of_all_8_voices_stays_under_the_clamp(self):
+        c = self.sound()
+        c.follow_bodies(self.moves(*[(0, 14)] * VOICES), 10, 0)
+        out = array("h")
+        buf = array("h", bytes(2 * BLOCK))
+        for _ in range(120):
+            c.render(buf)
+            out.extend(buf)
+        self.assertLess(sum(abs(v) >= PEAK for v in out) / len(out), 0.001)
 
 
 if __name__ == "__main__":
