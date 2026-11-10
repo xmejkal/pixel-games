@@ -42,7 +42,7 @@ VOICE (P747) is what the driver renders: "tone", "silent" (a Mixer with no play:
 "Crackle", "NativeCrackle" or "SampledCrackle", a class name in crackle. A crackle gets the Fire field's embers through
 fire.FirePlugin.crackle, one pop per birth. Lines: `first pop <ms>` (from the open to the first render that starts a
 pop) once, and every 5 s `crackle <game> render_max <us> pop_median <ms> pop_max <ms> pops <n> dropped <n>`.
-`pop` is the time from add_pops to the start of the render that starts that pop. The pop itself starts 1 to 128
+`pop` is the delay from add_pops to the start of the render that starts that pop, one per pop. The pop itself starts 1 to 128
 samples into that render, and the ring holds it for up to 64 ms (IBUF 2048) before the speaker.
 """
 
@@ -277,7 +277,9 @@ class TimedCrackle:
 
     def add_pops(self, n):
         if n:
-            self.stamps.append((self.crackle.counts()[0] + n, time.ticks_us()))
+            popped, t = self.crackle.counts()[0], time.ticks_us()
+            for k in range(1, n + 1):
+                self.stamps.append((popped + k, t))  # one stamp per pop, so `pops` counts pops
             self.crackle.add_pops(n)
 
     def render(self, buf):
@@ -291,7 +293,7 @@ class TimedCrackle:
                 self.first = t
 
     def report(self, name):
-        """The 5 s line, then a new window."""
+        """The 5 s line, then a new window. A render between a read and its reset here can lose one render_max."""
         pops, self.pops_us = self.pops_us, []
         render_max, self.render_max = self.render_max, 0
         print("crackle %s render_max %d pop_median %d pop_max %d pops %d dropped %d" % (

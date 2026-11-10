@@ -28,12 +28,22 @@ SLOTS = 8  # FX_CRACKLE_SLOTS
 PEAK = 32767  # FX_CRACKLE_PEAK
 
 
+def check_look(look):
+    """fx_crackle_init's ranges, which keep the C defined and every Python value under 2^30. ValueError if not."""
+    roar_shift, roar_gain, pop_min, pop_max, decay_min, decay_max, tails, tail_gap, gain = look
+    if not (1 <= roar_shift <= 8 and 0 <= roar_gain <= 255 and 0 <= pop_min <= pop_max < 16384
+            and 0 <= decay_min <= decay_max < 32768 and decay_max - decay_min < 16384 and 0 <= tails <= 3
+            and 0 <= tail_gap < 16384 and 0 <= gain <= 1023):
+        raise ValueError("a look out of fx_crackle_init's ranges: %r" % (look,))
+
+
 class Crackle:
     """The crackle in plain Python, step for step fx_crackle.c. A crackle has no play, so pending stays None."""
 
     pending = None
 
     def __init__(self, seed, look=CRACKLE_LOOK):
+        check_look(look)
         self.rng = (seed & 0xFFFF) or 1
         self.roar1 = self.roar2 = 0
         (self.roar_shift, self.roar_gain, self.pop_min, self.pop_max, self.decay_min, self.decay_max, self.tails,
@@ -115,6 +125,7 @@ class NativeCrackle:
 
     def __init__(self, seed, look=CRACKLE_LOOK):
         import crackle_c
+        check_look(look)
         self.c = crackle_c
         self.state = bytearray(crackle_c.SIZE)
         crackle_c.init(self.state, seed, *look)
@@ -134,7 +145,7 @@ class SampledCrackle:
     board, at start), then a sound.Mixer that plays the next one when a frame adds births. The Mixer has one voice, so the
     births of one frame make one pop, and a new pop cuts the last: started counts the pops played, dropped the rest."""
 
-    def __init__(self, seed, look=None):
+    def __init__(self, seed):
         import sound
 
         maker, self.pops = Crackle(seed, SAMPLED_LOOK), []
@@ -143,7 +154,7 @@ class SampledCrackle:
             maker.add_pops(1)
             maker.render(pop)
             self.pops.append(pop)
-        self.mixer, self.next = sound.Mixer(), 0
+        self.mixer, self.next_pop = sound.Mixer(), 0
         self.popped = self.started = self.dropped = 0
 
     @property
@@ -152,9 +163,9 @@ class SampledCrackle:
 
     def add_pops(self, n):
         if n:
+            self.mixer.play(self.pops[self.next_pop])  # first, so a render between the two never counts an unplayed pop
             self.popped += n
-            self.mixer.play(self.pops[self.next])
-            self.next = (self.next + 1) % SAMPLED_POPS
+            self.next_pop = (self.next_pop + 1) % SAMPLED_POPS
 
     def render(self, buf):
         waiting = self.popped - self.started - self.dropped
