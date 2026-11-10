@@ -343,6 +343,13 @@ class FireTest(unittest.TestCase):
         self.births(Following())
         self.assertEqual(0, fire.engine.stats_calls)
 
+        class BedOff(Following):
+            has_bed = False  # a FireSound with BED off: the pops alone, no stats() a step
+
+        fire.engine.HeatField = real
+        self.births(BedOff())
+        self.assertEqual(0, fire.engine.stats_calls)
+
     def test_a_tap_moves_to_the_next_mode(self):
         """P608: the scene starts linear, and a tap walks the three modes, each setting its filter. Only the picture
         mode paints the sky (here black: the Mac has no art) and blends."""

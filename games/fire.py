@@ -160,7 +160,8 @@ class FirePlugin(Plugin):
         """--- MVP (P753) --- A crackle with follow_field (FireSound) gets the field's stats and the wind, once per step
         batch. Whether it and the field have the methods is checked once."""
         if self.follows is None:
-            self.follows = hasattr(self.crackle, "follow_field") and hasattr(self.field, "stats")
+            self.follows = (hasattr(self.crackle, "follow_field") and getattr(self.crackle, "has_bed", True)
+                            and hasattr(self.field, "stats"))  # a FireSound with its bed off costs no stats()
         if self.follows:
             total, height = self.field.stats()
             self.crackle.follow_field(total, height, self.wind)

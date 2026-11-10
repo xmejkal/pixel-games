@@ -164,7 +164,7 @@ class FireSoundTest(unittest.TestCase):
     """P753's bed on the Mac: follow_field sets the bed from stats in ints, C renders it onto the grain pops."""
 
     def sound(self, stats=True, seed=747):
-        return FireSound(seed, bank_path=BANK, native=GrainsModule(), stats=stats)
+        return FireSound(seed, bank_path=BANK, native=GrainsModule(), stats=stats, bed=True)
 
     def bed(self, total, height, wind=0, blocks=40):
         """The rms of the bed alone (no pops) after it has glided to the targets of these stats."""
@@ -203,7 +203,8 @@ class FireSoundTest(unittest.TestCase):
             class HeatField:
                 pass
 
-        self.assertTrue(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=WithStats).has_bed)
+        self.assertTrue(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=WithStats, bed=True).has_bed)
+        self.assertFalse(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=WithStats).has_bed)  # BED off
         self.assertFalse(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=Without).has_bed)
         self.assertFalse(FireSound(1, bank_path=BANK, native=GrainsModule(), engine=object()).has_bed)
 

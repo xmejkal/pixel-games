@@ -235,6 +235,10 @@ FLUTTER, FLUTTER_CAP = 100, 8  # level per row of height's change since the last
 WIND_LEVEL, WIND_CAP = 6, 60  # level per unit of |wind|, up to Fire's WIND of 60: at most 360
 BED_MAX = 8000  # the bed's level at most: 6800 + 800 + 360 stay under it
 SAMPLE_RATE = 16000
+# --- Later, not MVP: the bed works and is tested, but the PO heard every noise bed as wind on the board's speaker
+# (run147, 2026-11-10: "sounds like a lot of wind in the background", and a quiet bed that flaps: "Still wind"). So
+# Fire plays the pops alone. Kept for a wind sound that follows the gusts, or a bed the PO likes later. ---
+BED = False
 
 
 class FireSound(GrainCrackle):
@@ -244,9 +248,10 @@ class FireSound(GrainCrackle):
     little from |wind|, and the cutoff goes from CUTOFF_BRIGHT to CUTOFF_DARK as the flame grows taller. The tables are
     made once here, the integer math is in follow_field. With a HeatField that has stats, the grain bed is off (look
     (0, pop_gain)). With an older one, FireSound is a GrainCrackle and follow_field does nothing. stats=None asks the
-    engine; a test passes True or False."""
+    engine; a test passes True or False. bed=False (BED, the default) keeps the noise bed off, so Fire plays the pops
+    alone."""
 
-    def __init__(self, seed, look=GRAIN_LOOK, bank_path=BANK_FILE, native=None, engine=None, stats=None):
+    def __init__(self, seed, look=GRAIN_LOOK, bank_path=BANK_FILE, native=None, engine=None, stats=None, bed=BED):
         if native is None:
             import crackle_c as native
         if stats is None:
@@ -256,7 +261,7 @@ class FireSound(GrainCrackle):
                 except ImportError:
                     pass
             stats = hasattr(getattr(engine, "HeatField", None), "stats")
-        self.has_bed = stats
+        self.has_bed = stats and bed  # BED off: the pops alone, with no grain bed and no noise bed
         super().__init__(seed, (0, look[1]) if stats else look, bank_path, native, engine)
         self.noise = bytearray(native.NOISE_SIZE)
         native.noise_init(self.noise, seed)

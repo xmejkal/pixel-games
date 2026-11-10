@@ -279,7 +279,7 @@ class TimedCrackle:
         # --- MVP (P753) --- follow_field and follow_bodies exist only when the inner crackle has them, so FirePlugin's
         # hasattr sees what it would on the crackle itself
         self.field_calls = self.bodies_calls = 0
-        if hasattr(crackle, "follow_field"):
+        if hasattr(crackle, "follow_field") and getattr(crackle, "has_bed", True):
             self.follow_field = self.forward_field
         if hasattr(crackle, "follow_bodies"):
             self.follow_bodies = self.forward_bodies
