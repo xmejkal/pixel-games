@@ -1,0 +1,78 @@
+=== run133 P733 step 3, slot check: Fire, TONE 1, MIC 1, 20 s, 2026-11-10 12:28:08 +0100
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6301712
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+mic dma_free 55347 largest 31744
+mic slot empty tone_mean 2 floor 10
+written 24064 short 320
+done
+=== run133b diagnosis: both slots, 32-bit stereo raw words, 2026-11-10 12:28:45 +0100
+startup slot 0 mean 4581 nonzero 6008 of 6144
+startup slot 1 mean 0 nonzero 0 of 6144
+startup first words 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0
+room slot 0 mean 144 nonzero 16383 of 16384
+room slot 1 mean 0 nonzero 0 of 16384
+room first words 0xfb82dbe0 0x0 0xfb81a3c0 0x0 0xfb841fc0 0x0 0xfb82a600 0x0
+tone slot 0 mean 2 nonzero 24569 of 24576
+tone slot 1 mean 0 nonzero 0 of 24576
+tone first words 0xffffec00 0x0 0xffff41e0 0x0 0x71e0 0x0 0xffff6600 0x0
+done
+=== run133c level test: 0-10 s the PO speaks or claps, 10-15 s tone 3000, 15-20 s tone 10000, 2026-11-10 12:30:28 +0100
+t     0 tone     0 level  2670 p2p 16334 n 8192 ############################################################
+t   647 tone     0 level    68 p2p   403 n 9728 #################
+t  1312 tone     0 level    54 p2p   331 n 9728 #############
+t  1988 tone     0 level    24 p2p   194 n 9728 ######
+t  2656 tone     0 level   154 p2p  1128 n 9728 ######################################
+t  3328 tone     0 level    14 p2p    59 n 9728 ###
+t  4007 tone     0 level    24 p2p    97 n 9728 ######
+t  4672 tone     0 level     7 p2p    59 n 9728 #
+t  5344 tone     0 level     1 p2p    13 n 9728 
+t  6016 tone     0 level     1 p2p    16 n 9728 
+t  6688 tone     0 level     6 p2p    49 n 9728 #
+t  7360 tone     0 level     4 p2p    36 n 9728 #
+t  8032 tone     0 level     2 p2p    27 n 9728 
+t  8704 tone     0 level     2 p2p    19 n 9728 
+t  9376 tone     0 level     3 p2p    21 n 9728 
+t 10048 tone  3000 level     2 p2p    20 n 9728 
+t 10720 tone  3000 level     3 p2p    40 n 9728 
+t 11392 tone  3000 level     5 p2p    39 n 9728 #
+t 12064 tone  3000 level     1 p2p    17 n 9728 
+t 12736 tone  3000 level     1 p2p    15 n 9728 
+t 13408 tone  3000 level     1 p2p    17 n 9728 
+t 14080 tone  3000 level     1 p2p    15 n 9728 
+t 14752 tone  3000 level     1 p2p    17 n 9728 
+t 15424 tone 10000 level    17 p2p    92 n 9728 ####
+t 16096 tone 10000 level    17 p2p    77 n 9728 ####
+t 16768 tone 10000 level    17 p2p    77 n 9728 ####
+t 17440 tone 10000 level    16 p2p    81 n 9728 ####
+t 18112 tone 10000 level    16 p2p    78 n 9728 ####
+t 18784 tone 10000 level    16 p2p    76 n 9728 ####
+t 19456 tone 10000 level    16 p2p    77 n 9728 ####
+done
+=== run133d level test at 1000 Hz: 0-3 s quiet, 3-8 s tone 3000, 8-13 s tone 10000, 2026-11-10 12:31:11 +0100
+t     1 tone     0 level  3037 p2p 26368 n 8192 ############################################################
+t   648 tone     0 level    62 p2p   349 n 9728 ###############
+t  1313 tone     0 level     1 p2p    14 n 9728 
+t  1985 tone     0 level     1 p2p    16 n 9728 
+t  2657 tone     0 level     1 p2p    11 n 9728 
+t  3333 tone  3000 level     2 p2p    16 n 9728 
+t  4001 tone  3000 level     1 p2p    15 n 9728 
+t  4673 tone  3000 level     2 p2p    15 n 9728 
+t  5345 tone  3000 level     2 p2p    20 n 9728 
+t  6024 tone  3000 level     1 p2p    14 n 9728 
+t  6693 tone  3000 level     2 p2p    20 n 9728 
+t  7361 tone  3000 level     2 p2p    33 n 9728 
+t  8040 tone 10000 level    19 p2p    96 n 9728 ####
+t  8705 tone 10000 level    20 p2p    92 n 9728 #####
+t  9377 tone 10000 level    20 p2p    91 n 9728 #####
+t 10053 tone 10000 level    20 p2p    91 n 9728 #####
+t 10721 tone 10000 level    20 p2p    92 n 9728 #####
+t 11393 tone 10000 level    20 p2p    91 n 9728 #####
+t 12065 tone 10000 level    20 p2p    92 n 9728 #####
+t 12744 tone 10000 level    20 p2p    88 n 9728 #####
+done
