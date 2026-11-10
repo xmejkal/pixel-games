@@ -7,12 +7,14 @@ TONE = 0 is the control run: the same game, restarts and presses, with no tone. 
 replaces App.frame with a hook that refills the tone after each frame, switches to a new copy of the game every 60 s
 (the heavy frame of D19), and presses BOOT on the game-over screen, so the game plays most of the time.
 
-ibuf=4096 gives 8 DMA buffers of 256 samples (16 ms), and the ESP-IDF queue takes 7 (machine_i2s.c:152,
-i2s_common.c:329). The probe keeps a lead of 6 buffers (96 ms), so a write always finds a free buffer and does not
-block. A frame longer than 96 ms runs the buffers dry: that is a `dry` count, not proof of a gap the ear hears.
+ibuf=4096 gives 8 DMA buffers of 256 samples (16 ms), a ring of 128 ms (machine_i2s.c:152). A poll switches the
+writes to not waiting (machine_i2s.c:239): each refill writes what fits in the free buffers and returns at once.
+The first version kept a lead of 96 ms with waiting writes, and each refill waited about 40 ms (run132, entry 2).
+A refill more than 112 ms after the last one can find the ring empty: that is a `late` count. `short` is the samples
+the clock expected minus the samples written. It rises only when the speaker plays silence.
 
-Lines: `sound <game> between_max <ms> write_max <ms> dry <n> lead_min <samples>` every 5 s, `switch <n> <ms>`, and
-at the end `written <samples> expected <samples>`, then `done`. The App prints its own fps and time lines.
+Lines: `sound <game> between_max <ms> write_max <ms> late <n> short <samples>` every 5 s, `switch <n> <ms>`, and
+at the end `written <samples> short <samples>`, then `done`. The App prints its own fps and time lines.
 
 Step 3, MIC = 1 (D18, D22: a separate run): the microphone on the second controller hears the speaker and counts the
 gaps in the tone. It opens on the first frame, and the tone opens 1.5 s later, so the run measures the room first.
@@ -36,7 +38,8 @@ SWITCH_MS = 60_000
 REPORT_MS = 5000
 RATE = 16000
 CYCLE = 400  # exactly 11 cycles of 440 Hz at 16 kHz, so the wave has no seam
-LEAD = 1536  # samples held ahead: 6 of the 7 queued DMA buffers of 256
+RING = 2048  # samples in the 8 DMA buffers of 256
+LATE_US = 112_000  # 7 buffers: a refill later than this can find the ring empty
 AMPLITUDE = 3000  # of 32767, quiet
 
 
@@ -46,30 +49,36 @@ class Done(Exception):
 
 
 class Tone:
-    """The 440 Hz tone, topped up to LEAD samples ahead at each refill. It counts the refills that came too late."""
+    """The 440 Hz tone. Each refill fills the free DMA buffers without waiting. It counts the refills that came too late."""
 
     def __init__(self, sd, delay_ms=0):
         self.sd, self.i2s, self.delay_ms, self.open_at = sd, None, delay_ms, None
-        # 7 cycles of the table hold CYCLE + LEAD samples, the longest slice a write takes
+        # 7 cycles of the table hold CYCLE + RING samples, the longest slice a write takes
         self.table = memoryview(array("h", (int(AMPLITUDE * math.sin(2 * math.pi * 11 * i / CYCLE)) for i in range(7 * CYCLE))))
-        self.written = self.played = self.frac = self.phase = self.dry = self.last = 0
+        self.written = self.phase = self.late = self.last = 0
         self.opened_ms = None
         self.reset()
 
     def reset(self):
-        self.between_max, self.write_max, self.lead_min = 0, 0, LEAD
+        self.between_max, self.write_max = 0, 0
 
     def open(self):
-        """The I2S, then LEAD samples, then the amplifier on. It runs delay_ms after the first refill, once the game is built."""
+        """The I2S, then a fill, then the amplifier on. It runs delay_ms after the first refill, once the game is built."""
+        import select
+
         self.i2s = I2S(0, sck=Pin(12), ws=Pin(13), sd=Pin(14), mode=I2S.TX, bits=16, format=I2S.MONO, rate=RATE,
                        ibuf=4096)
+        self.poll = select.poll()
+        self.poll.register(self.i2s, select.POLLOUT)
+        self.poll.poll(0)  # a poll switches the I2S to writes that return at once (extmod/machine_i2s.c:622)
         self.last, self.opened_ms = time.ticks_us(), time.ticks_ms()
-        self.write(LEAD)
+        self.fill()
         self.sd.value(1)
 
-    def write(self, n):
+    def fill(self):
+        """Write what fits in the free DMA buffers, from the current phase."""
         t = time.ticks_us()
-        self.i2s.write(self.table[self.phase:self.phase + n])
+        n = (self.i2s.write(self.table[self.phase:self.phase + RING]) or 0) // 2
         self.write_max = max(self.write_max, time.ticks_diff(time.ticks_us(), t))
         self.written += n
         self.phase = (self.phase + n) % CYCLE
@@ -85,16 +94,13 @@ class Tone:
         now = time.ticks_us()
         between, self.last = time.ticks_diff(now, self.last), now
         self.between_max = max(self.between_max, between)
-        self.frac += between * RATE // 1000  # samples x 1000, kept small: no long int in the loop
-        self.played += self.frac // 1000
-        self.frac %= 1000
-        lead = self.written - self.played
-        if lead < 0:  # the buffers ran dry before this refill: start again from now
-            self.dry += 1
-            self.written, lead = self.played, 0
-        self.lead_min = min(self.lead_min, lead)
-        if lead < LEAD:
-            self.write(LEAD - lead)
+        if between > LATE_US:
+            self.late += 1
+        self.fill()
+
+    def short(self):
+        """The samples the clock expected minus the samples written: a rise means the speaker played silence."""
+        return time.ticks_diff(time.ticks_ms(), self.opened_ms) * RATE // 1000 - self.written
 
     def close(self):
         """PHYS-13 order: the amplifier off before the clocks stop. The 10 ms is a margin with no datasheet figure."""
@@ -232,9 +238,9 @@ class Probe:
         if time.ticks_diff(now, self.report) >= REPORT_MS:
             self.report = now
             t = self.tone
-            if t:
-                print("sound %s between_max %d write_max %d dry %d lead_min %d" % (
-                    box.game.name, t.between_max // 1000, t.write_max // 1000, t.dry, t.lead_min))
+            if t and t.i2s:
+                print("sound %s between_max %d write_max %d late %d short %d" % (
+                    box.game.name, t.between_max // 1000, t.write_max // 1000, t.late, t.short()))
                 t.reset()
             if m:
                 print("mic %s gaps %d lost %d blind %d tone_mean %d floor %d" % (
@@ -284,7 +290,7 @@ def main():
         if probe.mic:
             probe.mic.close()
     if tone and tone.i2s:
-        print("written %d expected %d" % (tone.written, time.ticks_diff(time.ticks_ms(), tone.opened_ms) * RATE // 1000))
+        print("written %d short %d" % (tone.written, tone.short()))
     print("done")
 # --- MVP ---
 
