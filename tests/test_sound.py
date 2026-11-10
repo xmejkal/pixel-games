@@ -43,6 +43,7 @@ class FakeI2S:
 
     def deinit(self):
         self.deinited = True
+        self.sd_at_deinit = self.sd.level if getattr(self, "sd", None) else None
 
 
 class FakePin:
@@ -86,6 +87,12 @@ class MixerTest(unittest.TestCase):
         mixer.render(buf)
         self.assertEqual(list(buf), [7, 7, 0, 0, 0, 0, 0, 0])
 
+    def test_an_empty_looping_sound_is_silence(self):
+        mixer, buf = Mixer(), samples(*[5] * 8)
+        mixer.play(samples(), loop=True)  # it looped forever before the review
+        mixer.render(buf)
+        self.assertEqual(list(buf), [0] * 8)
+
     def test_any_multiple_of_8_is_filled(self):
         mixer = Mixer()
         for n in (8, 16, 256, 512):
@@ -127,7 +134,34 @@ class RefillTest(unittest.TestCase):
         mixer.play(samples(1))
         i2s.handler(i2s)
         self.assertEqual(refill.play_between, refill.between)
-        self.assertIsNone(mixer.next)
+        self.assertIsNone(mixer.pending)
+
+    def test_a_late_refill_counts_and_a_dead_chain_is_stalled(self):
+        mixer, i2s = Mixer(), FakeI2S()
+        refill = CallbackRefill(mixer, i2s, FakePin(), 4 * REFILL_SAMPLES)
+        refill.open()
+        self.assertFalse(refill.stalled(64_000))
+        refill.last -= 200_000  # no refill for 200 ms
+        self.assertTrue(refill.stalled(64_000))
+        i2s.handler(i2s)
+        self.assertEqual((refill.late, refill.between_max >= 200_000), (1, True))
+
+    def test_an_error_in_render_still_queues_a_block(self):
+        mixer, i2s = Mixer(), FakeI2S()
+        refill = CallbackRefill(mixer, i2s, FakePin(), 4 * REFILL_SAMPLES)
+        refill.open()
+        mixer.render = None  # render raises TypeError
+        with self.assertRaises(TypeError):
+            i2s.handler(i2s)
+        self.assertEqual(len(i2s.out), 2 * REFILL_SAMPLES)
+
+    def test_close_turns_the_amplifier_off_before_deinit(self):
+        i2s, sd = FakeI2S(), FakePin()
+        i2s.sd = sd
+        refill = CallbackRefill(Mixer(), i2s, sd, 4 * REFILL_SAMPLES)
+        refill.open()
+        refill.close()
+        self.assertEqual(i2s.sd_at_deinit, 0)
 
     def test_the_block_is_a_multiple_of_8(self):
         self.assertEqual(sound.REFILL_SAMPLES % 8, 0)

@@ -811,19 +811,28 @@ about every 16 ms (D25). `probe733_games.py` uses the module, and `REFILL` picks
 | 5b | `CallbackRefill`, 2048 B | 72 presses, beep at 6000 | 20 heard: delay median 76 ms, push to beep median 101 ms. The PO: "With the press" |
 | 6d | `CallbackRefill`, 2048 B | tone at 6000, Fire | 24.0 fps, worst 62 ms, 0 gaps, handler wait at most 29 ms, 0 late |
 
-- The callback passes all four lines that the plan set before the runs. Gaps (D9): none in Road or Fire, no open
-  gap, and every 5 s line sent at least 99.7 % of the expected blocks. Delay (A3): 70 ms, under the 90 ms goal. Cost
-  (D23): Road within 1 fps and 5 ms of the control. Handler wait: at most 29 ms, under the ring minus two blocks (32
-  ms). No `stall` line came in any entry.
+- The callback passes all four lines that the plan set before the runs. Gaps (D9): none in Road or Fire (3d, 6d),
+  no open gap, and each 5 s line sent 314 of 315 expected blocks or more. Delay (A3): 70 ms in entry 4, under the
+  90 ms goal, and the PO's ear in entry 5b. Cost (D23), from entry 3d: Road within 1 fps and 5 ms of the control.
+  Handler wait: at most 29 ms, under the ring minus two blocks (32 ms). No `stall` line came in any entry.
+- The cost line is close in the other callback runs. Entry 4 had a worst frame of 140 ms (6 ms over the control),
+  and entry 5b ran at 17.7 fps (1.0 fps under). In 6d, `between_max` reached 46 to 47 ms, 1 to 2 ms under a late
+  refill (48 ms).
 - The per-frame driver's delay rose from P746's 117 ms to 134 ms. A probable cause, not checked: `FrameRefill` keeps
   the unwritten rest of a block, so a new sound can wait up to 16 ms more.
 - The microphone read 32-bit words from entry 3b on. The 16-bit read kept the top 16 of its 24 bits, so every level
   was divided by 256, and the tone at 10000 read 4 to 17 against a room of 0. With 24 bits it read 1985 to 4630
   against about 200 (`run144i`, `run144j`). The level at the microphone varies a lot between runs: the tone at 3000
   read 351 against 268 (entry 3c), so the gap runs used 6000.
-- Entries 3b and 6b heard gaps at 113 to 119 s and at 40 to 54 s, and 6b lost USB at 15:08:38. The PO touched the
-  speaker, the microphone and the cable then, because the tone at 10000 was "really annoying". In those windows the
-  driver was never late, and an empty ring plays silence (`auto_clear` is on), so a real gap would also count as late.
-- In entry 5b, 52 of 72 hits found no beep: the soft beep at 6000 read 576 to 1243, under the onset threshold of
-  1200. The 20 heard hits give the delay. Push to frame (`seen`) was 1 to 52 ms, median about 25 ms.
+- Entries 3b and 6b heard gaps at 113 to 119 s and at 40 to 54 s, and 6b lost USB at 15:08:38. The PO reports
+  touching the speaker, the microphone and the cable then, because the tone at 10000 was "really annoying". No log
+  line marks a touch. The log rules out the driver: `late` stayed 0 and `lag_max` at most 31 ms. An empty ring plays
+  silence (`auto_clear` is on), so a gap from the driver would also count as late.
+- In entry 5b, 52 of 72 hits found no beep. Most missed hits read 568 to 1158, under the onset threshold of 1200.
+  Three read 1225, 1243 and 3268, and why they missed is not known. The 20 heard hits read 1301 to 7048, above the
+  soft beep's usual level, so some onsets can be another sound, such as the button's click. So 5b's delay (median 76
+  ms) is weak evidence, and A3 rests on entry 4 and the PO's ear. Push to frame (`seen`) was 1 to 52 ms, median about
+  25 ms. The probe's `BEEP_MIN` is now 700, not tested on the bench.
+- Later, not MVP (the "Later" marker in `games/sound.py`): more than one voice summed, a volume, a C mixer with the
+  same `render(buf)` (P747), and a C task on the second core (D27).
 - `align 0` in all 18 entries that opened the sound: the refill block is aligned to 16 bytes (D27).

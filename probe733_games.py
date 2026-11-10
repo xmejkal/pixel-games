@@ -84,9 +84,9 @@ FLOOR_MS = (1500, 2500)  # the room, after the microphone settles (about 1.3 s, 
 TONE_MS = (3000, 4000)  # the tone: it starts one ring after it opens, after a frame and the click
 # Levels are 24-bit block means. run144i: the tone at 10000 about 2840, the room 250 to 700. The 16-bit reads gave
 # the same divided by 256: the tone 6 to 21, beeps 25 to 33, claps up to 11.
-TONE_MIN = 500  # keeps a dead line out: with a floor of 0, 0 passed 4 x floor. The tone at 3000 reads about 600 to 1400
-BEEP_MIN = 1200  # the onset threshold with HITS: over the room (191 to 700), under a beep at 6000 (about 1900 to 2500,
-# scaled from 20000's 6400 to 8400). A clap (about 2800) also passes, so the hit line's `loud` tells the two apart
+TONE_MIN = 500  # keeps a dead line out: with a floor of 0, 0 passed 4 x floor. The tone read 351 at 3000, 901 to 976 at 6000
+BEEP_MIN = 700  # the onset threshold with HITS, about 2.5 x the room (262 to 268). A beep at 6000 read 568 to 1243 in
+# entry 5b, where 1200 missed 52 of 72 hits. 700 is not tested on the bench. A clap (about 2800) also passes
 QUIET = 0.3 # a block is quiet below floor + QUIET x (tone_mean - floor)
 BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or drop buffers without a report
 
@@ -302,7 +302,7 @@ class Probe:
                 self.open()
         elif isinstance(r, sound.FrameRefill):
             r.refill()
-        elif not self.stalled and time.ticks_diff(time.ticks_us(), r.last) > 2000 * RING_MS:
+        elif not self.stalled and r.stalled(1000 * RING_MS):
             self.stalled = True  # a lost schedule ends the callback chain for good (refuter): report, never write again
             print("stall %d pushes %d" % (time.ticks_diff(time.ticks_us(), r.last) // 1000, self.pushes))
         if m:
