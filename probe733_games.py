@@ -24,8 +24,8 @@ Lines: `mic dma_free <B> largest <B>` before it opens, `gap <ms since the microp
 
 P746, HITS = "auto" or "press" (with MIC = 1): silence instead of the tone, and a beep at each hit, a game event. The
 refill keeps the ring full of silence, so a beep waits behind the whole ring. The microphone measures the delay from
-the start of the frame that sees the hit to the beep: `hit <n> delay <ms> between <ms> lost <samples>`, or `hit <n>
-missed`, and at the end `hits <n> median <ms> max <ms> missed <n>`. No game restarts in these runs. IBUF sets the ring.
+the start of the frame that sees the hit to the beep: `hit <n> delay <ms> between <ms>`, or `hit <n> missed`
+(`lost` stays in the 5 s line: inside a read it counts a block twice), and at the end `hits <n> median <ms> max <ms> missed <n>`. No game restarts in these runs. IBUF sets the ring.
 """
 
 import math
@@ -207,19 +207,20 @@ class Mic:
 
         heaps = esp32.idf_heap_info(8)  # MALLOC_CAP_DMA: the 32 KB come from here, not from the PSRAM heap
         print("mic dma_free %d largest %d" % (sum(h[1] for h in heaps), max(h[2] for h in heaps)))
+        self.buf = bytearray(16384)  # before the I2S, so the clock below starts with the DMA
         self.i2s = I2S(1, sck=Pin(8), ws=Pin(11), sd=Pin(10), mode=I2S.RX, bits=16, format=I2S.MONO, rate=RATE,
                        ibuf=32768)
+        self.opened_us = time.ticks_us()  # the sample clock starts here (run143d: 0 to 192 samples behind)
         try:
             self.poll = select.poll()
             self.poll.register(self.i2s, select.POLLIN)
             self.poll.poll(0)  # a poll switches the I2S to reads that return at once (extmod/machine_i2s.c:621)
-            self.buf = bytearray(16384)
         except Exception:
             self.i2s.deinit()
             raise
         self.view = memoryview(self.buf)
         self.fill = self.samples = self.gaps = self.blind = 0
-        self.opened_us = self.last = time.ticks_us()
+        self.last = self.opened_us
         self.floors, self.tones, self.threshold, self.quiet_from = [], [], None, None
         self.floor = self.tone_mean = 0
         self.hits, self.delays, self.missed, self.pending, self.between = 0, [], 0, None, 0
@@ -274,7 +275,7 @@ class Mic:
             return
         if mean >= self.threshold:
             self.delays.append(t - self.pending)
-            print("hit %d delay %d between %d lost %d" % (self.hits, t - self.pending, self.between // 1000, self.lost()))
+            print("hit %d delay %d between %d" % (self.hits, t - self.pending, self.between // 1000))
             self.pending = None
         elif t - self.pending > ONSET_MS:
             self.missed += 1

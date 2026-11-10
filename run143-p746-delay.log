@@ -1,0 +1,131 @@
+=== run143 P746 smoke: Road, HITS auto, MIC 1, IBUF 4096, 20 s, 2026-11-10 13:17:02 +0100
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6299136
+frame tft
+ready
+game road
+mic dma_free 82787 largest 31744
+hit 1 delay 116 between 43 lost -336
+fps road 21
+time road step 0.7 paint 34.5 send 3.3 gc 2.6 fps 21 worst 77 slowest 62 = step 0 paint 58 send 3 gc 0
+phases road static 17 paint 24 fx 0 hud 26 over 0 title 34
+avg road static 12.0 paint 15.2 fx 0.1 hud 1.3 over 0.0 title 5.8
+heap road alloc 261152 glyphs 19
+sound road between_max 67 write_max 0 late 0 short 128
+mic road gaps 0 lost 160 blind 0 tone_mean 0 floor 1
+hit 2 delay 113 between 43 lost -560
+hit 3 delay 114 between 44 lost -240
+fps road 18
+time road step 1.1 paint 38.5 send 5.6 gc 3.1 fps 18 worst 115 slowest 107 = step 17 paint 68 send 20 gc 14
+phases road static 16 paint 24 fx 7 hud 9 over 21 title 0
+avg road static 11.4 paint 22.4 fx 0.6 hud 1.8 over 2.2 title 0.0
+heap road alloc 161264 glyphs 28
+sound road between_max 112 write_max 0 late 1 short 288
+mic road gaps 0 lost 48 blind 0 tone_mean 0 floor 1
+hit 4 delay 111 between 78 lost -640
+hit 5 delay 114 between 42 lost -592
+hit 6 delay 119 between 41 lost -176
+fps road 19
+time road step 1.1 paint 37.7 send 5.4 gc 3.1 fps 19 worst 108 slowest 102 = step 17 paint 63 send 20 gc 14
+phases road static 16 paint 24 fx 7 hud 10 over 23 title 0
+avg road static 11.5 paint 21.7 fx 0.5 hud 1.6 over 2.2 title 0.0
+heap road alloc 187488 glyphs 28
+sound road between_max 107 write_max 0 late 1 short 160
+mic road gaps 0 lost 176 blind 0 tone_mean 0 floor 1
+hit 7 delay 119 between 58 lost -640
+hit 8 delay 112 between 45 lost -368
+written 279296 short 432
+hits 8 median 114 max 119 missed 0
+done
+=== run143b P746 smoke after the clock fix: Road, HITS auto, MIC 1, IBUF 4096, 20 s, 2026-11-10 13:18:05 +0100
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6299040
+frame tft
+ready
+game road
+mic dma_free 82787 largest 31744
+hit 1 delay 111 between 69 lost -256
+fps road 21
+time road step 0.7 paint 35.1 send 3.6 gc 2.6 fps 21 worst 77 slowest 64 = step 0 paint 60 send 3 gc 0
+phases road static 17 paint 26 fx 0 hud 26 over 0 title 34
+avg road static 12.0 paint 15.6 fx 0.1 hud 1.3 over 0.0 title 6.0
+heap road alloc 214512 glyphs 19
+sound road between_max 69 write_max 0 late 0 short 208
+mic road gaps 0 lost 160 blind 0 tone_mean 0 floor 1
+hit 2 delay 121 between 44 lost -688
+hit 3 delay 115 between 91 lost -720
+fps road 19
+time road step 1.1 paint 38.4 send 4.9 gc 3.0 fps 19 worst 124 slowest 116 = step 17 paint 78 send 20 gc 14
+phases road static 19 paint 26 fx 7 hud 9 over 20 title 0
+avg road static 11.4 paint 22.5 fx 0.5 hud 1.7 over 2.1 title 0.0
+heap road alloc 186032 glyphs 28
+sound road between_max 121 write_max 0 late 1 short 128
+mic road gaps 0 lost 80 blind 0 tone_mean 0 floor 1
+hit 4 delay 117 between 72 lost -640
+hit 5 delay 116 between 45 lost -720
+hit 6 delay 121 between 44 lost -208
+fps road 20
+time road step 0.9 paint 36.3 send 3.2 gc 2.8 fps 20 worst 74 slowest 55 = step 1 paint 49 send 4 gc 0
+phases road static 17 paint 26 fx 2 hud 11 over 0 title 0
+avg road static 11.3 paint 22.9 fx 0.2 hud 1.8 over 0.0 title 0.0
+heap road alloc 260704 glyphs 28
+sound road between_max 67 write_max 0 late 1 short 272
+mic road gaps 0 lost 224 blind 0 tone_mean 0 floor 1
+hit 7 delay 107 between 79 lost -704
+hit 8 delay 108 between 41 lost -176
+fps road 18
+time road step 1.1 paint 38.3 send 5.5 gc 3.1 fps 18 worst 134 slowest 112 = step 18 paint 72 send 20 gc 15
+phases road static 16 paint 26 fx 7 hud 10 over 24 title 0
+avg road static 11.3 paint 22.3 fx 0.5 hud 1.7 over 2.3 title 0.0
+heap road alloc 161488 glyphs 28
+sound road between_max 131 write_max 0 late 2 short 464
+mic road gaps 0 lost 160 blind 0 tone_mean 0 floor 1
+written 279552 short 656
+hits 8 median 116 max 121 missed 0
+done
+=== run143c RX clock check: the microphone alone, 2026-11-10 13:18:55 +0100
+t 502 ms got 3614 expected 8032 lost 4418 first_data_at 502363 us
+t 1005 ms got 7228 expected 16080 lost 8852 first_data_at 502363 us
+t 1507 ms got 10842 expected 24112 lost 13270 first_data_at 502363 us
+t 2010 ms got 14456 expected 32160 lost 17704 first_data_at 502363 us
+t 2512 ms got 18326 expected 40192 lost 21866 first_data_at 502363 us
+t 3015 ms got 21940 expected 48240 lost 26300 first_data_at 502363 us
+t 3518 ms got 25554 expected 56288 lost 30734 first_data_at 502363 us
+t 4020 ms got 29168 expected 64320 lost 35152 first_data_at 502363 us
+t 4523 ms got 32782 expected 72368 lost 39586 first_data_at 502363 us
+t 5025 ms got 36652 expected 80400 lost 43748 first_data_at 502363 us
+done
+=== run143d RX clock check, reads every 100 ms (run143c slept 500 ms and overflowed the RX ring of about 240 ms), 2026-11-10 13:19:10 +0100
+t 101 ms got 1536 expected 1616 lost 80 first_data_at 101146 us
+t 202 ms got 3072 expected 3232 lost 160 first_data_at 101146 us
+t 304 ms got 4864 expected 4864 lost 0 first_data_at 101146 us
+t 405 ms got 6400 expected 6480 lost 80 first_data_at 101146 us
+t 506 ms got 7936 expected 8096 lost 160 first_data_at 101146 us
+t 608 ms got 9728 expected 9728 lost 0 first_data_at 101146 us
+t 709 ms got 11264 expected 11344 lost 80 first_data_at 101146 us
+t 811 ms got 12800 expected 12976 lost 176 first_data_at 101146 us
+t 912 ms got 14592 expected 14592 lost 0 first_data_at 101146 us
+t 1013 ms got 16128 expected 16208 lost 80 first_data_at 101146 us
+t 1115 ms got 17664 expected 17840 lost 176 first_data_at 101146 us
+t 1216 ms got 19456 expected 19456 lost 0 first_data_at 101146 us
+t 1318 ms got 20992 expected 21088 lost 96 first_data_at 101146 us
+t 1419 ms got 22528 expected 22704 lost 176 first_data_at 101146 us
+t 1521 ms got 24320 expected 24336 lost 16 first_data_at 101146 us
+t 1622 ms got 25856 expected 25952 lost 96 first_data_at 101146 us
+t 1723 ms got 27392 expected 27568 lost 176 first_data_at 101146 us
+t 1825 ms got 29184 expected 29200 lost 16 first_data_at 101146 us
+t 1926 ms got 30720 expected 30816 lost 96 first_data_at 101146 us
+t 2027 ms got 32256 expected 32432 lost 176 first_data_at 101146 us
+t 2129 ms got 34048 expected 34064 lost 16 first_data_at 101146 us
+t 2230 ms got 35584 expected 35680 lost 96 first_data_at 101146 us
+t 2332 ms got 37120 expected 37312 lost 192 first_data_at 101146 us
+t 2433 ms got 38912 expected 38928 lost 16 first_data_at 101146 us
+t 2535 ms got 40448 expected 40560 lost 112 first_data_at 101146 us
+t 2636 ms got 41984 expected 42176 lost 192 first_data_at 101146 us
+t 2737 ms got 43776 expected 43792 lost 16 first_data_at 101146 us
+t 2839 ms got 45312 expected 45424 lost 112 first_data_at 101146 us
+t 2940 ms got 46848 expected 47040 lost 192 first_data_at 101146 us
+t 3042 ms got 48640 expected 48672 lost 32 first_data_at 101146 us
+done
