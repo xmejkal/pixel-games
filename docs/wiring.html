@@ -2291,9 +2291,9 @@ ul{margin:0;padding-left:20px;max-width:72ch;display:grid;gap:6px} .m{color:var(
 <li>Pad names on the FireBeetle 2 side of the wires: <code>D10</code>, <code>D11</code>, <code>D12</code> and <code>A2</code> are GPIO 14, 13, 12 and 6 in the record. If the tone stays silent, suspect D10 first.</li>
 <li>Rail colors and the gap in the middle: your photos. Nobody measured whether the gap breaks the rail.</li>
 <li>Display pins: <code>games/gdi.py</code> and the DFR0664 part record, read from the board schematic. </li>
-<li>Microphone pads: spark's assigner chose A3, D14 and SDA. I moved WS from D14 to A5, because D14 is the user button that the games read, and A5 is free because the assigner only held it for a display pin that is really on the ribbon.</li>
-<li>Encoder pads, their order and the 3.3 V rule: the spark part record <code>cjmcu-111-rotary-encoder</code>. Every fact in that record is still marked unverified.</li>
-<li>Encoder wires: spark's breadboard sheet for P758, <code>build/breadboard.md</code>, steps 5, 6, 16, 19 and 20. It joins GA to SDA (GPIO 1) and GB to SCL (GPIO 2).</li>
+<li>Microphone pads and their order: the spark part record <code>inmp441-i2s-mic-round</code>, read from your photo of the pad side. Its wires are fixed in <code>requirements.json</code>: SCK on A3, WS on A5 and SD on A4. D14 stays free, because it is the user button that the games read.</li>
+<li>Encoder pads, their order and the 3.3 V rule: the spark part record <code>cjmcu-111-rotary-encoder</code>. One fact in that record is measured on the bench: 4 edges per click (run150). The other facts are still marked unverified.</li>
+<li>Encoder wires: spark's breadboard sheet for P758, <code>build/breadboard.md</code>, steps 5, 7, 23, 28 and 29. It joins GA to SDA (GPIO 1) and GB to SCL (GPIO 2).</li>
 <li>Encoder shape and color: your photo and the shop photo in the drawer entry <code>cjmcu-111</code>. No dimension drawing exists, so its sizes are estimates.</li>
 <li>Encoder place: your bench photo of 2026-11-10. The columns are read from it, about, and no single hole is clear in it.</li>
 <li>Encoder wiring checked: the probe on the board passed with your wiring, at 4 edges per click (run150).</li>

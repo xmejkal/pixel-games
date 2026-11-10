@@ -5,8 +5,9 @@ P758 bench: the rotary encoder's raw edges, one line each time the count changes
     mpremote cp games/encoder.py :encoder.py
     mpremote run probe758.py | tee run150-p758-encoder.log
 
-The PO turns the knob 20 detents one way, waits, then 20 back, then leaves it at rest for 2 minutes. The edges per
-detent are read from the 20 detents back. The probe prints raw edges only, so it passes edges_per_detent=1.
+The PO tries the knob both ways, turns it one way, waits, turns 20 detents back, then leaves it at rest for 2 minutes.
+The edges per detent are read from the 20 detents back. The probe prints raw edges only, so it passes
+edges_per_detent=1. The log's last line, "exit 0", is the shell's.
 """
 
 import time

@@ -85,7 +85,7 @@ ul{margin:0;padding-left:20px;display:grid;gap:4px;max-width:74ch}
 </div>
 
 <div class="card"><p class="m">Where each fact comes from:</p><ul class="m">
-<li>The four wires: spark's breadboard sheet for P758 (<code>build/breadboard.md</code>, steps 5, 6, 16, 19 and 20), built from <code>requirements.json</code>. spark chose SDA and SCL, because every other free pin is wired or is the board's own button.</li>
+<li>The four wires: spark's breadboard sheet for P758 (<code>build/breadboard.md</code>, steps 5, 7, 23, 28 and 29), built from <code>requirements.json</code>. spark chose SDA and SCL, because every other free pin is wired or is the board's own button.</li>
 <li>The pad order of both rows: spark's board record. Both rows start flush at the end away from USB-C.</li>
 <li>The encoder's pads: the part record <code>cjmcu-111-rotary-encoder</code> (GA at the end away from the tan capacitor). VCC from 3.3 V only, never 5 V.</li>
 <li>No pull-up resistors are confirmed on the encoder, so the firmware turns on the chip's own pull-ups. The meter reading in step 7 tells whether the encoder has its own.</li>

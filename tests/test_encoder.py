@@ -28,12 +28,24 @@ class EncoderTest(unittest.TestCase):
             counter.edges = edges
             self.assertEqual(knob.detents(), detents, edges)
 
-    def test_a_bounce_beside_a_detent_rounds_to_it(self):
+    def test_one_edge_off_a_detent_rounds_to_it(self):
         counter = FakeCounter()
         knob = Encoder(counter, 4)
         for edges, detents in ((1, 0), (-1, 0), (7, 2), (9, 2)):
             counter.edges = edges
             self.assertEqual(knob.detents(), detents, edges)
+
+    def test_each_detent_spans_four_edges_and_a_half_goes_up(self):
+        counter = FakeCounter()
+        knob = Encoder(counter, 4)
+        spans = {}
+        for edges in range(-10, 11):
+            counter.edges = edges
+            spans.setdefault(knob.detents(), []).append(edges)
+        self.assertEqual(spans[1], [2, 3, 4, 5])
+        self.assertEqual(spans[2], [6, 7, 8, 9])
+        self.assertEqual(spans[0], [-2, -1, 0, 1])
+        self.assertEqual(spans[-1], [-6, -5, -4, -3])
 
     def test_edges_are_the_raw_count(self):
         self.assertEqual(Encoder(FakeCounter(-3), 4).edges(), -3)

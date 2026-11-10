@@ -969,8 +969,14 @@ the raw edge count for 180 s. The PO turned the knob by hand and counted the cli
 
 - `EDGES_PER_DETENT = 4` in `games/encoder.py` comes from entry 3. The part record `cjmcu-111-rotary-encoder` now holds
   it as a bench fact. The shops publish 20 clicks per turn and no edge count.
-- Inside a turn the count steps back by 1 edge a few times (13.1 s, 17.5 s, 26.4 s, 38.9 s). The log cannot tell a
-  contact bounce from the PO's hand. `detents()` rounds to the nearest click, so 1 edge does not move it.
+- Inside a turn the count steps back by 1 edge six times (17.5 s, 17.9 s, 26.4 s, 35.8 s, 38.9 s, 49.2 s). The log
+  cannot tell a contact bounce from the PO's hand.
+- The knob does not rest on a multiple of 4 edges. The run starts at 0, and the rests are at 9, 85 and 5, each 1 above
+  a multiple of 4. `detents()` gives each click 4 edges (2 to 5 is click 1), so at such a rest 1 more edge changes
+  the click count. A use that must not flicker, such as P757's volume, needs a dead band.
+- ENC_A and ENC_B are the board's SDA and SCL pads. spark's board record says that a FireBeetle 2 ESP32-S3 of V1.1 or
+  earlier has its power chip (AXP313A) and 5.1 kΩ pull-ups on these lines, so the knob's contacts would toggle that
+  chip's bus. The revision of the PO's board is not recorded. Nothing else in the repository uses I2C.
 - No frame loop ran beside the probe. The count under a game's load is P757's bench.
-- Not measured: the board's own pull-ups (an ohmmeter from VCC to GA and to GB, power off). The record keeps that
-  fact unverified.
+- Not measured: the module's own pull-ups (an ohmmeter from VCC to GA and to GB, power off, with the GA and GB wires
+  out of the board). The record keeps that fact unverified.

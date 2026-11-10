@@ -1,19 +1,26 @@
 """
 The rotary encoder (P758): the knob's turns as a count of detents. --- MVP (P758) ---
 
-machine.Encoder decodes both channels in the ESP32-S3's pulse counter (PCNT), so no interrupt runs and a busy frame
-loses no step (MicroPython v1.29, ports/esp32/modules/machine.py). Esp32 pin interrupts are soft and run late (see
-buttons.py), so a decoder in Python could miss steps. The pins are pins.ENC_A and pins.ENC_B, from spark's
-requirements.json, each with the internal pull-up (pins.ENC_A_PULL). How many edges fall in one detent is not
-published (the part record cjmcu-111-rotary-encoder), so the bench measured it.
+machine.Encoder decodes both channels in the ESP32-S3's pulse counter (PCNT), so no interrupt runs per edge and a busy
+frame loses no step (MicroPython v1.29, ports/esp32/modules/machine.py: its one interrupt fires at 32000 counts and
+adds the overflow back). Esp32 pin interrupts are soft and run late (see buttons.py), so a decoder in Python could
+miss steps. The pins are pins.ENC_A and pins.ENC_B, from spark's requirements.json. The pin map asks for the internal
+pull-up (pins.ENC_A_PULL is "up"), and on_board sets it. How many edges fall in one detent is not published (the part
+record cjmcu-111-rotary-encoder), so the bench measured it.
+
+Two limits, both from the bench and the board record (bench.md, P758):
+- The knob does not rest on a multiple of 4 edges. In run150 it rested at 9, 85 and 5, and the count stepped back by
+  1 edge inside a turn. So detents() can change by 1 at rest. A use that must not flicker (P757) needs a dead band.
+- ENC_A and ENC_B are the board's SDA and SCL pads. A FireBeetle 2 ESP32-S3 of V1.1 or earlier has its power chip
+  (AXP313A) and 5.1 kOhm pull-ups on these two lines. The revision of the PO's board is not recorded.
 """
 
 EDGES_PER_DETENT = 4  # the PO's CJMCU-111, 2026-11-10 (run150): 20 clicks back read 80 edges, 4 per click
-FILTER_NS = 12000  # the counter's glitch filter at its maximum, 1023 ticks of 80 MHz: drops contact spikes under 12 us
+FILTER_NS = 12000  # the glitch filter: 960 ticks of 80 MHz (the port stops at 1023), drops contact spikes under 12 us
 
 
 class Encoder:
-    """edges() is the raw count of contact edges, detents() the nearest whole detent: + one way, - the other."""
+    """edges() is the raw count of contact edges, detents() the nearest detent, a half up: + one way, - the other."""
 
     def __init__(self, counter, edges_per_detent):
         self.counter, self.edges_per_detent = counter, edges_per_detent
@@ -29,4 +36,4 @@ class Encoder:
         return self.counter.value()
 
     def detents(self):
-        return round(self.edges() / self.edges_per_detent)
+        return (self.edges() + self.edges_per_detent // 2) // self.edges_per_detent  # round() gives uneven detents
