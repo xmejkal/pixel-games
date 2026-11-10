@@ -725,27 +725,31 @@ the tone at 10000 of 32767.
 
 | run | game | tone | fps (mean of 20) | worst frame, median and max | late refills | breaks in the tone |
 | --- | --- | --- | --- | --- | --- | --- |
-| `run140-p733-games.log` entry 10 | Fire | yes | 24.05 | 50, 56 ms | 0 | none (`short` flat) |
+| `run140-p733-games.log` entry 10 | Fire | yes | 24.05 | 50, 56 ms | 0 | none inferred (`short` within 300) |
 | entry 11 | Fire | no | 24.05 | 53, 56 ms | | |
-| entry 12 | BallPit | yes | 24.05 | 60, 73 ms | 0 | none (`short` flat) |
+| entry 12 | BallPit | yes | 24.05 | 60, 73 ms | 0 | none inferred (`short` within 300) |
 | entry 13 | BallPit | no | 24.00 | 60, 77 ms | | |
-| entry 14 | Road | yes | 20.70 | 103, 116 ms | 4 | about 3 (`short` rose about 700 samples) |
-| entry 15 | Road | no | 20.55 | 108, 127 ms | | |
+| entry 14 | Road | yes | 20.70 | 103, 116 ms | 4 | about 3 inferred (`short` rose about 700 samples) |
+| entry 15 | Road | no | 20.55 | 107, 127 ms | | |
 | `run141-p733-mic.log` entry 16 | Fire | yes, microphone | 24.00 | 56, 62 ms | 0 | 0 heard |
 | entry 17 | BallPit | yes, microphone | 24.00 | 63, 81 ms | 0 | 0 heard |
 | entry 18 | Road | yes, microphone | 19.60 | 105, 122 ms | 7 | 3 heard, 12 ms each, at 4.9, 10.3 and 67.1 s |
 
-- Step 1 (`run139-p733-tone.log`): the PO heard the tone. 160,000 B in 5 s, the clock rate. Beep, silence, beep with SD
+- Step 1 (`run139-p733-tone.log`): the PO heard the tone. 160,000 B for the 5 s of tone, in a run of 6.0 s. Beep, silence, beep with SD
   (A2) low in the middle: the PO heard the middle silent, so A2 shuts the amplifier down while the clocks run.
 - The frame-time line of D23 passes in all three games: the worst frame with the tone is within 5 ms of the control
   run, or lower, and the mean fps is within 1 fps. Each write took under 1 ms.
 - The "no gaps at all" line of D9 fails in Road. Its own slow frames, 116 to 127 ms, are longer than the 112 ms that
   the ring holds after a refill. A game restart costs 11 to 20 ms in the hook, so it is not the cause. The microphone's
-  3 breaks and the rise of `short` (3 buffers of 256 samples) agree. The phone recording of D18 did not run.
-- The first refill waited for room (blocking writes and a lead of 96 ms): each refill waited about 40 ms, and Fire fell
-  to 16 to 17 fps (`run140` entry 2). A `select.poll()` switch makes the writes return at once with what fits.
-- The microphone heard the tone at 3000 no louder than the quiet room (1 to 2 units), and at 10000 at 16 to 21. It
+  3 breaks and the rise of `short` (about 3 buffers of 256 samples) agree. `late` (7) counts more than the breaks
+  heard (3), because a refill 112 to 128 ms late can still come in time. `short` moves by up to about 300 samples
+  between reports with no break, and its last value, after the close, ends 500 to 600 higher. The phone recording of
+  D18 did not run.
+- The first refill waited for room (blocking writes and a lead of 96 ms): each refill waited 26 to 43 ms, and Fire fell
+  to 16 to 22 fps (`run140` entry 2). A `select.poll()` switch makes the writes return at once with what fits.
+- The microphone heard the tone at 3000 no louder than the quiet room (1 to 5 units), and at 10000 at 16 to 21. It
   settles for about 1.3 s after it opens, and its constant offset counted as noise until the block mean left it out.
-  Voice and claps read 25 to 154 (`run141`, the diagnosis runs 141b to 141d).
+  Voice and claps read up to 154 (`run141`, the diagnosis runs 141b to 141d). The room floor with the game running is
+  0 to 5, so BallPit passed the check (tone at least 4 times the floor) by 21 against 20: the margin is thin.
 - Open for the design: a larger ring (8192 B, 256 ms, over D9's limit, and a sound effect up to 256 ms late), a refill
   from C outside the game loop, or Road frames under 112 ms.
