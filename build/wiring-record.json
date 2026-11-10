@@ -1,0 +1,441 @@
+{
+ "steps": [
+  {
+   "key": [
+    "place",
+    "board"
+   ],
+   "anchor": null,
+   "kind": "place",
+   "source": "the board",
+   "to": "",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "place",
+    "Max98357aDfr0954"
+   ],
+   "anchor": null,
+   "kind": "place",
+   "source": "Max98357aDfr0954",
+   "to": "",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "place",
+    "SpeakerTerminal"
+   ],
+   "anchor": null,
+   "kind": "place",
+   "source": "SpeakerTerminal",
+   "to": "",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "place",
+    "JoystickModuleMh"
+   ],
+   "anchor": null,
+   "kind": "place",
+   "source": "JoystickModuleMh",
+   "to": "",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "place",
+    "Cjmcu111RotaryEncoder"
+   ],
+   "anchor": null,
+   "kind": "place",
+   "source": "Cjmcu111RotaryEncoder",
+   "to": "",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board 3V3"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder VCC (the pad labelled VCC, next to GND)"
+   ],
+   "kind": "jumper",
+   "source": "board 3V3",
+   "to": "the row of Cjmcu111RotaryEncoder VCC",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "part",
+    "JoystickModuleMh VCC (second pin from the GND end, printed +5V)"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder VCC (the pad labelled VCC, next to GND)"
+   ],
+   "kind": "jumper",
+   "source": "the row of JoystickModuleMh VCC",
+   "to": "the row of Cjmcu111RotaryEncoder VCC",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "part",
+    "Max98357aDfr0954 VCC"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder VCC (the pad labelled VCC, next to GND)"
+   ],
+   "kind": "jumper",
+   "source": "the row of Max98357aDfr0954 VCC",
+   "to": "the row of Cjmcu111RotaryEncoder VCC",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board A0"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "JoystickModuleMh VRX (middle pin)"
+   ],
+   "kind": "jumper",
+   "source": "board A0",
+   "to": "the row of JoystickModuleMh VRX",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board A1"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "JoystickModuleMh VRY (fourth pin from the GND end)"
+   ],
+   "kind": "jumper",
+   "source": "board A1",
+   "to": "the row of JoystickModuleMh VRY",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board A2"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Max98357aDfr0954 SD"
+   ],
+   "kind": "jumper",
+   "source": "board A2",
+   "to": "the row of Max98357aDfr0954 SD",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board D5"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "JoystickModuleMh SW (the pin at the end labelled SW)"
+   ],
+   "kind": "jumper",
+   "source": "board D5",
+   "to": "the row of JoystickModuleMh SW",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board D10"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Max98357aDfr0954 DIN"
+   ],
+   "kind": "jumper",
+   "source": "board D10",
+   "to": "the row of Max98357aDfr0954 DIN",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board D11"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Max98357aDfr0954 LRC"
+   ],
+   "kind": "jumper",
+   "source": "board D11",
+   "to": "the row of Max98357aDfr0954 LRC",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board D12"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Max98357aDfr0954 BCLK"
+   ],
+   "kind": "jumper",
+   "source": "board D12",
+   "to": "the row of Max98357aDfr0954 BCLK",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board GND"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor)"
+   ],
+   "kind": "jumper",
+   "source": "board GND",
+   "to": "the row of Cjmcu111RotaryEncoder GND",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "part",
+    "JoystickModuleMh GND (the header pin at the end labelled GND)"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor)"
+   ],
+   "kind": "jumper",
+   "source": "the row of JoystickModuleMh GND",
+   "to": "the row of Cjmcu111RotaryEncoder GND",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "part",
+    "Max98357aDfr0954 GND"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor)"
+   ],
+   "kind": "jumper",
+   "source": "the row of Max98357aDfr0954 GND",
+   "to": "the row of Cjmcu111RotaryEncoder GND",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board SCL"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder GB (the pad labelled GB, next to GA)"
+   ],
+   "kind": "jumper",
+   "source": "board SCL",
+   "to": "the row of Cjmcu111RotaryEncoder GB",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "board",
+    "board SDA"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Cjmcu111RotaryEncoder GA (the pad labelled GA, at the end of the 4-pad row away from the lone tan ceramic capacitor)"
+   ],
+   "kind": "jumper",
+   "source": "board SDA",
+   "to": "the row of Cjmcu111RotaryEncoder GA",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "part",
+    "SpeakerTerminal SPK_N"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Max98357aDfr0954 SPK_N"
+   ],
+   "kind": "jumper",
+   "source": "the row of SpeakerTerminal SPK_N",
+   "to": "the row of Max98357aDfr0954 SPK_N",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "supply",
+    "SPEAKER_N"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Max98357aDfr0954 SPK_N"
+   ],
+   "kind": "supply",
+   "source": "the SPEAKER_N supply",
+   "to": "the row of Max98357aDfr0954 SPK_N",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "part",
+    "SpeakerTerminal SPK_P"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Max98357aDfr0954 SPK_P"
+   ],
+   "kind": "jumper",
+   "source": "the row of SpeakerTerminal SPK_P",
+   "to": "the row of Max98357aDfr0954 SPK_P",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  },
+  {
+   "key": [
+    "supply",
+    "SPEAKER_P"
+   ],
+   "anchor": [
+    "row",
+    "part",
+    "Max98357aDfr0954 SPK_P"
+   ],
+   "kind": "supply",
+   "source": "the SPEAKER_P supply",
+   "to": "the row of Max98357aDfr0954 SPK_P",
+   "tag": "",
+   "value": "",
+   "job": "",
+   "color": null,
+   "marks": ""
+  }
+ ],
+ "drawn_jumpers": []
+}

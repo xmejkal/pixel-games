@@ -1,0 +1,27 @@
+{
+  "Max98357aDfr0954": {
+    "skip": "no Wokwi part for the I2S amplifier; cues are visible in the serial log"
+  },
+  "SpeakerTerminal": {
+    "skip": "a terminal is wiring, not a part to simulate; the amplifier it hangs off has no Wokwi part either, and no sound reaches the simulation"
+  },
+  "JoystickModuleMh": {
+    "pins": {
+      "GND": "GND",
+      "VCC": "VCC",
+      "VRX": "HORZ",
+      "VRY": "VERT",
+      "SW": "SEL"
+    },
+    "wokwiType": "wokwi-analog-joystick"
+  },
+  "Cjmcu111RotaryEncoder": {
+    "pins": {
+      "GA": "CLK",
+      "GB": "DT",
+      "VCC": "VCC",
+      "GND": "GND"
+    },
+    "wokwiType": "wokwi-ky-040"
+  }
+}

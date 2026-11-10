@@ -1,0 +1,4 @@
+# Written by spark from the part records. The chips stand in for parts Wokwi has no model of.
+[wokwi]
+version = 1
+# firmware = "flash-with-firmware.bin"  # no image named yet: MicroPython plus the project's files
