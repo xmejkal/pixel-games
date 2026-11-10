@@ -129,3 +129,195 @@ t 2839 ms got 45312 expected 45424 lost 112 first_data_at 101146 us
 t 2940 ms got 46848 expected 47040 lost 192 first_data_at 101146 us
 t 3042 ms got 48640 expected 48672 lost 32 first_data_at 101146 us
 done
+=== entry 2 Road ibuf 4096 hits auto seconds 45, start 2026-11-10 13:20:09 +0100
+TONE = 0 is the control run: the same ga
+GAME = "Road"  # Fire, BallPit or Road: 
+TONE = 1  # 0: the control run, no I2S
+MIC = 1  # 1: the microphone counts the 
+HITS = "auto"  # "auto": a hit every 2 s
+IBUF = 4096  # TX DMA bytes: 8 buffers o
+SECONDS = 45
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6299056
+frame tft
+ready
+game road
+mic dma_free 82787 largest 31744
+hit 1 delay 121 between 42
+fps road 21
+time road step 0.7 paint 34.5 send 3.4 gc 2.6 fps 21 worst 77 slowest 62 = step 1 paint 58 send 3 gc 0
+phases road static 18 paint 24 fx 0 hud 26 over 0 title 34
+avg road static 12.1 paint 15.2 fx 0.1 hud 1.3 over 0.0 title 5.8
+heap road alloc 263456 glyphs 19
+sound road between_max 71 write_max 0 late 0 short 208
+mic road gaps 0 lost 144 blind 0 tone_mean 0 floor 1
+hit 2 delay 121 between 77
+hit 3 delay 113 between 39
+fps road 19
+time road step 1.1 paint 37.9 send 4.9 gc 3.0 fps 19 worst 117 slowest 110 = step 17 paint 72 send 20 gc 14
+phases road static 15 paint 24 fx 7 hud 9 over 20 title 0
+avg road static 11.5 paint 22.0 fx 0.5 hud 1.7 over 2.1 title 0.0
+heap road alloc 215504 glyphs 26
+hit 4 delay 23 between 46
+sound road between_max 115 write_max 0 late 1 short 144
+mic road gaps 0 lost 80 blind 0 tone_mean 0 floor 1
+hit 5 delay 113 between 46
+hit 6 delay 119 between 83
+fps road 18
+time road step 1.1 paint 38.5 send 5.7 gc 3.0 fps 18 worst 119 slowest 113 = step 18 paint 74 send 20 gc 14
+phases road static 16 paint 24 fx 7 hud 11 over 24 title 0
+avg road static 11.4 paint 22.5 fx 0.6 hud 1.7 over 2.1 title 0.0
+heap road alloc 259248 glyphs 28
+sound road between_max 117 write_max 0 late 2 short 256
+mic road gaps 0 lost 208 blind 0 tone_mean 0 floor 1
+hit 7 delay 110 between 60
+hit 8 delay 120 between 44
+fps road 21
+time road step 0.9 paint 35.7 send 3.0 gc 2.9 fps 21 worst 68 slowest 51 = step 1 paint 46 send 3 gc 0
+phases road static 15 paint 25 fx 0 hud 14 over 0 title 0
+avg road static 11.4 paint 22.3 fx 0.1 hud 1.8 over 0.0 title 0.0
+heap road alloc 187184 glyphs 28
+sound road between_max 66 write_max 0 late 2 short 112
+mic road gaps 0 lost 48 blind 0 tone_mean 0 floor 1
+hit 9 delay 125 between 59
+hit 10 delay 116 between 58
+hit 11 delay 117 between 56
+fps road 19
+time road step 1.1 paint 38.1 send 5.3 gc 3.1 fps 19 worst 114 slowest 107 = step 18 paint 68 send 20 gc 14
+phases road static 15 paint 25 fx 7 hud 8 over 26 title 0
+avg road static 11.4 paint 22.2 fx 0.6 hud 1.6 over 2.2 title 0.0
+heap road alloc 184112 glyphs 28
+sound road between_max 112 write_max 0 late 3 short 224
+mic road gaps 0 lost 176 blind 0 tone_mean 0 floor 1
+hit 12 delay 113 between 48
+hit 13 delay 114 between 42
+fps road 19
+time road step 1.1 paint 38.2 send 5.1 gc 3.1 fps 19 worst 110 slowest 104 = step 17 paint 65 send 20 gc 14
+phases road static 16 paint 24 fx 7 hud 10 over 23 title 0
+avg road static 11.4 paint 22.2 fx 0.5 hud 1.7 over 2.2 title 0.0
+heap road alloc 184704 glyphs 28
+hit 14 delay 125 between 42
+sound road between_max 109 write_max 0 late 3 short 128
+mic road gaps 0 lost 64 blind 0 tone_mean 0 floor 1
+hit 15 delay 125 between 45
+hit 16 delay 96 between 46
+fps road 19
+time road step 1.1 paint 37.9 send 5.4 gc 3.1 fps 19 worst 113 slowest 105 = step 17 paint 67 send 20 gc 14
+phases road static 17 paint 24 fx 7 hud 9 over 23 title 0
+avg road static 11.4 paint 22.0 fx 0.5 hud 1.6 over 2.2 title 0.0
+heap road alloc 186448 glyphs 28
+sound road between_max 110 write_max 0 late 3 short 192
+mic road gaps 0 lost 128 blind 0 tone_mean 0 floor 1
+hit 17 delay 110 between 41
+hit 18 delay 122 between 110
+hit 19 delay 120 between 44
+fps road 19
+time road step 1.1 paint 38.0 send 5.3 gc 3.1 fps 19 worst 113 slowest 106 = step 17 paint 67 send 20 gc 14
+phases road static 15 paint 25 fx 4 hud 11 over 23 title 0
+avg road static 11.4 paint 22.5 fx 0.4 hud 1.7 over 1.9 title 0.0
+heap road alloc 184736 glyphs 28
+sound road between_max 110 write_max 0 late 3 short 288
+mic road gaps 0 lost 224 blind 0 tone_mean 0 floor 1
+hit 20 delay 110 between 50
+hit 21 delay 121 between 57
+written 679168 short 272
+hits 21 median 117 max 125 missed 0
+done
+=== entry 2 end 2026-11-10 13:20:59 +0100 exit 0
+=== entry 3 Road ibuf 8192 hits auto seconds 45, start 2026-11-10 13:20:59 +0100
+TONE = 0 is the control run: the same ga
+GAME = "Road"  # Fire, BallPit or Road: 
+TONE = 1  # 0: the control run, no I2S
+MIC = 1  # 1: the microphone counts the 
+HITS = "auto"  # "auto": a hit every 2 s
+IBUF = 8192  # TX DMA bytes: 8 buffers o
+SECONDS = 45
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6294960
+frame tft
+ready
+game road
+mic dma_free 82787 largest 31744
+hit 1 delay 241 between 43
+fps road 21
+time road step 0.9 paint 35.1 send 3.7 gc 2.8 fps 21 worst 114 slowest 108 = step 17 paint 69 send 20 gc 14
+phases road static 17 paint 25 fx 4 hud 27 over 19 title 34
+avg road static 12.0 paint 15.2 fx 0.1 hud 1.4 over 0.3 title 5.9
+heap road alloc 219472 glyphs 24
+sound road between_max 113 write_max 0 late 0 short 160
+mic road gaps 0 lost 208 blind 0 tone_mean 0 floor 1
+hit 2 delay 237 between 41
+hit 3 delay 239 between 58
+fps road 19
+time road step 0.9 paint 37.1 send 5.0 gc 2.8 fps 19 worst 105 slowest 84 = step 1 paint 62 send 20 gc 0
+phases road static 14 paint 24 fx 7 hud 10 over 20 title 0
+avg road static 11.4 paint 21.9 fx 0.4 hud 1.6 over 1.6 title 0.0
+heap road alloc 247584 glyphs 25
+sound road between_max 94 write_max 0 late 0 short 128
+mic road gaps 0 lost 160 blind 0 tone_mean 0 floor 1
+hit 4 delay 239 between 63
+hit 5 delay 251 between 45
+hit 6 delay 240 between 50
+fps road 19
+time road step 1.1 paint 37.8 send 5.4 gc 3.1 fps 19 worst 116 slowest 108 = step 18 paint 69 send 20 gc 15
+phases road static 15 paint 24 fx 7 hud 10 over 20 title 0
+avg road static 11.4 paint 22.0 fx 0.5 hud 1.7 over 2.1 title 0.0
+heap road alloc 190112 glyphs 26
+sound road between_max 112 write_max 0 late 0 short 176
+mic road gaps 0 lost 208 blind 0 tone_mean 0 floor 1
+hit 7 delay 249 between 82
+hit 8 delay 243 between 43
+fps road 19
+time road step 1.1 paint 37.8 send 5.4 gc 3.0 fps 19 worst 109 slowest 103 = step 17 paint 64 send 20 gc 14
+phases road static 15 paint 24 fx 7 hud 10 over 24 title 0
+avg road static 11.4 paint 22.0 fx 0.5 hud 1.6 over 2.2 title 0.0
+heap road alloc 189776 glyphs 26
+hit 9 delay 44 between 63
+sound road between_max 108 write_max 0 late 0 short 112
+mic road gaps 0 lost 144 blind 0 tone_mean 0 floor 1
+hit 10 delay 240 between 57
+hit 11 delay 249 between 43
+fps road 19
+time road step 1.1 paint 38.3 send 4.9 gc 3.1 fps 19 worst 118 slowest 112 = step 17 paint 73 send 20 gc 14
+phases road static 16 paint 25 fx 7 hud 10 over 21 title 0
+avg road static 11.4 paint 22.3 fx 0.5 hud 1.7 over 2.2 title 0.0
+heap road alloc 187856 glyphs 28
+sound road between_max 118 write_max 0 late 0 short 96
+mic road gaps 0 lost 128 blind 0 tone_mean 0 floor 1
+hit 12 delay 249 between 52
+hit 13 delay 245 between 56
+fps road 19
+time road step 1.1 paint 38.0 send 5.4 gc 3.1 fps 19 worst 109 slowest 102 = step 17 paint 63 send 20 gc 14
+phases road static 15 paint 24 fx 7 hud 11 over 22 title 0
+avg road static 11.4 paint 22.0 fx 0.5 hud 1.7 over 2.2 title 0.0
+heap road alloc 190368 glyphs 28
+sound road between_max 107 write_max 0 late 0 short 128
+mic road gaps 0 lost 176 blind 0 tone_mean 0 floor 1
+hit 14 delay 242 between 41
+hit 15 delay 243 between 80
+hit 16 delay 249 between 44
+fps road 19
+time road step 1.1 paint 37.8 send 5.4 gc 3.1 fps 19 worst 108 slowest 102 = step 17 paint 63 send 20 gc 14
+phases road static 15 paint 24 fx 7 hud 11 over 22 title 0
+avg road static 11.4 paint 21.9 fx 0.5 hud 1.6 over 2.2 title 0.0
+heap road alloc 191552 glyphs 28
+sound road between_max 106 write_max 0 late 0 short 64
+mic road gaps 0 lost 96 blind 0 tone_mean 0 floor 1
+hit 17 delay 246 between 42
+hit 18 delay 244 between 58
+fps road 19
+time road step 1.1 paint 37.8 send 5.4 gc 3.1 fps 19 worst 108 slowest 101 = step 17 paint 62 send 20 gc 14
+phases road static 16 paint 24 fx 7 hud 12 over 21 title 0
+avg road static 11.4 paint 22.0 fx 0.5 hud 1.6 over 2.1 title 0.0
+heap road alloc 192928 glyphs 28
+sound road between_max 106 write_max 0 late 0 short 272
+mic road gaps 0 lost 48 blind 0 tone_mean 0 floor 1
+hit 19 delay 243 between 41
+hit 20 delay 242 between 45
+hit 21 delay 248 between 58
+written 679168 short 256
+hits 21 median 243 max 251 missed 0
+done
+=== entry 3 end 2026-11-10 13:21:48 +0100 exit 0
