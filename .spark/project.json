@@ -1,0 +1,12 @@
+{
+  "//": "The brief. parts.py reads `prefer` and `sellers`; the spark-review skill hands the reviewers `must`, and it is what they judge consequence against \u2014 a finding is only 'bad' relative to something you promised.",
+  "goal": "to be able to add joystick and sound to the games",
+  "must": [],
+  "//must": "What the design has to do, in terms that can be violated. \"Runs a year on one charge\" can be checked against a current budget; \"low power\" cannot.",
+  "prefer": null,
+  "//prefer": "Whose modules to research first, in order: [\"dfrobot\", \"seeed\"].",
+  "sellers": null,
+  "//sellers": "Where you buy, local first, in order \u2014 e.g. [\"laskakit\", \"tme\"] in Czechia, [\"adafruit\", \"digikey\"] in the US. Modules come from their makers; simple parts (connectors, discretes) take their facts from the maker's datasheet and are bought here.",
+  "decided": [],
+  "//decided": "Choices already made and not up for re-litigation, each with why. Kept for you and for any agent that reads this file: no script reads it, and the spark-review skill hands the reviewers only `must`, so it does not stop a reviewer proposing an option you already rejected."
+}
