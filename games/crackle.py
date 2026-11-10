@@ -11,8 +11,8 @@ dropped. A refill callback between two bytecodes of add_pops so loses no pop and
 """
 
 # --- MVP (P747) ---
-# roar_shift, roar_gain, pop_min, pop_max, decay_min, decay_max, tails, tail_gap: see fx_crackle_init in fx_crackle.h
-CRACKLE_LOOK = (4, 48, 6000, 12000, 28400, 31600, 3, 4000)
+# roar_shift, roar_gain, pop_min, pop_max, decay_min, decay_max, tails, tail_gap, gain: see fx_crackle_init in fx_crackle.h
+CRACKLE_LOOK = (4, 48, 6000, 12000, 28400, 31600, 3, 4000, 224)
 SLOTS = 8  # FX_CRACKLE_SLOTS
 PEAK = 32767  # FX_CRACKLE_PEAK
 
@@ -26,7 +26,7 @@ class Crackle:
         self.rng = (seed & 0xFFFF) or 1
         self.roar1 = self.roar2 = 0
         (self.roar_shift, self.roar_gain, self.pop_min, self.pop_max, self.decay_min, self.decay_max, self.tails,
-         self.tail_gap) = look
+         self.tail_gap, self.gain) = look
         self.popped = self.started = self.dropped = 0
         self.wait, self.armed, self.env = [0] * SLOTS, [0] * SLOTS, [0] * SLOTS
         self.decay, self.lp, self.shift, self.tails_left = [0] * SLOTS, [0] * SLOTS, [0] * SLOTS, [0] * SLOTS
@@ -92,6 +92,7 @@ class Crackle:
                         tails_left[i] -= 1
                         armed[i] >>= 1
                         wait[i] = 32 + self.between(0, self.tail_gap)
+            total = (total * self.gain) >> 6
             buf[k] = PEAK if total > PEAK else -PEAK if total < -PEAK else total
 
 

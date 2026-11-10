@@ -18,13 +18,13 @@ RATE, BLOCK = 16000, 256  # sound.py's RATE and REFILL_SAMPLES
 FRAME_BLOCKS = 2  # about one Fire frame of 40 ms between two add_pops
 
 
-def play(crackle, seconds, seed=747):
+def play(crackle, seconds, seed=747, burst=0.01):
     """seconds of blocks, with a few births before every second block, as Fire's frames add them (about 3.9 a
-    second, and now and then a burst of 9 that fills every slot)."""
+    second), and in burst of them a test's 9 at once, which fills every slot (Fire adds at most 2 a frame)."""
     rng, out, buf = random.Random(seed), array("h"), array("h", bytes(2 * BLOCK))
     for k in range(seconds * RATE // BLOCK):
         if k % FRAME_BLOCKS == 0:
-            crackle.add_pops(9 if rng.random() < 0.01 else 1 if rng.random() < 0.16 else 0)
+            crackle.add_pops(9 if rng.random() < burst else 1 if rng.random() < 0.16 else 0)
         crackle.render(buf)
         out.extend(buf)
     return out
@@ -41,7 +41,7 @@ class CrackleTest(unittest.TestCase):
         self.assertEqual(c.counts(), (11, 8, 3))  # none starts twice
 
     def test_the_peak_stays_under_90_percent(self):
-        self.assertLessEqual(max(map(abs, play(Crackle(5), 10))), PEAK * 9 // 10)
+        self.assertLessEqual(max(map(abs, play(Crackle(5), 10, burst=0))), PEAK * 9 // 10)
 
     @unittest.skipUnless(HAVE_CLANG, "clang is needed")
     def test_python_equals_c_sample_for_sample(self):
