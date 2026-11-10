@@ -8,9 +8,9 @@ the I2S. add_pops(n) queues n pops, and the next render starts them. counts() gi
 - NativeCrackle runs the same integer math in C, engine/core/fx_crackle.c, loaded from crackle_c.mpy with no firmware
   rebuild: 0.4 ms a block. A Mac test wants it equal to Crackle sample for sample, so a change to one is a change to
   both, by fx_crackle.h's rules: every value under 2^30, signed values shift only with >>, no / or %.
-- GrainCrackle (P751) is the fire of P750's demo g: a bed of grains and one bank pop per ember, mixed in C by
-  engine/core/fx_grains.c from the same crackle_c.mpy, out of a sample bank (fire_bank.raw, made on the Mac by
-  tools/fire_bank.py). No filter, so nothing rings or overflows.
+- GrainCrackle (P751) is the fire of P750's demo g: a low flame roar (the bed, played in grains) and one bank pop per
+  ember, mixed in C by engine/core/fx_grains.c from the same crackle_c.mpy, out of a sample bank (fire_bank.raw, made
+  on the Mac by tools/fire_bank.py). No filter, so nothing rings or overflows.
 - SampledCrackle is the naive path on the board, which stays working (D26, the PO chose it on 2026-11-10): Crackle
   renders a few pops once, and a sound.Mixer plays one per frame that has births. No roar, no overlap.
 

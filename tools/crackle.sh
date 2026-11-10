@@ -9,7 +9,8 @@
 #     tools/crackle.sh [seconds] [voice] [look]   # voice: NativeCrackle (default), SampledCrackle or GrainCrackle
 #
 # A look, such as "6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK in the crackle.py that this
-# run copies (GRAIN_LOOK for GrainCrackle, such as "0, 32768": bed gain, pop gain). That copy stays on the board until the next copy.
+# run copies (GRAIN_LOOK for GrainCrackle, such as "0, 32768": bed gain, pop gain).
+# That copy stays on the board until the next copy.
 # GrainCrackle (P751) also needs the bank on the board: games/fire_bank.raw (about 250 KB, about 60 s to copy) goes
 # only when `mpremote fs sha256sum` shows the board's copy differs.
 # --- MVP (P747, P751) ---
