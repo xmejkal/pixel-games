@@ -7,9 +7,9 @@ the remaining risk (D rows). An extension may tighten these. Next: design, or a 
 → the design skill the facts name, with this file; otherwise none, and the collection plan says who runs it.
 Stands on: the assumptions not retired in risks-and-tests.md; of which those the decider rated high, or — while any
 is unrated. check computes both. -->
-**Ready for:** an experiment: the A1 bench spike (D17), and design follows the spike <!-- REQUIRED:ready -->
-**Stands on:** 10 H, 10 of which would change the decision <!-- REQUIRED:debt -->
-**Decision needed:** none for the hand-off. Q10 to Q13 go to the plan of P733 <!-- REQUIRED:decision-needed -->
+**Ready for:** an experiment: the A1 spike ran (Results, 2026-11-10) and missed only in Road; Q12 decides the next step <!-- REQUIRED:ready -->
+**Stands on:** 9 H, 9 of which would change the decision <!-- REQUIRED:debt -->
+**Decision needed:** Q12, now that A1 missed on gaps in Road only <!-- REQUIRED:decision-needed -->
 
 **Short version.** The options are proposals, and D8 to D16 record what the PO selected. The games have no sound today, and nobody is blocked: the want is the PO's wish and a showcase (C27). The source of stock `machine.I2S` fits the owned amplifier, nobody ran it here, and it needs a C or Python fill from the game loop (★C2 (not run), ★C7). A buffer deep enough to hide the worst frame gap (105 ms in Road) also delays every new sound by up to about 168 ms in a 40 ms frame and about 233 ms in Road's 105 ms frame, calculated and not measured (★C3, ★C4). The S3 has two I2S controllers and no DAC (★C25 (no DAC is an absence)), so on the stock class the amplifier and the microphone take one controller each. AMY, an MIT C synth core that runs on the S3, joins Q3 as option P4, read and not built (★C24). The cheapest next step is one bench session with a tone beside the game loop and no new C (A1), and the microphone (D6, D12) is the chosen gap count that the stock class lacks (★C6 (dry blocks)). It is a round module that matches the INMP441 (★C26 (marking is unread)). The PO answered Q1 to Q5, Q8 and the two queue questions (D8 to D16). The queue holds Q7, Q6 and Q9 to Q15, and a look at the bench (the collection plan in risks-and-tests.md) is open.
 
