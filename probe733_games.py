@@ -77,37 +77,35 @@ class Done(Exception):
 
 MIC_BLOCK = const(64)  # samples per block mean, 1 << MIC_BLOCK_SHIFT: 4 ms, so any gap of 8 ms or more holds one whole quiet block
 MIC_BLOCK_SHIFT = const(6)
+MIC_BYTES = 4  # a 32-bit read keeps all 24 bits of the INMP441; a 16-bit read kept the top 16, 256 times coarser (run144i)
 TONE_OPEN_MS = 2500  # the sound opens this long after the microphone
 FLOOR_MS = (1500, 2500)  # the room, after the microphone settles (about 1.3 s, run141), before the sound opens
 TONE_MS = (3000, 4000)  # the tone: it starts one ring after it opens, after a frame and the click
-TONE_MIN = 10  # the tone at 10000 read 16 to 21, the room 0 to 5 (run141): the 4 x floor margin is thin
-BEEP_MIN = 20  # the onset threshold with HITS: over a click or speech, under the beep at 20000 (the tone at 10000 read 16 to 21)
+# Levels are 24-bit block means. run144i: the tone at 10000 about 2840, the room 250 to 700. The 16-bit reads gave
+# the same divided by 256: the tone 6 to 21, beeps 25 to 33, claps up to 11.
+TONE_MIN = 1000  # keeps a dead line out: with a floor of 0, 0 passed 4 x floor
+BEEP_MIN = 4000  # the onset threshold with HITS: over a clap (about 2800), under a beep at 20000 (about 6400 to 8400)
 QUIET = 0.3 # a block is quiet below floor + QUIET x (tone_mean - floor)
 BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or drop buffers without a report
 
 
 @micropython.viper
 def block_mean(buf, offset: int) -> int:
-    """The mean |x - m| of MIC_BLOCK int16 samples from offset (in samples), with m their mean, so the microphone's
-    constant offset does not count as sound (run141f). ptr16 reads unsigned."""
-    p = ptr16(buf)  # noqa: F821, a viper built-in
+    """The mean |x - m| of MIC_BLOCK 24-bit samples from offset (in samples), with m their mean, so the microphone's
+    constant offset does not count as sound (run141f). Each 32-bit word holds the sample in its top 24 bits, and the
+    arithmetic shift keeps the sign. 64 sums of 24 bits fit in a 32-bit int."""
+    p = ptr32(buf)  # noqa: F821, a viper built-in
     s = 0
     i = offset
     end = offset + MIC_BLOCK
     while i < end:
-        x = p[i]
-        if x >= 32768:
-            x -= 65536
-        s += x
+        s += int(p[i]) >> 8
         i += 1
     m = s >> MIC_BLOCK_SHIFT
     s = 0
     i = offset
     while i < end:
-        x = p[i]
-        if x >= 32768:
-            x -= 65536
-        x -= m
+        x = (int(p[i]) >> 8) - m
         if x < 0:
             x = 0 - x
         s += x
@@ -131,7 +129,7 @@ class Mic:
         heaps = esp32.idf_heap_info(8)  # MALLOC_CAP_DMA: the 32 KB come from here, not from the PSRAM heap
         print("mic dma_free %d largest %d" % (sum(h[1] for h in heaps), max(h[2] for h in heaps)))
         self.buf = bytearray(16384)  # before the I2S, so the clock below starts with the DMA
-        self.i2s = I2S(1, sck=Pin(8), ws=Pin(11), sd=Pin(10), mode=I2S.RX, bits=16, format=I2S.MONO, rate=RATE,
+        self.i2s = I2S(1, sck=Pin(8), ws=Pin(11), sd=Pin(10), mode=I2S.RX, bits=32, format=I2S.MONO, rate=RATE,
                        ibuf=32768)
         self.opened_us = time.ticks_us()  # the sample clock starts here (run143d: 0 to 192 samples behind)
         try:
@@ -161,11 +159,11 @@ class Mic:
             if not n:
                 return
             self.fill += n
-            whole = self.fill // (2 * MIC_BLOCK)
+            whole = self.fill // (MIC_BYTES * MIC_BLOCK)
             for k in range(whole):
                 self.add_mean(block_mean(self.buf, k * MIC_BLOCK))
-            rest = self.fill - whole * 2 * MIC_BLOCK
-            self.buf[:rest] = self.buf[whole * 2 * MIC_BLOCK:self.fill]
+            rest = self.fill - whole * MIC_BYTES * MIC_BLOCK
+            self.buf[:rest] = self.buf[whole * MIC_BYTES * MIC_BLOCK:self.fill]
             self.fill = rest
 
     def now_ms(self):
@@ -243,7 +241,7 @@ class Mic:
         self.threshold = self.floor + QUIET * (self.tone_mean - self.floor)
 
     def lost(self):
-        return time.ticks_diff(time.ticks_us(), self.opened_us) // 1000 * (RATE // 1000) - self.samples - self.fill // 2
+        return time.ticks_diff(time.ticks_us(), self.opened_us) // 1000 * (RATE // 1000) - self.samples - self.fill // MIC_BYTES
 
     def report(self, name):
         print("mic %s gaps %d open %d lost %d blind %d tone_mean %d floor %d" % (
