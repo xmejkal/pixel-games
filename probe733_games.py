@@ -124,7 +124,8 @@ BLIND_US = 13 * 16_000  # a wait of 13 or more DMA buffers: ESP-IDF can skip or 
 
 @micropython.viper
 def block_mean(buf, offset: int) -> int:
-    """The mean absolute value of BLOCK int16 samples from offset (in samples). ptr16 reads unsigned."""
+    """The mean |x - m| of BLOCK int16 samples from offset (in samples), with m their mean, so the microphone's
+    constant offset does not count as sound (run133e). ptr16 reads unsigned."""
     p = ptr16(buf)  # noqa: F821, a viper built-in
     s = 0
     i = offset
@@ -132,7 +133,19 @@ def block_mean(buf, offset: int) -> int:
     while i < end:
         x = p[i]
         if x >= 32768:
-            x = 65536 - x
+            x -= 65536
+        s += x
+        i += 1
+    m = s >> BLOCK_SHIFT
+    s = 0
+    i = offset
+    while i < end:
+        x = p[i]
+        if x >= 32768:
+            x -= 65536
+        x -= m
+        if x < 0:
+            x = 0 - x
         s += x
         i += 1
     return s >> BLOCK_SHIFT
