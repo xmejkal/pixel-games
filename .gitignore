@@ -2,3 +2,8 @@ __pycache__/
 *.log
 backup/
 *.bin
+node_modules/
+package-lock.json
+build/dist/
+build/page.html
+docs/photos/

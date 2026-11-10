@@ -952,3 +952,31 @@ and the `out` read), 120 s each. `HeatField.stats()` timing is in run147e: 392 t
   locals) is a later row.
 - The step on BurningBodies grows from 9.5 to 11.7 ms with the whooshes, against about 0.8 ms in run148. Both runs pass
   the fps line. The cost of `follow_bodies` in Python is a later row too.
+
+## P758 (#1041), 2026-11-10: the rotary encoder on the pulse counter
+
+The PO's CJMCU-111 knob sits on 3V3 and GND, with GA on SDA (GPIO1, `pins.ENC_A`) and GB on SCL (GPIO2, `pins.ENC_B`).
+spark's `requirements.json` chose both pins. `games/encoder.py` reads the knob with `machine.Encoder`, the ESP32-S3's
+pulse counter, with the internal pull-ups and the 12 us glitch filter. `probe758.py` prints one line per change of
+the raw edge count for 180 s. The PO turned the knob by hand and counted the clicks.
+
+| entry | log | what the PO did | result |
+| --- | --- | --- | --- |
+| 1 | run150-p758-encoder.log, 0 to 16 s | a free try, both ways | the count goes up to 9 and down to -16, so the sign follows the direction |
+| 2 | 16 to 30 s | the way up | the count stops at 85, and the start of the count is unclear |
+| 3 | 35 to 55 s | 20 clicks back | 85 to 5: 80 edges, 4 edges per click |
+| 4 | 55 to 180 s | hands off | no change for 125 s, the run ends at 5 |
+
+- `EDGES_PER_DETENT = 4` in `games/encoder.py` comes from entry 3. The part record `cjmcu-111-rotary-encoder` now holds
+  it as a bench fact. The shops publish 20 clicks per turn and no edge count.
+- Inside a turn the count steps back by 1 edge six times (17.5 s, 17.9 s, 26.4 s, 35.8 s, 38.9 s, 49.2 s). The log
+  cannot tell a contact bounce from the PO's hand.
+- The knob does not rest on a multiple of 4 edges. The run starts at 0, and the rests are at 9, 85 and 5, each 1 above
+  a multiple of 4. `detents()` gives each click 4 edges (2 to 5 is click 1), so at such a rest 1 more edge changes
+  the click count. A use that must not flicker, such as P757's volume, needs a dead band.
+- ENC_A and ENC_B are the board's SDA and SCL pads. spark's board record says that a FireBeetle 2 ESP32-S3 of V1.1 or
+  earlier has its power chip (AXP313A) and 5.1 kΩ pull-ups on these lines, so the knob's contacts would toggle that
+  chip's bus. The revision of the PO's board is not recorded. Nothing else in the repository uses I2C.
+- No frame loop ran beside the probe. The count under a game's load is P757's bench.
+- Not measured: the module's own pull-ups (an ohmmeter from VCC to GA and to GB, power off, with the GA and GB wires
+  out of the board). The record keeps that fact unverified.

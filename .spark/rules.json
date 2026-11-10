@@ -1,0 +1,19 @@
+{
+  "//": "Things no netlist format records. Written by spark init from the nets in the built design; every value is null until someone establishes it.",
+  "i2c_buses": [],
+  "//i2c_buses": "Where an I2C bus is, as a net name or as Component.PIN. Seeded from the part records: a line is here when a module needs THIS board to pull it up. Add or remove as the design actually is.",
+  "must_not_float": [],
+  "//must_not_float": "Pins that must never be left floating, as [\"Component\", \"PIN\"] pairs. An H-bridge input is the usual one: floating, it can turn both halves on. Seeded from every pin the design's own part records declare as an input \u2014 an empty list means the records declare none, not that nobody filled it in.",
+  "pulled_by_firmware": [],
+  "//pulled_by_firmware": "Inputs the board's internal pull-up holds, set by the firmware with Pin.PULL_UP, so no resistor is on the board (P204). No netlist shows it, so check_all says it on a ? line.",
+  "physics": {
+    "trace_temperature_rise_c": 10,
+    "//trace_temperature_rise_c": "How much warmer a trace may run than ambient. 10 is the usual conservative choice and is a DECISION, not a measurement \u2014 change it deliberately.",
+    "i2c_hz": null,
+    "i2c_bus_capacitance_pf": null,
+    "//i2c_bus_capacitance_pf": "Total bus capacitance: cable, fan-out and every device pin. Decides whether the pull-ups are strong enough for the clock you chose.",
+    "rails": {}
+  },
+  "fabrication": {},
+  "//fabrication": "What YOUR board house can make, by the names in the plugin's data/fabrication.json \u2014 min_annular_ring_mm, min_via_hole_mm, min_via_pad_mm, board_thickness_mm, copper_thickness_mm and the rest. Empty means the plugin's defaults for a cheap two-layer process. Stating one moves both the check and the generator that draws for it, because they read the same number."
+}

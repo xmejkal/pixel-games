@@ -1,0 +1,9 @@
+{
+  "name": "firebeetle-games",
+  "private": true,
+  "dependencies": {
+    "@tscircuit/cli": "0.1.2113",
+    "tscircuit": "0.0.2600"
+  },
+  "//": "written by /spark:init: `npm install` once, then `npx --no tsci build board.tsx` works here. `--no` refuses to fetch npm's unrelated `tsci` package. `tsci` runs on bun (spark's ts-runtime), so bun must be installed (npm or Homebrew). BOTH are pinned: the cli, and the `tscircuit` core it takes as a `*` peer dependency and would otherwise fetch newest. Every number in spark's documents was measured on this core; see init_project.PINNED_TSCI and PINNED_CORE."
+}

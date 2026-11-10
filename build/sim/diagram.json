@@ -1,0 +1,129 @@
+{
+  "version": 1,
+  "author": "generated from board.tsx",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-s3-devkitc-1",
+      "id": "mcu",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-analog-joystick",
+      "id": "joystickmodulemh",
+      "top": 0,
+      "left": 182.4,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-ky-040",
+      "id": "cjmcu111rotaryencoder",
+      "top": 96,
+      "left": 182.4,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "inmp441i2smicroundpulldownsd",
+      "top": 201.6,
+      "left": 182.4,
+      "attrs": {
+        "value": "100000"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "mcu:4",
+      "joystickmodulemh:HORZ",
+      "green",
+      []
+    ],
+    [
+      "mcu:5",
+      "joystickmodulemh:VERT",
+      "green",
+      []
+    ],
+    [
+      "mcu:7",
+      "joystickmodulemh:SEL",
+      "green",
+      []
+    ],
+    [
+      "mcu:10",
+      "inmp441i2smicroundpulldownsd:1",
+      "green",
+      []
+    ],
+    [
+      "mcu:1",
+      "cjmcu111rotaryencoder:CLK",
+      "green",
+      []
+    ],
+    [
+      "mcu:2",
+      "cjmcu111rotaryencoder:DT",
+      "green",
+      []
+    ],
+    [
+      "mcu:3V3.1",
+      "cjmcu111rotaryencoder:VCC",
+      "red",
+      []
+    ],
+    [
+      "mcu:3V3.1",
+      "joystickmodulemh:VCC",
+      "red",
+      []
+    ],
+    [
+      "mcu:GND.3",
+      "cjmcu111rotaryencoder:GND",
+      "black",
+      []
+    ],
+    [
+      "mcu:GND.3",
+      "joystickmodulemh:GND",
+      "black",
+      []
+    ],
+    [
+      "mcu:GND.3",
+      "mcu:GND.2",
+      "black",
+      []
+    ],
+    [
+      "mcu:GND.3",
+      "mcu:GND.1",
+      "black",
+      []
+    ],
+    [
+      "mcu:GND.3",
+      "inmp441i2smicroundpulldownsd:2",
+      "black",
+      []
+    ],
+    [
+      "mcu:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "mcu:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ]
+  ]
+}

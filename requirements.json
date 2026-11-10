@@ -1,0 +1,80 @@
+{
+  "board": "firebeetle2-esp32s3",
+  "parts": [
+    "max98357a-dfr0954",
+    "speaker-terminal",
+    "joystick-module-mh",
+    "cjmcu-111-rotary-encoder",
+    "inmp441-i2s-mic-round"
+  ],
+  "signals": [
+    {
+      "name": "AUDIO_SHUTDOWN",
+      "pin": "A2"
+    },
+    {
+      "name": "JOY_X",
+      "pin": "A0"
+    },
+    {
+      "name": "JOY_Y",
+      "pin": "A1"
+    },
+    {
+      "name": "JOY_SW",
+      "pin": "D5"
+    },
+    {
+      "name": "SCLK",
+      "needs": [],
+      "pin": "SCK"
+    },
+    {
+      "name": "MOSI",
+      "needs": [],
+      "pin": "MOSI"
+    },
+    {
+      "name": "MISO",
+      "needs": [],
+      "pin": "MISO"
+    },
+    {
+      "name": "GDI_RST",
+      "needs": [],
+      "pin": "D3"
+    },
+    {
+      "name": "GDI_CS",
+      "needs": [],
+      "pin": "D6"
+    },
+    {
+      "name": "GDI_SD_CS",
+      "needs": [],
+      "pin": "D7"
+    },
+    {
+      "name": "GDI_BL",
+      "needs": [],
+      "pin": "D13"
+    },
+    {
+      "name": "SWITCH_BUTTON",
+      "needs": [],
+      "pin": "D14"
+    },
+    {
+      "name": "MIC_SCK",
+      "pin": "A3"
+    },
+    {
+      "name": "MIC_WS",
+      "pin": "A5"
+    },
+    {
+      "name": "MIC_SD",
+      "pin": "A4"
+    }
+  ]
+}

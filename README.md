@@ -16,7 +16,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
 | `p537-finding.md` | the options for smooth motion, ranked, with a plan in slices |
-| `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565) |
+| `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565). Also the wiring guides: `wiring.html` (every wire, with pictures) and `p758-encoder-steps.html` (the encoder, one wire per step) |
 
 ## Build and run
 
@@ -97,6 +97,17 @@ Runs now:
   one woody pop per ember, in sync with the sparks, over a low flame roar, from a bank rendered on the Mac
   (`tools/fire_bank.py`), kept in `engine.SoundBank` outside the GC heap. The fastest embers (rise 4 and 5) get larger pops. Only the bench probe
   (`probe733_games.py`) turns the sound on today. Try a change to the C crackle with `tools/crackle.sh`. Since P753, `FireSound` adds integer noise in C (`engine/core/fx_noise.c`): each falling burning body of `BurningBodies` whooshes by its airspeed, and Fire plays the pops alone, because the PO heard the noise bed as wind. Try it with `GAME=BurningBodies tools/crackle.sh 30 FireSound`.
+- The rotary encoder (P758, `games/encoder.py`): `Encoder.on_board(pins.ENC_A, pins.ENC_B, EDGES_PER_DETENT)` reads
+  the knob through `machine.Encoder`, the ESP32-S3's pulse counter, so no interrupt runs. `detents()` gives the clicks,
+  + one way and - the other. The bench measured 4 edges per click (bench.md, P758). The knob can rest 1 edge from a
+  click's border, so a use that must not flicker needs a dead band. No game uses the knob yet: the master volume is
+  P757.
+- The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a
+  change, run `python3 ~/Development/spark/scripts/check_spine.py requirements.json --keep build --json` and copy
+  `build/firmware/pins.py` to `games/pins.py`. The run ends in `problems` today, only because the reserved display pins
+  connect to no part. The microphone's record, `parts/inmp441-i2s-mic-round.json`, comes from one photo through
+  `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
+  guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
 - Fourteen games. Four are effect scenes: fire, the ball pit, bodies on fire and rain. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
