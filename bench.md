@@ -952,3 +952,25 @@ and the `out` read), 120 s each. `HeatField.stats()` timing is in run147e: 392 t
   locals) is a later row.
 - The step on BurningBodies grows from 9.5 to 11.7 ms with the whooshes, against about 0.8 ms in run148. Both runs pass
   the fps line. The cost of `follow_bodies` in Python is a later row too.
+
+## P758 (#1041), 2026-11-10: the rotary encoder on the pulse counter
+
+The PO's CJMCU-111 knob sits on 3V3 and GND, with GA on SDA (GPIO1, `pins.ENC_A`) and GB on SCL (GPIO2, `pins.ENC_B`).
+spark's `requirements.json` chose both pins. `games/encoder.py` reads the knob with `machine.Encoder`, the ESP32-S3's
+pulse counter, with the internal pull-ups and the 12 us glitch filter. `probe758.py` prints one line per change of
+the raw edge count for 180 s. The PO turned the knob by hand and counted the clicks.
+
+| entry | log | what the PO did | result |
+| --- | --- | --- | --- |
+| 1 | run150-p758-encoder.log, 0 to 16 s | a free try, both ways | the count goes up to 9 and down to -16, so the sign follows the direction |
+| 2 | 16 to 30 s | the way up | the count stops at 85, and the start of the count is unclear |
+| 3 | 35 to 55 s | 20 clicks back | 85 to 5: 80 edges, 4 edges per click |
+| 4 | 55 to 180 s | hands off | no change for 125 s, the run ends at 5 |
+
+- `EDGES_PER_DETENT = 4` in `games/encoder.py` comes from entry 3. The part record `cjmcu-111-rotary-encoder` now holds
+  it as a bench fact. The shops publish 20 clicks per turn and no edge count.
+- Inside a turn the count steps back by 1 edge a few times (13.1 s, 17.5 s, 26.4 s, 38.9 s). The log cannot tell a
+  contact bounce from the PO's hand. `detents()` rounds to the nearest click, so 1 edge does not move it.
+- No frame loop ran beside the probe. The count under a game's load is P757's bench.
+- Not measured: the board's own pull-ups (an ohmmeter from VCC to GA and to GB, power off). The record keeps that
+  fact unverified.
