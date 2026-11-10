@@ -235,6 +235,16 @@ FLUTTER, FLUTTER_CAP = 100, 8  # level per row of height's change since the last
 WIND_LEVEL, WIND_CAP = 6, 60  # level per unit of |wind|, up to Fire's WIND of 60: at most 360
 BED_MAX = 8000  # the bed's level at most: 6800 + 800 + 360 stay under it
 SAMPLE_RATE = 16000
+# The whooshes (P753): a body's airspeed s is its speed against the air, in px/s. Bodies fall at up to about 1,400 px/s
+# (burning.py's FLARE numbers) and drift at most 120 px/s. All integer math in follow_bodies, tables made once.
+VOICES = 8  # whoosh voices, one per body index (FX_NOISE_VOICES)
+WIND_AIR = 5  # px/s of airspeed per unit of wind: wind 60 gives 300 px/s, a sound-only number
+S2_FLOOR = 100 * 100  # s^2 under this (100 px/s) is silent
+S2_FULL = 2000000  # s^2 at or over this (1,414 px/s) is the loudest whoosh
+WHOOSH_MAX = 3000  # one voice's level at most: 8 voices stay under 24000 of the 32768 (the bed has 8000 of its own)
+CENTRE_LOW, CENTRE_HIGH = 300, 2000  # Hz of the band-pass: s = 0 gets the low one, S2_FULL the high one
+S2_SHIFT = 10  # the centre table has one coefficient per 1024 of s^2, so the square root costs no code
+V_CAP = 2047  # px/s: a speed component is cut here, so every square stays under 2^23
 # --- Later, not MVP: the bed works and is tested, but the PO heard every noise bed as wind on the board's speaker
 # (run147, 2026-11-10: "sounds like a lot of wind in the background", and a quiet bed that flaps: "Still wind"). So
 # Fire plays the pops alone. Kept for a wind sound that follows the gusts, or a bed the PO likes later. ---
@@ -272,6 +282,14 @@ class FireSound(GrainCrackle):
             self.gains.append(int(32768 * math.sqrt(CUTOFF_DARK / cutoff)))
         self.height = None  # the last step's, for the flutter
         self.level = self.coef = 0  # the bed's targets now, for the probe
+        # --- MVP (P753) --- the whooshes: Q15 2 sin(pi f / 16000) for the centre f of each s^2 >> S2_SHIFT
+        self.centres = array("H")
+        for k in range((S2_FULL >> S2_SHIFT) + 1):
+            f = CENTRE_LOW + (CENTRE_HIGH - CENTRE_LOW) * math.sqrt(k << S2_SHIFT) / math.sqrt(S2_FULL)
+            self.centres.append(min(25080, int(32768 * 2 * math.sin(math.pi * min(f, CENTRE_HIGH) / SAMPLE_RATE))))
+        self.whoosh = array("H", bytes(2 * VOICES))  # each voice's level target now, for the tests and the probe
+        self.centre = array("H", [self.centres[0]] * VOICES)  # each voice's centre target now: a fading voice keeps it
+        self.whoosh_level = 0  # the loudest of them
 
     def follow_field(self, total, height, wind):
         """The bed's targets from one step's stats and the wind (-60 to 60)."""
@@ -285,10 +303,32 @@ class FireSound(GrainCrackle):
         self.coef = self.coefs[ci]
         self.c.noise_bed(self.noise, self.level, self.coef)
 
+    def follow_bodies(self, moves, ms, wind):
+        """--- MVP (P753) --- The whooshes' targets from one frame: moves holds dx, dy in px per body (body i is voice i),
+        ms is the physics time behind them and wind is the wind now (-60 to 60). A body's airspeed is its velocity
+        against the air, which the wind moves at WIND_AIR px/s a unit. A body that does not move is silent, and ms 0
+        changes nothing."""
+        if ms <= 0:
+            return
+        loudest = 0
+        for i in range(min(len(moves) >> 1, VOICES)):
+            dx, dy = moves[2 * i], moves[2 * i + 1]
+            level = 0
+            if dx or dy:
+                vx = max(-V_CAP, min(V_CAP, dx * 1000 // ms - wind * WIND_AIR))
+                vy = max(-V_CAP, min(V_CAP, dy * 1000 // ms))
+                s2 = min(vx * vx + vy * vy, S2_FULL)
+                if s2 >= S2_FLOOR:
+                    level = (s2 >> 4) * WHOOSH_MAX // (S2_FULL >> 4)  # the shift keeps the product under 2^30
+                    self.centre[i] = self.centres[s2 >> S2_SHIFT]
+            self.c.noise_whoosh(self.noise, i, level, self.centre[i])
+            self.whoosh[i] = level
+            loudest = max(loudest, level)
+        self.whoosh_level = loudest
+
     def render(self, buf):
         super().render(buf)
-        if self.has_bed:
-            self.c.noise_mix(self.noise, buf)
+        self.c.noise_mix(self.noise, buf)  # an idle noise (no bed, no whoosh) leaves buf as it is
 
 
 class SampledCrackle:

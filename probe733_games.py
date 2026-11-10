@@ -46,7 +46,8 @@ pop) once, and every 5 s `crackle <game> render_max <us> pop_median <ms> pop_max
 samples into that render, and the ring holds it for up to 64 ms (IBUF 2048) before the speaker.
 FireSound (P753) also follows the heat field (and, with GAME BurningBodies, the bodies' airspeed): TimedCrackle forwards
 follow_field and follow_bodies to it and counts the calls, and a line with every 5 s line,
-`follow <game> follow_field <n> follow_bodies <n> level <n> coef <n>`: the calls of the window and the bed's targets now.
+`follow <game> follow_field <n> follow_bodies <n> level <n> coef <n> whoosh <n>`: the calls of the window, the bed's
+targets now and the loudest whoosh's level now.
 """
 
 import math
@@ -321,9 +322,9 @@ class TimedCrackle:
         print("crackle %s render_max %d pop_median %d pop_max %d pops %d dropped %d" % (
             name, render_max, median(pops) // 1000, max(pops or [0]) // 1000, len(pops), self.crackle.counts()[2]))
         if hasattr(self.crackle, "follow_field") or hasattr(self.crackle, "follow_bodies"):  # P753
-            print("follow %s follow_field %d follow_bodies %d level %d coef %d" % (
+            print("follow %s follow_field %d follow_bodies %d level %d coef %d whoosh %d" % (
                 name, self.field_calls, self.bodies_calls, getattr(self.crackle, "level", 0),
-                getattr(self.crackle, "coef", 0)))
+                getattr(self.crackle, "coef", 0), getattr(self.crackle, "whoosh_level", 0)))
             self.field_calls = self.bodies_calls = 0
 
 
