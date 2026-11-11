@@ -23,6 +23,7 @@ from balls import BallPit
 from burning import BurningBodies
 from fire import Fire
 from lcd import open_tft
+from overlay import Overlay
 from rain import Rain
 from render import StOut
 from space3d import CubeTiming, Starfire
@@ -56,6 +57,7 @@ class App:
         self.frames, self.mark, self.us, self.state, self.gc_floor = 0, 0, [0, 0, 0, 0], 0, gc_floor
         self.index = len(games) - 1
         self.game = None
+        self.overlay = Overlay()  # --- MVP (P762) --- system information over every game
 
     def start(self):
         self.out.clear()
@@ -86,6 +88,7 @@ class App:
         before = us[:]
         now = time.ticks_ms()
         pressed, switched = self.fire.update(now), self.boot.update(now)  # Input
+        self.overlay.update(now)
         if switched:
             self.switch()
         else:
@@ -96,7 +99,7 @@ class App:
             if self.gc_floor and self.state != 1:
                 self.collect()
         us[0] += time.ticks_diff(time.ticks_us(), t0)
-        self.out.draw(game, us)  # Render, then Present: one show()
+        self.out.draw(game, us, self.overlay)  # Render, then Present: one show()
         self.frames += 1
         took = time.ticks_diff(time.ticks_us(), t0)
         if took > self.slow[0]:  # the slowest frame of the interval, and where its time went

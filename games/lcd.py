@@ -166,6 +166,7 @@ class TftOut:
 
     def __init__(self, tft):
         self.tft, self.canvas, self.fresh = tft, TftCanvas(tft), True
+        self.windows = 0  # what the last show() returned: the windows it sent (P762, for a probe)
 
     def clear(self):
         self.tft.fill(0)
@@ -173,7 +174,7 @@ class TftOut:
     def reset(self):
         self.fresh = True  # another game: another still picture, which no draw of the new game marks
 
-    def draw(self, game, us):
+    def draw(self, game, us, overlay=None):
         t1, cv, tft = time.ticks_us(), self.canvas, self.tft
         tft.track(self.fresh)  # untracked, the background fill and the still picture mark nothing; fresh, fill marks all
         self.fresh = False
@@ -184,8 +185,11 @@ class TftOut:
         tft.track(True)
         cv.start()
         game.draw(cv)
+        if overlay:  # --- MVP (P762) --- over the game, in the same frame
+            cv.clip = FULL
+            overlay.draw(cv)
         t2 = time.ticks_us()
-        self.tft.show()
+        self.windows = self.tft.show()
         us[1] += time.ticks_diff(t2, t1)
         us[2] += time.ticks_diff(time.ticks_us(), t2)
 

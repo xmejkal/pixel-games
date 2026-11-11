@@ -58,9 +58,9 @@ class CountingCanvas(lcd.TftCanvas):
 
 
 class CountingOut(lcd.TftOut):
-    def draw(self, game, us):
+    def draw(self, game, us, overlay=None):
         self.canvas.begin(game.state == gfx.PLAY)
-        super().draw(game, us)
+        super().draw(game, us, overlay)
 
 
 def count():
