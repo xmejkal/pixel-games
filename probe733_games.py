@@ -4,7 +4,9 @@ stock machine.I2S, and heard by a microphone.
 
     mpremote cp games/sound.py :sound.py
     mpremote cp games/volume.py :volume.py + cp games/volume_viper.py :volume_viper.py   # for a run with VOLUME (P757)
-    mpremote run probe733_games.py      # GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE, VOLUME, LEVEL and SECONDS set by sed
+    mpremote cp games/encoder.py :encoder.py + cp games/pins.py :pins.py                 # for a run with KNOB (P757)
+    mpremote run probe733_games.py      # after sed set GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE, VOLUME, LEVEL, KNOB
+                                        # and SECONDS
 
 tools/crackle.sh runs it with a crackle (P747): it builds crackle_c.mpy and copies it and games/crackle.py first.
 
@@ -57,6 +59,8 @@ volume_viper), or "" for the mix as it is: then the probe imports neither. LEVEL
 more line every 5 s: `volume level <n> gain <n> apply_max <us>`: the step, the gain that the last block ended at
 (32768 is the mix as it is), and the longest apply of the window. With ViperMasterVolume, the first line is `scale
 match <1 or 0>`: 1 when the viper scale gave the naive scale's samples on the named blocks of volume_viper.
+KNOB = 1 (with a VOLUME): the rotary encoder on pins.ENC_A and pins.ENC_B turns the step, 1 step per detent, read once
+per frame. Lines: `level <n> edges <n>` at each change of the step, and `edges <n>` at the end of the 5 s volume line.
 """
 
 import math
@@ -78,6 +82,7 @@ IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 2048 gi
 VOICE = "tone"  # "silent", "Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle" or "FireSound" (P747, P751, P753)
 VOLUME = ""  # "MasterVolume" or "ViperMasterVolume": the master volume's class; "": the mix as it is (P757)
 LEVEL = None  # the volume's start step, 0 to 16; None: volume.DEFAULT_STEP
+KNOB = 0  # 1: the rotary encoder turns the volume's step (P757)
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -342,6 +347,8 @@ class TimedCrackle:
 class TimedVolume:
     """A master volume with the probe's clock (P757): apply times itself. --- MVP (P757) ---"""
 
+    knob = None  # the probe's VolumeKnob, with KNOB
+
     def __init__(self, volume):
         self.volume, self.apply_max = volume, 0
 
@@ -353,7 +360,9 @@ class TimedVolume:
     def report(self):
         """The 5 s line, then a new window. An apply between a read and its reset here can lose one apply_max."""
         apply_max, self.apply_max = self.apply_max, 0
-        print("volume level %d gain %d apply_max %d" % (self.volume.step, self.volume.gain, apply_max))
+        print("volume level %d gain %d apply_max %d%s" % (
+            self.volume.step, self.volume.gain, apply_max,
+            " edges %d" % self.knob.encoder.edges() if self.knob else ""))
 
 
 class Probe:
@@ -370,6 +379,11 @@ class Probe:
                 import volume_viper as home
                 print("scale match %d" % home.scale_match())
             self.volume = TimedVolume(getattr(home, VOLUME)(volume.DEFAULT_STEP if LEVEL is None else LEVEL))
+            if KNOB:
+                import encoder
+                import pins
+                self.volume.knob = volume.VolumeKnob(
+                    encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), self.volume.volume)
         self.first_pop_shown = False
         if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle", "FireSound"):  # P747, P751, P753
             import crackle
@@ -423,6 +437,9 @@ class Probe:
             print("stall %d pushes %d" % (time.ticks_diff(time.ticks_us(), r.last) // 1000, self.pushes))
         if m:
             m.read()
+        knob = self.volume and self.volume.knob
+        if knob and knob.poll(now):  # P757
+            print("level %d edges %d" % (knob.volume.step, knob.encoder.edges()))
         if not self.first_pop_shown and getattr(self.mixer, "first", None) is not None:
             self.first_pop_shown = True
             print("first pop %d" % (time.ticks_diff(self.mixer.first, self.opened_us) // 1000))

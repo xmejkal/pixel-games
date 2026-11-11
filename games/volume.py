@@ -5,13 +5,15 @@ A Refill of sound.py calls volume.apply(block) after the mixer's render. The vol
 silent, step STEPS is the mix as it is, and each step between is DB_PER_STEP dB. A change of step ramps across one
 block (16 ms), so it does not click. MasterVolume is the naive path, plain MicroPython bytecode, which stays working
 (D26). A faster class keeps apply(buf) and overrides scale: ViperMasterVolume of volume_viper.py.
+VolumeKnob turns the step with the rotary encoder (encoder.py), 1 step per detent.
 
-DB_PER_STEP and DEFAULT_STEP are choices for the PO's ear, not measured facts.
+DB_PER_STEP, DEFAULT_STEP and LOUDER are choices for the PO's ear and hand, not measured facts.
 """
 
 STEPS = 16
 DB_PER_STEP = 3
 DEFAULT_STEP = 8
+LOUDER = 1  # the sign of the encoder's louder direction
 FULL = 32768  # a gain is Q15: FULL is the mix as it is
 RAMP_BITS = 14  # the ramp's fraction bits: FULL << RAMP_BITS is 2^29
 GAINS = (0,) + tuple(int(FULL * 10 ** (-DB_PER_STEP * (STEPS - step) / 20) + 0.5) for step in range(1, STEPS + 1))
@@ -50,3 +52,18 @@ class MasterVolume:
         for i in range(n):
             acc += inc
             buf[i] = (buf[i] * (acc >> RAMP_BITS)) >> 15
+
+
+class VolumeKnob:
+    """The encoder's detents turn the volume's step, 1 step per detent. poll(now_ms) is the game loop's, once per
+    frame: it is True when the step changed. A turn past an end is dropped, so the first detent back counts."""
+
+    def __init__(self, encoder, volume, louder=LOUDER):
+        self.encoder, self.volume, self.louder = encoder, volume, louder
+
+    def poll(self, now_ms):
+        step = self.volume.step
+        turned = self.encoder.take_detents(now_ms)
+        if turned:
+            self.volume.set(step + self.louder * turned)
+        return self.volume.step != step

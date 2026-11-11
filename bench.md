@@ -1034,3 +1034,16 @@ The tone through the microphone (`MIC = 1`, `FrameRefill` 4096 B), `tone_mean` a
   The room moved between 202 and 1036. The numbers fall with the step and meet the room at about step 13.
   They cannot tell step 12 from step 0, and they cannot tell 3 dB a step from another slope.
 - Nobody listened to these runs. The PO's ear is the test of slice 3.
+
+### Slice 3: the knob
+
+`VolumeKnob` reads `Encoder.take_detents()` once per frame and turns the step, 1 step per detent. The dead band is
+2 edges, and the rest point follows the count after 500 ms with no change. Both numbers are not tuned on the bench.
+
+| entry | log | what ran | result |
+| --- | --- | --- | --- |
+| 5 | run157-p757-fire-knob-rest.log | Fire with `FireSound`, `ViperMasterVolume` at step 8, `KNOB = 1`, 30 s, hands off | `edges 0` and step 8 in all five lines, no `level` line, fps 24, 24, 23, 23, 23, late 0, step 7.4 to 7.7 ms, apply_max 270 to 308 us |
+
+- Entry 5 is the pulse counter beside a game's load at rest: it counted no edge in 30 s.
+- Not done yet: the PO's turn of the knob in Fire and in BurningBodies (no click, 16 detents from silent to full,
+  the level holds at rest, which way is louder).

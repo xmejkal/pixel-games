@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join(HERE, "stubs"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
 
 import volume_viper  # noqa: E402
-from volume import DB_PER_STEP, DEFAULT_STEP, FULL, GAINS, STEPS, MasterVolume  # noqa: E402
+from volume import DB_PER_STEP, DEFAULT_STEP, FULL, GAINS, STEPS, MasterVolume, VolumeKnob  # noqa: E402
 from volume_viper import CASES, CORNERS, ViperMasterVolume  # noqa: E402
 
 
@@ -132,6 +132,40 @@ class MasterVolumeTest(unittest.TestCase):
         volume.apply(samples(*[1] * 8))  # the fade in
         volume.apply(samples(*[1] * 8))
         self.assertEqual(calls, [(0, FULL)])
+
+
+class FakeEncoder:
+    """take_detents gives the next of `turns`, then 0."""
+
+    def __init__(self, *turns):
+        self.turns = list(turns)
+
+    def take_detents(self, now_ms):
+        return self.turns.pop(0) if self.turns else 0
+
+
+class VolumeKnobTest(unittest.TestCase):
+    def test_each_detent_is_one_step_and_poll_says_when_the_step_changed(self):
+        volume = MasterVolume(8)
+        knob = VolumeKnob(FakeEncoder(1, 0, -3, 2), volume)
+        seen = [(knob.poll(40 * k), volume.step) for k in range(5)]
+        self.assertEqual(seen, [(True, 9), (False, 9), (True, 6), (True, 8), (False, 8)])
+
+    def test_a_turn_past_an_end_is_dropped_and_the_first_detent_back_counts(self):
+        volume = MasterVolume(15)
+        knob = VolumeKnob(FakeEncoder(5, -1, -20, 1), volume)
+        seen = [(knob.poll(40 * k), volume.step) for k in range(4)]
+        self.assertEqual(seen, [(True, STEPS), (True, STEPS - 1), (True, 0), (True, 1)])
+
+    def test_a_turn_at_an_end_changes_nothing(self):
+        volume = MasterVolume(STEPS)
+        self.assertFalse(VolumeKnob(FakeEncoder(2), volume).poll(0))
+        self.assertEqual(volume.step, STEPS)
+
+    def test_louder_flips_the_direction(self):
+        volume = MasterVolume(8)
+        VolumeKnob(FakeEncoder(2), volume, louder=-1).poll(0)
+        self.assertEqual(volume.step, 6)
 
 
 class ViperMasterVolumeTest(unittest.TestCase):
