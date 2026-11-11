@@ -19,6 +19,7 @@ if not hasattr(time, "sleep_ms"):
 
 import sound  # noqa: E402
 from sound import REFILL_SAMPLES, CallbackRefill, FrameRefill, Mixer  # noqa: E402
+from volume import GAINS, STEPS, MasterVolume  # noqa: E402
 
 
 def samples(*values):
@@ -131,6 +132,25 @@ class RefillTest(unittest.TestCase):
         i2s.handler(i2s)  # the task's last schedule, after deinit
         self.assertEqual((len(i2s.out), sd.level, i2s.deinited), (3 * REFILL_SAMPLES, 0, True))
 
+    def test_a_refill_with_a_volume_writes_the_scaled_mix(self):  # --- MVP (P757) ---
+        for refill_class in (FrameRefill, CallbackRefill):
+            mixer, i2s = Mixer(), FakeI2S(room=2 * REFILL_SAMPLES)
+            mixer.play(samples(*[16384] * (2 * REFILL_SAMPLES)))  # a sample of 16384 reads the gain: out = gain >> 1
+            refill = refill_class(mixer, i2s, FakePin(), 4 * REFILL_SAMPLES, MasterVolume(STEPS - 2))
+            refill.write()
+            refill.write()  # the callback's second block; the frame refill wrote both in its first write
+            first, second = i2s.out[:REFILL_SAMPLES], i2s.out[REFILL_SAMPLES:2 * REFILL_SAMPLES]
+            self.assertEqual(first, sorted(first), refill_class.__name__)  # the fade in
+            self.assertLess(first[0], 100, refill_class.__name__)
+            self.assertEqual(set(second), {GAINS[STEPS - 2] >> 1}, refill_class.__name__)
+
+    def test_a_refill_with_no_volume_writes_the_mix_as_it_is(self):  # P757
+        for refill_class in (FrameRefill, CallbackRefill):
+            mixer, i2s = Mixer(), FakeI2S(room=REFILL_SAMPLES)
+            mixer.play(samples(*range(1, REFILL_SAMPLES + 1)))
+            refill_class(mixer, i2s, FakePin(), 4 * REFILL_SAMPLES).write()
+            self.assertEqual(i2s.out[:REFILL_SAMPLES], list(range(1, REFILL_SAMPLES + 1)), refill_class.__name__)
+
     def test_the_refill_that_takes_a_play_keeps_its_gap(self):
         mixer, i2s = Mixer(), FakeI2S()
         refill = CallbackRefill(mixer, i2s, FakePin(), 4 * REFILL_SAMPLES)
@@ -151,6 +171,18 @@ class RefillTest(unittest.TestCase):
         self.assertTrue(refill.stalled(64_000))
         i2s.handler(i2s)
         self.assertEqual((refill.late, refill.between_max >= 200_000), (1, True))
+
+    def test_a_render_that_fails_part_way_still_gets_the_volume(self):  # P757
+        class HalfMixer(Mixer):
+            def render(self, buf):
+                buf[0] = 30000
+                raise ValueError
+
+        i2s = FakeI2S()
+        refill = CallbackRefill(HalfMixer(), i2s, FakePin(), 4 * REFILL_SAMPLES, MasterVolume(0))
+        with self.assertRaises(ValueError):
+            refill.write()
+        self.assertEqual(i2s.out[0], 0)  # step 0 is silent, also for the block of a failed render
 
     def test_an_error_in_render_still_queues_a_block(self):
         mixer, i2s = Mixer(), FakeI2S()

@@ -980,3 +980,96 @@ the raw edge count for 180 s. The PO turned the knob by hand and counted the cli
 - No frame loop ran beside the probe. The count under a game's load is P757's bench.
 - Not measured: the module's own pull-ups (an ohmmeter from VCC to GA and to GB, power off, with the GA and GB wires
   out of the board). The record keeps that fact unverified.
+
+## P757 (#1040), 2026-11-11: the master volume
+
+`MasterVolume` (`games/volume.py`) scales each block of 256 samples by a Q15 gain, just before the I2S. It has 17
+steps of 3 dB, and step 0 is silent. `ViperMasterVolume` (`games/volume_viper.py`) is the same scale as viper code.
+`probe733_games.py` runs them with `VOLUME` and `LEVEL`. Nobody flashed the board for this card, and these runs did
+not read its image. `crackle_c.mpy` is 90d7503d74fe (engine 1c15d73). Logs (git-ignored, kept on the Mac): `run151`
+to `run161`.
+
+### Slices 1 and 2: the gain and its cost
+
+The scale gives the same samples on the Mac and on the board, as bytecode and as viper code.
+
+| entry | log | what ran | result |
+| --- | --- | --- | --- |
+| 1 | run152-p757-scale-mac.log, run152-p757-scale-board.log | the naive scale on 10 named cases of a scratch script (not the 8 `CASES` of `volume_viper`), the same script on both | the same `GAINS` table and the same 10 sums |
+| 2 | run152-p757-scale-board.log | the naive scale alone, 20 blocks each | a steady gain 1220 us a block (median), a ramp 1644 us |
+| 3 | run154-p757-emitters.log | the steady loop as bytecode and under `@micropython.native` | 1204 us and 681 us |
+| 4 | run155-p757-viper-board.log | `volume_viper.scale_match()`, then the viper scale alone | `scale match 1`, and 116 us a block, steady and ramp |
+
+Fire with `FireSound`, `CallbackRefill` 2048 B, 30 s each (`tools/crackle.sh 30 FireSound`), from five 5 s lines:
+
+| log | volume | fps | late | step ms | apply_max us | render_max us |
+| --- | --- | --- | --- | --- | --- | --- |
+| run153a-p757-fire-off.log | none | 24, 24, 24, 24, 24 | 0 | 7.3 to 7.5 | | 593 to 664 |
+| run153b-p757-fire-l8.log | `MasterVolume`, step 8 | 24, 24, 23, 23, 24 | 0 | 7.6 to 8.1 | 1366 to 1909 | 604 to 685 |
+| run156-p757-fire-viper-l8.log | `ViperMasterVolume`, step 8 | 24, 24, 24, 24, 24 | 0 | 7.4 to 7.6 | 249 to 334 | 615 to 700 |
+
+The tone through the microphone (`MIC = 1`, `FrameRefill` 4096 B), `tone_mean` and `floor` of each run:
+
+| log | volume | tone_mean | floor |
+| --- | --- | --- | --- |
+| run151b-p757-tone-off.log | none | 616 | 207 |
+| run151a, run151c, run151d-p757-tone-l16.log | step 16 | 616, 855, 561 | 1036, 634, 209 |
+| run151d-p757-tone-l15.log | step 15 | 337 | 204 |
+| run151d-p757-tone-l14.log | step 14 | 245 | 206 |
+| run151d-p757-tone-l13.log | step 13 | 217 | 203 |
+| run151d-p757-tone-l12.log | step 12 | 218 | 217 |
+| run151d-p757-tone-l8.log | step 8 | 200 | 203 |
+| run151d-p757-tone-l1.log | step 1 | 202 | 204 |
+| run151d-p757-tone-l0.log | step 0 | 197 | 202 |
+
+- The naive scale costs about 1.2 ms of each 16 ms block as bytecode, twice the `FireSound` render itself. Fire lost
+  one frame per second in two of five lines. The viper scale costs 116 us alone and at most 334 us in the game, with
+  the probe's timer around it. The naive class stays: it is the path that always works (D26).
+- `fast.native` does nothing on the board (entry 3 and `print(fast.native)`: `<function native>`, the fallback of
+  `games/fast.py`). The `micropython` module has no `native` name to import: the compiler knows only the written
+  decorator `@micropython.native`. So the `@native` code of `gfx.py`, `motion.py` and `render.py` runs as bytecode.
+  `volume.py` does not use it. The fix is not in this card.
+- The microphone does not prove the levels. Every tone run ended with `mic slot empty`, also the run with no volume:
+  the tone read 561 to 855, under 3 times the room in each run, where P733 read 901 to 976. The cause is not measured.
+  The room moved between 202 and 1036. The numbers fall with the step and meet the room at about step 13.
+  They cannot tell step 12 from step 0, and they cannot tell 3 dB a step from another slope.
+- Nobody listened to these runs. The PO's ear is the test of slice 3.
+
+### Slice 3: the knob
+
+`VolumeKnob` reads `Encoder.take_detents()` once per frame and turns the step, 1 step per detent. The dead band is
+2 edges, and the rest point follows the count after 500 ms with no change, at most 1 edge from a whole detent. The
+three numbers are not tuned on the bench.
+
+| entry | log | what ran | result |
+| --- | --- | --- | --- |
+| 5 | run157-p757-fire-knob-rest.log | Fire with `FireSound`, `ViperMasterVolume` at step 8, `KNOB = 1`, 30 s, hands off | `edges 0` and step 8 in all five lines, no `level` line, fps 24, 24, 23, 23, 23, late 0, step 7.4 to 7.7 ms, apply_max 270 to 308 us |
+
+| 10 | run161-p757-fire-knob-review.log | the same as entry 5, after the review's changes (the bounded rest point, the `finally` in `render_block`) | `scale match 1`, `edges 0` and step 8 in all five lines, no `level` line, fps 24, 24, 24, 23, 24, late 0, step 7.4 to 7.6 ms, apply_max 247 to 387 us |
+
+- Entry 5 is the pulse counter beside a game's load at rest: it counted no edge in 30 s. Entry 10 is the same.
+- Not done yet: the PO's turn of the knob in Fire and in BurningBodies (no click, 16 detents from silent to full,
+  the level holds at rest, which way is louder).
+
+### Slice 4: the save
+
+`VolumeStore` keeps the step in `volume.txt` on the board (littlefs2, 3584 blocks of 4096 B, 2231 free). `VolumeKnob`
+saves the step 3 s after its last change. The stress run saves each second, whatever the knob does
+(`SAVE=1 SAVE_EVERY_MS=1000`). It ran as two runs of 30 s, not one of 60 s, because the probe leaves Fire after 30 s.
+
+| entry | log | what ran | result |
+| --- | --- | --- | --- |
+| 6 | run158a-p757-fire-save-stress.log | Fire with `FireSound`, `ViperMasterVolume`, `KNOB = 1`, a save each second, 30 s, hands off | `stored level None`, 24 saves, save_max 14 to 19 ms, save_errors 0, late 0, fps 24, 24, 24, 23, 23 |
+| 7 | run158b-p757-fire-save-stress.log | the same again | `stored level 8`, 22 saves, save_errors 0. One save took 2600 ms: in its 5 s line sent 155 of 313, between_max 2601 ms, late 1, short 40464 samples, fps 11, worst frame 2622 ms. The other lines: save_max 13 to 19 ms, fps 24, 23, 23, 24 |
+| 8 | run159-p757-save-times.log | 200 saves of `volume.txt` in a loop, no sound, no game | saves 14, 51, 88, 125, 162 and 199 took 2407 to 2417 ms each: each 37th save. The other 194 took 5.2 ms each (mean) |
+| 9 | run160-p757-nvs-times.log | 200 saves into the board's NVS (`esp32.NVS`: `set_i32`, `commit`), no sound, no game | 0.8 ms each (mean), the worst 10.6 ms, five saves over 5 ms (each 34th or 35th). The read gave the last value. The probe's key is erased again |
+
+- The save into a file breaks the sound. Each 37th save stops the game loop for 2.4 s. The sound's ring holds 64 ms,
+  so the speaker is silent for 2.5 s and the picture stands still. The other saves (13 to 19 ms beside the game)
+  made no `late` count.
+- The cause of the 2.4 s is not measured. The period of 37 saves is a fact of run159, on this board's file system
+  as it is filled now.
+- By the plan, the save stays behind `SAVE` (default 0), and the fix is a later card. Entry 9 is one candidate:
+  a store in the NVS. Its worst save is under one block of 16 ms, but it is not measured beside the sound.
+- The step survives a restart of the probe: entry 7 read the 8 that entry 6 saved. Not done yet: the knob's own save
+  on the board (turn, wait 3 s, reset the board, the same level). Nobody turned the knob in these runs.

@@ -59,10 +59,10 @@ class Refill:
     close() stops them in PHYS-13's order. A refill later than the ring minus one block can find the ring empty: that
     is a `late` count, and the probe's `lag_max` is between_max minus one block. play_between is the gap before the
     refill that took the last play. `written` counts samples handed to the I2S, in CallbackRefill up to one block
-    before they reach the DMA ring."""
+    before they reach the DMA ring. `volume` (P757) is a MasterVolume of volume.py, or None for the mix as it is."""
 
-    def __init__(self, mixer, i2s, sd, ring_samples):
-        self.mixer, self.i2s, self.sd = mixer, i2s, sd
+    def __init__(self, mixer, i2s, sd, ring_samples, volume=None):
+        self.mixer, self.i2s, self.sd, self.volume = mixer, i2s, sd, volume
         self.block = array("h", (0 for _ in range(REFILL_SAMPLES)))
         self.late_us = (ring_samples - REFILL_SAMPLES) * 1000 // (RATE // 1000)
         self.written = self.sent_count = self.late = self.between = self.play_between = self.last = 0
@@ -79,6 +79,14 @@ class Refill:
     def start(self):
         """The driver's first write."""
         raise NotImplementedError
+
+    def render_block(self):
+        """The mixer's next block, then the master volume: the last gain before the I2S (P757)."""
+        try:
+            self.mixer.render(self.block)
+        finally:  # a render that failed part way still gets the volume: no block is louder than the step
+            if self.volume is not None:
+                self.volume.apply(self.block)
 
     def stamp(self):
         now = time.ticks_us()
@@ -107,8 +115,8 @@ class FrameRefill(Refill):
     A write renders at most one ring of blocks, so a mixer slower than real time slows the game but never locks it
     (P747: the Python Crackle took 21 ms a block, and Fire never finished a frame)."""
 
-    def __init__(self, mixer, i2s, sd, ring_samples):
-        super().__init__(mixer, i2s, sd, ring_samples)
+    def __init__(self, mixer, i2s, sd, ring_samples, volume=None):
+        super().__init__(mixer, i2s, sd, ring_samples, volume)
         self.ring_blocks = max(1, ring_samples // REFILL_SAMPLES)  # P747
         self.rest = 0  # samples at the end of the block not yet written
         self.poll = None
@@ -129,7 +137,7 @@ class FrameRefill(Refill):
     def write(self):
         for _ in range(self.ring_blocks):
             if not self.rest:
-                self.mixer.render(self.block)
+                self.render_block()
                 self.rest = REFILL_SAMPLES
             n = (self.i2s.write(memoryview(self.block)[REFILL_SAMPLES - self.rest:]) or 0) // 2
             self.written += n
@@ -143,8 +151,8 @@ class CallbackRefill(Refill):
     makes the task's writes stop waiting (ports/esp32/machine_i2s.c:239). close() never calls irq(None): that deletes
     the task while it holds the write lock, and deinit then waits forever."""
 
-    def __init__(self, mixer, i2s, sd, ring_samples):
-        super().__init__(mixer, i2s, sd, ring_samples)
+    def __init__(self, mixer, i2s, sd, ring_samples, volume=None):
+        super().__init__(mixer, i2s, sd, ring_samples, volume)
         self.closed = False
 
     def start(self):
@@ -160,7 +168,7 @@ class CallbackRefill(Refill):
 
     def write(self):
         try:
-            self.mixer.render(self.block)  # the task finished with the block before it scheduled sent
+            self.render_block()  # the task finished with the block before it scheduled sent
         finally:  # an error in render still queues a block, so the chain goes on
             self.i2s.write(self.block)
             self.written += REFILL_SAMPLES
@@ -169,5 +177,5 @@ class CallbackRefill(Refill):
         self.closed = True
         super().close()
 # --- MVP ---
-# --- Later, not MVP: a row in bench.md P748, not code: more than one voice summed, volume, a C mixer (P747), a C task
+# --- Later, not MVP: a row in bench.md P748, not code: more than one voice summed, a C mixer (P747), a C task
 # on the second core (D27) ---

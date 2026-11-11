@@ -1,15 +1,21 @@
-"""games/encoder.py on the Mac (P758): detents from a fake pulse counter, and the pin map's names. No board.
-Run from the repository root: python3 -m unittest discover tests. --- MVP (P758) ---"""
+"""games/encoder.py on the Mac (P758, P757): detents from a fake pulse counter, and the pin map's names. No board.
+Run from the repository root: python3 -m unittest discover tests. --- MVP (P758, P757) ---"""
 
 import os
 import sys
+import time
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+if not hasattr(time, "ticks_diff"):  # the same three as tests/test_sound.py, which looks for ticks_diff too
+    time.ticks_diff = lambda a, b: a - b
+    time.ticks_us = lambda: int(time.perf_counter() * 1e6)
+    time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import pins  # noqa: E402
-from encoder import Encoder  # noqa: E402
+from encoder import REST_MS, Encoder  # noqa: E402
 
 
 class FakeCounter:
@@ -49,6 +55,86 @@ class EncoderTest(unittest.TestCase):
 
     def test_edges_are_the_raw_count(self):
         self.assertEqual(Encoder(FakeCounter(-3), 4).edges(), -3)
+
+
+class TakeDetentsTest(unittest.TestCase):  # --- MVP (P757) ---
+    def knob_at(self, edges):
+        """A knob that rests at `edges`, after its first take."""
+        self.counter = FakeCounter(edges)
+        knob = Encoder(self.counter, 4)
+        self.assertEqual(knob.take_detents(0), 0)
+        return knob
+
+    def take(self, knob, edges, now_ms):
+        self.counter.edges = edges
+        return knob.take_detents(now_ms)
+
+    def test_a_wobble_at_rest_is_no_turn(self):
+        for rest in (9, 85, 5):  # run150's rest points, each 1 above a multiple of 4
+            knob = self.knob_at(rest)
+            for t, off in enumerate((1, 2, 0, -1, -2, 0, 1, -1)):
+                self.assertEqual(self.take(knob, rest + off, 10 * t), 0, (rest, off))
+
+    def test_each_click_of_4_edges_is_1_detent_both_ways(self):
+        for rest in (9, 85, 5):
+            knob = self.knob_at(rest)
+            self.assertEqual([self.take(knob, rest + 4 * k, 40 * k) for k in (1, 2, 3)], [1, 1, 1], rest)
+            self.assertEqual([self.take(knob, rest + 4 * k, 200 + 40 * k) for k in (2, 1, 0, -1)], [-1] * 4, rest)
+
+    def test_a_fast_spin_between_two_takes_counts_every_detent(self):
+        knob = self.knob_at(9)
+        self.assertEqual(self.take(knob, 49, 40), 10)
+        self.assertEqual(self.take(knob, 9, 80), -10)
+
+    def test_3_to_6_edges_are_1_detent(self):
+        for edges, detents in ((2, 0), (3, 1), (4, 1), (6, 1), (7, 2), (-2, 0), (-3, -1), (-6, -1), (-7, -2)):
+            self.assertEqual(self.take(self.knob_at(0), edges, 40), detents, edges)
+
+    def test_the_rest_point_follows_a_knob_that_rests_1_edge_off(self):
+        knob = self.knob_at(0)
+        self.assertEqual(self.take(knob, 1, 40), 0)
+        self.assertEqual(self.take(knob, 1, 40 + REST_MS), 0)  # at rest: the rest point is now 1
+        self.assertEqual([self.take(knob, edges, 600 + 40 * k) for k, edges in enumerate((3, -1, 1))], [0, 0, 0])
+        self.assertEqual(self.take(knob, -2, 800), -1)  # a click back that ends 1 edge short still counts
+        self.assertEqual(self.take(knob, -6, 840), -1)
+
+    def test_a_turn_of_a_detent_and_a_half_keeps_its_half(self):
+        knob = self.knob_at(0)
+        self.assertEqual(self.take(knob, 6, 40), 1)
+        self.assertEqual(self.take(knob, 8, 80), 1)  # a rest point that jumped to 6 would see 2 edges and no detent
+
+    def test_a_slow_turn_loses_no_detent(self):
+        for ms_per_edge in (400, 600, 2500):  # under REST_MS, over it (the refuter's case), and far over it
+            knob, turned, now_ms = self.knob_at(5), 0, 0
+            for k in range(1, 9):
+                for _ in range(ms_per_edge // 40):  # a poll each 40 ms
+                    now_ms += 40
+                    turned += self.take(knob, 5 + k, now_ms)
+            self.assertEqual(turned, 2, ms_per_edge)
+            self.assertEqual(self.take(knob, 5 + 8, now_ms + 1000), 0)
+            self.assertEqual(self.take(knob, 5 + 4, now_ms + 1040), -1, ms_per_edge)  # no click is lost on the way back
+
+    def test_a_hand_that_stops_in_the_middle_of_a_click_loses_no_edge(self):
+        knob = self.knob_at(0)
+        self.assertEqual(self.take(knob, 2, 40), 0)
+        self.assertEqual(self.take(knob, 2, 40 + 2 * REST_MS), 0)  # 2 edges are too far for the rest point to follow
+        self.assertEqual(self.take(knob, 4, 1100), 1)
+
+    def test_the_rest_follows_across_the_wrap_of_ticks_ms(self):
+        period = 1 << 30
+        with mock.patch.object(time, "ticks_diff", lambda a, b: (a - b + period // 2) % period - period // 2):
+            self.counter = FakeCounter(0)
+            knob = Encoder(self.counter, 4)
+            self.assertEqual(knob.take_detents(period - 100), 0)
+            self.assertEqual(self.take(knob, 1, period - 60), 0)
+            self.assertEqual(self.take(knob, 1, REST_MS - 60), 0)  # REST_MS later: the rest point is now 1
+            self.assertEqual(self.take(knob, 3, REST_MS), 0)
+
+    def test_the_rest_point_does_not_follow_a_knob_that_still_turns(self):
+        knob = self.knob_at(0)
+        self.assertEqual(self.take(knob, 1, 450), 0)
+        self.assertEqual(self.take(knob, 2, 900), 0)  # 2 edges in 900 ms, each change under REST_MS ago
+        self.assertEqual(self.take(knob, 3, 1350), 1)
 
 
 class PinMapTest(unittest.TestCase):
