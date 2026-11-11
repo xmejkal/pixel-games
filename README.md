@@ -102,7 +102,8 @@ Runs now:
   + one way and - the other. The bench measured 4 edges per click (bench.md, P758). The knob can rest 1 edge from a
   click's border, so a use that must not flicker calls `take_detents(now_ms)`: it has a dead band of 2 edges, and
   its rest point follows the knob. No game uses the knob yet: only the probe does. The encoder sits on the pads RX
-  and TX (`docs/wiring.html`), which the image gives to its serial console at each reset.
+  and TX (`docs/wiring.html`), which the image gives to its serial console at each reset. So `app.py`, `encoder.py`
+  and `pins.py` go on the board together.
   `encoder.take_pads(pins.ENC_A, pins.ENC_B)` takes them, and `app.run` calls it first.
 - The master volume (P757, `games/volume.py`): `MasterVolume` is one gain on the whole mix, the last step before
   the I2S. It has 16 steps of 3 dB, and step 0 is silent. A change of step ramps across one block, so it does not
@@ -116,9 +117,11 @@ Runs now:
   the count stands still. That the first causes the second is likely, not proven (bench.md, P757, entries 11 to
   17). A device at 0x36, likely the board's power chip, also answers on the pads SDA and SCL (entries 18 and 19).
   So the encoder moved to the pads RX (GA, GPIO44) and TX (GB, GPIO43) on 2026-11-11. With no wire, the pulse
-  counter counts there with the I2S open, and the games take both pads from the console at their start (entries 20
-  to 24). Nobody turned the knob on the new pads yet. Until the games start, about 1 s after a reset, a turn of the
-  knob can type into the console. Set the step with `LEVEL`:
+  counter counts edges that the chip's own pulls make there (entry 20). The games take both pads from the
+  console at their start (entry 24). No run shows yet that a real contact counts there with the sound on: nobody
+  turned the knob on the new pads. From a reset until a game starts, a turn of the knob can type into the console.
+  That time is not measured. If the start stops before `take_pads`, the console keeps both pads. Set the step with
+  `LEVEL`:
   `VOLUME=ViperMasterVolume LEVEL=4 tools/crackle.sh 30 FireSound`. `KNOB=1` adds the knob, and `SAVE=1` the save.
 - The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a
   change, run `python3 ~/Development/spark/scripts/check_spine.py requirements.json --keep build --json` and copy

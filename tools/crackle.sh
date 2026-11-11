@@ -64,7 +64,8 @@ if [ -n "$VOLUME" ]; then
     mpremote cp "$ROOT/games/volume.py" :volume.py + cp "$ROOT/games/volume_viper.py" :volume_viper.py
 fi
 if [ "$KNOB" = 1 ]; then
-    mpremote cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py
+    mpremote cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py \
+        + cp "$ROOT/games/app.py" :app.py  # app.run takes the encoder's pads, so the three stay in step (P757)
 fi
 if [ "$GAME" = BurningBodies ]; then
     mpremote cp "$ROOT/games/burning.py" :burning.py + cp "$ROOT/games/plugins.py" :plugins.py

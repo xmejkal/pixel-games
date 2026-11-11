@@ -960,6 +960,9 @@ spark's `requirements.json` chose both pins. `games/encoder.py` reads the knob w
 pulse counter, with the internal pull-ups and the 12 us glitch filter. `probe758.py` prints one line per change of
 the raw edge count for 180 s. The PO turned the knob by hand and counted the clicks.
 
+This section describes the place of 2026-11-10. On 2026-11-11 the encoder moved to the pads RX and TX, so
+`pins.ENC_A` is 44 and `pins.ENC_B` is 43 now (P757, entries 20 to 24).
+
 | entry | log | what the PO did | result |
 | --- | --- | --- | --- |
 | 1 | run150-p758-encoder.log, 0 to 16 s | a free try, both ways | the count goes up to 9 and down to -16, so the sign follows the direction |
@@ -1108,11 +1111,26 @@ Entries 20 to 24 are scratch scripts, not in the repository.
 
 - Measured, with no wire: the pulse counter counts on RX and TX, with the I2S open too (entry 20).
   `Pin(n, Pin.IN, Pin.PULL_UP)` alone cuts the console's input from the RX pad (entry 23), so `take_pads` writes no
-  register. The games take both pads at their start (entry 24).
+  register. After a game started, both pads are plain inputs (entry 24).
+- What these runs do not show. The edges of entry 20 came from the chip's own pulls, which swing the full range,
+  and its I2S was mono. So no run shows that a real contact counts on these pads with the sound on. Entry 24 is one
+  read after mpremote stopped the game: that `take_pads` is the first statement of `app.run` is read from
+  `games/app.py`. Entry 23 rests on the image's route: the console's input comes straight from the IO_MUX
+  (`in_sel` 0x3c as found). A `machine.UART(0, ...)` call can route it through the GPIO matrix, and then `Pin()`
+  does not cut it. No game makes a UART. Stage 2 of entry 23 did not read the pad's own level under the pull-down.
+- The register names, the restart through `machine.deepsleep(300)` and the wait of 6 s in entries 21, 23 and 24
+  come from the scripts. The logs do not print them.
 - Read from the source, not measured: until `take_pads`, the console holds TX high and each `print` toggles it. A
   byte on RX goes to the console, and the byte 0x03 stops the program (MicroPython v1.29, `ports/esp32/uart.c`).
 - A limit that stays: from the reset until `app.run` starts, the console owns both pads. A turn of the knob in that
-  time can type into the console. The full fix is an image with no serial console on these pads.
+  time can type into the console. The time is not measured, and it has no fixed end. The console keeps both pads
+  when the start stops before `take_pads`: a Ctrl-C from mpremote, an import that fails, a byte 0x03 on RX, or a
+  probe that does not call it. The full fix is an image with no serial console on these pads.
+- The meter rule (under 1 kΩ from GB to GND means stop) does not depend on that time. The limit is a choice, not
+  a datasheet fact: at 1 kΩ, a pad at 3.3 V drives 3.3 mA. Not checked: parts of the board's own on the RX and TX
+  pads. Entry 20 shows that both pads follow the chip's pulls with no wire.
+- `app.py` now needs this change's `encoder.py` and `pins.py` on the board. With `KNOB=1`, `tools/crackle.sh`
+  copies all three.
 - A control starts from a known state (entries 20 and 21). `mpremote reset` did not put `in_sel` back, and a restart
   through deep sleep did (entry 23, "as found"). Three failed tries of entry 23 are kept: `run174a` (no restart
   before it), `run174b` (the USB port was not back yet) and `run174c` (after a soft restart).

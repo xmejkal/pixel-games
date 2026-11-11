@@ -85,11 +85,11 @@ ul{margin:0;padding-left:20px;display:grid;gap:4px;max-width:74ch}
 </div>
 
 <div class="card"><p class="m">Where each fact comes from:</p><ul class="m">
-<li>The four wires: spark's breadboard sheet for P758 (<code>build/breadboard.md</code>, steps 5, 7, 23, 28 and 29), built from <code>requirements.json</code>. The PO chose RX and TX on 2026-11-11, and <code>requirements.json</code> names them. On this board something outside the chip holds SDA and SCL high, and a device answers on them at address 0x36 (<code>bench.md</code>, P757).</li>
+<li>The four wires: spark's breadboard sheet for P758 (<code>build/breadboard.md</code>, steps 5, 7, 23, 28 and 29), built from <code>requirements.json</code>. The PO chose RX and TX on 2026-11-11, and <code>requirements.json</code> names them. On this board the bare pads SDA and SCL read high under the chip's pull-down, and a device answers on them at address 0x36 (<code>bench.md</code>, P757).</li>
 <li>The pad order of both rows: spark's board record. Both rows start flush at the end away from USB-C.</li>
 <li>The encoder's pads: the part record <code>cjmcu-111-rotary-encoder</code> (GA at the end away from the tan capacitor). VCC from 3.3 V only, never 5 V.</li>
 <li>No pull-up resistors are confirmed on the encoder, so the firmware turns on the chip's own pull-ups. The meter readings in step 5 tell whether the encoder has its own.</li>
-<li>RX and TX belong to the board's serial console from each reset until the games start, which is about 1 s. In that time the console holds TX high, and a turn of the knob can type into the console. So the reading from GB to GND in step 5 comes before the wire to TX.</li>
+<li>RX and TX belong to the board's serial console from each reset until the games start. That time is not measured, and if the start stops early, the console keeps both pads. In that time the console holds TX high, and a turn of the knob can type into the console. So the reading from GB to GND in step 5 comes before the wire to TX.</li>
 </ul></div>
 </main>
 <script>
@@ -106,7 +106,7 @@ const STEPS=[
  {c:"#16608f",t:"Put the encoder in the breadboard",x:"Turn it so that GND is on the left and the tan capacitor is beside it. Put each of its four pads in its own row, in a free place left of the FireBeetle 2. If the header is loose in the bag, solder it first.",glow:["enc"],wires:[]},
  {c:"#d0202a",t:"VCC to the + rail",x:"Run a red jumper from the encoder's VCC row to the + rail. The + rail carries 3.3 V from the board's 3V3 pad.",glow:["vcc","prail"],wires:["w-vcc"]},
  {c:"#20262b",t:"GND to the - rail",x:"Run a black jumper from the encoder's GND row to the - rail.",glow:["gnd","mrail"],wires:["w-gnd"]},
- {c:"#c8500f",t:"Measure, power still off",x:"Set the meter to ohms. First measure from GB to GND. Turn the knob slowly between two clicks, and write down the lowest number. If the meter shows OL the whole time, it measured nothing. If the lowest number is under 1 kΩ, stop: do not plug GB into TX. Then measure from VCC to GA and from VCC to GB with the knob at rest, and write both down. A reading in kΩ means the encoder has its own pull-ups.",glow:["vcc","gnd","ga","gb"],wires:[]},
+ {c:"#c8500f",t:"Measure, power still off",x:"Set the meter to ohms. First measure from GB to GND. Turn the knob slowly between two clicks, and write down the lowest number. If the meter shows OL the whole time, it measured nothing. With the contact open the meter can show a large number in place of OL, and the lowest number is the one that counts. If the lowest number is under 1 kΩ, stop: do not plug GB into TX. Then measure from VCC to GA and from VCC to GB with the knob at rest, and write both down. A reading in kΩ means the encoder has its own pull-ups.",glow:["vcc","gnd","ga","gb"],wires:[]},
  {c:"#e07a10",t:"GA to RX",x:"Run an orange jumper from the encoder's GA row to the board's pad printed RX, on the 18-pin row. RX is the first pad at the end away from USB-C.",glow:["ga","rx"],wires:["w-ga"]},
  {c:"#1f9d55",t:"GB to TX",x:"Run a green jumper from the encoder's GB row to the pad printed TX, the next pad after RX toward USB-C.",glow:["gb","tx"],wires:["w-gb"]},
  {c:"#1c262e",t:"Plug in and say “wired”",x:"Plug the USB-C cable back in. Tell Claude “wired” and the three readings. Claude then runs the probe, and you turn the knob.",glow:["usb"],wires:[]}];
