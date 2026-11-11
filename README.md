@@ -140,8 +140,8 @@ Runs now:
   it. To add a sound, add it to `tools/sound_bank.py`, run the tool, and name the cue in the game's `cues`.
   `games/box_bank.SOURCES.md` gives each sound's source and license. Since PR 3 a small music loop
   plays in every game: `App.switch` starts it once, as a protected voice of the group `music`, and the tune is a
-  note list in `tools/sound_bank.py`. `docs/sound.md` says how a game gets a sound. In `Rain` the music costs
-  about 2 fps (bench.md, P768). The box
+  note list in `tools/sound_bank.py`. `docs/sound.md` says how a game gets a sound. In `Rain` the sound costs
+  about 2 fps, of which the music voice is about 1.5 (bench.md, P768, one run each). The box
   does not save the step. The sound probe passes its own knob to the box, so only one
   encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the box opens its
   own knob, and the sound does not follow it. A run with no hand went through all 14 games with the knob
