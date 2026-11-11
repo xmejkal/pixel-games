@@ -37,11 +37,15 @@ class View:
 
 
 class PaintCount(overlay.VolumeView):
-    paints = 0
+    paints = levels = 0
 
     def paint(self, cv):
         self.paints += 1
         super().paint(cv)
+
+    def paint_level(self, cv):
+        self.levels += 1
+        super().paint_level(cv)
 
 
 class Game:
@@ -161,17 +165,28 @@ class VolumeViewTest(unittest.TestCase):
         _, ops = self.lit(7)
         self.assertEqual([op[5] for op in ops if op[4] == 3], ["vol", "7"])
 
-    def test_paint_runs_only_when_the_step_changes(self):
+    def test_a_new_step_paints_only_the_cells_and_the_number_again(self):
         for cv in (gfx.Canvas(), lcd.TftCanvas(Tft())):
             vol = volume.MasterVolume(8)
             view = PaintCount(vol)
             cv.start()
             view.draw(cv)
             view.draw(cv)
-            self.assertEqual(view.paints, 1)
+            self.assertEqual((view.paints, view.levels), (1, 1))
             vol.set(9)
             view.draw(cv)
-            self.assertEqual(view.paints, 2)
+            self.assertEqual((view.paints, view.levels), (1, 2))
+
+    def test_the_level_part_lies_inside_the_picture_and_holds_the_cells_and_the_number(self):
+        x, y, w, h = overlay.RECT
+        lx, ly, lw, lh = overlay.LEVEL_RECT
+        self.assertTrue(x < lx and lx + lw < x + w and y < ly and ly + lh < y + h)
+        cv = gfx.Canvas()
+        cv.start()
+        overlay.VolumeView(volume.MasterVolume(16)).paint_level(cv)
+        self.assertEqual(cv.ops[0][:6], (lx, ly, lx + lw, ly + lh, 0, gfx.DARK))
+        for op in cv.ops:
+            self.assertTrue(lx <= op[0] and op[2] <= lx + lw and ly <= op[1] and op[3] <= ly + lh, op)
 
 
 class StOutTest(unittest.TestCase):
@@ -208,8 +223,9 @@ class TftOutTest(unittest.TestCase):
         layer.show(overlay.VolumeView(volume.MasterVolume(8)), 0)
         out.draw(Game(), [0, 0, 0, 0], layer)
         blits = [i for i, call in enumerate(tft.calls) if call[0] == "blit"]
-        self.assertEqual(len(blits), 1)
+        self.assertEqual(len(blits), 2)  # the still part, then the cells and the number over it
         self.assertEqual(tft.calls[blits[0]][3:5], (overlay.RECT[3], overlay.RECT[2]))  # the panel's w and h: turned
+        self.assertEqual(tft.calls[blits[1]][3:5], (overlay.LEVEL_RECT[3], overlay.LEVEL_RECT[2]))
         self.assertLess(tft.calls.index("fill_rect"), blits[0])  # the game's rectangle
         self.assertEqual(tft.calls[-1], "show")
         self.assertEqual(out.windows, 3)

@@ -3,7 +3,9 @@ The system overlay (P762): one small picture over the running game, for system i
 
 Overlay holds one view and hides it HOLD_MS after the last show(). A view is any object with draw(cv). VolumeView is
 the first one: the master volume's step as a bar of STEPS cells and a number. A view draws with cv.keep, as a game's
-score bar does (P599), so it is painted again only when its key changes.
+score bar does (P599), so it is painted again only when its key changes. VolumeView keeps two pictures: the still
+part, painted once, and the cells with the number, painted at each new step (2.2 ms on the board against 3.8 ms for
+the whole picture, bench.md, P762).
 
 The app owns the overlay (App.overlay). Each output draws it after the game and before the frame goes to the display.
 Nothing here erases a hidden view: each output sends the areas of the frame before again (render.Dirty, and the
@@ -19,6 +21,7 @@ from volume import STEPS
 
 HOLD_MS = 1000  # the PO: "and for like a second afterwards"
 RECT = (WIDTH // 2 - 100, HEIGHT - 44, 200, 28)  # the volume's picture: low, clear of a game's score bar at the top
+LEVEL_RECT = (RECT[0] + 40, RECT[1] + 8, 156, 12)  # inside RECT: the cells and the number, the part a new step changes
 EMPTY = c565(60, 60, 70)  # a cell above the step
 
 
@@ -48,15 +51,22 @@ class VolumeView:
         self.volume = volume
 
     def draw(self, cv):
-        cv.keep(("volume", self.volume.step), RECT, self.paint)
+        cv.keep("volume", RECT, self.paint)
+        cv.keep(("level", self.volume.step), LEVEL_RECT, self.paint_level)
 
     def paint(self, cv):
-        """Covers RECT, as keep() asks, with fill, box and text only: a kept strip of lcd.py takes no more."""
+        """The still part. Covers RECT, as keep() asks, with fill, box and text only: a kept strip of lcd.py takes no
+        more."""
         x, y, w, h = RECT
-        step = self.volume.step
         cv.fill(x, y, w, h, DARK)
         cv.box(x, y, w, h, GREY)
         cv.text("vol", x + 8, y + 10, WHITE)
+
+    def paint_level(self, cv):
+        """The part that a new step changes. Covers LEVEL_RECT."""
+        x, y, w, h = LEVEL_RECT
+        step = self.volume.step
+        cv.fill(x, y, w, h, DARK)
         for i in range(STEPS):
-            cv.fill(x + 40 + 8 * i, y + 8, 6, 12, WHITE if i < step else EMPTY)
-        cv.text(str(step), x + 176, y + 10, WHITE)
+            cv.fill(x + 8 * i, y, 6, h, WHITE if i < step else EMPTY)
+        cv.text(str(step), x + 136, y + 2, WHITE)
