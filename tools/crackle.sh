@@ -15,7 +15,8 @@
 # The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None), KNOB (default 0),
 # SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). With a VOLUME, games/volume.py and
 # games/volume_viper.py go to the board too, and with KNOB=1 games/encoder.py and games/pins.py (P757).
-# With KNOB=1 each change of the step also shows the volume on the screen for 1 s (P762): games/overlay.py goes to
+# With KNOB=1 the probe passes its knob to the game box (P764), and each change of the step shows the volume on the
+# screen for 1 s (P762). With KNOB=0 the box opens its own knob, and the sound does not follow it. games/overlay.py goes to
 # the board with app.py, lcd.py, render.py and gfx.py. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the
 # probe spins the step to an end at this period. ALPHA (default None: the pane's own value, 192, see-through) is how
 # solid the picture is over the game, and 255 is solid (P764).
