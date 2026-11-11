@@ -63,7 +63,7 @@ match <1 or 0>`: 1 when the viper scale gave the naive scale's samples on the na
 With KNOB = 1 (and a VOLUME) the rotary encoder on pins.ENC_A and pins.ENC_B turns the step, 1 step per detent, read
 once per frame. Lines: `level <n> edges <n>` at each change of the step, and `edges <n> windows_max <n>` at the end of
 the 5 s volume line: the most windows that one show() of the window sent (P762). Each change of the step also shows
-the volume on the screen for 1 s (games/overlay.py, P762).
+the volume on the screen for 1 s: the probe adds a VolumePane to the game box's overlay (games/overlay.py, P764).
 With SAVE = 1 (and a VOLUME) the step lives in volume.txt on the board. A line at the start is
 `stored level <n or None>`, the file's step, when LEVEL is None. With KNOB, the knob saves the step 3 s after its last
 change, and the 5 s volume line ends with `saves <n> save_max <ms> save_errors <n>`: the saves and the failed saves of
@@ -73,7 +73,8 @@ SAVE_EVERY_MS (with SAVE and KNOB) is the stress run: a save at this period, wha
 SPIN_EVERY_MS (with KNOB, P762) is the overlay's stress run with no hand: at this period the probe turns the step
 itself from where it is to an end, 1 step per frame, down and then up by turns. Each step paints the cells and the
 number of the volume's picture again, so this is the costly case of the overlay. The line at the end of a spin is
-`spin to <n>`. A spin does not save the step, also with SAVE. ALPHA under 255 lets the game show through the picture's still part (255: solid).
+`spin to <n>`. A spin does not save the step, also with SAVE. ALPHA is how solid the
+picture's still part is over the game: None is the pane's own value (192, see-through), 255 is solid.
 """
 
 import math
@@ -99,7 +100,7 @@ KNOB = 0  # 1: the rotary encoder turns the volume's step (P757)
 SAVE = 0  # 1: the volume's step is read from volume.txt, and the knob saves it there (P757)
 SAVE_EVERY_MS = 0  # the stress run of the save: a save at this period (P757)
 SPIN_EVERY_MS = 0  # the stress run of the overlay: a spin of the step to an end at this period (P762)
-ALPHA = 255  # how solid the volume's picture is over the game: 255 solid, 192 a see-through first pick (P762)
+ALPHA = None  # how solid the volume's picture is over the game: None the pane's own value, 255 solid (P764)
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -365,7 +366,7 @@ class TimedVolume:
     """A master volume with the probe's clock (P757): apply times itself. --- MVP (P757) ---"""
 
     knob = None  # the probe's VolumeKnob, with KNOB
-    view, windows_max = None, 0  # with KNOB (P762): the overlay's VolumeView, and the most windows of one show()
+    pane, windows_max = None, 0  # with KNOB (P764): the overlay's VolumePane, and the most windows of one show()
 
     def __init__(self, volume):
         self.volume, self.apply_max = volume, 0
@@ -430,8 +431,9 @@ class Probe:
                     encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), self.volume.volume,
                     store)
                 import overlay
-                self.volume.view = overlay.VolumeView(self.volume.volume)  # P762
-                self.volume.view.alpha = ALPHA
+                self.volume.pane = overlay.VolumePane(self.volume.volume)  # P764: first() adds it to the overlay
+                if ALPHA is not None:
+                    self.volume.pane.alpha = ALPHA
         self.first_pop_shown = False
         if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle", "FireSound"):  # P747, P751, P753
             import crackle
@@ -454,6 +456,8 @@ class Probe:
         self.next_spin, self.spin = time.ticks_add(now, SPIN_EVERY_MS), 0  # spin: the step per frame, or 0
         self.press_on_over(box)
         self.stamp_pushes(box)
+        if self.volume and self.volume.pane:
+            box.overlay.add(self.volume.pane)  # P764: the pane shows itself at each change of the step, for 1 s
         if MIC:
             self.mic = Mic()
 
@@ -491,7 +495,6 @@ class Probe:
         knob = self.volume and self.volume.knob
         if knob and knob.poll(now):  # P757
             print("level %d edges %d" % (knob.volume.step, knob.encoder.edges()))
-            box.overlay.show(self.volume.view, now)  # P762: on the screen from the next frame, for 1 s
         if knob:
             self.volume.windows_max = max(self.volume.windows_max, getattr(box.out, "windows", 0) or 0)
         if SPIN_EVERY_MS and knob:  # --- MVP (P762) --- the overlay's stress run
@@ -499,9 +502,7 @@ class Probe:
             if not self.spin and time.ticks_diff(now, self.next_spin) >= 0:
                 self.spin = -1 if step else 1
             knob.volume.set(step + self.spin)
-            if knob.volume.step != step:
-                box.overlay.show(self.volume.view, now)
-            elif self.spin:  # at an end
+            if knob.volume.step == step and self.spin:  # at an end
                 self.spin, self.next_spin = 0, time.ticks_add(now, SPIN_EVERY_MS)
                 print("spin to %d" % step)
         if SAVE_EVERY_MS and knob and knob.store and time.ticks_diff(now, self.next_save) >= 0:  # the stress run

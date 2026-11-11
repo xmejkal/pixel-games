@@ -8,7 +8,7 @@ import overlay
 import volume
 
 vol = volume.MasterVolume(16)
-view = overlay.VolumeView(vol)
+pane = overlay.VolumePane(vol)
 turned = type("T", (), {"turned": lcd.ORIENTATION == 180})()
 
 
@@ -23,5 +23,5 @@ def least(rect, paint):
     return best
 
 
-print("still part", least(overlay.RECT, view.paint))
-print("level part", least(overlay.LEVEL_RECT, view.paint_level))
+print("still part", least(overlay.RECT, pane.paint))
+print("level part", least(overlay.LEVEL_RECT, pane.paint_level))
