@@ -77,9 +77,11 @@ Runs now:
 - Bucket (P773, `games/bucket.py`), fourth: a one-button game on the rain's physics. Boxes drop one by one, straight
   down. Hold BOOT and the bucket on the rail goes right, let go and it goes left. A box in the bucket is a point. A
   missed box bounces onto the pile in its column, and a column of 3 boxes reaches the rail and ends the round. Each
-  point makes the boxes come faster (a box each 1.5 s, down to 1 s). On the Mac a player who does nothing loses in
-  14 to 45 s, a hold with no end in 14 to 31 s, and 50 fixed rhythms of hold and release lost in 61 s at the latest.
-  A bot that steers to the lowest box lasted 481 s at the least. The bodies do not touch each other, so the pile is a
+  point of the first 10 makes the boxes come faster (a box each 1.5 s, down to 1 s). On the Mac, with frames of 42
+  ms, 60 ms and random 20 to 90 ms, a player who does nothing loses in 14 to 54 s, a hold with no end in 14 to 51 s,
+  and 50 fixed rhythms of hold and release (42 and 60 ms only) lost in 61 s at the latest. A bot that steers to the lowest box lasted the
+  whole 600 s of the trial every time, and one that gets columns 0 and 31 in turn at full speed misses none (a trial
+  script that is not in the repository made these numbers; the bucket is 64 px wide and goes 360 px a second). The bodies do not touch each other, so the pile is a
   count per column, and a missed box bounces on its column's top. It plays `catch`, `miss` and `die`. The PO's hand,
   eye and ear on it are still open.
 - The rain (P593, `games/rain.py`), the scene under Bucket. Since P773 it is not in the box's list: 160 boxes fall,

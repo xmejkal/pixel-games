@@ -3,7 +3,7 @@ Bucket (P773): catch the falling boxes. A bucket rides on a rail near the bottom
 
 How to play: hold BOOT and the bucket goes right, let go and it goes left. A box that falls into the bucket is a
 point. A box you miss bounces and lands on the pile in its column. When a column of the pile reaches the rail, the
-round ends. Each point makes the boxes come faster.
+round ends. Each of the first 10 points makes the boxes come faster.
 
 The boxes fall on the rain's physics (plugins.PhysicsPlugin: engine.Bodies, or its twin in Python). The bodies do not
 touch each other, so the pile is a count of boxes per column in Python: a missed box falls and bounces on the real
@@ -20,20 +20,26 @@ from cues import Cue
 from gfx import GREY, HEIGHT, PALETTE, PLAY, WIDTH, YELLOW, Game
 from plugins import PhysicsPlugin
 
-# --- MVP (P773) --- the rules, in px, ms and ints. Mac trials through Game.step on the Python bodies (frames of 42 and
-# 60 ms, 20 seeds): an idle player lost after 14 to 45 s, one who held always after 14 to 31 s, and 50 blind rhythms
-# (hold periods 200 to 2000 ms, duty 20 to 80 %) after 61 s at the slowest. A bot that steers to the lowest box lasted
-# 481 s at the least, mostly the whole 600 s. Take care with DROP_MIN_MS: at SIZE 12 the bot broke down in a narrow band
-# of it (1100 and 1150 ms: 27 to 82 s), as a box takes about 1.2 s to fall to the rail.
+# --- MVP (P773) --- the rules, in px, ms and ints. Mac trials through Game.step on the Python bodies (frames of 42 ms,
+# 60 ms and random 20 to 90 ms, 8 seeds; the trial script is not in the repository): an idle player lost after 14 to
+# 54 s, one who held always after 14 to 51 s, and 50 blind rhythms (hold periods 200 to 2000 ms, duty 20 to 80 %) after
+# 61 s at the slowest. A bot that steers to the lowest box it can see lasted the whole 600 s at every frame pace.
+# BUCKET_W 56 failed it at 60 ms and with jitter (39 s at the least), so it is 64: the bang-bang bot overshoots by a
+# frame's travel (BUCKET_PX_S * 60 ms = 22 px), which the inside of the bucket (W - 2 * WALL_PX - SIZE, over 2) must
+# hold. BUCKET_PX_S is 360 so that a trip from one wall to the other plus two 60 ms frames fits in the gap of two
+# drops at DROP_MIN_MS (a test drops columns 0 and 31 in turn). Take care with DROP_MIN_MS: at SIZE 12 the bot broke
+# down in a narrow band of it (1100 and 1150 ms: 27 to 82 s), as a box takes about 1.2 s to fall to the rail.
 SIZE = 10  # px, a box's side
 COLS = WIDTH // SIZE  # the columns a box drops at, and the pile's
 PILE_ROWS = 3  # boxes a column holds before it reaches the rail
 RAIL_Y = HEIGHT - SIZE * PILE_ROWS  # px: the line the bucket rides on, and the top of a full column
-BUCKET_W = 50  # px
-BUCKET_PX_S = 300  # px a second, to the right while BOOT is held and to the left while it is not
+BUCKET_W = 64  # px
+WALL_PX = 4  # px: the bucket's walls; it may go this far past each screen edge, so its inside reaches the end columns
+LEFT_X, RIGHT_X = -WALL_PX, WIDTH - BUCKET_W + WALL_PX  # px: the bucket's left edge, least and most
+BUCKET_PX_S = 360  # px a second, to the right while BOOT is held and to the left while it is not
 N = 8  # boxes out at most
-GRAVITY_PX = 300  # px/s squared, a box needs about a second to the rail (the rain's is 2000)
-DROP_MS, DROP_STEP_MS, DROP_MIN_MS = 1500, 50, 1000  # a new box each DROP_MS, shorter by DROP_STEP_MS for each point
+GRAVITY_PX = 300  # px/s squared, a box needs about 1.2 s to the rail (the rain's is 2000)
+DROP_MS, DROP_STEP_MS, DROP_MIN_MS = 1500, 50, 1000  # a new box each DROP_MS, shorter by DROP_STEP_MS for each of the first (DROP_MS - DROP_MIN_MS) / DROP_STEP_MS = 10 points
 
 
 class Rules:
@@ -55,8 +61,8 @@ class Rules:
         px = self.rest // 1000
         self.rest -= px * 1000
         x = self.bucket_x + px
-        if x < 0 or x > WIDTH - BUCKET_W:
-            x = 0 if x < 0 else WIDTH - BUCKET_W
+        if x < LEFT_X or x > RIGHT_X:
+            x = LEFT_X if x < LEFT_X else RIGHT_X
             self.rest = 0
         self.bucket_x = x
 
@@ -72,8 +78,8 @@ class Rules:
         return False
 
     def caught(self, x):
-        """Whether a box at x, at the rail, is wholly inside the bucket."""
-        return self.bucket_x <= x and x + SIZE <= self.bucket_x + BUCKET_W
+        """Whether a box at x, at the rail, is wholly between the bucket's walls."""
+        return self.bucket_x + WALL_PX <= x and x + SIZE <= self.bucket_x + BUCKET_W - WALL_PX
 
     def catch(self):
         """A point; the score."""
@@ -92,7 +98,7 @@ class Rules:
 
 # --- MVP (P773) --- the game
 FREE, FALL, LAND = 0, 1, 2  # a box's phase: its body is free, the box falls to the rail, a missed one bounces and rests
-WALL_PX, WALL_H = 4, 12  # px: the bucket's walls and their height above the rail
+WALL_H = 12  # px: the walls' height above the rail
 FLOOR = 3  # px, the bucket's floor
 
 
@@ -117,6 +123,8 @@ class Bucket(Game):
         rules, plugin, phase = self.rules, self.physics_plugin, self.phase
         rules.move(self.ms, held)
         plugin.read(self.on_rest)
+        if self.state != PLAY:  # a body asleep in the air ended the round
+            return
         for i in range(N):
             if phase[i] == FALL:
                 x, y = plugin.place(i)
@@ -155,7 +163,7 @@ class Bucket(Game):
         rest_y = HEIGHT - SIZE * rules.miss(col)
         speed = int(math.sqrt(2 * GRAVITY_PX * (y + SIZE)))  # the bodies do not read their speed out: from the fall
         self.phase[i] = LAND
-        self.physics_plugin.spawn(i, x, y, 0, speed, rest_y)  # the same box, now with a plane: the pile's top
+        self.physics_plugin.spawn(i, x, min(y, rest_y), 0, speed, rest_y)  # the same box, now with a plane: the pile's top, never below it
         self.emit("miss")
         if rules.full(col):
             self.die()
@@ -178,7 +186,7 @@ class Bucket(Game):
                 fill(SIZE * col, HEIGHT - SIZE * shown[col], SIZE, SIZE * shown[col], PALETTE[col % len(PALETTE)])
         plugin = self.physics_plugin
         for i in range(N):
-            if self.phase[i]:
+            if self.phase[i] and not (self.phase[i] == FALL and self.last_y[i] == -SIZE):  # a new box: the read is stale
                 x, y = plugin.place(i)
                 fill(x, y, SIZE, SIZE, PALETTE[i % len(PALETTE)])
         fill(0, RAIL_Y, WIDTH, 1, GREY)

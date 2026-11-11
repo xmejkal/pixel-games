@@ -53,23 +53,32 @@ class RulesTest(unittest.TestCase):
         rules = Rules()
         for _ in range(100):
             rules.move(60, False)
-        self.assertEqual(0, rules.bucket_x)
+        self.assertEqual(bk.LEFT_X, rules.bucket_x)
         rules.move(60, True)  # no debt is carried from the edge
-        self.assertEqual(bk.BUCKET_PX_S * 60 // 1000, rules.bucket_x)
+        self.assertEqual(bk.LEFT_X + bk.BUCKET_PX_S * 60 // 1000, rules.bucket_x)
         for _ in range(100):
             rules.move(60, True)
-        self.assertEqual(bk.WIDTH - bk.BUCKET_W, rules.bucket_x)
+        self.assertEqual(bk.RIGHT_X, rules.bucket_x)
         rules.move(60, False)
-        self.assertEqual(bk.WIDTH - bk.BUCKET_W - bk.BUCKET_PX_S * 60 // 1000, rules.bucket_x)
+        self.assertEqual(bk.RIGHT_X - (bk.BUCKET_PX_S * 60 + 999) // 1000, rules.bucket_x)  # going left, a part px counts
+        self.assertEqual(0, bk.LEFT_X + bk.WALL_PX)  # the inside reaches both screen edges
+        self.assertEqual(bk.WIDTH, bk.RIGHT_X + bk.BUCKET_W - bk.WALL_PX)
 
-    def test_caught_needs_the_whole_box_inside_the_bucket_at_both_edges(self):
+    def test_caught_needs_the_whole_box_between_the_walls_at_both_edges(self):
         rules = Rules()
-        left, right = rules.bucket_x, rules.bucket_x + bk.BUCKET_W
+        left, right = rules.bucket_x + bk.WALL_PX, rules.bucket_x + bk.BUCKET_W - bk.WALL_PX  # the inside
         self.assertTrue(rules.caught(left))
         self.assertTrue(rules.caught(right - bk.SIZE))
-        self.assertFalse(rules.caught(left - 1))
-        self.assertFalse(rules.caught(right - bk.SIZE + 1))
+        self.assertFalse(rules.caught(left - 1))  # over the left wall
+        self.assertFalse(rules.caught(right - bk.SIZE + 1))  # over the right wall
         self.assertFalse(rules.caught(0 if left > bk.SIZE else bk.WIDTH - bk.SIZE))
+
+    def test_the_end_columns_can_be_caught(self):
+        rules = Rules()
+        rules.bucket_x = bk.LEFT_X
+        self.assertTrue(rules.caught(0))
+        rules.bucket_x = bk.RIGHT_X
+        self.assertTrue(rules.caught(bk.WIDTH - bk.SIZE))
 
     def test_the_drop_clock_drops_one_box_each_drop_ms_and_carries_the_rest(self):
         rules = Rules()
@@ -93,6 +102,12 @@ class RulesTest(unittest.TestCase):
         rules.score = 3
         self.assertEqual(bk.DROP_MS - 3 * bk.DROP_STEP_MS, rules.drop_ms())
         rules.score = 1000
+        self.assertEqual(bk.DROP_MIN_MS, rules.drop_ms())
+        # the speed-up stops at the first (DROP_MS - DROP_MIN_MS) / DROP_STEP_MS points
+        stop = (bk.DROP_MS - bk.DROP_MIN_MS) // bk.DROP_STEP_MS
+        rules.score = stop - 1
+        self.assertGreater(rules.drop_ms(), bk.DROP_MIN_MS)
+        rules.score = stop
         self.assertEqual(bk.DROP_MIN_MS, rules.drop_ms())
         self.assertGreater(bk.DROP_MIN_MS, 60)  # a frame holds one drop at most
 
@@ -140,12 +155,13 @@ def start(game):
 
 
 def run(game, now, frames, hold, ms=FRAME_MS, limit=None):
-    """frames frames of ms from now, or until the round is over or limit ms of play have passed. hold(game, t) says
+    """frames frames of ms (a number, or a function that gives each frame's ms) from now, or until the round is over or limit ms of play have passed. hold(game, t) says
     whether BOOT is down at play time t. Answers the time of the last frame and the ms of play."""
     t = 0
     for _ in range(frames):
-        now += ms
-        t += ms
+        frame = ms() if callable(ms) else ms
+        now += frame
+        t += frame
         game.step(now, False, hold(game, t))
         if game.state != gfx.PLAY or (limit is not None and t >= limit):
             break
@@ -165,10 +181,10 @@ def rhythm(period, duty):
 
 
 def bot(game, t):
-    """Steers to the lowest falling box: BOOT is down when its middle is right of the bucket's."""
+    """Steers to the lowest falling box it can see: BOOT is down when its middle is right of the bucket's."""
     best = None
     for i in range(bk.N):
-        if game.phase[i] == FALL:
+        if game.phase[i] == FALL and game.last_y[i] != -bk.SIZE:  # a box just dropped has no read yet
             x, y = game.physics_plugin.place(i)
             if best is None or y > best[1]:
                 best = (x, y)
@@ -270,7 +286,7 @@ class BucketTest(SeededTest):
         game = self.game
         now = start(game)
         no_drops(game)
-        game.rules.pile[0] = 1  # the pile is 2 high with this box: its top is 20 px under the rail's
+        game.rules.pile[0] = 1  # the pile is 2 high with this box: its top is 10 px under the rail's
         game.rules.bucket_x = 200
         put(game, 0, 0, bk.RAIL_Y - bk.SIZE - 5, 400)
         now += 60
@@ -310,9 +326,32 @@ class BucketTest(SeededTest):
         game = self.game
         start(game)
         game.rules.bucket_x = 200
-        put(game, 0, 0, 50)
+        put(game, 0, 70, 50)  # column 7
+        game.physics_plugin.read(lambda i: None)
         game.rest(0)  # by the rules it cannot happen
-        self.assertEqual((LAND, 1), (game.phase[0], game.rules.pile[0]))
+        self.assertEqual((LAND, 1, 0), (game.phase[0], game.rules.pile[7], game.rules.pile[0]))
+
+    def test_a_missed_box_is_never_spawned_below_its_plane(self):
+        game = self.game
+        start(game)
+        game.rules.bucket_x = 200
+        game.rules.pile[0] = 2  # this miss makes 3: the plane is the rail
+        put(game, 0, 0, bk.RAIL_Y - 2 * bk.SIZE)
+        spawns = []
+        game.physics_plugin.spawn = lambda i, x, y, vx, vy, plane: spawns.append((y, plane))
+        game.at_rail(0, 0, bk.RAIL_Y + 6)
+        self.assertEqual([(bk.RAIL_Y, bk.RAIL_Y)], spawns)
+
+    def test_play_stops_when_a_body_asleep_in_the_air_ends_the_round(self):
+        game = self.game
+        now = start(game)
+        game.rules.bucket_x = 200
+        game.rules.pile[0] = bk.PILE_ROWS - 1
+        put(game, 0, 0, 50)
+        game.physics_plugin.read = lambda callback: callback(0)
+        game.rules.due = lambda ms, free: self.fail("play went on after the round ended")
+        game.step(now + FRAME_MS, False, False)
+        self.assertEqual(gfx.OVER, game.state)
 
     def test_a_body_that_rests_is_free_for_the_next_box(self):
         game = self.game
@@ -352,7 +391,7 @@ class BucketTest(SeededTest):
 
     def test_a_new_round_starts_clean(self):
         game = self.game
-        now = start(game)
+        start(game)
         game.rules.pile[3], game.shown[3], game.rules.score = 2, 2, 5
         game.restart()
         self.assertEqual((bytearray(bk.COLS), bytearray(bk.COLS), 0, 0),
@@ -370,6 +409,13 @@ class BucketTest(SeededTest):
         game.paint(cv)
         self.assertIn((4 * bk.SIZE, bk.HEIGHT - 2 * bk.SIZE, bk.SIZE, 2 * bk.SIZE), cv.fills)
         self.assertIn((0, bk.RAIL_Y, bk.WIDTH, 1), cv.fills)
+        self.assertIn((60, 30, bk.SIZE, bk.SIZE), cv.fills)
+        put(game, 1, 90, 40)
+        game.last_y[1] = -bk.SIZE  # dropped this frame: the plugin's read is stale
+        game.physics_plugin.read(lambda i: None)
+        cv = Recorder(Tft())
+        game.paint(cv)
+        self.assertNotIn((90, 40, bk.SIZE, bk.SIZE), cv.fills)
         self.assertIn((60, 30, bk.SIZE, bk.SIZE), cv.fills)
         self.assertIn((100, bk.RAIL_Y - bk.FLOOR, bk.BUCKET_W, bk.FLOOR), cv.fills)
 
@@ -393,7 +439,7 @@ class PlayersTest(SeededTest):
 
     def lasts(self, player, ms, limit):
         game = new_game()
-        run(game, start(game), limit // ms + 1, player, ms, limit)
+        run(game, start(game), limit, player, ms, limit)
         return game
 
     def test_an_idle_player_loses_in_under_60_s(self):
@@ -417,12 +463,28 @@ class PlayersTest(SeededTest):
                     self.assertEqual(gfx.OVER, game.state, (ms, period, duty, game.score))
 
     def test_a_bot_that_steers_to_the_lowest_box_lasts_3_minutes(self):
-        for ms in (42, 60):
+        jitter = lambda: random.randint(20, 90)  # frames that are not fixed
+        for ms in (42, 60, jitter):
             for seed in (1, 2, 3):
                 random.seed(seed)
                 game = self.lasts(bot, ms, 180000)
                 self.assertEqual(gfx.PLAY, game.state, (ms, seed, game.score))
                 self.assertGreater(game.score, 100)
+
+    def test_a_perfect_player_catches_every_box_when_the_columns_alternate_0_and_31_at_full_speed(self):
+        columns = [0, bk.COLS - 1] * 100
+        for ms in (42, 60):
+            game = new_game()
+            drops = iter(columns)
+            randrange = bk.random.randrange
+            bk.random.randrange = lambda n: next(drops)
+            try:
+                run(game, start(game), 120000, bot, ms, 120000)
+            finally:
+                bk.random.randrange = randrange
+            self.assertEqual(gfx.PLAY, game.state, ms)
+            self.assertEqual(bytearray(bk.COLS), game.rules.pile, ms)
+            self.assertGreater(game.score, 90, ms)
 
 
 @unittest.skipUnless(world_lib.HAVE_CLANG, "clang is missing: engine/core/world.c is not built")
