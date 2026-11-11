@@ -1457,6 +1457,6 @@ nothing. The Python twin stays for the places with no engine module (the Mac's t
 | 207 | `run207-p768-rain-c-music.log` | `Rain`, 60 s, the music | 66 times `stepper c`, 24 or 25 fps, worst frame 51 to 67 ms, 0 late, render mean 510 to 531 us, max 705 to 799 us |
 
 - `Rain` on the C stepper passes the fps line with the music. The worst frame is 12 ms longer in one line (67
-  against 55), over the 5 ms line, and within it in 7 of 11 lines.
+  against 55), over the 5 ms line, and within it (at most 60 ms) in 9 of 11 lines.
 - The rows of run201 to run205 for `rain` describe the mixed case and no longer the game.
 - The probe still presses every 900 ms, so each run starts the rain 66 times.

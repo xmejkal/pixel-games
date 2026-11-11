@@ -132,9 +132,8 @@ class CRainTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             game = rain.Rain()
             _, now = play(game, 1, 0)
-            first = game.physics_plugin.name
             play(game, 1, now, pressed=True)
-        self.assertEqual(first, game.physics_plugin.name)
+        self.assertEqual("c", game.physics_plugin.name)
 
 
 if __name__ == "__main__":
