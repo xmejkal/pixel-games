@@ -25,7 +25,7 @@ line 87) redraws a kept strip only when its key changes. App.frame names its sta
 
 | Option | What it is | Cost or risk | Fit here | Source |
 |---|---|---|---|---|
-| Object tree, dirty areas | Parent and child objects. Change marks area | Not confirmed | Like render.Dirty, keep | [1] |
+| Object tree, dirty areas | Parent and child objects. Change marks area | Not confirmed | Like render.Dirty | [1] |
 | Signals (observer) | Object emits. Listeners connect | Sender waits for listeners | Good for values | [2], [3] |
 | Event queue | Events wait in a ring buffer. A loop reads them | Stale data, hidden loops | Good for interrupts | [3] |
 | Poll in each frame | The frame reads each source | Work each frame. A tap can fall between | Works now | [repo] |
