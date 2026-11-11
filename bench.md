@@ -1548,6 +1548,6 @@ than the control.
 
 - Run212b passes every line. Its worst frame (64 ms) is under the control's (91 ms), because `Bucket` draws at most
   8 boxes and the pile, against the rain's 160 boxes.
-- The control's fps line is 23 in 4 of its 12 windows, so the control itself is under the 24 fps line.
+- The control has 23 fps in 5 of its 11 windows, so the control itself is under the 24 fps line.
 - The bot scored 54 and did not lose in 60 s. The first window holds the title, so its paint mean is the highest.
 - Open: the PO's hand, eye and ear. No run shows how the game looks or plays.
