@@ -216,6 +216,11 @@ This file stays in pixel-games while the other session refactors spark. When tha
 | 205 | The PO merged PR 62 while the alpha change was still local, so the change and its two commits missed the merge. A change after "ready" goes to the next PR, and the merged PR gets a comment. | this session, the PR's state | acted | pixel-games PR 63 holds them, comment on PR 62. | No |
 | 206 | `app.py` now imports `volume` always, but `tools/crackle.sh` copied `volume.py` only with a `VOLUME`. A new import in a module means a look at each copy list. | the Sonnet agent of PR B | acted | `tools/crackle.sh` copies it with `KNOB=1`. | No |
 | 207 | Road's second `time` line is 12 frames per second in two of three runs over all games and 21 in one, with no hand. The cause is not known. | this session, run186 to run188 | raised | bench.md, P764, PR B. | No |
+| 208 | bench.md said that the paint rose in both lines in six games only. Rain, Snake, Cave and Tunnel also rose in both. | the reviewer on Sonnet and the refuter on Opus, read in run187 and run188 | acted | bench.md, P764, PR B. | No |
+| 209 | No test failed when `overlay.update` moved before the switch. The comment claimed the order, and only the bench covered it. | the refuter on Opus, a mutation on a copy | acted | `test_a_pane_updates_after_the_switch`, which fails on that mutation. | No |
+| 210 | `tools/crackle.sh` with `KNOB=0` left the board's old `app.py`, so "the box opens its own knob" was not sure. A tool that copies files by condition can run old code. | the reviewer on Sonnet, read in the tool | acted | The tool copies the box's files in each run (run190). | No |
+| 211 | `open_knob()` catches only a missing `machine.Encoder`. An error from `Encoder.on_board` stops `run()` before the display opens. | the refuter on Opus, read in the code | raised | Named in pixel-games PR 63 and bench.md. Not changed. | No |
+| 212 | With the box's knob and the spin, the sound's late count ended at 3 in 45 s (run189), against 0 and 1 in PR A's two runs. One run each gives no verdict. | this session, run189 | raised | bench.md, P764, PR B. | No |
 | 34 | The second pass of the refuter waits until after Q1, so that one pass covers all changed sections. | this session | acted | Step 8 of the discovery. | No |
 
 ## Time
