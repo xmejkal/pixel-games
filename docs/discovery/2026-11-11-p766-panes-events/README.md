@@ -5,13 +5,14 @@ Date: 2026-11-11. This is a finding with sources. It is not a design. Tags: [sou
 
 ## Short version
 
-- Q1. Standard systems keep a tree of objects, send events to listeners, and redraw only marked areas. LVGL's events page,
-  Godot and Game Programming Patterns are read. LVGL's display and input-device pages are not. Use direct listeners for state
-  changes, and a small queue only where the sender must not wait (interrupts, radio).
+- Q1. Standard systems keep a tree of objects, send events to listeners, and redraw only marked areas. LVGL's
+  events page, Godot and Game Programming Patterns are read. LVGL's display and input-device pages are not. Use
+  direct listeners for state changes, and a small queue only where the sender must not wait (interrupts, radio).
 - Q2. The official rule for interrupts is: short code, no heap allocation, use micropython.schedule. No timing numbers
   for a Python call or a callback were found. Measure them on the board.
 - Q3. S3 has a second core, LCD_CAM and PIE. P4 adds the PPA (scale, rotate, mirror, blend), MIPI-DSI and 2D-DMA.
-  Keep the blit, the blend and the fill behind swappable parts. MicroPython has an ESP32-P4 port (stable v1.29.0). A binding for the PPA is not confirmed.
+  Keep the blit, the blend and the fill behind swappable parts. MicroPython has an ESP32-P4 port (stable v1.29.0).
+  A binding for the PPA is not confirmed.
 - Q4. One system can hold buttons, knob, values, game state, timers, sound level and radio messages. ESP-NOW works in
   MicroPython on ESP32 with both polling and a callback.
 - Gaps: LVGL's display and encoder pages, MicroPython call costs, a PPA binding, input events in Godot or Unity.
@@ -25,7 +26,7 @@ line 87) redraws a kept strip only when its key changes. App.frame names its sta
 
 | Option | What it is | Cost or risk | Fit here | Source |
 |---|---|---|---|---|
-| Object tree, dirty areas | Parent and child objects. Change marks area | Cost not on the page | Like render.Dirty | [1] |
+| Object tree, dirty areas | Parent and child objects. Change marks area | Cost not given | Like render.Dirty | [1] |
 | Signals (observer) | Object emits. Listeners connect | Sender waits for listeners | Good for values | [2], [3] |
 | Event queue | Events wait in a ring buffer. A loop reads them | Stale data, hidden loops | Good for interrupts | [3] |
 | Poll in each frame | The frame reads each source | Work each frame. A tap can fall between | Works now | [repo] |
