@@ -115,9 +115,9 @@ Runs now:
   Status: the gain works, and the knob turns it on the pads RX (GA, GPIO44) and TX (GB, GPIO43). On the first
   pads, SDA and SCL, the step did not move in Fire. A closed contact read 1.2 to 1.4 V there, not 0 V. A
   device at 0x36 also answers on those pads (bench.md, P757, entries 11 to 19). So the encoder moved on
-  2026-11-11. The games take both pads from the console at their start (entry 24). With the PO's hand, the
-  counter followed the knob with no sound and with a tone (entry 26). In Fire the step went from 0 to 16 and
-  back (entry 27). The PO: "yeah, seems to be working." From a reset until a game starts, a turn of the knob can
+  2026-11-11. The games take both pads from the console at their start (entry 24). While the PO turned the knob,
+  the counter counted with no sound and with a tone (entry 26). In Fire the step went from 0 up to 16 (entry
+  27). The PO: "yeah, seems to be working." From a reset until a game starts, a turn of the knob can
   type into the console. That time is not measured. If the start stops before `take_pads`, the console keeps
   both pads. No run starts the board with a contact closed on RX. Set the step with `LEVEL`:
   `VOLUME=ViperMasterVolume LEVEL=4 tools/crackle.sh 30 FireSound`. `KNOB=1` adds the knob, and `SAVE=1` the save.
