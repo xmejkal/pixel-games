@@ -1098,8 +1098,9 @@ the repository: they set up the encoder as `Encoder.on_board` does and print onc
   knob that works.
 
 The move to the pads RX and TX, 2026-11-11 (the PO: "lets go with TX and RX though"). `requirements.json` puts GA on
-RX (GPIO44) and GB on TX (GPIO43). Every run below has no wire on the pads it tests, and nobody turned a knob.
-Entries 20 to 24 are scratch scripts, not in the repository.
+RX (GPIO44) and GB on TX (GPIO43). Entries 20 to 24 have no wire on the pads they test, and nobody turned a knob
+there. Entries 25 to 27 have the encoder on RX and TX, and 26 and 27 have the PO's hand. Entries 20 to 26 are
+scratch scripts, not in the repository.
 
 | entry | log | what ran | result |
 | --- | --- | --- | --- |
@@ -1108,6 +1109,9 @@ Entries 20 to 24 are scratch scripts, not in the repository.
 | 22 | run173-p757-pads-joystick.log | A0, A1 and D5, the joystick's reserved pads: 200 digital reads under each pull, and 200 ADC reads under each pull | each pad follows the chip's pulls: 1 in 0 of 200 reads under the pull-down and in 200 of 200 under the pull-up. ADC 0 mV under the pull-down and 3071 mV under the pull-up |
 | 23 | run174-p757-pads-console.log | after `machine.deepsleep(300)`, so the registers are the image's. The UART's own input bit (UART_STATUS_REG, bit 15) under the chip's pull-down and pull-up on RX, 200 reads each, and its break bit after 20 low pulses of 2 ms. Stage 1: the pad as the image has it. Stage 2: after `Pin(44, Pin.IN, Pin.PULL_UP)`. Stage 3: also with `in_sel` 0xb8 | stage 1: IO_MUX 0xb00, the bit reads 1 in 0 of 200 under the pull-down and 200 of 200 under the pull-up, break 1 (`int_raw` 0x82). Stage 2: IO_MUX 0x1b00, 200 of 200 under both pulls, break 0 (`int_raw` 0x2). Stage 3: the same as stage 2 |
 | 24 | run175a-p757-app-takes-pads-control.log, run175-p757-app-takes-pads.log | the board restarts through `machine.deepsleep(300)`, `main.py` starts `app.run`, and about 6 s after the USB port is back mpremote stops it. A script then reads the IO_MUX word of both pads and calls no `Pin()`. First with the board's `app.py` from before this change, then with the `app.py` of commit 9ec1212 | before: 0xb00 on both pads. With `encoder.take_pads` in `app.run`: 0x1b00 on both |
+| 25 | run176a-p757-txrx-rest.log | the encoder on RX and TX, no hand. `take_pads`, `Encoder.on_board`, and one counter of rising edges on each pad. 2 s with no sound, then 2 s with the I2S open and a tone of 437.5 Hz | IO_MUX 0x1b00 on both pads as found and at the end. GA 1 and GB 1 at rest. 0 edges in both windows, so the tone made no edge. No break and no frame error |
+| 26 | run176-p757-txrx-hand.log | the same script with the PO's hand: 10 s with no sound from his first edge, then 10 s with the tone. The ask was about ten clicks one way and about ten back, in each window | no sound: the count went to -28 edges (7 detents) and back to +1. Rising edges: GA 17, GB 15. GA read low in 61219 of 154433 loop reads, and the UART's input read low in 0 of them. With the tone: the count went to +18, then down to -25. Rising edges: GA 22, GB 17. GA read low in 177 of 626 loop reads, and the UART's input in 0. No break, no frame error and no KeyboardInterrupt in both windows |
+| 27 | run176c-p757-txrx-fire.log | `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`. The ask: down to silent, then up to full | the step went from 8 to 0 (edges 0 to -31). The count went on to -40 at step 0. The step then went from 0 to 16 (edges -36 to 23) and stayed at 16 while the count ran to 177. Then it went down to 7 and back up to 16. 8 sound lines, each with `late 0` and `pushes 0`. 8 crackle lines, each with `dropped 0`. `apply_max` at most 360 us. `written 720384 short 0` |
 
 - Measured, with no wire: the pulse counter counts on RX and TX, with the I2S open too (entry 20).
   `Pin(n, Pin.IN, Pin.PULL_UP)` alone cuts the console's input from the RX pad (entry 23), so `take_pads` writes no
@@ -1138,8 +1142,8 @@ Entries 20 to 24 are scratch scripts, not in the repository.
   encoder. No run tested an encoder there.
 - spark's build writes the pin map, the sheet and the board for the new pads, and its simulation stage fails:
   `"44" is not a pin of board-esp32-s3-devkitc-1`. So `build/sim/` is from before the move. That is not a pass.
-- Open: the PO's meter reading from GB to GND with the power off, which the safety of TX rests on. Then his turn
-  with the wires on RX and TX: the count with the sound on, and 16 detents from silent to full in Fire.
+- Open before the plug, and answered in the three bullets below: the PO's meter reading from GB to GND with the
+  power off, and his turn with the wires on RX and TX.
 - The PO's meter, 2026-11-11, with the USB and the battery unplugged and the encoder's VCC and GND on the rails:
   "its about 180 kOhm and goes low when turned, from GB to VCC its around 6,6 kOhm". So GB to GND reads about
   180 kΩ at rest, and GB to VCC about 6.6 kΩ. Both are readings in the circuit, not on a bare module.
@@ -1148,6 +1152,18 @@ Entries 20 to 24 are scratch scripts, not in the repository.
   above the limit of 1 kΩ, so the rule lets GB go on TX. The console's high level then drives about 1 mA into a
   closed contact (3.3 V across 3.3 kΩ). His "I think" stays in the record: it is one reading, and run176 reads
   the closed level on the pad as a second look. VCC to GA is not read yet.
+- Measured with the PO's hand, the same day (entries 25 to 27). The pulse counter follows the knob on RX and TX,
+  with no sound, with a tone, and with Fire's sound. Both pads read 0 and 1, so a closed contact is a low level
+  for the chip there. In Fire the step went from 0 to 16 over the edges -36 to 23, which is 59 edges for 16
+  steps. While GA was low on RX, the UART's input stayed high in every read, so the console did not hear the knob.
+  The PO after the Fire run: "yeah, seems to be working."
+- What entries 25 to 27 do not show. The board cannot say what the PO's hand did or what his ear heard. His
+  word above is the only source for that, and it does not name the 16 steps. Entry 26 has more rising edges than
+  one for each detent on each pad. With no sound: 17 and 15 for about 14 detents. With the tone: 22 and 17 for
+  about 15. Bounce longer than the filter's 12 us can explain it, and that is inferred, not measured. The count itself came back
+  to +1. In entry 26 the knob stood still for 4 s at -28 edges, and GA read low in 61219 of 154433 reads. So
+  GA is likely low in some rest places of the knob. No run starts the board with GA low on RX, where the console
+  holds the pad until `take_pads`.
 
 ### Slice 4: the save
 

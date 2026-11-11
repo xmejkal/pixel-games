@@ -112,16 +112,14 @@ Runs now:
   `VolumeKnob(encoder, volume, store)` turns the step, 1 step per click, from `poll(now_ms)` once per frame.
   `VolumeStore` keeps the step in `volume.txt`, and the knob saves it 3 s after the last turn. The save is off in the
   probe by default: each 37th save takes 2.4 s and stops the sound (bench.md, P757). The fix is a later card.
-  Status: the gain works, and the knob is not proven yet. The PO turned the knob in Fire on 2026-11-11 and the
-  step did not move. Measured: a closed contact of the encoder reads 1.2 to 1.4 V, not 0 V, and with the I2S open
-  the count stands still. That the first causes the second is likely, not proven (bench.md, P757, entries 11 to
-  17). A device at 0x36, likely the board's power chip, also answers on the pads SDA and SCL (entries 18 and 19).
-  So the encoder moved to the pads RX (GA, GPIO44) and TX (GB, GPIO43) on 2026-11-11. With no wire, the pulse
-  counter counts edges that the chip's own pulls make there (entry 20). The games take both pads from the
-  console at their start (entry 24). No run shows yet that a real contact counts there with the sound on: nobody
-  turned the knob on the new pads. From a reset until a game starts, a turn of the knob can type into the console.
-  That time is not measured. If the start stops before `take_pads`, the console keeps both pads. Set the step with
-  `LEVEL`:
+  Status: the gain works, and the knob turns it on the pads RX (GA, GPIO44) and TX (GB, GPIO43). On the first
+  pads, SDA and SCL, the step did not move in Fire. A closed contact read 1.2 to 1.4 V there, not 0 V. A
+  device at 0x36 also answers on those pads (bench.md, P757, entries 11 to 19). So the encoder moved on
+  2026-11-11. The games take both pads from the console at their start (entry 24). With the PO's hand, the
+  counter followed the knob with no sound and with a tone (entry 26). In Fire the step went from 0 to 16 and
+  back (entry 27). The PO: "yeah, seems to be working." From a reset until a game starts, a turn of the knob can
+  type into the console. That time is not measured. If the start stops before `take_pads`, the console keeps
+  both pads. No run starts the board with a contact closed on RX. Set the step with `LEVEL`:
   `VOLUME=ViperMasterVolume LEVEL=4 tools/crackle.sh 30 FireSound`. `KNOB=1` adds the knob, and `SAVE=1` the save.
 - The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a
   change, run `python3 ~/Development/spark/scripts/check_spine.py requirements.json --keep build --json` and copy
