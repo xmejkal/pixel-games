@@ -1,9 +1,10 @@
 """
-P733 steps 2 and 3, P746, P748 and P747: a sound beside the game loop, fed by a driver of games/sound.py through stock
-machine.I2S, and heard by a microphone.
+P733 steps 2 and 3, P746, P748, P747 and P757: a sound beside the game loop, fed by a driver of games/sound.py through
+stock machine.I2S, and heard by a microphone.
 
     mpremote cp games/sound.py :sound.py
-    mpremote run probe733_games.py      # GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE and SECONDS set by sed before each run
+    mpremote cp games/volume.py :volume.py      # only for a run with VOLUME (P757)
+    mpremote run probe733_games.py      # GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE, VOLUME, LEVEL and SECONDS set by sed
 
 tools/crackle.sh runs it with a crackle (P747): it builds crackle_c.mpy and copies it and games/crackle.py first.
 
@@ -49,6 +50,11 @@ follows the heat field, is off (crackle.BED), so Fire plays the pops alone. Time
 the bed on) and follow_bodies to it and counts the calls, and adds a line to every 5 s line,
 `follow <game> follow_field <n> follow_bodies <n> level <n> coef <n> whoosh <n>`: the calls of the window, the bed's
 targets now and the loudest whoosh's level now.
+
+VOLUME (P757) is the master volume's class name in volume, or "" for the mix as it is: then the probe never imports
+volume. LEVEL is its start step, 0 (silent) to 16 (the mix as it is), or None for volume.DEFAULT_STEP. It is LEVEL
+because a step in this probe is a bench step. One more line every 5 s: `volume level <n> gain <n> apply_max <us>`:
+the step, the gain that the last block ended at (32768 is the mix as it is), and the longest apply of the window.
 """
 
 import math
@@ -68,6 +74,8 @@ HITS = 0  # "auto": a hit every 2 s from 4 s on, "press": a hit at each BOOT pre
 REFILL = "FrameRefill"  # or "CallbackRefill": a driver's class name in sound (P748)
 IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 2048 gives 4 buffers, 64 ms
 VOICE = "tone"  # "silent", "Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle" or "FireSound" (P747, P751, P753)
+VOLUME = ""  # "MasterVolume": the master volume, a class name in volume; "": the mix as it is (P757)
+LEVEL = None  # the volume's start step, 0 to 16; None: volume.DEFAULT_STEP
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -329,13 +337,33 @@ class TimedCrackle:
             self.field_calls = self.bodies_calls = 0
 
 
+class TimedVolume:
+    """A master volume with the probe's clock (P757): apply times itself. --- MVP (P757) ---"""
+
+    def __init__(self, volume):
+        self.volume, self.apply_max = volume, 0
+
+    def apply(self, buf):
+        t = time.ticks_us()
+        self.volume.apply(buf)
+        self.apply_max = max(self.apply_max, time.ticks_diff(time.ticks_us(), t))
+
+    def report(self):
+        """The 5 s line, then a new window. An apply between a read and its reset here can lose one apply_max."""
+        apply_max, self.apply_max = self.apply_max, 0
+        print("volume level %d gain %d apply_max %d" % (self.volume.step, self.volume.gain, apply_max))
+
+
 class Probe:
     """The hook around App.frame: the sound's open and per-frame refill, the microphone's read, the 5 s report, the
     switch every 30 s (none with HITS), the press on game over, the push stamps, the hits, and the end."""
 
     def __init__(self):
         self.sd = Pin(6, Pin.OUT, value=0)  # the amplifier stays off through the display setup
-        self.mixer, self.refill, self.mic = sound.Mixer(), None, None
+        self.mixer, self.refill, self.mic, self.volume = sound.Mixer(), None, None, None
+        if VOLUME:  # P757
+            import volume
+            self.volume = TimedVolume(getattr(volume, VOLUME)(volume.DEFAULT_STEP if LEVEL is None else LEVEL))
         self.first_pop_shown = False
         if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle", "FireSound"):  # P747, P751, P753
             import crackle
@@ -361,7 +389,7 @@ class Probe:
     def open(self):
         """The I2S, the driver, a first write, then the amplifier on (Refill.open)."""
         i2s = I2S(0, sck=Pin(12), ws=Pin(13), sd=Pin(14), mode=I2S.TX, bits=16, format=I2S.MONO, rate=RATE, ibuf=IBUF)
-        self.refill = r = getattr(sound, REFILL)(self.mixer, i2s, self.sd, RING)
+        self.refill = r = getattr(sound, REFILL)(self.mixer, i2s, self.sd, RING, self.volume)
         print("align %d" % (uctypes.addressof(r.block) % 16))
         if not HITS and VOICE == "tone":
             self.mixer.play(self.tone, loop=True)
@@ -406,6 +434,8 @@ class Probe:
                 m.report(box.game.name)
             if isinstance(self.mixer, TimedCrackle):
                 self.mixer.report(box.game.name)
+            if self.volume and r:
+                self.volume.report()
             self.report = now
         if self.next_switch is not None and time.ticks_diff(now, self.next_switch) >= 0:
             self.next_switch = time.ticks_add(self.next_switch, SWITCH_MS)
