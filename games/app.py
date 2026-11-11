@@ -3,7 +3,9 @@ The game box: the fire effect (P595), the ball pit (P598), the rain demo of the 
 on the GDI display.
 The BOOT button plays, the board's own button (D14) moves to the next game from any state.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
-It changes a step only: the game box has no sound yet, and the step is not saved. App(knob=None) has no volume pane.
+The step is not saved. App(knob=None) has no volume pane.
+The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
+main.py opens the Speaker. run() with no speaker is the silent box.
 
 run() prints `ready` once the display is set up, then `game <name>` at the start and after each D14 press. Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
@@ -22,13 +24,18 @@ import pins
 from arcade import Flappy, Runner, Snake
 from arcade2 import Cave, GravityPong, Stack
 from balls import BallPit
+from bank import Bank
+from box_bank import BOX_BANK_INDEX
 from burning import BurningBodies
+from cues import SoundCues
 from fire import Fire
 from lcd import open_tft
 from overlay import Overlay, VolumePane
 from rain import Rain
 from render import StOut
+from signals import Signals
 from space3d import CubeTiming, Starfire
+from speaker import Speaker
 from volume import MasterVolume, VolumeKnob
 from world3d import Road, Tunnel
 
@@ -52,7 +59,8 @@ GAMES = (Fire, BallPit, BurningBodies, Rain, Flappy, Runner, Snake, Stack, Cave,
 class App:
     """Owns the display, the two buttons and the current game. frame() is one pass of the loop."""
 
-    def __init__(self, display, read_fire, read_boot, games=GAMES, full=False, gc_floor=0, out=None, knob=None):
+    def __init__(self, display, read_fire, read_boot, games=GAMES, full=False, gc_floor=0, out=None, knob=None,
+                 cues=None):
         self.display, self.games = display, games
         self.fire = buttons.Button(read_fire, buttons.BOOT_BUTTON_ON)  # BOOT plays: holding it is safe once running
         self.boot = buttons.Button(read_boot, pins.ONBOARD_BUTTON_ON)  # D14 switches: a long hold powers the board off
@@ -63,6 +71,8 @@ class App:
         self.overlay = Overlay()  # --- MVP (P762) --- system information over every game
         self.knob = knob  # --- MVP (P764) --- the volume's knob, or None: then the overlay has no volume pane
         self.volume_pane = self.overlay.add(VolumePane(knob.volume)) if knob else None
+        self.signals = Signals()  # --- MVP (P768) --- what the game says happened
+        self.cues = cues  # --- MVP (P768) --- a cues.SoundCues, or None: then the box is silent
 
     def start(self):
         self.out.clear()
@@ -74,6 +84,10 @@ class App:
         self.game = None
         gc.collect()
         self.game = self.games[self.index]()
+        self.signals.clear()  # --- MVP (P768) --- the last game's listeners go
+        self.game.signals = self.signals
+        if self.cues:
+            self.cues.follow(self.game, self.signals)
         self.out.reset()
         self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
@@ -158,12 +172,23 @@ def open_knob():
         machine.Encoder
     except (ImportError, AttributeError):
         return None
-    return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), MasterVolume())
+    try:  # the sound's callback applies the volume: the viper scale takes 116 us a block, the plain one 1220 us
+        from volume_viper import ViperMasterVolume as Volume
+    except (ImportError, AttributeError):
+        Volume = MasterVolume
+    return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), Volume())
 
 
-def run(games=GAMES, knob=None):
+# --- MVP (P768) ---
+def open_speaker(knob=None):
+    """The game box's Speaker, not yet open. The knob's volume is its master volume."""
+    return Speaker(knob.volume if knob else None)
+
+
+def run(games=GAMES, knob=None, speaker=None):
     """The loop main.py starts. knob: a caller's VolumeKnob (the probe's). With none, the box opens its own, so two
-    encoders never share the counter unit."""
+    encoders never share the counter unit. speaker: a Speaker that run() opens after the display, or None for the
+    silent box (P768)."""
     import select
     import sys
 
@@ -186,7 +211,12 @@ def run(games=GAMES, knob=None):
     # D14 also drives the power chip's PWRON (boards/firebeetle2-esp32s3.json, hardware_revisions, V1.1 and earlier):
     # held about 5 s, it powered the board off on 2026-11-02. So BOOT is the game button and D14 only a short press.
     fire, boot = Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP), Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP)
-    app = App(display, fire.value, boot.value, games=games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob)
+    cues = None
+    if speaker:  # --- MVP (P768) ---
+        cues = SoundCues(speaker.mixer, Bank("box_bank.raw", BOX_BANK_INDEX))
+        speaker.open()
+    app = App(display, fire.value, boot.value, games=games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob,
+              cues=cues)
     app.fire.watch(fire)
     app.boot.watch(boot)
     if full:
@@ -195,15 +225,19 @@ def run(games=GAMES, knob=None):
     console.register(sys.stdin, select.POLLIN)
     print("ready")
     app.start()
-    due = time.ticks_ms()
-    while True:  # the s3lcd port may lose USB at init; the lines still print in case it stays
-        app.frame()
-        if console.poll(0):
-            sys.stdin.read(1)
-        due = time.ticks_add(due, FRAME_MS)
-        wait = time.ticks_diff(due, time.ticks_ms())
-        if wait > 0:
-            time.sleep_ms(wait)
-        else:  # a slow frame: start again from now, never rush to catch up
-            due = time.ticks_ms()
-            time.sleep_ms(1)
+    try:
+        due = time.ticks_ms()
+        while True:  # the s3lcd port may lose USB at init; the lines still print in case it stays
+            app.frame()
+            if console.poll(0):
+                sys.stdin.read(1)
+            due = time.ticks_add(due, FRAME_MS)
+            wait = time.ticks_diff(due, time.ticks_ms())
+            if wait > 0:
+                time.sleep_ms(wait)
+            else:  # a slow frame: start again from now, never rush to catch up
+                due = time.ticks_ms()
+                time.sleep_ms(1)
+    finally:
+        if speaker:  # the amplifier off, also at Ctrl-C or an error
+            speaker.close()

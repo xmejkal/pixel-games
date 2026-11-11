@@ -301,6 +301,8 @@ class Game:
     HUD_SCORE, HUD_BEST = WHITE, YELLOW  # the score bar's colours; a restyled game sets its own
     covers = False  # True: paint_static covers the whole screen, so no background fill goes under it (TftOut)
     plugins = ()  # the engine's layers the game turns on (plugins.Plugin), in their stage order; setup lists them
+    signals = None  # --- MVP (P768) --- the game box's signals.Signals; a class attribute, as setup runs in __init__
+    cues = {}  # --- MVP (P768) --- signal name -> cues.Cue: the sounds this game asks for
     TITLE_MS = 1500
     OVER_MS = 900
 
@@ -325,8 +327,14 @@ class Game:
     def paint(self, cv):
         pass
 
+    def emit(self, name, value=None):
+        """Say what happened (P768). With no signals, in a test or a probe, it does nothing."""
+        if self.signals is not None:
+            self.signals.emit(name, value)
+
     def die(self, x=None, y=None, colours=(RED, YELLOW)):
         """End the round; at (x, y), a burst in the two colours."""
+        self.emit("die")
         BEST[self.name] = max(BEST.get(self.name, 0), self.score)
         if x is not None:
             self.fx.burst(x, y, colours[0], 14, 170.0, 0.8)
