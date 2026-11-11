@@ -25,8 +25,8 @@ line 87) redraws a kept strip only when its key changes. App.frame names its sta
 
 | Option | What it is | Cost or risk | Fit here | Source |
 |---|---|---|---|---|
-| Object tree, dirty areas | Parent and child objects. A change marks an area | Not confirmed | Like render.Dirty, keep | [1] |
-| Signals (observer) | Object emits a signal. Listeners connect | Sender waits for each listener | Good for values | [2], [3] |
+| Object tree, dirty areas | Parent and child objects. Change marks area | Not confirmed | Like render.Dirty, keep | [1] |
+| Signals (observer) | Object emits. Listeners connect | Sender waits for listeners | Good for values | [2], [3] |
 | Event queue | Events wait in a ring buffer. A loop reads them | Stale data, hidden loops | Good for interrupts | [3] |
 | Poll in each frame | The frame reads each source | Work each frame. A tap can fall between | Works now | [repo] |
 
@@ -55,9 +55,9 @@ lines 29-43). The comment there says the interrupt is a soft interrupt, run afte
 
 | Option | What it is | Cost or risk | Fit here | Source |
 |---|---|---|---|---|
-| Plain call to listeners | The frame calls each bound method | Cost per call not confirmed | Fine if short. Measure | none |
-| Allocation in a callback | A new object or list in a handler | Heap allocation is not re-entrant | Never in interrupts | [4] |
-| micropython.schedule | Runs a function when the heap is free | Queue limits not confirmed | Way out of an interrupt | [4] |
+| Plain call to listeners | Frame calls each bound method | Call cost not confirmed | Fine if short | none |
+| Allocation in a callback | New object in a handler | Heap allocation not re-entrant | Never in interrupts | [4] |
+| micropython.schedule | Runs a function when heap is free | Queue size not confirmed | Exit from an interrupt | [4] |
 | Ring buffer of ints | Fixed storage, no growth | Needs a size and a full rule | Interrupts, refill | [3], [4] |
 
 - [source] Interrupt rules: "Keep the code as short and simple as possible." "Avoid memory allocation: no appending
@@ -81,11 +81,11 @@ lines 29-43). The comment there says the interrupt is a soft interrupt, run afte
 | Option | What it is | Cost or risk | Fit here | Source |
 |---|---|---|---|---|
 | S3 pulse counter | Counts encoder edges in hardware | None new | Already used | [5] |
-| S3 LCD_CAM | 8 or 16 bit parallel LCD bus with GDMA, 40 MHz or lower | New wiring or C driver | Later. Panel is SPI | [5] |
+| S3 LCD_CAM | 8 or 16 bit parallel LCD bus, GDMA, 40 MHz or less | New wiring or C driver | Later | [5] |
 | S3 PIE (SIMD) | 128 bit vector instructions | Needs C or assembly | Fill, blend, volume in C | [5] |
 | S3 second core | Dual-core LX7, up to 240 MHz | Use from MicroPython not confirmed | Not confirmed | [5] |
 | S3 GDMA | 5 send and 5 receive channels, shared | Shared channels | SPI and I2S use it | [5] |
-| P4 PPA | Scale, rotate, mirror, blend, fill by 2D-DMA | New C API. Bilinear scaling | Pane blend, rotation | [6], [7] |
+| P4 PPA | Scale, rotate, mirror, blend, fill (2D-DMA) | New C API. Bilinear scale | Pane blend, rotation | [6], [7] |
 | P4 MIPI-DSI | 2 data lanes, up to 1.5 Gbps each | Needs a DSI panel | Bigger display later | [8] |
 | P4 cores | Dual RISC-V, up to 400 MHz (360 in rev 1.3) | Not Xtensa | Native code rebuilt | [8], [9] |
 
