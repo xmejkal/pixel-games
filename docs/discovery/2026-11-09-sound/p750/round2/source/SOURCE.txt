@@ -1,0 +1,1 @@
+"Fire Crackling" by AntumDeluge, OpenGameArt, 2013-05-10, CC0: https://opengameart.org/content/fire-crackling (file fire-1.wav, 44.1 kHz). fire16k.wav is that file converted to 16 kHz mono with afconvert.
