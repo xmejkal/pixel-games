@@ -1227,7 +1227,7 @@ ran `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, with nobody
   frame, so its frame is always one window (read in the driver by the review's refuter). A game with partial sends
   is the test, and none ran.
 - Read, not measured: on `lcd.py` the hidden picture leaves the screen through the driver's tiles (`frame.c`).
-  The PO saw the picture on the board. He did not say when it went.
+  The PO saw the picture on the board. He named no time for its end.
 - The see-through picture ran (entry 7): 2 late refills against 1 for the solid picture (entry 6), one run on each side.
   The mean paint was about 1 ms longer per frame. The driver blends each of the still part's 5600 pixels.
 - The plan's rule was: if a sound line is late with the blend, the picture stays solid. So `VolumeView.alpha` is 255.
