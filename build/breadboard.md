@@ -1,4 +1,4 @@
-# Breadboard: pixel-p758, on a DFRobot FireBeetle 2 ESP32-S3
+# Breadboard: pixel-p757, on a DFRobot FireBeetle 2 ESP32-S3
 
 ## Parts
 
@@ -21,18 +21,10 @@
 
 ### Changes since the last build
 
-- Move the jumper from board GND: it now goes to a free rail, which you mark GND (it went to the row of Cjmcu111RotaryEncoder GND).
-- Put Inmp441I2sMicRound in the breadboard.
-- Run a jumper from the row of Inmp441I2sMicRound VDD to the row of Cjmcu111RotaryEncoder VCC.
-- Run a jumper from board A3 to the row of Inmp441I2sMicRound SCK.
-- Run a jumper from board A4 to the row of Inmp441I2sMicRound SD.
-- Put R1 end 1 (pull-down on Inmp441I2sMicRound SD) in the row of Inmp441I2sMicRound SD.
-- Run a jumper from board A5 to the row of Inmp441I2sMicRound WS.
-- Run a jumper from the row of Cjmcu111RotaryEncoder GND to the GND rail.
-- Run a jumper from the row of Inmp441I2sMicRound GND to the GND rail.
-- Put R1 end 2 (pull-down on Inmp441I2sMicRound SD) in the GND rail.
-- Move the jumper from the row of JoystickModuleMh GND: it now goes to the GND rail (it went to the row of Cjmcu111RotaryEncoder GND).
-- Move the jumper from the row of Max98357aDfr0954 GND: it now goes to the GND rail (it went to the row of Cjmcu111RotaryEncoder GND).
+- Take out the jumper from board SCL to the row of Cjmcu111RotaryEncoder GB.
+- Take out the jumper from board SDA to the row of Cjmcu111RotaryEncoder GA.
+- Run a jumper from board RX to the row of Cjmcu111RotaryEncoder GA.
+- Run a jumper from board TX to the row of Cjmcu111RotaryEncoder GB.
 
 ### Steps
 
@@ -65,8 +57,8 @@ One connection per step. The board's pins take the rows beside them, so a board 
 25. Run a jumper from the row of JoystickModuleMh GND (the header pin at the end labelled GND) to the GND rail.
 26. Run a jumper from the row of Max98357aDfr0954 GND to the GND rail.
 27. Put R1 (100kΩ pull-down on Inmp441I2sMicRound SD), end 2, in the GND rail.
-28. Run a jumper from board SCL to the row of Cjmcu111RotaryEncoder GB.
-29. Run a jumper from board SDA to the row of Cjmcu111RotaryEncoder GA.
+28. Run a jumper from board RX to the row of Cjmcu111RotaryEncoder GA.
+29. Run a jumper from board TX to the row of Cjmcu111RotaryEncoder GB.
 30. Run a jumper from the row of SpeakerTerminal SPK_N to the row of Max98357aDfr0954 SPK_N.
 31. Connect the SPEAKER_N supply, from off the board, to the row of Max98357aDfr0954 SPK_N. Check its voltage first (Before you power it).
 32. Run a jumper from the row of SpeakerTerminal SPK_P to the row of Max98357aDfr0954 SPK_P.
@@ -91,14 +83,14 @@ flowchart LR
     n10["board D11"]
     n11["board D12"]
     n12["board GND"]
-    n13["board SCL"]
-    n14["board SDA"]
+    n13["board RX"]
+    n14["board TX"]
   end
   subgraph g2["Cjmcu111RotaryEncoder"]
     n15["Cjmcu111RotaryEncoder VCC"]
     n16["Cjmcu111RotaryEncoder GND"]
-    n17["Cjmcu111RotaryEncoder GB"]
-    n18["Cjmcu111RotaryEncoder GA"]
+    n17["Cjmcu111RotaryEncoder GA"]
+    n18["Cjmcu111RotaryEncoder GB"]
   end
   subgraph g3["Inmp441I2sMicRound"]
     n19["Inmp441I2sMicRound VDD"]
@@ -182,8 +174,8 @@ After the steps, each line is one point: its ends must be joined, and nothing el
 10. board D11 · Max98357aDfr0954 LRC
 11. board D12 · Max98357aDfr0954 BCLK
 12. board GND · Cjmcu111RotaryEncoder GND (the pad labelled GND, at the end of the row beside the lone tan ceramic capacitor) · Inmp441I2sMicRound GND · JoystickModuleMh GND (the header pin at the end labelled GND) · Max98357aDfr0954 GND · R1 (100kΩ pull-down on Inmp441I2sMicRound SD), end 2 — more ends than one breadboard row holds: join board GND to a rail and put the others on that rail
-13. board SCL · Cjmcu111RotaryEncoder GB (the pad labelled GB, next to GA)
-14. board SDA · Cjmcu111RotaryEncoder GA (the pad labelled GA, at the end of the 4-pad row away from the lone tan ceramic capacitor)
+13. board RX · Cjmcu111RotaryEncoder GA (the pad labelled GA, at the end of the 4-pad row away from the lone tan ceramic capacitor)
+14. board TX · Cjmcu111RotaryEncoder GB (the pad labelled GB, next to GA)
 15. Max98357aDfr0954 SPK_N · SpeakerTerminal SPK_N · the SPEAKER_N supply, from off the board, not part of the parts list
 16. Max98357aDfr0954 SPK_P · SpeakerTerminal SPK_P · the SPEAKER_P supply, from off the board, not part of the parts list
 

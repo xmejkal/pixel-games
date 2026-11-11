@@ -16,37 +16,50 @@ import { FireBeetle2Esp32S3 } from "./FireBeetle2Esp32S3"
  * anything carrying real current.
  */
 export default () => (
-  <board width="75.4mm" height="85.8mm" autorouter="auto"
+  <board width="82.6mm" height="103.8mm" autorouter="auto"
       thickness="1.6mm"
       minViaHoleDiameter="0.3mm" minViaPadDiameter="0.6mm"
       automaticPoursEnabled>
-    <FireBeetle2Esp32S3 name="Mcu" pcbX={-19} pcbY={0} />
+    <FireBeetle2Esp32S3 name="Mcu" pcbX={-22.6} pcbY={0} />
 
     {/* DFRobot DFR0954 MAX98357A I2S amplifier */}
-    <chip name="Max98357aDfr0954" footprint="dip12_w15.24mm" pcbX={14.7} pcbY={27.9}
+    <chip name="Max98357aDfr0954" footprint="dip12_w15.24mm" pcbX={11.1} pcbY={36.9}
       pinLabels={{ pin1: "SPK_P", pin2: "DIN", pin3: "BCLK", pin4: "LRC", pin5: "GND", pin6: "VCC", pin7: "GAIN", pin8: "SD", pin9: "NC", pin10: "GND", pin11: "VCC", pin12: "SPK_N" }} />
     {/* 2-pin speaker terminal (JST PH) */}
     {/* silkscreen: SPK_N is printed SPK-, SPK_P is printed SPK+ */}
-    <chip name="SpeakerTerminal" footprint="jst_ph_2" pcbX={14.7} pcbY={12}
+    <chip name="SpeakerTerminal" footprint="jst_ph_2" pcbX={11.1} pcbY={21}
       pinLabels={{ pin1: "SPK_P", pin2: "SPK_N" }} />
     {/* Two-axis thumb joystick module (PS2-style, 5-pin, silkscreen "MH") */}
     {/* silkscreen: VCC is printed +5V */}
-    <chip name="JoystickModuleMh" footprint="headermodule5" pcbX={14.7} pcbY={-7.9}
+    <chip name="JoystickModuleMh" footprint="headermodule5" pcbX={11.1} pcbY={1.1}
       pinLabels={{ pin1: "GND", pin2: "VCC", pin3: "VRX", pin4: "VRY", pin5: "SW" }} />
     {/* CJMCU-111 rotary encoder module (4-pad: GA GB VCC GND, knob fitted) */}
-    <chip name="Cjmcu111RotaryEncoder" footprint="pinrow4" pcbX={14.7} pcbY={-28.9}
+    <chip name="Cjmcu111RotaryEncoder" footprint="pinrow4" pcbX={11.1} pcbY={-19.9}
       pinLabels={{ pin1: "GND", pin2: "VCC", pin3: "GB", pin4: "GA" }} />
+    {/* Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread */}
+    {/* silkscreen: LR is printed L/R */}
+    <chip name="Inmp441I2sMicRound" footprint="dip6" pcbX={11.1} pcbY={-34.9}
+      pinLabels={{ pin1: "LR", pin2: "WS", pin3: "SCK", pin4: "SD", pin5: "VDD", pin6: "GND" }} />
+
+    {/* What the parts demand of this board as components, from their records' host_parts — done here. */}
+    {/* pulldown on Inmp441I2sMicRound.SD: the datasheet asks for it so that SD does not float in the half-frame the chip does not drive; whether the board has its own is unknown (other face unseen). A host that reads only the slot L/R selects may ignore the other, then the pull-down does not matter */}
+    <resistor name="Inmp441I2sMicRoundPulldownSD" resistance="100k" footprint="0603" pcbX={33.7} pcbY={45.1} />
+    <trace from=".Inmp441I2sMicRoundPulldownSD > .pin1" to=".Inmp441I2sMicRound > .SD" />
+    <trace from=".Inmp441I2sMicRoundPulldownSD > .pin2" to="net.GND" />
 
     {/* Signals, each on the pin assign_pins.py chose and for the reason it gave. */}
     <trace from=".Mcu > .A2" to=".Max98357aDfr0954 > .SD" />  {/* AUDIO_SHUTDOWN: asked for by name — dedicated hardware, not a choice */}
     <trace from=".Mcu > .A0" to=".JoystickModuleMh > .VRX" />  {/* JOY_X: asked for by name — dedicated hardware, not a choice */}
     <trace from=".Mcu > .A1" to=".JoystickModuleMh > .VRY" />  {/* JOY_Y: asked for by name — dedicated hardware, not a choice */}
     <trace from=".Mcu > .D5" to=".JoystickModuleMh > .SW" />  {/* JOY_SW: asked for by name — dedicated hardware, not a choice */}
+    <trace from=".Mcu > .RX" to=".Cjmcu111RotaryEncoder > .GA" />  {/* ENC_A: asked for by name — dedicated hardware, not a choice */}
+    <trace from=".Mcu > .TX" to=".Cjmcu111RotaryEncoder > .GB" />  {/* ENC_B: asked for by name — dedicated hardware, not a choice */}
+    <trace from=".Mcu > .A3" to=".Inmp441I2sMicRound > .SCK" />  {/* MIC_SCK: asked for by name — dedicated hardware, not a choice */}
+    <trace from=".Mcu > .A5" to=".Inmp441I2sMicRound > .WS" />  {/* MIC_WS: asked for by name — dedicated hardware, not a choice */}
+    <trace from=".Mcu > .A4" to=".Inmp441I2sMicRound > .SD" />  {/* MIC_SD: asked for by name — dedicated hardware, not a choice */}
     <trace from=".Mcu > .D12" to=".Max98357aDfr0954 > .BCLK" />  {/* I2S_BCLK: on the I2S bus, which this board routes through its GPIO matrix rather than to labelled pins, so any pin serves; needs nothing special; the cheapest pin left could still pwm and wake, which is spent here */}
     <trace from=".Mcu > .D11" to=".Max98357aDfr0954 > .LRC" />  {/* I2S_LRC: on the I2S bus, which this board routes through its GPIO matrix rather than to labelled pins, so any pin serves; needs nothing special; the cheapest pin left could still pwm and wake, which is spent here */}
     <trace from=".Mcu > .D10" to=".Max98357aDfr0954 > .DIN" />  {/* I2S_DIN: on the I2S bus, which this board routes through its GPIO matrix rather than to labelled pins, so any pin serves; needs nothing special; the cheapest pin left could still pwm and wake, which is spent here */}
-    <trace from=".Mcu > .SDA" to=".Cjmcu111RotaryEncoder > .GA" />  {/* ENC_A: needs nothing special; the cheapest pin left could still adc and pwm and wake, which is spent here */}
-    <trace from=".Mcu > .SCL" to=".Cjmcu111RotaryEncoder > .GB" />  {/* ENC_B: needs nothing special; the cheapest pin left could still adc and pwm and wake, which is spent here */}
 
     {/* ASSIGNED, AND CONNECTED TO NOTHING. The pin assigner placed these, and
         no part in the module list claims them, so this file cannot say what
@@ -58,9 +71,6 @@ export default () => (
           - GDI_CS on D6 (GPIO18): asked for by name — dedicated hardware, not a choice
           - GDI_SD_CS on D7 (GPIO9): asked for by name — dedicated hardware, not a choice
           - GDI_BL on D13 (GPIO21): asked for by name — dedicated hardware, not a choice
-          - MIC_SCK on A3 (GPIO8): asked for by name — dedicated hardware, not a choice
-          - MIC_WS on A5 (GPIO11): asked for by name — dedicated hardware, not a choice
-          - MIC_SD on A4 (GPIO10): asked for by name — dedicated hardware, not a choice
           - SWITCH_BUTTON on D14 (GPIO47): asked for by name — dedicated hardware, not a choice
         Add a part record for whatever each one drives, or wire it by hand.
         A schematic missing half its signals builds and routes cleanly. */}
@@ -84,6 +94,8 @@ export default () => (
     <trace from=".JoystickModuleMh > .GND" to="net.GND" />
     <trace from=".Cjmcu111RotaryEncoder > .VCC" to="net.V33" />  {/* feed from the host's 3V3, never from 5 V: if the board's own pull-ups go to VCC (unconfirmed), GA and GB idle at the supply voltage */}
     <trace from=".Cjmcu111RotaryEncoder > .GND" to="net.GND" />
+    <trace from=".Inmp441I2sMicRound > .VDD" to="net.V33" />  {/* the host's 3V3. The chip's absolute maximum is 3.63 V: never 5 V */}
+    <trace from=".Inmp441I2sMicRound > .GND" to="net.GND" />
     {/* THE WIDTH OF THE TRACES ABOVE ON net.GND, net.SPEAKER_N, net.SPEAKER_P, net.V33 IS UNJUSTIFIED.
         They take the router's default, which is about 0.15 mm and good
         for roughly 0.6 A. Nobody has stated what these rails carry, so
@@ -93,7 +105,7 @@ export default () => (
         judges the result by the same arithmetic that would have set it. */}
 
     {/* What these parts require of this board, from their part files.
-        None of it is done here — each one is a design decision:
+        Beyond the 1 passive(s) placed above, none of it is done here — each one is a design decision:
           - DFRobot DFR0954 MAX98357A I2S amplifier: NEVER stop LRCLK while BCLK is running. Maxim state twice that this can produce a large DC output voltage, which into an 8 ohm speaker cooks the voice coil. Stop BCLK, not LRCLK.
           - DFRobot DFR0954 MAX98357A I2S amplifier: SD must be DRIVEN LOW to shut the amplifier down, not left floating — an on-board resistor holds it high, and floating selects a channel rather than turning it off. Removing the clock only reaches standby at 340 uA.
           - DFRobot DFR0954 MAX98357A I2S amplifier: Holding SD low draws current through that on-board resistor for as long as it is held: 33 uA at 3.3 V if R1 is 100k, 4.9 uA if it is 680k. The host GPIO sinks it, and it is spent precisely while the amplifier is meant to be off.
@@ -113,6 +125,14 @@ export default () => (
           - CJMCU-111 rotary encoder module (4-pad: GA GB VCC GND, knob fitted): Shop pages for 'CJMCU-111' describe two different boards: Leybold's text and a search summary list 5 pins (GND + SW DT CLK, KY-040 style) while both shops' photos show 4 pads labelled GA GB VCC GND. Wire from the silkscreen on the unit, never from a CLK/DT/SW diagram: reading the row from the wrong end puts GND on GA and VCC on GB.
           - CJMCU-111 rotary encoder module (4-pad: GA GB VCC GND, knob fitted): Debounce in firmware (the contacts are mechanical and an on-board capacitor, if it is a filter, has an unknown value), and decode both channels together: A alone cannot tell the direction. Count per detent on the bench before trusting a figure: shops give 20 detents and 20 pulses per turn, not the edges per detent.
           - CJMCU-111 rotary encoder module (4-pad: GA GB VCC GND, knob fitted): The board ships with the 4-pin header loose in the bag (Funduino: unsoldered). Solder it, shaft side up or down as the enclosure needs, and do not push sideways on the shaft: the sheet warns against lateral force.
+          - Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: Feed VDD from the host's 3V3 and never from 5 V or VBUS: the chip's absolute maximum on VDD is 3.63 V and on the digital pins VDD + 0.3 V, and no regulator can be seen on the pad side of this board (the other face was not seen).
+          - Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: L/R must be tied: to GND the samples come in the LEFT slot, to VDD in the RIGHT slot. Do not leave it floating; the slot is undefined.
+          - Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: The host is the I2S master and must clock SCK at exactly 64 times WS (32-bit slots, both channels), SCK 0.5 to 3.2 MHz, WS 7.8 to 50 kHz. Read 32-bit words: the 24 bits are the top of each word, two's complement.
+          - Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: The first 2^18 SCK cycles after power-up (85 ms at 3.072 MHz) read zero; drop those samples.
+          - Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: SD floats in the half-frame the chip does not use. Read only the slot that L/R selects, or add the datasheet's 100 kOhm pull-down to GND on SD.
+          - Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: Do not leave SCK and WS running while VDD is off: the datasheet warns that it continuously turns on the ESD diodes and may affect the chip's long-term reliability.
+          - Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: The sound port is the small plated hole at the centre of the PAD SIDE: keep it clear of dust, tape and a breadboard surface pressed against it, or the sensitivity drops.
+          - Round INMP441-type I2S MEMS microphone breakout (6 pads: SCK WS L/R / SD VDD GND), chip marking unread: Pad order and the identity of the chip rest on one photo of one face. Look at the other face before the pad order is trusted for a PCB footprint.
      */}
   </board>
 )

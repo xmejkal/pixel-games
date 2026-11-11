@@ -488,16 +488,16 @@
   {
    "key": [
     "board",
-    "board SCL"
+    "board RX"
    ],
    "anchor": [
     "row",
     "part",
-    "Cjmcu111RotaryEncoder GB (the pad labelled GB, next to GA)"
+    "Cjmcu111RotaryEncoder GA (the pad labelled GA, at the end of the 4-pad row away from the lone tan ceramic capacitor)"
    ],
    "kind": "jumper",
-   "source": "board SCL",
-   "to": "the row of Cjmcu111RotaryEncoder GB",
+   "source": "board RX",
+   "to": "the row of Cjmcu111RotaryEncoder GA",
    "tag": "",
    "value": "",
    "job": "",
@@ -507,16 +507,16 @@
   {
    "key": [
     "board",
-    "board SDA"
+    "board TX"
    ],
    "anchor": [
     "row",
     "part",
-    "Cjmcu111RotaryEncoder GA (the pad labelled GA, at the end of the 4-pad row away from the lone tan ceramic capacitor)"
+    "Cjmcu111RotaryEncoder GB (the pad labelled GB, next to GA)"
    ],
    "kind": "jumper",
-   "source": "board SDA",
-   "to": "the row of Cjmcu111RotaryEncoder GA",
+   "source": "board TX",
+   "to": "the row of Cjmcu111RotaryEncoder GB",
    "tag": "",
    "value": "",
    "job": "",
