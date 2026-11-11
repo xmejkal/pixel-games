@@ -109,8 +109,11 @@ Runs now:
   `VolumeKnob(encoder, volume, store)` turns the step, 1 step per click, from `poll(now_ms)` once per frame.
   `VolumeStore` keeps the step in `volume.txt`, and the knob saves it 3 s after the last turn. The save is off in the
   probe by default: each 37th save takes 2.4 s and stops the sound (bench.md, P757). The fix is a later card.
-  Status: the probe turns the volume, and no game does yet. The PO's hand and ear did not test the knob yet. Try it
-  with `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 30 FireSound`, and add `SAVE=1` for the save.
+  Status: the gain works, and the knob does not turn it yet. The PO turned the knob in Fire on 2026-11-11 and the
+  step did not move. Measured: a closed contact of the encoder reads 1.2 to 1.4 V, not 0 V, and with the I2S open
+  the count stands still. That the first causes the second is likely, not proven (bench.md, P757, entries 11 to
+  17). The fix is open. Set the step with `LEVEL`:
+  `VOLUME=ViperMasterVolume LEVEL=4 tools/crackle.sh 30 FireSound`. `KNOB=1` adds the knob, and `SAVE=1` the save.
 - The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a
   change, run `python3 ~/Development/spark/scripts/check_spine.py requirements.json --keep build --json` and copy
   `build/firmware/pins.py` to `games/pins.py`. The run ends in `problems` today, only because the reserved display pins

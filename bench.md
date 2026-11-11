@@ -987,7 +987,7 @@ the raw edge count for 180 s. The PO turned the knob by hand and counted the cli
 steps of 3 dB, and step 0 is silent. `ViperMasterVolume` (`games/volume_viper.py`) is the same scale as viper code.
 `probe733_games.py` runs them with `VOLUME` and `LEVEL`. Nobody flashed the board for this card, and these runs did
 not read its image. `crackle_c.mpy` is 90d7503d74fe (engine 1c15d73). Logs (git-ignored, kept on the Mac): `run151`
-to `run161`.
+to `run168`.
 
 ### Slices 1 and 2: the gain and its cost
 
@@ -1048,8 +1048,40 @@ three numbers are not tuned on the bench.
 | 10 | run161-p757-fire-knob-review.log | the same as entry 5, after the review's changes (the bounded rest point, the `finally` in `render_block`) | `scale match 1`, `edges 0` and step 8 in all five lines, no `level` line, fps 24, 24, 24, 23, 24, late 0, step 7.4 to 7.6 ms, apply_max 247 to 387 us |
 
 - Entry 5 is the pulse counter beside a game's load at rest: it counted no edge in 30 s. Entry 10 is the same.
-- Not done yet: the PO's turn of the knob in Fire and in BurningBodies (no click, 16 detents from silent to full,
-  the level holds at rest, which way is louder).
+- Entries 5 and 10 pass for a knob that works and for one that does not: nobody turned it.
+
+The PO's turn, 2026-11-11: "I played it and heard fire dounds, but the rotary did nothing". The runs that followed,
+each with the PO's hand on the knob (entries 13 and 14 with no hand). Entries 12 to 17 are scratch scripts, not in
+the repository: they set up the encoder as `Encoder.on_board` does and print once a second or once a phase.
+
+| entry | log | what ran | result |
+| --- | --- | --- | --- |
+| 11 | run162-p757-fire-knob-po.log | entry 5 again, the PO turns | step 8 in all five lines, no `level` line, edges 0, 0, 1, 0, 1 |
+| 12 | run163-p757-encoder-raw.log | the encoder alone: both pins read raw beside the pulse counter, 45 s | both pins change, the counter reads 240 edges after about 22 s of turning |
+| 13 | run165-p757-encoder-i2s.log | no hand: the pins' GPIO registers and raw rising edges in 1 s, before, with and after an open I2S | GPIO1 and GPIO2: output off, `out_sel` 256 and the same IO_MUX word in all three states. 0 edges, level 1 |
+| 14 | run166-p757-encoder-display-i2s.log | no hand: the same with the display opened first | the same: 0 edges, level 1 |
+| 15 | run164-p757-encoder-phases.log | the count alone (25 s), after the display's setup (15 s), after the I2S opens (15 s) | alone and with the display the count follows the hand. With the I2S open it stands at -3 for the 15 s, pin A changes as before (168 polled changes in 15 s), pin B 2403 |
+| 16 | run167-p757-encoder-alternate.log | the display open, the I2S closed and open in turns of 4 s, raw rising edges per second on each pin with no filter | I2S closed: 2 to 22 edges a second on B, the count goes from 20 to 172. I2S open, the 16 seconds with a turn: 26052 to 300347 edges a second on B, 10 to 1377 on A, and the count changes in 6 of 28 seconds, by 2 at most. At rest: 0 edges, also with the I2S open |
+| 17 | run168-p757-encoder-adc.log | the voltage on both pins by the ADC (11 dB, bins of 200 mV), five turns of 12 s by the script (the log has no times): the I2S closed, open, closed, open, closed. The first two turns show no closed contact | open contact: 3.0 to 3.2 V, and with the I2S open up to 133 of 85466 samples in 2.8 to 3.0 V. Closed contact, I2S closed: 1.2 to 1.4 V, with 13 of 31002 low samples outside that bin on A and 3 of 14667 on B in the last turn. I2S open: the low samples spread over 0.8 to 2.0 V, with 315 of 39064 outside the bin on A and 1598 of 16257 on B |
+
+- The knob does not turn the volume while the sound plays. The encoder, its wires and the pulse counter work when
+  the I2S is closed (entries 12, 15, 16). `volume.py` and `take_detents` are not the cause: the count that they
+  read stands still.
+- Measured: a closed contact reads 1.2 to 1.4 V, not 0 V, and an open one 3.0 to 3.2 V (entry 17). Read, not
+  measured: the ADC's setup switches the pin's own pull-up off (ESP-IDF v5.5.2, `gpio_config_as_analog`). If that
+  holds on this image, a pull-up outside the chip holds the open level, and the closed contact is one half of a
+  divider. Which resistors these are is not measured.
+- Measured: with the I2S closed the count follows the hand at this level (entries 15 and 16), and P758's bench ran
+  with the I2S closed (run150). With the I2S open, B shows 26052 to 300347 raw edges a second while the knob turns,
+  and the count changes by 2 at most in a second (entries 15 and 16).
+- Inferred, and tested by no run: the level sits near the input's threshold, so the I2S's noise flips the input.
+  The pulse counter's filter (`FILTER_NS`, 12 us) drops these pulses, so the counter sees B as constant, and each
+  edge of A counts once up and once back. The source is the bit clock on GPIO12: 512000 edges a second by the I2S's
+  settings (16 kHz, 16 bits, 2 slots), which no run measured.
+- The chip does not drive GPIO1 or GPIO2 (entry 13). How the clock's noise reaches the pins is not measured.
+- Open: the two resistors (a meter: the module's VCC to GA and GB, and GA to GND with the contact closed), if this
+  board has its own pull-ups on SDA and SCL (the board record: 5.1 kOhm on V1.1 and earlier), and the fix. Not done:
+  the PO's turn in Fire and in BurningBodies with a knob that works.
 
 ### Slice 4: the save
 
