@@ -980,3 +980,57 @@ the raw edge count for 180 s. The PO turned the knob by hand and counted the cli
 - No frame loop ran beside the probe. The count under a game's load is P757's bench.
 - Not measured: the module's own pull-ups (an ohmmeter from VCC to GA and to GB, power off, with the GA and GB wires
   out of the board). The record keeps that fact unverified.
+
+## P757 (#1040), 2026-11-11: the master volume
+
+`MasterVolume` (`games/volume.py`) scales each block of 256 samples by a Q15 gain, just before the I2S. It has 17
+steps of 3 dB, and step 0 is silent. `ViperMasterVolume` (`games/volume_viper.py`) is the same scale as viper code.
+`probe733_games.py` runs them with `VOLUME` and `LEVEL`. Nobody flashed the board for this card, and these runs did
+not read its image. `crackle_c.mpy` is 90d7503d74fe (engine 1c15d73). Logs (git-ignored, kept on the Mac): `run151`
+to `run156`.
+
+### Slices 1 and 2: the gain and its cost
+
+The scale gives the same samples on the Mac and on the board, as bytecode and as viper code.
+
+| entry | log | what ran | result |
+| --- | --- | --- | --- |
+| 1 | run152-p757-scale-mac.log, run152-p757-scale-board.log | the naive scale on 10 named cases, the same script on both | the same `GAINS` table and the same 10 sums |
+| 2 | run152-p757-scale-board.log | the naive scale alone, 20 blocks each | a steady gain 1220 us a block (median), a ramp 1644 us |
+| 3 | run154-p757-emitters.log | the steady loop as bytecode and under `@micropython.native` | 1204 us and 681 us |
+| 4 | run155-p757-viper-board.log | `volume_viper.scale_match()`, then the viper scale alone | `scale match 1`, and 116 us a block, steady and ramp |
+
+Fire with `FireSound`, `CallbackRefill` 2048 B, 30 s each (`tools/crackle.sh 30 FireSound`), from five 5 s lines:
+
+| log | volume | fps | late | step ms | apply_max us | render_max us |
+| --- | --- | --- | --- | --- | --- | --- |
+| run153a-p757-fire-off.log | none | 24, 24, 24, 24, 24 | 0 | 7.3 to 7.5 | | 593 to 664 |
+| run153b-p757-fire-l8.log | `MasterVolume`, step 8 | 24, 24, 23, 23, 24 | 0 | 7.6 to 8.1 | 1366 to 1909 | 604 to 685 |
+| run156-p757-fire-viper-l8.log | `ViperMasterVolume`, step 8 | 24, 24, 24, 24, 24 | 0 | 7.4 to 7.6 | 249 to 334 | 615 to 700 |
+
+The tone through the microphone (`MIC = 1`, `FrameRefill` 4096 B), `tone_mean` and `floor` of each run:
+
+| log | volume | tone_mean | floor |
+| --- | --- | --- | --- |
+| run151b-p757-tone-off.log | none | 616 | 207 |
+| run151a, run151c, run151d-p757-tone-l16.log | step 16 | 616, 855, 561 | 1036, 634, 209 |
+| run151d-p757-tone-l15.log | step 15 | 337 | 204 |
+| run151d-p757-tone-l14.log | step 14 | 245 | 206 |
+| run151d-p757-tone-l13.log | step 13 | 217 | 203 |
+| run151d-p757-tone-l12.log | step 12 | 218 | 217 |
+| run151d-p757-tone-l8.log | step 8 | 200 | 203 |
+| run151d-p757-tone-l1.log | step 1 | 202 | 204 |
+| run151d-p757-tone-l0.log | step 0 | 197 | 202 |
+
+- The naive scale costs about 1.2 ms of each 16 ms block as bytecode, twice the `FireSound` render itself. Fire lost
+  one frame per second in two of five lines. The viper scale costs 116 us alone and at most 334 us in the game, with
+  the probe's timer around it. The naive class stays: it is the path that always works (D26).
+- `fast.native` does nothing on the board (entry 3 and `print(fast.native)`: `<function native>`, the fallback of
+  `games/fast.py`). The `micropython` module has no `native` name to import: the compiler knows only the written
+  decorator `@micropython.native`. So the `@native` code of `gfx.py`, `motion.py` and `render.py` runs as bytecode.
+  `volume.py` does not use it. The fix is not in this card.
+- The microphone does not prove the levels. Every tone run ended with `mic slot empty`, also the run with no volume:
+  the tone read 561 to 855, under 3 times the room in each run, where P733 read 901 to 976. The cause is not measured.
+  The room moved between 202 and 1036. The numbers fall with the step and meet the room at about step 13.
+  They cannot tell step 12 from step 0, and they cannot tell 3 dB a step from another slope.
+- Nobody listened to these runs. The PO's ear is the test of slice 3.

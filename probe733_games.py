@@ -3,7 +3,7 @@ P733 steps 2 and 3, P746, P748, P747 and P757: a sound beside the game loop, fed
 stock machine.I2S, and heard by a microphone.
 
     mpremote cp games/sound.py :sound.py
-    mpremote cp games/volume.py :volume.py      # only for a run with VOLUME (P757)
+    mpremote cp games/volume.py :volume.py + cp games/volume_viper.py :volume_viper.py   # for a run with VOLUME (P757)
     mpremote run probe733_games.py      # GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE, VOLUME, LEVEL and SECONDS set by sed
 
 tools/crackle.sh runs it with a crackle (P747): it builds crackle_c.mpy and copies it and games/crackle.py first.
@@ -51,10 +51,12 @@ the bed on) and follow_bodies to it and counts the calls, and adds a line to eve
 `follow <game> follow_field <n> follow_bodies <n> level <n> coef <n> whoosh <n>`: the calls of the window, the bed's
 targets now and the loudest whoosh's level now.
 
-VOLUME (P757) is the master volume's class name in volume, or "" for the mix as it is: then the probe never imports
-volume. LEVEL is its start step, 0 (silent) to 16 (the mix as it is), or None for volume.DEFAULT_STEP. It is LEVEL
-because a step in this probe is a bench step. One more line every 5 s: `volume level <n> gain <n> apply_max <us>`:
-the step, the gain that the last block ended at (32768 is the mix as it is), and the longest apply of the window.
+VOLUME (P757) is the master volume's class name: "MasterVolume" (in volume, the naive path), "ViperMasterVolume" (in
+volume_viper), or "" for the mix as it is: then the probe imports neither. LEVEL is its start step, 0 (silent) to 16
+(the mix as it is), or None for volume.DEFAULT_STEP. It is LEVEL because a step in this probe is a bench step. One
+more line every 5 s: `volume level <n> gain <n> apply_max <us>`: the step, the gain that the last block ended at
+(32768 is the mix as it is), and the longest apply of the window. With ViperMasterVolume, the first line is `scale
+match <1 or 0>`: 1 when the viper scale gave the naive scale's samples on the named blocks of volume_viper.
 """
 
 import math
@@ -74,7 +76,7 @@ HITS = 0  # "auto": a hit every 2 s from 4 s on, "press": a hit at each BOOT pre
 REFILL = "FrameRefill"  # or "CallbackRefill": a driver's class name in sound (P748)
 IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 2048 gives 4 buffers, 64 ms
 VOICE = "tone"  # "silent", "Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle" or "FireSound" (P747, P751, P753)
-VOLUME = ""  # "MasterVolume": the master volume, a class name in volume; "": the mix as it is (P757)
+VOLUME = ""  # "MasterVolume" or "ViperMasterVolume": the master volume's class; "": the mix as it is (P757)
 LEVEL = None  # the volume's start step, 0 to 16; None: volume.DEFAULT_STEP
 SECONDS = 120
 SWITCH_MS = 30_000
@@ -363,7 +365,11 @@ class Probe:
         self.mixer, self.refill, self.mic, self.volume = sound.Mixer(), None, None, None
         if VOLUME:  # P757
             import volume
-            self.volume = TimedVolume(getattr(volume, VOLUME)(volume.DEFAULT_STEP if LEVEL is None else LEVEL))
+            home = volume
+            if VOLUME == "ViperMasterVolume":
+                import volume_viper as home
+                print("scale match %d" % home.scale_match())
+            self.volume = TimedVolume(getattr(home, VOLUME)(volume.DEFAULT_STEP if LEVEL is None else LEVEL))
         self.first_pop_shown = False
         if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle", "FireSound"):  # P747, P751, P753
             import crackle

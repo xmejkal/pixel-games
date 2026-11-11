@@ -3,13 +3,11 @@ The master volume (P757): one gain on the whole mix, just before the I2S. --- MV
 
 A Refill of sound.py calls volume.apply(block) after the mixer's render. The volume has STEPS steps: step 0 is
 silent, step STEPS is the mix as it is, and each step between is DB_PER_STEP dB. A change of step ramps across one
-block (16 ms), so it does not click. MasterVolume is the naive path, plain MicroPython, which stays working (D26).
-A faster class keeps apply(buf) and overrides scale.
+block (16 ms), so it does not click. MasterVolume is the naive path, plain MicroPython bytecode, which stays working
+(D26). A faster class keeps apply(buf) and overrides scale: ViperMasterVolume of volume_viper.py.
 
 DB_PER_STEP and DEFAULT_STEP are choices for the PO's ear, not measured facts.
 """
-
-from fast import native
 
 STEPS = 16
 DB_PER_STEP = 3
@@ -37,7 +35,6 @@ class MasterVolume:
             self.scale(buf, self.gain, end)
             self.gain = end
 
-    @native
     def scale(self, buf, start, end):
         """buf times a gain that goes from start to end across the block. No product is over 2^30, and the loop
         divides nothing. The ramp never passes end: it stops at end, or 1 under it on the way up. >> rounds down,

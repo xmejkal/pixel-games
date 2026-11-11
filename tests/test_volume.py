@@ -8,9 +8,28 @@ import unittest
 from array import array
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "stubs"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
 
+import volume_viper  # noqa: E402
 from volume import DB_PER_STEP, DEFAULT_STEP, FULL, GAINS, STEPS, MasterVolume  # noqa: E402
+from volume_viper import CASES, CORNERS, ViperMasterVolume  # noqa: E402
+
+
+class Ptr16:
+    """Viper's ptr16 on the Mac: a read is unsigned, and a store keeps the low 16 bits."""
+
+    def __init__(self, buf):
+        self.view = memoryview(buf).cast("B").cast("H")
+
+    def __getitem__(self, i):
+        return self.view[i]
+
+    def __setitem__(self, i, value):
+        self.view[i] = value & 0xFFFF
+
+
+volume_viper.ptr16 = Ptr16
 
 
 def samples(*values):
@@ -113,6 +132,36 @@ class MasterVolumeTest(unittest.TestCase):
         volume.apply(samples(*[1] * 8))  # the fade in
         volume.apply(samples(*[1] * 8))
         self.assertEqual(calls, [(0, FULL)])
+
+
+class ViperMasterVolumeTest(unittest.TestCase):
+    def test_the_viper_scale_gives_the_naive_samples_on_each_named_block(self):
+        for start, end in CASES:
+            naive, viper = samples(*CORNERS * 32), samples(*CORNERS * 32)
+            MasterVolume().scale(naive, start, end)
+            ViperMasterVolume().scale(viper, start, end)
+            self.assertEqual(list(viper), list(naive), (start, end))
+        self.assertTrue(volume_viper.scale_match())
+
+    def test_scale_match_sees_a_scale_that_differs(self):
+        class OffByOne(MasterVolume):
+            def scale(self, buf, start, end):
+                buf[5] = 1  # the naive scale leaves this corner at 0
+
+        kept, volume_viper.ViperMasterVolume = volume_viper.ViperMasterVolume, OffByOne
+        try:
+            self.assertFalse(volume_viper.scale_match())
+        finally:
+            volume_viper.ViperMasterVolume = kept
+
+    def test_apply_reaches_the_step_as_the_naive_class_does(self):
+        naive, viper = MasterVolume(5), ViperMasterVolume(5)
+        for _ in range(2):  # the fade in, then the steady block
+            a, b = samples(*CORNERS * 32), samples(*CORNERS * 32)
+            naive.apply(a)
+            viper.apply(b)
+            self.assertEqual(list(b), list(a))
+        self.assertEqual(viper.gain, GAINS[5])
 
 
 if __name__ == "__main__":

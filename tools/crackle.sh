@@ -9,6 +9,10 @@
 #     tools/crackle.sh [seconds] [voice] [look]
 #         voice: NativeCrackle (default), SampledCrackle, GrainCrackle or FireSound (P753)
 #     GAME=BurningBodies tools/crackle.sh 30 FireSound   # the game: Fire (default) or BurningBodies (P753)
+#     VOLUME=MasterVolume LEVEL=8 tools/crackle.sh 30 FireSound   # with the master volume at step 8 (P757)
+#
+# The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None) and MIC
+# (default 0). With a VOLUME, games/volume.py and games/volume_viper.py go to the board too (P757).
 #
 # A look, such as "6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK in the crackle.py that this
 # run copies (GRAIN_LOOK for GrainCrackle and FireSound, such as "0, 32768": bed gain, pop gain).
@@ -16,7 +20,7 @@
 # GAME=BurningBodies also copies burning.py and plugins.py, which the bodies' whooshes hook into (P753).
 # GrainCrackle and FireSound (P751, P753) also need the bank on the board: games/fire_bank.raw (about 250 KB, about
 # 60 s to copy) goes only when `mpremote fs sha256sum` shows the board's copy differs.
-# --- MVP (P747, P751, P753) ---
+# --- MVP (P747, P751, P753, P757) ---
 set -eo pipefail
 START=$(date +%s)
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
@@ -24,6 +28,9 @@ SECONDS_RUN=${1:-10}
 VOICE=${2:-NativeCrackle}
 LOOK=${3:-}
 GAME=${GAME:-Fire}
+VOLUME=${VOLUME:-}
+LEVEL=${LEVEL:-None}
+MIC=${MIC:-0}
 TOOLS=$(ls -d "$HOME"/.espressif/tools/xtensa-esp-elf/*/xtensa-esp-elf/bin | tail -1)
 IDF_PYTHON=$HOME/.espressif/python_env/idf5.5_py3.10_env/bin/python
 PROBE_DIR=$(mktemp -d)
@@ -34,6 +41,7 @@ CRACKLE_PY=$PROBE_DIR/crackle.py
 PATH=$TOOLS:$PATH make -s -C "$ROOT/engine/natmod/crackle" ARCH=xtensawin CROSS=xtensa-esp32s3-elf- PYTHON="$IDF_PYTHON"
 sed -e "s/^GAME = .*/GAME = \"$GAME\"/" -e 's/^REFILL = .*/REFILL = "CallbackRefill"/' -e 's/^IBUF = .*/IBUF = 2048/' \
     -e "s/^VOICE = .*/VOICE = \"$VOICE\"/" -e "s/^SECONDS = .*/SECONDS = $SECONDS_RUN/" \
+    -e "s/^VOLUME = .*/VOLUME = \"$VOLUME\"/" -e "s/^LEVEL = .*/LEVEL = $LEVEL/" -e "s/^MIC = .*/MIC = $MIC/" \
     "$ROOT/probe733_games.py" > "$PROBE"
 LOOK_NAME=CRACKLE_LOOK
 case $VOICE in GrainCrackle | FireSound) LOOK_NAME=GRAIN_LOOK ;; esac
@@ -45,6 +53,9 @@ fi
 echo "crackle_c.mpy sha256 $(shasum -a 256 "$ROOT/engine/natmod/crackle/crackle_c.mpy" | cut -d' ' -f1), engine $(git -C "$ROOT/engine" rev-parse --short HEAD)"
 mpremote cp "$ROOT/engine/natmod/crackle/crackle_c.mpy" :crackle_c.mpy + cp "$CRACKLE_PY" :crackle.py \
     + cp "$ROOT/games/fire.py" :fire.py + cp "$ROOT/games/sound.py" :sound.py
+if [ -n "$VOLUME" ]; then
+    mpremote cp "$ROOT/games/volume.py" :volume.py + cp "$ROOT/games/volume_viper.py" :volume_viper.py
+fi
 if [ "$GAME" = BurningBodies ]; then
     mpremote cp "$ROOT/games/burning.py" :burning.py + cp "$ROOT/games/plugins.py" :plugins.py
 fi
