@@ -42,8 +42,9 @@ Runs now:
   A black one is lost, and so is one whose time ran out (the bar under the score). Three lost ones end the round.
   Each point makes the campfire higher and less steady (up to 5 points), the time shorter (8 s down to 3.2 s) and
   black nearer to golden. So deep in the flames is fast and risky, and the shallow way is safe and too slow. On the
-  Mac a player who does nothing loses in 24 s, a hold with no end in 12 s, and the best of 175 fixed rhythms of
-  hold and release reached 27 points. The plain flame is easier: 4 of the 175 rhythms played on for 10 minutes there.
+  Mac a player who does nothing loses in 24 s, a hold with no end in 12 s, and no fixed rhythm of hold and release
+  played on (the best reached about 20 to 30 points). The plain flame is even, so there a few fixed rhythms play on
+  with no end. From 16 points on, nothing gets harder.
   The game burns the campfire itself at the bottom middle (`HeatField.burn`, the field's own base is off) and reads
   the flame's height from `HeatField.stats`. It plays `serve`, `burn` (also for a late one), `die` and a fire loop that follows the
   flame's height. With no engine module a plain flame of three bars takes the campfire's place, with the same rules.

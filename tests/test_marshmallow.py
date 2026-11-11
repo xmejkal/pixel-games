@@ -409,6 +409,8 @@ class MarshmallowNoEngineTest(unittest.TestCase):
         self.assertEqual(mm.TIME_BAR_PX, bar())
         game.roast.age = mm.TIME_MS // 2
         self.assertEqual(mm.TIME_BAR_PX // 2, bar())
+        game.roast.served, game.roast.age = 1000, 0  # the shortest time: a new one's bar is full again
+        self.assertEqual(mm.TIME_BAR_PX, bar())
 
 
 @unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/core/fx_fire.c is not built")
@@ -452,7 +454,9 @@ class MarshmallowEngineTest(unittest.TestCase):
         end. The rhythms here are the ones that scored best then. The plain flame is not held to this: it is even,
         and 4 of 175 rhythms still played on for 10 minutes there (Mac trial)."""
         import random
-        random.seed(773)
+        state = random.getstate()
+        self.addCleanup(random.setstate, state)
+        random.seed(773)  # the wind. The C field's seed is fixed (fire.SEED)
         best = 0
         for release in (25, 30):  # frames
             for hold in range(36, 58, 4):

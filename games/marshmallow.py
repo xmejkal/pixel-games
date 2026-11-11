@@ -225,8 +225,9 @@ class Marshmallow(Fire):
         cv.fill(CENTRE - 1, 0, 3, y + SIZE // 2, STICK)
         cv.fill(CENTRE - SIZE // 2, y, SIZE, SIZE, SHADES[self.roast.colour()])
         cv.box(CENTRE - SIZE // 2, y, SIZE, SIZE, GREY)
-        left = self.roast.time_ms() - self.roast.age  # the time bar: what this marshmallow has left
-        cv.fill(CENTRE + 12, HUD_RECT[3] + 4, TIME_BAR_PX * left // TIME_MS, 4, YELLOW if 3 * left > TIME_MS else RED)
+        time_ms = self.roast.time_ms()  # the time bar: the share of its time that this marshmallow has left
+        left = time_ms - self.roast.age
+        cv.fill(CENTRE + 12, HUD_RECT[3] + 4, TIME_BAR_PX * left // time_ms, 4, YELLOW if 3 * left > time_ms else RED)
 
     def hud(self, cv):
         cv.keep((self.name, self.score, BEST.get(self.name, 0), self.roast.lost), HUD_RECT, self.draw_hud)

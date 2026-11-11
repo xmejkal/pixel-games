@@ -1507,10 +1507,12 @@ golden with each point, and a white marshmallow at once after a lost one. The hi
 220, so the flame stays under the marshmallow at the top (Mac, 5,900 steps: at most 198 px of 200).
 
 Mac trials with the C field (scratch scripts, 10 minutes of play at most): nothing done loses in 24 s, a hold with
-no end in 12 s. Of 175 fixed rhythms none played on, and the best reached 27 points in 88 s. A simple seeing player
-(it goes at most 60 px under the flame's top and lifts at golden) reached 26 to 95 points in four rounds. The wind
-is random, so these numbers move from run to run. With the plain flame, 4 of the 175 rhythms played on for 10
-minutes.
+no end in 12 s. Of 175 fixed rhythms none played on. The best reached 27 points in my trial and 19 in the refuter's
+trial of 176. Seeing players that go at most 60 to 120 px under the flame's top reached 12 to 176 points (my trial
+and the refuter's, 4 or 5 rounds each), and every round ended within 10 minutes. The wind's seed was not fixed, so
+these numbers move from run to run, and no script of them is in the repository. With the plain flame, a few of
+the fixed rhythms played on for 10 minutes (4 of 175, and 1 of 176 with 192 points). The rules stop getting harder
+at 16 points: the campfire at 5, the time at 12 and the black limit at 16.
 
 | Run | Log | What | fps | Worst frame, ms | Late | Last line |
 |---|---|---|---|---|---|---|
@@ -1520,7 +1522,8 @@ minutes.
 - Run211a: the round ended after 24 s, as on the Mac, and the game-over screen stayed for the rest of the run,
   because this probe presses nothing with no hold. The window with the death has 23 fps and the worst frame, 95 ms.
 - Run211b: the blind hold scored 2 points in 60 s. Its worst frame, 88 ms, is in a window with a death too.
-- In both runs every window with no death has a worst frame of at most 75 ms, inside the controls' 70 and 81 ms.
+- In both runs every window of play with no death has a worst frame of at most 75 ms, inside the controls' 70 and
+  81 ms. The windows on the game-over screen of run211a have 69 to 78 ms.
 - The frame of a death holds the HUD's new strip (22 to 26 ms) and the first game-over box (26 to 29 ms). Both are
   `Game`'s code, shared by every game. `Fire` never dies, so the controls hold no such frame, and no run here
   measures a death in another game. On the game-over screen the box takes 19.5 ms in each frame, at 24 fps.
