@@ -18,7 +18,7 @@
 # With KNOB=1 the probe passes its knob to the game box (P764), and each change of the step shows the volume on the
 # screen for 1 s (P762). With KNOB=0 the box opens its own knob, and the sound does not follow it. games/overlay.py goes to
 # the board with app.py, lcd.py, render.py and gfx.py. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the
-# probe spins the step to an end at this period. ALPHA (default None: the pane's own value, 192, see-through) is how
+# probe spins the step to an end at this period. ALPHA (default None: the pane's own value, 128, see-through) is how
 # solid the picture is over the game, and 255 is solid (P764).
 #
 # A look, such as "6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK in the crackle.py that this
