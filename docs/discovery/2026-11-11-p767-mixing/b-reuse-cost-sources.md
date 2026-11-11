@@ -5,10 +5,10 @@ or run shows, [inference] is my reasoning. "Not confirmed" marks what I did not 
 
 ## Short version
 
-- Q3. Reuse no mixer code. Reuse the design of CircuitPython `audiomixer` and Espressif `esp_audio_render`. SoLoud,
-  miniaudio and SDL_mixer are free to use, but their size and bare-metal fit are not confirmed.
-- Q4. A C voice costs at most 413 to 979 us a block (runs 145b to 149d). A Python voice took 20.9 to 22.7 ms. No
-  run summed N sampled voices.
+- Q3. Round 1 said: reuse no mixer code, only designs. Round 2 (c-reuse-round2.md) replaces this answer: esp-dsp
+  as code for the fast sum, and the licenses that were open here are read there.
+- Q4. One C voice costs at most 413 us a block (run145b). Pops plus 8 noise voices cost 693 to 979 us. A sampled
+  voice in the Python `Mixer` cost at most 2.3 ms (run145e). No run summed N sampled voices.
 - Q5. The repo has a CC0 fire recording and a bank loader. Kenney packs are CC0. jsfxr is Unlicense. Freesound
   needs a per-sound check.
 
@@ -45,7 +45,8 @@ the last play wins". It lists "more than one voice summed" as Later (lines 180 t
 - [inference] Our `Mixer` has the CircuitPython shape for one voice. The cheapest extension is `voice_count`
   voices with `play(sound, voice=0, loop=False)`, a per-voice level, and a master volume that already exists
   (games/volume.py). Keep `render(buf)` unchanged, so a C version can swap in behind it (naive path rule).
-- Recommendation Q3 [inference]: reuse design and names only. Take `Mixer.voice[i].play/level/loop/end/stop` from
+- Recommendation Q3 [inference], round 1, replaced by part C: reuse design and names only.
+  Take `Mixer.voice[i].play/level/loop/end/stop` from
   CircuitPython and the "per-stream gain, post-mix limiter" split from esp_audio_render. Write the sum in our own
   small C function next to `fx_noise_mix`. Do not port a library.
 
@@ -55,7 +56,7 @@ the last play wins". It lists "more than one voice summed" as Later (lines 180 t
 
 | What | Result | Run |
 |---|---|---|
-| Plain Python `Crackle`, one voice | 20.9 to 22.7 ms a block, Fire never finished a frame | run145b, 5c |
+| Python `Crackle`, a generator, not a sampled voice | 20.9 to 22.7 ms a block, Fire hung | run145b, text |
 | `SampledCrackle` (Mixer, FrameRefill 4096 B) | 24.15 fps, worst 70 ms, late 0, render at most 2.3 ms | run145e |
 | Python volume scale, bytecode | 1220 us steady, 1644 us ramp, a block | run152 |
 | Same, viper | 116 us a block | run155 |
@@ -71,14 +72,15 @@ the last play wins". It lists "more than one voice summed" as Later (lines 180 t
   budget, and sampled voices are not the same work.
 - [repo] The submodule `engine/` is not checked out. Not confirmed: how `fx_noise.c` sums voices and clamps.
 - Not measured yet, to make on the board (each with the same Fire and Road games, 120 s, `CallbackRefill` 2048 B):
-  1. Plain-Python `Mixer.render` for one sampled voice, alone, in us a block, after `play`.
+  1. Plain-Python `Mixer.render` for one sampled voice with no game beside it (run145e gave 2.3 ms in Fire).
   2. Python sum of N = 2, 4, 8 sampled voices (a for-loop add and clamp).
   3. Viper and C sums of N = 2, 4, 8 voices, render_max in us, with the viper master volume behind them.
   4. Looping background plus event sounds from the `SoundBank` in PSRAM: render_max when a bank read misses cache.
   5. A play started while 4 voices run: the `pending` delay (play_between) and dropped plays.
   6. Road, the slowest game, with N voices: late refills, gaps heard, and GC time (slices allocate).
 - Recommendation Q4 [inference]: run items 1 to 3 first and decide the voice count from them. One C voice fits
-  with room, a Python voice did not (run145b). Keep the plain Python path working (D26).
+  with room. A sampled Python voice fit too (run145e). The Python generator `Crackle` did not (run145b).
+  Keep the plain Python path working (D26).
 
 ## Q5. Where the sounds come from
 
@@ -109,7 +111,8 @@ the last play wins". It lists "more than one voice summed" as Later (lines 180 t
 
 ## Not confirmed
 
-- Mixer library size, float need and no-OS builds. Espressif licences. Kenney packs but one. A CC0-only Freesound
+- Mixer library size and no-OS builds (the licenses and the float need are in part C). Kenney packs but one.
+  A CC0-only Freesound
   filter. jsfxr presets. Plain `Mixer.render` alone. Any sum of N sampled voices. C voice sums in `engine/`.
 
 ## Sources

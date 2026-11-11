@@ -1,10 +1,11 @@
 # P767: how to mix many sounds (finding for spark issue 1057)
 
-Date: 2026-11-11. This is a finding with sources. It is not a design and it holds no code. Two parts carry the
-detail and the sources: [a-mixing.md](a-mixing.md) (questions 1 and 2) and
+Date: 2026-11-11. This is a finding with sources. It is not a design and it holds no code. Three parts carry the
+detail and the sources: [a-mixing.md](a-mixing.md) (questions 1 and 2),
 [b-reuse-cost-sources.md](b-reuse-cost-sources.md) (questions 3 to 5), and
-[c-reuse-round2.md](c-reuse-round2.md) (question 3 again, six candidates against eight wants). Tags: [source] says what a page says,
-[repo] says what the code or a run shows, [inference] is reasoning. "Not confirmed" marks what nobody read or ran.
+[c-reuse-round2.md](c-reuse-round2.md) (question 3 again, six candidates against eight wants). Where part B and
+part C differ on question 3, part C holds. Tags: [source] says what a page says, [repo] says what the code or a
+run shows, [inference] is reasoning. "Not confirmed" marks what nobody read or ran.
 
 ## Short version
 
@@ -17,11 +18,13 @@ detail and the sources: [a-mixing.md](a-mixing.md) (questions 1 and 2) and
   background gets quieter under an event sound) is a plain rule. A table from event names to sounds can come later.
 - Q3, what to reuse (two rounds, the second in [c-reuse-round2.md](c-reuse-round2.md)). As code: esp-dsp's
   `dsps_add_s16_aes3` and `dsps_mul_s16_aes3` (Apache 2.0, 16-bit, S3 assembly) as an optional fast path under
-  our own small C sum. As design: CircuitPython's `audiomixer` (MIT, integer math, a clamp after each add) and
-  SoLoud's voices and groups. Left out: `esp_audio_effects` (a prebuilt binary, for Espressif chips only),
+  our own small C sum. Its vector path needs 16-byte aligned buffers and a length that is a multiple of 8.
+  As design: CircuitPython's `audiomixer` (MIT, integer math, a clamp in its add) and SoLoud's voices and groups. Left out: `esp_audio_effects` (a prebuilt binary, for Espressif chips only),
   the GMF and ADF frameworks, miniaudio and SoLoud as code (both mix in floating point). No build was tried.
-- Q4, the cost. One C voice renders a 16 ms block in at most 413 to 979 us (run145b to run149d). One Python voice
-  took 20.9 to 22.7 ms, which is too slow. No run summed N sampled voices. Six measurements come first.
+- Q4, the cost per 16 ms block. One C voice: at most 413 us (run145b). C pops plus 8 noise voices: 693 to 979 us
+  (run149b, run149d), and 948 to 1054 us before the -O2 build (run148b). One sampled voice in the Python `Mixer`:
+  at most 2.3 ms, with 0 late refills (run145e). The Python generator `Crackle`: 20.9 to 22.7 ms, too slow
+  (run145b, in the text of `bench.md`). No run summed N sampled voices. Three measurements come first (part B).
 - Q5, the sounds. The repository holds a CC0 fire recording and `engine.SoundBank`. Kenney's "Interface Sounds"
   pack is CC0. jsfxr generates jump, press and fall sounds. On Freesound, each sound has its own license.
 
@@ -78,7 +81,10 @@ The mixer picks the voice so that a game holds no table of voices. This is the o
 - No source gave a number of voices, a ducking share or a fade time for this board. They are set by a
   measurement and by the owner's ear.
 - Not confirmed: that esp-dsp links into the `build.sh` image, and its size there. A build trial answers it.
-  The overflow rule: esp-dsp's plain C add does not saturate and its S3 add does, so the Python twin must pick
-  one rule. FMOD from full pages, and all of Wwise. Kenney's other packs. Who owns the output of jsfxr.
-- Not measured: `Mixer.render` alone, and every sum of N sampled voices in Python, viper and C. The list of six
-  measurements is in part B, question 4.
+  The overflow rule: esp-dsp's add saturates only on its vector path (aligned buffers), and it does not on the
+  other paths. The Python twin must follow one rule, and the C code must hold it on every path.
+  FMOD from full pages, and all of Wwise. Kenney's other packs. Who owns the output of jsfxr.
+- Not measured: every sum of N sampled voices in Python, viper and C, and `Mixer.render` with no game beside
+  it. The list of six measurements is in part B, question 4. Items 1 to 3 decide the voice count.
+- The parts use "bus", "level" and "volume" where this page says "group" and "gain". The background sound is the
+  one voice of the group `music`. "D26" in the parts is the owner's rule: the plain MicroPython path always works.

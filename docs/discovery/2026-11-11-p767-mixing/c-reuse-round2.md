@@ -107,3 +107,15 @@ R1 is the round-1 file, sources 1 to 4 there. Row 3 is mostly from one page, see
 11. https://github.com/mackron/miniaudio (miniaudio.h, build options table, engine section)
 12. https://github.com/adafruit/circuitpython/blob/main/shared-module/audiomixer/Mixer.c
 13. https://github.com/jarikomppa/soloud (include/soloud.h, src/core/soloud.cpp, src/backend/null/soloud_null.cpp)
+
+## Corrections after the review (2026-11-11)
+
+- [repo] The reviewer read `dsps_add_s16_aes3.S`. The vector loop (`ee.vadds.s16.ld.incp`, saturating) runs only
+  when both steps are 1, both inputs are 16-byte aligned and the length is a multiple of 8. In other cases the
+  code jumps to the ae32 path, where the reviewer saw a plain `add` and no clamp (not the whole file read).
+- [repo] The vector loop does not apply the `shift` argument. So the overflow rule depends on the input's
+  alignment, not only on the file. This answers the "Not confirmed" on `shift` above.
+- [repo] "no aes3 file" for the dot product holds for the name `dsps_dotprod_s16` only. `dspi_dotprod_s16_aes3.S`
+  and `dsps_dp_s8_aes3.S` exist.
+- [repo] CircuitPython `Mixer.c`: `add16signed` clamps to `SHRT_MAX` (lines 74 to 84), but line 186 uses it only
+  in the `accumulate` case. "A clamp after each add" is too wide.

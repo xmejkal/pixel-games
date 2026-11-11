@@ -69,7 +69,8 @@ each block in Refill.render_block (line 83). More than one voice is "Later, not 
   master (Godot, MasterVolume), protect (SoLoud), polyphony (Godot), gain (SDL_mixer, miniaudio).
 ## Q2. Direct call or event, and background against event sounds
 
-[repo] Today a game calls `mixer.play(sound, loop=False)` (games/sound.py, line 35). No game imports sound.py yet.
+[repo] Today a game calls `mixer.play(sound, loop=False)` (games/sound.py, line 35). `games/crackle.py` imports
+`sound` for the fire games. No other game plays a sound.
 
 | Option | What it is | Cost or risk | Fit here | Source |
 |---|---|---|---|---|
