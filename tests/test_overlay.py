@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
@@ -134,7 +135,32 @@ class OverlayTest(unittest.TestCase):
         layer.update(5000 + overlay.HOLD_MS)
         layer.draw(cv)
         self.assertEqual(len(pane.log), 1)
-        self.assertFalse(pane.visible)
+        self.assertEqual((pane.visible, pane.until), (False, None))
+
+    def test_the_hold_crosses_the_wrap_of_the_ticks(self):
+        period = 1 << 30  # MicroPython's ticks wrap here, and the Mac's stand-ins above do not
+        add = lambda a, b: (a + b) % period  # noqa: E731
+        diff = lambda a, b: (a - b + period // 2) % period - period // 2  # noqa: E731
+        with mock.patch.object(time, "ticks_add", add), mock.patch.object(time, "ticks_diff", diff):
+            pane = Count()
+            pane.show(period - 500)
+            for now, visible in ((period - 1, True), (overlay.HOLD_MS - 501, True), (overlay.HOLD_MS - 500, False)):
+                pane.update(now)
+                self.assertEqual(pane.visible, visible, now)
+
+    def test_each_pane_draws_with_the_whole_screen_as_its_clip(self):
+        class Narrow(overlay.Pane):
+            visible, clips = True, []
+
+            def draw(self, cv):
+                self.clips.append(cv.clip)
+                cv.clip = GAME_RECT  # a pane that leaves its own clip
+
+        layer, cv = overlay.Overlay(), Clip()
+        layer.add(Narrow())
+        layer.add(Narrow())
+        layer.draw(cv)
+        self.assertEqual(Narrow.clips, [gfx.FULL, gfx.FULL])
 
     def test_a_second_show_moves_the_end(self):
         layer = overlay.Overlay()

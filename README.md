@@ -132,8 +132,9 @@ Runs now:
   the knob (the next step of P764). The picture is see-through by default (`VolumePane.alpha` is 192), for about
   1 ms more per frame while it shows, and `ALPHA=255` on the command makes it solid. Nobody looked at the
   see-through picture yet. The PO saw the solid one, painted whole at each step: "nice". Now the first show paints
-  both parts (4.4 ms), and a new step paints the cells and the number again (2.2 ms). Without the overlay the
-  fire's sound has 1 ms of margin in Fire: the longest gap between two refills is 47 ms, and the limit is 48 ms.
+  both parts (4.4 ms), and a new step paints the cells and the number again (2.2 ms). With nothing on the
+  screen the fire's sound has no safe margin in Fire: the longest gap between two refills was 47 ms in P762's run
+  and 48 ms in two of P764's three runs, each with 1 late refill, and a gap over 48 ms is late (bench.md, P764).
   With the overlay and fast turns the gap reached 49 ms. The PO's turns made 5 late refills in 120 s, with the
   first form of the picture (bench.md, P762). Nobody reported a gap in the sound.
 - The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a

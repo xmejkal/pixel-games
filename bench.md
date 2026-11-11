@@ -1245,14 +1245,21 @@ between 12:17 and 12:24 CET. Each run has 8 sound lines, 23 or 24 frames per sec
 | # | log | what ran | result |
 |---|-----|----------|--------|
 | 1 | run181a-p764-nohand.log | this PR's code, no hand, no spin: the pane never shows | `late 1` from the first line on, and no more after it. `between_max` 36 to 48 ms. Frame `worst` 56 to 99 ms, `slowest` 51 to 54 ms, mean paint 10.1 to 10.8 ms. `written 720384 short 176` |
-| 2 | run181b-p764-spin.log | `SPIN_EVERY_MS=3000`, the pane's own alpha (192). The knob turned during the run: 37 `level` lines and 164 edges, between the second and the fourth volume line. The PO turned it: "i did turn it" | `late 0` in each line. `between_max` 41 to 47 ms. `worst` 60 to 82 ms, `slowest` 57 to 64 ms, mean paint 11.8 to 14.5 ms. `written 720128 short 80` |
+| 2 | run181b-p764-spin.log | `SPIN_EVERY_MS=3000`, the pane's own alpha (192). The knob turned during the run: `edges 15` at the second volume line and `edges 164` at the fourth, with 37 `level` lines between them. The PO turned it: "i did turn it" | `late 0` in each line. `between_max` 41 to 47 ms. `worst` 60 to 82 ms, `slowest` 57 to 64 ms, mean paint 11.8 to 14.5 ms. `written 720128 short 80` |
 | 3 | run181c-p764-spin-solid.log | `ALPHA=255 SPIN_EVERY_MS=3000`: 12 spins, the solid picture, edges 0 | `late` is a running count: 0, 0, 1, 1, 1, 2, 2, 2. `between_max` 40 to 49 ms. `worst` 58 to 94 ms, `slowest` 52 to 62 ms, mean paint 11.0 to 13.0 ms. `written 720640 short 16` |
 | 4 | run182a-p764-master-nohand.log | the control: `master`'s code (4a7bb01's files, worktree `pixel-p762`), `ALPHA=255`, no hand, no spin | `late 0` in the first line, then 1 to the end. `between_max` 44 to 48 ms. `worst` 54 to 75 ms, `slowest` 52 to 56 ms, mean paint 10.3 to 11.2 ms. `written 720384 short 224` |
 | 5 | run182b-p764-nohand.log | entry 1 again | `late 0` in each line. `between_max` 40 to 46 ms. `worst` 54 to 70 ms, `slowest` 51 to 53 ms, mean paint 10.0 to 10.7 ms. `written 720384 short 112` |
 | 6 | run182c-p764-spin.log | `SPIN_EVERY_MS=3000`, the pane's own alpha (192): 12 spins, edges 0 | `late 0` in the first line, then 1 to the end. `between_max` 39 to 48 ms. `worst` 60 to 88 ms, `slowest` 53 to 63 ms, mean paint 11.7 to 14.0 ms. `written 719872 short 224` |
 
-- The plan's pass rule was `late 0` in each sound line of the run with no hand and no spin, as in run177a. Entry 5
-  meets it. Entry 1 does not: it has 1 late refill.
+- The plan's pass rule has two parts. The first is `late 0` in each sound line of the run with no hand and no spin,
+  as in run177a. Entry 5 meets it. Entry 1 does not: it has 1 late refill. The second part is the PO's read of the
+  see-through picture with his hand on the knob. It is not done.
+- The plan named runs on this PR's code only. Entry 4, the control on `master`'s code, is an addition, made after
+  entry 1 was late. It has no hand and no spin, so no pane shows in it: it is no control for the spin runs or for
+  `ALPHA`.
+- What differs from `master` while the picture shows: the pane's 1 s starts at the next frame's `update`, so the
+  picture can stay one frame longer. Any change of the step shows it, not only the knob and the spin. And
+  `VolumePane.update` runs in each frame, also while hidden. Its time is not measured.
 - The control on `master`'s code (entry 4) also has 1 late refill. So a run with no hand gives 0 or 1 late refill
   in 45 s on both codes, and these runs show no difference between them. The sound's margin in Fire is 1 ms
   (P762), and a run with nothing on the screen can cross it.
