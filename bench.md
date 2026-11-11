@@ -1082,8 +1082,9 @@ the repository: they set up the encoder as `Encoder.on_board` does and print onc
   settings (16 kHz, 16 bits, 2 slots), which no run measured.
 - The chip does not drive GPIO1 or GPIO2 (entry 13). How the clock's noise reaches the pins is not measured.
 - With the encoder off, the pads SDA and SCL read high under the chip's pull-down (entry 18). The reading of
-  that: a pull-up outside the chip, stronger than the pull-down. A device answers on them at 0x36 (entry 19). The board record says that V1.1 and earlier
-  carry an AXP313A power chip on this bus, with 5.1 kOhm pull-ups to 3V3. That 0x36 is that chip's address is from
+  that: a pull-up outside the chip, stronger than the pull-down. A device answers on them at 0x36 (entry 19). The
+  board record says that V1.1 and earlier carry an AXP313A power chip on this bus, with 5.1 kOhm pull-ups to 3V3.
+  That 0x36 is that chip's address is from
   memory, not from a document read here, and no run measured the pull-ups' value. The record's line for V1.2 and
   later ("NONE anywhere on the board") does not fit this board.
 - Measured: a device at 0x36 shares the two pads with the encoder. Likely, not proven: it is the board's power
