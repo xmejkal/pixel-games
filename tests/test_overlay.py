@@ -333,15 +333,15 @@ class TftOutTest(unittest.TestCase):
         self.assertEqual(out.windows, 3)
 
     def test_the_still_part_blends_at_the_panes_alpha_and_the_level_part_stays_solid(self):
-        self.assertEqual(overlay.VolumePane.alpha, 192)
-        for alpha, want in ((None, 192), (255, 255), (128, 128)):  # None: the class's own value
+        self.assertEqual(overlay.VolumePane.alpha, 128)
+        for alpha, want in ((None, 128), (255, 255), (192, 192)):  # None: the class's own value
             tft, layer = Tft(), overlay.Overlay()
             pane = layer.add(shown())
             if alpha is not None:
                 pane.alpha = alpha
             lcd.TftOut(tft).draw(Game(), [0, 0, 0, 0], layer)
             self.assertEqual([call[5] for call in tft.calls if call[0] == "blit"], [want, 255])
-        self.assertEqual(overlay.VolumePane.alpha, 192)  # a value set on one pane stays that pane's
+        self.assertEqual(overlay.VolumePane.alpha, 128)  # a value set on one pane stays that pane's
 
     def test_a_hidden_overlay_and_two_arguments_blit_nothing(self):
         tft, layer = Tft(), overlay.Overlay()

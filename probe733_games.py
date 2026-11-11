@@ -74,7 +74,7 @@ SPIN_EVERY_MS (with KNOB, P762) is the overlay's stress run with no hand: at thi
 itself from where it is to an end, 1 step per frame, down and then up by turns. Each step paints the cells and the
 number of the volume's picture again, so this is the costly case of the overlay. The line at the end of a spin is
 `spin to <n>`. A spin does not save the step, also with SAVE. ALPHA is how solid the
-picture's still part is over the game: None is the pane's own value (192, see-through), 255 is solid.
+picture's still part is over the game: None is the pane's own value (128, see-through), 255 is solid.
 """
 
 import math

@@ -77,7 +77,7 @@ class VolumePane(Pane):
     """The master volume's step, `volume.step` of a MasterVolume: `vol`, one cell per step, and the number. It shows
     at each change of the step."""
 
-    alpha = 192  # the PO: "see through, it should be setting of each pane"
+    alpha = 128  # the PO: "see through, it should be setting of each pane". At 192: "it could be more see through"
 
     def __init__(self, volume):
         self.volume, self.seen = volume, volume.step  # seen: the step of the last update, so the start shows nothing

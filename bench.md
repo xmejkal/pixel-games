@@ -1238,9 +1238,10 @@ ran `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, with nobody
 
 ## P764 (#1051), 2026-11-11: the overlay holds panes (PR A)
 
-The overlay holds a list of panes, and `VolumePane` shows itself at each change of the volume's step. Its default
-is see-through (alpha 192). Each run is `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, in Fire,
-between 12:17 and 12:24 CET. Each run has 8 sound lines, 23 or 24 frames per second and `pushes 0`.
+The overlay holds a list of panes, and `VolumePane` shows itself at each change of the volume's step. It is
+see-through: alpha 192 in entries 1 to 7, and 128 after the PO's pick (entry 9). Each run is
+`VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh <seconds> FireSound`, in Fire, with `pushes 0` and 23 or 24 frames
+per second. Entries 1 to 6 ran for 45 s each, between 12:17 and 12:24 CET, with 8 sound lines each.
 
 | # | log | what ran | result |
 |---|-----|----------|--------|
@@ -1250,10 +1251,14 @@ between 12:17 and 12:24 CET. Each run has 8 sound lines, 23 or 24 frames per sec
 | 4 | run182a-p764-master-nohand.log | the control: `master`'s code (4a7bb01's files, worktree `pixel-p762`), `ALPHA=255`, no hand, no spin | `late 0` in the first line, then 1 to the end. `between_max` 44 to 48 ms. `worst` 54 to 75 ms, `slowest` 52 to 56 ms, mean paint 10.3 to 11.2 ms. `written 720384 short 224` |
 | 5 | run182b-p764-nohand.log | entry 1 again | `late 0` in each line. `between_max` 40 to 46 ms. `worst` 54 to 70 ms, `slowest` 51 to 53 ms, mean paint 10.0 to 10.7 ms. `written 720384 short 112` |
 | 6 | run182c-p764-spin.log | `SPIN_EVERY_MS=3000`, the pane's own alpha (192): 12 spins, edges 0 | `late 0` in the first line, then 1 to the end. `between_max` 39 to 48 ms. `worst` 60 to 88 ms, `slowest` 53 to 63 ms, mean paint 11.7 to 14.0 ms. `written 719872 short 224` |
+| 7 | run183-p764-hand.log | 90 s with the PO's hand and eye, the pane at alpha 192 | the PO: "yeah, it could be more see through". 78 changes of the step, between 0 and 16. 17 sound lines, `late` a running count that ended at 3. `between_max` 34 to 49 ms. `worst` 59 to 91 ms, `slowest` 53 to 61 ms, mean paint 10.2 to 14.5 ms. `written 1440768 short 96` |
+| 8 | run184-p764-hand-alpha128.log | `ALPHA=128`, 45 s. It started 9 s after entry 7 ended, and the knob did not turn: no pane showed | 8 sound lines, `late 0` in seven and 1 in the last. `between_max` 44 to 48 ms. `worst` 53 to 99 ms, `slowest` 49 to 54 ms, mean paint 10.1 to 10.7 ms. `written 720640 short 192` |
+| 9 | run185-p764-hand-alpha128.log | `ALPHA=128`, 60 s with the PO's hand and eye | the PO: "yes, nice". 51 changes of the step, between 4 and 16. 11 sound lines, `late` 0 in five lines, then 1 to the end. `between_max` 35 to 49 ms. `worst` 57 to 83 ms, `slowest` 52 to 64 ms, mean paint 10.4 to 13.8 ms. `written 961024 short 16` |
 
 - The plan's pass rule has two parts. The first is `late 0` in each sound line of the run with no hand and no spin,
   as in run177a. Entry 5 meets it. Entry 1 does not: it has 1 late refill. The second part is the PO's read of the
-  see-through picture with his hand on the knob. It is not done.
+  see-through picture with his hand on the knob: entries 7 and 9. He chose alpha 128, so `VolumePane.alpha` is 128.
+  Entry 8 is one more run with no pane on the screen and 1 late refill, on this PR's code.
 - The plan named runs on this PR's code only. Entry 4, the control on `master`'s code, is an addition, made after
   entry 1 was late. It has no hand and no spin, so no pane shows in it: it is no control for the spin runs or for
   `ALPHA`.
@@ -1269,4 +1274,7 @@ between 12:17 and 12:24 CET. Each run has 8 sound lines, 23 or 24 frames per sec
   knob, and it has no late refill. He did not say what he saw on the screen.
 - In the spin runs the pane shows with no `show` call from the probe: the mean paint rose by 1 to 4 ms against the
   runs with no spin, as in P762. Nobody looked at the screen for this record.
-- Not run: the PO's eye on the see-through picture, and any game but Fire.
+- With his hand the runs had 3 late refills in 90 s (entry 7) and 1 in 60 s (entry 9). He named no gap in the sound.
+- Entries 7 to 9 ran from 12:31 to 12:36 CET, on c3d0ee0. No run is on the code with the default 128: entries 8
+  and 9 set 128 with `ALPHA`.
+- Not run: any game but Fire.
