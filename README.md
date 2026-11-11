@@ -112,7 +112,8 @@ Runs now:
   Status: the gain works, and the knob does not turn it yet. The PO turned the knob in Fire on 2026-11-11 and the
   step did not move. Measured: a closed contact of the encoder reads 1.2 to 1.4 V, not 0 V, and with the I2S open
   the count stands still. That the first causes the second is likely, not proven (bench.md, P757, entries 11 to
-  17). The fix is open. Set the step with `LEVEL`:
+  17). The pads SDA and SCL also carry the bus of the board's power chip (entries 18 and 19), so the encoder's
+  wires are off them now. The fix is two other pads, and it is open. Set the step with `LEVEL`:
   `VOLUME=ViperMasterVolume LEVEL=4 tools/crackle.sh 30 FireSound`. `KNOB=1` adds the knob, and `SAVE=1` the save.
 - The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a
   change, run `python3 ~/Development/spark/scripts/check_spine.py requirements.json --keep build --json` and copy

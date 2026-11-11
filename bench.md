@@ -987,7 +987,7 @@ the raw edge count for 180 s. The PO turned the knob by hand and counted the cli
 steps of 3 dB, and step 0 is silent. `ViperMasterVolume` (`games/volume_viper.py`) is the same scale as viper code.
 `probe733_games.py` runs them with `VOLUME` and `LEVEL`. Nobody flashed the board for this card, and these runs did
 not read its image. `crackle_c.mpy` is 90d7503d74fe (engine 1c15d73). Logs (git-ignored, kept on the Mac): `run151`
-to `run168`.
+to `run170`.
 
 ### Slices 1 and 2: the gain and its cost
 
@@ -1063,6 +1063,8 @@ the repository: they set up the encoder as `Encoder.on_board` does and print onc
 | 15 | run164-p757-encoder-phases.log | the count alone (25 s), after the display's setup (15 s), after the I2S opens (15 s) | alone and with the display the count follows the hand. With the I2S open it stands at -3 for the 15 s, pin A changes as before (168 polled changes in 15 s), pin B 2403 |
 | 16 | run167-p757-encoder-alternate.log | the display open, the I2S closed and open in turns of 4 s, raw rising edges per second on each pin with no filter | I2S closed: 2 to 22 edges a second on B, the count goes from 20 to 172. I2S open, the 16 seconds with a turn: 26052 to 300347 edges a second on B, 10 to 1377 on A, and the count changes in 6 of 28 seconds, by 2 at most. At rest: 0 edges, also with the I2S open |
 | 17 | run168-p757-encoder-adc.log | the voltage on both pins by the ADC (11 dB, bins of 200 mV), five turns of 12 s by the script (the log has no times): the I2S closed, open, closed, open, closed. The first two turns show no closed contact | open contact: 3.0 to 3.2 V, and with the I2S open up to 133 of 85466 samples in 2.8 to 3.0 V. Closed contact, I2S closed: 1.2 to 1.4 V, with 13 of 31002 low samples outside that bin on A and 3 of 14667 on B in the last turn. I2S open: the low samples spread over 0.8 to 2.0 V, with 315 of 39064 outside the bin on A and 1598 of 16257 on B |
+| 18 | run169-p757-pads-unplugged.log | the PO pulled GA and GB off the pads SDA and SCL. Each pad: 200 digital reads with no pull, with the chip's pull-down and with its pull-up, then 200 ADC reads | both pads read 1 in all 200 reads under each pull, also under the pull-down. The ADC reads 3071 mV in every sample on both pads |
+| 19 | run170-p757-pads-i2c-scan.log | an I2C scan on the two pads (100 kHz), the encoder's wires still off | 1 device answers, at 0x36 |
 
 - The knob does not turn the volume while the sound plays. The encoder, its wires and the pulse counter work when
   the I2S is closed (entries 12, 15, 16). `volume.py` and `take_detents` are not the cause: the count that they
@@ -1079,9 +1081,15 @@ the repository: they set up the encoder as `Encoder.on_board` does and print onc
   edge of A counts once up and once back. The source is the bit clock on GPIO12: 512000 edges a second by the I2S's
   settings (16 kHz, 16 bits, 2 slots), which no run measured.
 - The chip does not drive GPIO1 or GPIO2 (entry 13). How the clock's noise reaches the pins is not measured.
-- Open: the two resistors (a meter: the module's VCC to GA and GB, and GA to GND with the contact closed), if this
-  board has its own pull-ups on SDA and SCL (the board record: 5.1 kOhm on V1.1 and earlier), and the fix. Not done:
-  the PO's turn in Fire and in BurningBodies with a knob that works.
+- The pads SDA and SCL have a pull-up outside the chip, with the encoder off: they read high under the chip's
+  pull-down (entry 18). A device answers on them at 0x36 (entry 19). The board record says that V1.1 and earlier
+  carry an AXP313A power chip on this bus, with 5.1 kOhm pull-ups to 3V3. That 0x36 is that chip's address is from
+  memory, not from a document read here, and no run measured the pull-ups' value. The record's line for V1.2 and
+  later ("NONE anywhere on the board") does not fit this board.
+- So the encoder sat on the bus of the board's power chip. Its contacts made edges on that chip's SDA and SCL. What
+  the chip does with such edges is not measured. The encoder's wires stay off these two pads.
+- Open: the fix (two other pads for GA and GB, and the low level measured there with the sound on), and the
+  module's own resistors. Not done: the PO's turn in Fire and in BurningBodies with a knob that works.
 
 ### Slice 4: the save
 
