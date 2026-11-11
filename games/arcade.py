@@ -8,6 +8,7 @@ import track
 from array import array
 
 from effects import FireTrail
+from cues import Cue
 from fire import FireLayer, ramp
 from gfx import (BLACK, GREEN, GREY, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565)
 
@@ -153,6 +154,7 @@ class Runner(Game):
     accent = ORANGE
     GROUND = 192
     BUFFER = 0.15  # seconds a tap in the air is kept for the landing
+    cues = {"jump": Cue("jump"), "die": Cue("die")}  # --- MVP (P768) ---
 
     def __init__(self):
         # --- MVP (P651) --- made once, before Game.__init__ runs setup; the trail only when the field exists
@@ -201,6 +203,7 @@ class Runner(Game):
         self.buffer -= dt
         if self.h <= 0 and (held or self.buffer > 0):  # held: jump again at each landing
             self.vy, self.buffer, self.jumped = 420.0 * k, 0.0, self.t
+            self.emit("jump")
             self.fx.burst(60, self.GROUND, c565(150, 110, 70), 5, 60.0, 0.4, 200.0)
         if not held and self.vy > 150 * k:  # let go while rising: the jump ends low, so the hold time sets the height
             self.vy = 150 * k

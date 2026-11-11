@@ -1335,3 +1335,42 @@ first and second. Nobody pressed a button, so a game with a title screen stayed 
 - Not tested and not run: `run()` with a caller's knob has no Mac test (the Mac has no `machine`). Runs 189 and
   190 cover its two paths on the board. An error from `Encoder.on_board` in `open_knob()` stops `run()`.
 - Not run: a game in play, the PO's hand and eye in the games.
+
+## P768 (#1058), 2026-11-11: the game box plays a sound (PR 1)
+
+The box (`app.run`) now takes a `Speaker`. `Runner` emits `jump` and `die`, and each plays its sound from
+`games/box_bank.raw` through one voice. `probe768_box.py` ran `Runner` for 120 s with no hand: a press every 900 ms
+while the game plays. The image and the board are those of P764. Each run has 22 `time` lines and 22 `sound` lines after the first, and the table reads those 22.
+
+| Run | Log | Speaker | Mean fps | Worst frame, per 5 s | Late refills | `between_max` | `render_max` | Plays |
+|---|---|---|---|---|---|---|---|---|
+| 191 | `run191-p768-runner-silent.log` | none (the control) | 22.0 | 70 to 95 ms | - | - | - | - |
+| 192 | `run192-p768-runner-sound.log` | opened before the first game's setup | not read | not read | 14, all in the first 5 s | 163 ms, then 34 to 38 ms | 2370 us, then 297 to 400 us | not summed |
+| 193 | `run193-p768-runner-sound.log` | opened after the setup, no volume | 21.1 | 73 to 107 ms | 0 | 33 to 42 ms | 2353 us, then 319 to 492 us | 99 |
+| 194 | `run194-p768-runner-sound-knob.log` | as 193, with the knob's `ViperMasterVolume` and the soft sounds | 21.0 | 74 to 101 ms, and one of 135 ms | 0 | 34 to 39 ms | 2376 us, then at most 456 us | 98 |
+
+- Run 192 found a fault: the first refills waited behind the first game's setup, so 14 were late. `run()` now opens
+  the `Speaker` after `app.start()`. Runs 193 and 194 have 0 late refills.
+- The sound costs about 1 frame per second in `Runner` (22.0 against 21.1 and 21.0). The worst frame of a 5 s line
+  is about 5 to 10 ms longer with the sound. One run per case gives no verdict on the line of 135 ms.
+- The first render of each run takes about 2.4 ms. The likely cause is the `Mixer`'s block of zeros, which the
+  first render makes. No run tested that cause. Later renders take at
+  most 0.5 ms. `render_max` includes the probe's own timer.
+- Free flash with the bank on the board: 9084928 of 14680064 bytes, read with `os.statvfs` before run 191 (not in
+  a log). The bank is 23040 bytes.
+- `main.py` now opens the `Speaker` for all 14 games, so each game pays the refill 62 times a second, also a
+  game with no cue. Only `Runner` ran. PR 3's run measures the other 13 games.
+- One voice plays, so a `die` within 120 ms of a `jump` cuts the jump, and a switch cuts a sound. A cut can click.
+  PR 2's voices end the first case.
+- Not run: a switch of the game (D14) with the `Speaker` open. Each run held one game. A switch collects the
+  heap and sets up a game, so its refills can be late. PR 3's run of all 14 games measures it.
+- Not run: the amplifier's tone check of the plan's step 1 (the PO dislikes tones). The runs with the sound are
+  the amplifier's check. No microphone ran, so no run measured the delay from a press to its sound.
+- The PO, during run 193: "I wasn't able to lower the volumr now, btw. And the sounds should be nice and not
+  aggressive". The probe gave the `Speaker` no volume in runs 192 and 193. From run 194 it passes the knob's
+  volume, as `main.py` does. The sounds of runs 192 and 193 were a sweep to 990 Hz at peak 9000 and a noise burst at
+  peak 11000. These are the tool's values at commit 07d6917. From run 194 they are pure sine notes with a 10 ms rise. The
+  tool's peaks are 3000 and 3200, and the largest samples in the bank are 2519 and 2993.
+- After the review, `run195-p768-runner-sound-20s.log` (20 s, the fixed code): 3 sound lines, `late 0`, `done`.
+- The PO after run 194: "yeah, ok, go on automatically, add all the sounds and overlays". His hand on the knob
+  with the box's sound is not confirmed in words.

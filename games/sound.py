@@ -9,8 +9,8 @@ stays working (D26). CallbackRefill refills from the stock I2S.irq callback, so 
 The stock callback (MicroPython v1.29.0): after i2s.irq(handler), write(buf) returns at once, and a FreeRTOS task
 copies buf into the DMA ring as room frees (ports/esp32/machine_i2s.c:241). When all of buf is in, the task schedules
 the handler (:274). The handler runs at the next bytecode boundary, never inside a C call such as a display send or
-gc.collect(). The task's queue holds one buffer, so only the handler writes. No game imports this module yet: only
-probe733_games.py and crackle.py's SampledCrackle (P747) do.
+gc.collect(). The task's queue holds one buffer, so only the handler writes. The game box plays through speaker.Speaker
+(P768). probe733_games.py and crackle.py's SampledCrackle (P747) use this module too.
 """
 
 import time
@@ -24,7 +24,7 @@ REFILL_SAMPLES = 256  # one DMA buffer, 16 ms, a multiple of 8 samples (D27)
 class Mixer:
     """One voice: the last play wins. render(buf) renders sound, not the screen. Its contract holds for every mixer,
     also a later one in C: buf is an array("h") of int16 mono samples at RATE, len(buf) is a multiple of 8, buf is
-    aligned to 16 bytes, and render fills all of buf and never waits. Its slices allocate small views. `pending` is not
+    aligned to 16 bytes, and render fills all of buf and never waits. stop() ends the sound at the next render. Its slices allocate small views. `pending` is not
     None while a play waits for the next render: the drivers read it to time a play (Refill.stamp)."""
 
     def __init__(self):
@@ -34,6 +34,9 @@ class Mixer:
 
     def play(self, sound, loop=False):
         self.pending = (memoryview(sound), loop) if len(sound) else (None, False)  # an empty loop never ends a render
+
+    def stop(self):
+        self.pending = (None, False)
 
     def render(self, buf):
         if self.pending is not None:

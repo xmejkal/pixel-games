@@ -95,13 +95,13 @@ Runs now:
   `crackle_c.mpy` with no firmware rebuild: at most 0.41 ms per 16 ms block, and Fire keeps 24 fps (bench.md, P747).
   `SampledCrackle` is the plain Python path: four pre-rendered pops through the `Mixer`. Since P751, `GrainCrackle` plays
   one woody pop per ember, in sync with the sparks, over a low flame roar, from a bank rendered on the Mac
-  (`tools/fire_bank.py`), kept in `engine.SoundBank` outside the GC heap. The fastest embers (rise 4 and 5) get larger pops. Only the bench probe
-  (`probe733_games.py`) turns the sound on today. Try a change to the C crackle with `tools/crackle.sh`. Since P753, `FireSound` adds integer noise in C (`engine/core/fx_noise.c`): each falling burning body of `BurningBodies` whooshes by its airspeed, and Fire plays the pops alone, because the PO heard the noise bed as wind. Try it with `GAME=BurningBodies tools/crackle.sh 30 FireSound`.
+  (`tools/fire_bank.py`), kept in `engine.SoundBank` outside the GC heap. The fastest embers (rise 4 and 5) get larger pops. The fire's sound plays only in the bench probe
+  (`probe733_games.py`). The game box plays its own sounds since P768 (see the overlay's status below). Try a change to the C crackle with `tools/crackle.sh`. Since P753, `FireSound` adds integer noise in C (`engine/core/fx_noise.c`): each falling burning body of `BurningBodies` whooshes by its airspeed, and Fire plays the pops alone, because the PO heard the noise bed as wind. Try it with `GAME=BurningBodies tools/crackle.sh 30 FireSound`.
 - The rotary encoder (P758, `games/encoder.py`): `Encoder.on_board(pins.ENC_A, pins.ENC_B, EDGES_PER_DETENT)` reads
   the knob through `machine.Encoder`, the ESP32-S3's pulse counter, so no interrupt runs. `detents()` gives the clicks,
   + one way and - the other. The bench measured 4 edges per click (bench.md, P758). The knob can rest 1 edge from a
   click's border, so a use that must not flicker calls `take_detents(now_ms)`: it has a dead band of 2 edges, and
-  its rest point follows the knob. No game uses the knob yet: only the probe does. The encoder sits on the pads RX
+  its rest point follows the knob. The game box uses the knob for the volume (P764). The encoder sits on the pads RX
   and TX (`docs/wiring.html`), which the image gives to its serial console at each reset. So `app.py`, `encoder.py`
   and `pins.py` go on the board together.
   `encoder.take_pads(pins.ENC_A, pins.ENC_B)` takes them, and `app.run` calls it first.
@@ -129,7 +129,13 @@ Runs now:
   (`App.overlay`), and each output draws it after the game.
   Status: the game box opens the rotary encoder as the volume's knob (`app.open_knob`) and adds the pane when it has
   one, so every game shows the volume for 1 s when the knob turns. To see it, start the box and turn the knob. The
-  box has no sound yet, and it does not save the step. The sound probe passes its own knob to the box, so only one
+  box plays its first sounds since P768 (PR 1): `Runner` plays `jump` and `die`, and the knob's volume is the `Speaker`'s master volume (the PO's hand on
+  it is not yet confirmed). A
+  game emits a signal by name (`self.emit("jump")`) and names its cues (`cues = {"jump": Cue("jump")}`).
+  `SoundCues` plays the cue's sound from the bank (`games/box_bank.raw`, made by `tools/sound_bank.py`) through
+  the `Speaker`'s `Mixer`. `main.py` opens the `Speaker`. `app.run()` with no speaker is the silent box. One voice
+  plays, so the last sound wins. Music, the fire and more voices are P768's next PRs (bench.md, P768). The box
+  does not save the step. The sound probe passes its own knob to the box, so only one
   encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the box opens its
   own knob, and the sound does not follow it. A run with no hand went through all 14 games with the knob
   open, and with the pane shown by a spin of the step (`probe764_box.py`, bench.md, P764, PR B). The PO's hand and
