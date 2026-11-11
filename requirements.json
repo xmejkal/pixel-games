@@ -25,6 +25,14 @@
       "pin": "D5"
     },
     {
+      "name": "ENC_A",
+      "pin": "RX"
+    },
+    {
+      "name": "ENC_B",
+      "pin": "TX"
+    },
+    {
       "name": "SCLK",
       "needs": [],
       "pin": "SCK"

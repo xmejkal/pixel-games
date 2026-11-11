@@ -15,7 +15,7 @@ if not hasattr(time, "ticks_diff"):  # the same three as tests/test_sound.py, wh
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import pins  # noqa: E402
-from encoder import REST_MS, Encoder  # noqa: E402
+from encoder import REST_MS, Encoder, take_pads  # noqa: E402
 
 
 class FakeCounter:
@@ -137,6 +137,33 @@ class TakeDetentsTest(unittest.TestCase):  # --- MVP (P757) ---
         self.assertEqual(self.take(knob, 3, 1350), 1)
 
 
+class FakePin:
+    IN, PULL_UP = "in", "up"
+
+    def __init__(self, number, mode=None, pull=None):
+        self.number, self.mode, self.pull = number, mode, pull
+
+
+class TakePadsTest(unittest.TestCase):
+    def machine(self):
+        counter = mock.Mock(return_value=FakeCounter(8))
+        return mock.patch.dict(sys.modules, {"machine": mock.Mock(Pin=FakePin, Encoder=counter)}), counter
+
+    def test_both_pads_become_inputs_with_the_pull_up(self):
+        patch, _ = self.machine()
+        with patch:
+            a, b = take_pads(44, 43)
+        self.assertEqual([(p.number, p.mode, p.pull) for p in (a, b)], [(44, "in", "up"), (43, "in", "up")])
+
+    def test_on_board_counts_on_the_pads_it_took(self):
+        patch, counter = self.machine()
+        with patch:
+            knob = Encoder.on_board(44, 43, 4)
+        unit, a, b = counter.call_args.args
+        self.assertEqual((unit, a.number, a.pull, b.number, b.pull), (0, 44, "up", 43, "up"))
+        self.assertEqual(knob.detents(), 2)
+
+
 class PinMapTest(unittest.TestCase):
     def test_the_pin_map_keeps_the_names_the_games_import(self):
         for name in ("SCLK", "MOSI", "MISO", "ONBOARD_BUTTON", "ONBOARD_BUTTON_ON", "ENC_A", "ENC_B"):
@@ -147,6 +174,10 @@ class PinMapTest(unittest.TestCase):
                  pins.ONBOARD_BUTTON, pins.AUDIO_SHUTDOWN, pins.JOY_X, pins.JOY_Y, pins.JOY_SW,
                  pins.MIC_SCK, pins.MIC_WS, pins.MIC_SD, pins.I2S_BCLK, pins.I2S_LRC, pins.I2S_DIN}
         self.assertFalse({pins.ENC_A, pins.ENC_B} & wired)
+
+    def test_the_encoder_is_on_the_pads_rx_and_tx_with_the_pull_up(self):
+        self.assertEqual((pins.ENC_A, pins.ENC_B), (44, 43))  # GA on RX, GB on TX: requirements.json (P757)
+        self.assertEqual((pins.ENC_A_PULL, pins.ENC_B_PULL), ("up", "up"))
 
 
 if __name__ == "__main__":

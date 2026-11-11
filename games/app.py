@@ -13,6 +13,7 @@ import gc
 import time
 
 import buttons
+import encoder
 import gdi
 import gfx
 import pins
@@ -144,6 +145,7 @@ def run(games=GAMES):
 
     from machine import Pin
 
+    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first: until here a turn of the knob can type into the console (P757)
     out = open_tft(SPI_HZ) if BACKEND == "s3lcd" else None  # None: no s3lcd in this image
     display, full = None, False
     if out:
