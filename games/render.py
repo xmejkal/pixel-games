@@ -9,7 +9,7 @@ so its first frame is the whole screen. chunks() cuts a rectangle into pieces th
 import time
 
 from fast import native
-from gfx import FULL, HEIGHT, WIDTH, Canvas
+from gfx import HEIGHT, WIDTH, Canvas
 
 MARGIN, MANY, CELL = 4, 24, 32
 
@@ -139,7 +139,6 @@ class StOut:
             cv.build_background(game.bg)
         game.draw(cv)
         if overlay:  # --- MVP (P762) --- over the game, in the same frame
-            cv.clip = FULL
             overlay.draw(cv)
         rects = self.dirty.changed(cv.ops)
         t2 = time.ticks_us()

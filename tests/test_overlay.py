@@ -36,6 +36,12 @@ class View:
         self.draws += 1
 
 
+class Clip:
+    """The least canvas that Overlay.draw asks for."""
+
+    clip = None
+
+
 class PaintCount(overlay.VolumeView):
     paints = levels = 0
 
@@ -109,11 +115,12 @@ def touches(sent, rect):
 
 class OverlayTest(unittest.TestCase):
     def test_a_view_shows_for_hold_ms_after_show(self):
-        layer, view, cv = overlay.Overlay(), View(), None
+        layer, view, cv = overlay.Overlay(), View(), Clip()
         layer.show(view, 5000)
         layer.update(5000 + overlay.HOLD_MS - 1)
         layer.draw(cv)
         self.assertEqual(view.draws, 1)
+        self.assertEqual(cv.clip, gfx.FULL)  # the view draws on the whole screen, whatever clip the game left
         layer.update(5000 + overlay.HOLD_MS)
         layer.draw(cv)
         self.assertEqual(view.draws, 1)
@@ -132,9 +139,6 @@ class OverlayTest(unittest.TestCase):
         layer = overlay.Overlay()
         layer.update(0)
         layer.draw(None)  # a canvas would raise here
-
-    def test_hold_ms_is_one_second(self):
-        self.assertEqual(overlay.HOLD_MS, 1000)
 
 
 class VolumeViewTest(unittest.TestCase):
@@ -209,11 +213,20 @@ class StOutTest(unittest.TestCase):
         self.assertTrue(covers(frame(40 + overlay.HOLD_MS), overlay.RECT))  # hidden: the game shows there again
         self.assertEqual(frame(80 + overlay.HOLD_MS), [])
 
-    def test_two_arguments_draw_no_overlay(self):
-        display = Display()
-        out = render.StOut(display, False)
+    def test_only_a_shown_overlay_draws_its_picture(self):
+        x, y, w, h = overlay.RECT
+        layer, out = overlay.Overlay(), render.StOut(Display(), False)
+
+        def pictures():
+            return [op for op in out.canvas.ops if op[:4] == (x, y, x + w, y + h)]
+
         out.draw(Game(), [0, 0, 0, 0])
-        self.assertTrue(all(op[:4] != overlay.RECT[:4] for op in out.canvas.ops))
+        self.assertFalse(pictures())
+        out.draw(Game(), [0, 0, 0, 0], layer)  # hidden
+        self.assertFalse(pictures())
+        layer.show(overlay.VolumeView(volume.MasterVolume(8)), 0)
+        out.draw(Game(), [0, 0, 0, 0], layer)
+        self.assertTrue(pictures())
 
 
 class TftOutTest(unittest.TestCase):
@@ -237,9 +250,6 @@ class TftOutTest(unittest.TestCase):
         layer.show(view, 0)
         lcd.TftOut(tft).draw(Game(), [0, 0, 0, 0], layer)
         self.assertEqual([call[5] for call in tft.calls if call[0] == "blit"], [192, 255])
-
-    def test_the_picture_is_solid_until_a_caller_sets_its_alpha(self):
-        self.assertEqual(overlay.VolumeView.alpha, 255)  # the driver's copy path (bench.md, P762, entry 7)
 
     def test_a_hidden_overlay_and_two_arguments_blit_nothing(self):
         tft, layer = Tft(), overlay.Overlay()

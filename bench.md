@@ -1198,7 +1198,7 @@ ran `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, with nobody
 | # | log | what ran | result |
 |---|-----|----------|--------|
 | 1 | run177a-p762-nohand.log | no hand: the step stays at 8, and the overlay never shows | 8 sound lines, each with `late 0` and `pushes 0`. `between_max` 39 to 47 ms. Frame `worst` 56 to 69 ms, `slowest` 52 to 54 ms, mean paint 10.1 to 10.7 ms. `apply_max` at most 306 us. `windows_max 1` in each line. `written 720896 short -48` |
-| 2 | run177b-p762-spin.log | `SPIN_EVERY_MS=3000`: the probe turns the step from one end to the other, 1 step per frame, 12 times | 8 sound lines, each with `pushes 0`. `late` is a running count: 0, 0, 1, 3, 4, 4, 4, 4. `between_max` 44 to 49 ms. Frame `worst` 61 to 83 ms, `slowest` 54 to 70 ms, mean paint 11.4 to 14.3 ms. `apply_max` at most 385 us. `windows_max 1` in each line. `written 720128 short 96` |
+| 2 | run177b-p762-spin.log | `SPIN_EVERY_MS=3000`: the probe turns the step to an end, 1 step per frame, 12 times. The first spin starts at the step of the start, each later one at the other end | 8 sound lines, each with `pushes 0`. `late` is a running count: 0, 0, 1, 3, 4, 4, 4, 4. `between_max` 44 to 49 ms. Frame `worst` 61 to 83 ms, `slowest` 54 to 70 ms, mean paint 11.4 to 14.3 ms. `apply_max` at most 385 us. `windows_max 1` in each line. `written 720128 short 96` |
 | 3 | run177c-p762-paint-time.log | `probe762_paint.py`: one repaint of the picture into its kept strip, the least of 5, no game, no sound | 3765 us. Its parts: the fill 217, the border 305, the text `vol` 1654, the 16 cells 1086, the text `16` 1120 |
 | 4 | run178-p762-hand.log | the same command for 120 s, with the PO's hand on the knob and his eye on the screen. The picture was still one kept picture | the PO: "nice". 123 changes of the step, between 0 and 16, some by 2 steps in one frame. 23 sound lines. `late` is a running count and ended at 5. `between_max` 38 to 49 ms. 22 to 24 frames per second, `worst` 59 to 93 ms, `slowest` 54 to 79 ms. `apply_max` at most 347 us. `windows_max 1` in each line. `written 1920256 short 256` |
 | 5 | run179a-p762-paint-time.log | `probe762_paint.py` after the split of the picture into a still part and a level part, at step 16 | the still part 2229 us, painted once. The level part (the cells and the number) 2204 us, painted at each new step |
@@ -1207,7 +1207,8 @@ ran `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, with nobody
 
 - Entry 1 is the control run. The overlay's code in the frame adds no `late` count while nothing shows.
 - The sound's margin in Fire is small. The longest gap between two refills was 47 ms in entry 1, and a gap over
-  48 ms is a `late` count (`games/sound.py`, `late_us`).
+  48 ms is a `late` count (`games/sound.py`, `late_us`). With the picture on the screen the longest gap reached
+  49 ms (entries 2, 4 and 7). So the 1 ms of margin is the state without the overlay only.
 - Entry 2 is the costly case: each frame of a spin paints the picture again. It made 4 late refills in 45 s.
   Nobody listened, so no run shows that a late refill is heard.
 - A repaint of the whole picture took 3.8 ms, and the two texts took 2.8 ms of it (entry 3, at step 8).
@@ -1216,11 +1217,17 @@ ran `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, with nobody
 - `pushes` is the count of raw BOOT interrupts, not a fault of the sound. In entry 4 it rose to 3: the button was
   pressed. The lines with `pushes 0` in the other entries say only that nobody pressed it.
 - After entry 4 the picture became two kept pictures. A new step paints only the cells and the number again:
-  2.2 ms against 3.8 ms (entry 5). The same stress then made 1 late refill against 4 (entries 6 and 2).
+  2.2 ms against 3.8 ms (entry 5). Entry 5 ran at step 16 and entry 3 at step 8, so its number has 2 characters
+  against 1. The first show paints both parts, 4.4 ms against 3.8 ms.
+  The same stress then made 1 late refill against 4 (entries 6 and 2).
   That is one run on each side, so it is a first sign and not a proof.
 - The one late refill of entry 6 is in the 5 s of the first show, where both parts are painted in one frame.
   The cause is not shown by the run.
-- `windows_max` is 1 with and without the picture, so in Fire the picture adds no window. No other game ran.
+- `windows_max` is 1 in each line, and that shows nothing about the overlay. Fire marks the whole frame at each
+  frame, so its frame is always one window (read in the driver by the review's refuter). A game with partial sends
+  is the test, and none ran.
+- Read, not measured: on `lcd.py` the hidden picture leaves the screen through the driver's tiles (`frame.c`).
+  The PO saw the picture on the board. He did not say when it went.
 - The see-through picture ran (entry 7): 2 late refills against 1 for the solid picture (entry 6), one run on each side.
   The mean paint was about 1 ms longer per frame. The driver blends each of the still part's 5600 pixels.
 - The plan's rule was: if a sound line is late with the blend, the picture stays solid. So `VolumeView.alpha` is 255.

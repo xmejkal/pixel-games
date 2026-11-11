@@ -73,7 +73,7 @@ SAVE_EVERY_MS (with SAVE and KNOB) is the stress run: a save at this period, wha
 SPIN_EVERY_MS (with KNOB, P762) is the overlay's stress run with no hand: at this period the probe turns the step
 itself from where it is to an end, 1 step per frame, down and then up by turns. Each step paints the cells and the
 number of the volume's picture again, so this is the costly case of the overlay. The line at the end of a spin is
-`spin to <n>`. ALPHA under 255 lets the game show through the picture's still part (255: solid).
+`spin to <n>`. A spin does not save the step, also with SAVE. ALPHA under 255 lets the game show through the picture's still part (255: solid).
 """
 
 import math

@@ -5,7 +5,8 @@ Overlay holds one view and hides it HOLD_MS after the last show(). A view is any
 the first one: the master volume's step as a bar of STEPS cells and a number. A view draws with cv.keep, as a game's
 score bar does (P599), so it is painted again only when its key changes. VolumeView keeps two pictures: the still
 part, painted once, and the cells with the number, painted at each new step (2.2 ms on the board against 3.8 ms for
-the whole picture, bench.md, P762). With VolumeView.alpha under 255 the game shows through the still part on lcd.py.
+the whole picture, bench.md, P762). The first show paints both parts (4.4 ms). On lcd.py the two kept strips stay in
+memory after the view hides, about 15 KB. With VolumeView.alpha under 255 the game shows through the still part on lcd.py.
 The cells and the number stay solid: they read well, and their copy stays on the driver's fast path. On render.py
 both parts are solid.
 
@@ -18,7 +19,7 @@ HOLD_MS, RECT and the colours are choices for the PO's eye, not measured facts.
 
 import time
 
-from gfx import DARK, GREY, HEIGHT, WHITE, WIDTH, c565
+from gfx import DARK, FULL, GREY, HEIGHT, WHITE, WIDTH, c565
 from volume import STEPS
 
 HOLD_MS = 1000  # the PO: "and for like a second afterwards"
@@ -43,6 +44,7 @@ class Overlay:
 
     def draw(self, cv):
         if self.view is not None:
+            cv.clip = FULL  # a game can leave its own clip, and keep() asks for the whole screen
             self.view.draw(cv)
 
 

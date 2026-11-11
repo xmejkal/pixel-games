@@ -188,7 +188,6 @@ class TftOut:
         cv.start()
         game.draw(cv)
         if overlay:  # --- MVP (P762) --- over the game, in the same frame
-            cv.clip = FULL
             overlay.draw(cv)
         t2 = time.ticks_us()
         self.windows = self.tft.show()
