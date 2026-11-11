@@ -59,9 +59,10 @@ Runs now:
   bodies, then the field's hot part again, cut out with a soft edge (P639). A BOOT tap walks three modes: linear,
   picture (over the sky) and nearest. `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO,
   2026-11-04).
-- The rain (P593, `games/rain.py`), fourth: 160 boxes fall, stepped by the C engine, and a BOOT tap swaps C
-  and Python. On the board, C runs at 24 to 25 fps with a 0.22 ms step, and Python at 8 to 9 fps with a 28 ms step
-  (bench.md P590). It needs the engine image (`./build.sh engine`). Without it, the rain runs in Python only.
+- The rain (P593, `games/rain.py`), fourth: 160 boxes fall, stepped by the C engine, and a BOOT tap starts
+  the rain again. On the board, C ran at 24 to 25 fps with a 0.22 ms step, and the Python twin at 8 to 9 fps with a
+  28 ms step (bench.md P590). Since P768 the box runs only the C stepper. The Python twin steps the rain where no
+  engine module exists (the Mac's tests, a stock image).
 - The bodies' API (P590): `engine.Bodies(n)` in C and its twin `motion.Bodies(n)` in Python take the same calls:
   `spawn`, `step`, `read` into an `array('h')` and `drain` into an `array('i')`. A step reports each hit with its
   speed (`HIT`) and each body that comes to rest (`SLEEP`) as an event, and the game drains them once per frame.
@@ -138,8 +139,10 @@ Runs now:
   `Runner` also plays `land`, `pickup`, `footstep` and a fire loop that gets louder as the flame grows. A cue with
   `loop=True` is one voice: its signal carries a level from 0 to 256 (`self.emit("fire", self.fire_k)`), and 0 ends
   it. To add a sound, add it to `tools/sound_bank.py`, run the tool, and name the cue in the game's `cues`.
-  `games/box_bank.SOURCES.md` gives each sound's source and license. Music in every game is P768's last PR
-  (bench.md, P768). The box
+  `games/box_bank.SOURCES.md` gives each sound's source and license. Since PR 3 a small music loop
+  plays in every game: `App.switch` starts it once, as a protected voice of the group `music`, and the tune is a
+  note list in `tools/sound_bank.py`. `docs/sound.md` says how a game gets a sound. All 14 games keep their fps
+  with the music, within 1 fps (bench.md, P768). The box
   does not save the step. The sound probe passes its own knob to the box, so only one
   encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the box opens its
   own knob, and the sound does not follow it. A run with no hand went through all 14 games with the knob

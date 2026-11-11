@@ -1,13 +1,15 @@
 """
 The rain (P593, P590): the C engine beside Python. N boxes of 4 px fall from above the screen, bounce on a plane each
 and, once asleep, fall again from the top. Its one plugin, plugins.PhysicsPlugin, steps them on engine.Bodies
-(engine/core/world.c) or on its twin motion.Bodies, the same maths in Python. A BOOT tap swaps the two and starts the
-rain again from the same seed. The HUD says C or Python, the step ms and the fps, over a bar as long as the step time.
+(engine/core/world.c). With no engine module (the Mac's tests, a stock image) it steps them on the twin motion.Bodies,
+the same maths in Python. A BOOT tap starts the rain again from the same seed. Since P768 the tap no longer swaps C
+and Python (the PO, 2026-11-11: "leave only the fast version"). The HUD says the stepper, the step ms and the fps,
+over a bar as long as the step time.
 
 Every REPORT_MS it prints, for the bench log, the average ms per frame of each phase:
     rain <stepper> n <N> fps <fps> step <ms> read <ms> draw <ms>
-step is the plugin's steps, read is the read-back and the respawn of sleepers, draw is one fill per box. A swap
-prints `stepper <c|python>` and starts a new interval, so each line holds one stepper.
+step is the plugin's steps, read is the read-back and the respawn of sleepers, draw is one fill per box. Each start
+prints `stepper <c|python>`.
 --- MVP (P590): the rain and the burning scene prove engine.Bodies; P633: on a PhysicsPlugin ---
 """
 
@@ -29,7 +31,7 @@ BAR_US_PER_PX = 200  # the step bar: 1 px for each 0.2 ms of step in a frame, so
 
 class Rain(Game):
     name = "rain"
-    TITLE_MS = 0  # straight into the rain, so the first BOOT tap swaps C and Python
+    TITLE_MS = 0  # straight into the rain
     COLOURS = tuple(PALETTE[i % len(PALETTE)] for i in range(N))
 
     def __init__(self):
@@ -54,10 +56,9 @@ class Rain(Game):
                                   0, H - SIZE - random.randrange(40))
 
     def play(self, pressed, held):
-        """A tap swaps C and Python and starts again. Else the bodies the plugin stepped in FixedUpdate are read.
+        """A tap starts again. Else the bodies the plugin stepped in FixedUpdate are read.
         --- MVP (P633) ---"""
         if pressed:
-            self.c = plugins.engine is not None and not self.c
             self.restart()
             return
         plugin = self.physics_plugin

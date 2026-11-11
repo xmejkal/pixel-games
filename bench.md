@@ -1414,3 +1414,49 @@ and the fire loop. The 22 lines after the first:
 - After the review (PR 67): `Mixer.slot()` keeps what it read, a looping cue plays again when a render ended its
   voice, and `Bank` refuses an index that starts below 0. `run200-p768-runner-fixes.log`, 30 s with all sounds: 0
   late refills, a render of at most 880 us, 91 plays, no error.
+
+## P768 (#1058), 2026-11-11: the music in every game (PR 3)
+
+The bank now holds `music`: theme `a` of `tools/sound_bank.py`, a loop of 92160 samples (5.76 s) with a peak of 1600
+of 32767. The bank is 295040 bytes. `App.switch` starts the loop once. `probe768_box.py` with `GAME = ""` and
+`SWITCH_S = 12` goes through all 14 games, 12 s each, no hand, a press every 900 ms.
+
+| Run | Log | What | Result |
+|---|---|---|---|
+| 201 | `run201-p768-all-silent.log` | all games, no speaker | the control |
+| 202 | `run202-p768-all-music.log` | all games, the music and `Runner`'s sounds | no error, 1 late refill in 170 s (in the first window of `burning`, `between_max` 49 ms) |
+| 203 | `run203-p768-rain-silent.log` | `Rain`, 60 s, no speaker | 11 lines: 18 or 19 fps, worst frame 130 to 244 ms |
+| 204 | `run204-p768-rain-music.log` | `Rain`, 60 s, the music | 15 to 17 fps, worst frame 158 to 258 ms, 0 late, render mean 587 to 650 us, max 1322 to 1624 us |
+| 205 | `run205-p768-rain-nomusic.log` | `Rain`, 60 s, the speaker open and no music voice | 16 to 19 fps, worst frame 110 to 343 ms, render mean 273 to 333 us |
+
+- Run201 against run202, the mean fps of each game's two lines (whole numbers, so 1 fps is one line's rounding): 13 games differ by at most 1 fps
+  (`runner` 21.5 and 20.5, `cave` 21.5 and 20.5, `cube` 23.5 and 22.5, the others by 0.5 or less). `rain` went from
+  19.0 to 16.5.
+- `Rain` fails the fps line: about 18.4 fps silent and 16.2 fps with the music (run203, run204). With the speaker
+  open and no music voice it is 17.6 fps (run205). So the open speaker costs about 0.7 fps there and the music
+  voice about 1.5. One run each, so the sizes are not exact. Run201 has no speaker, so run201 against run202 holds
+  both costs in every game.
+- The render line of PR 2 (at most 1000 us) does not hold as a maximum beside a game. In run202 the longest render
+  of a window is 700 to 1322 us with one or two voices, and over 1000 us in windows of 7 games. Alone, one voice
+  took at most 396 us (run197). The cause is not known. No late refill came from it.
+- The switches make no error. The log does not say if the one late refill came at a switch. The music plays on over it by the code
+  and its Mac test. No log shows that the ear hears no gap.
+- Open: the PO's ear on the tune (theme `a` or `b`), its loudness against the game sounds, and the choice for
+  `Rain`: accept the 2 fps, or a later card for a faster sum (the C sum of P767).
+
+### After the PO's decision on `Rain` (2026-11-11)
+
+The probe's presses swapped `Rain` between C and Python: run203 and run204 each print `stepper c` 33 times and
+`stepper python` 33 times. So their 18 and 16 fps are a mix of both steppers, and a case that nobody plays. The PO:
+"Let's get rid of the slow verson, leave only the fast version." A tap in `Rain` now starts the rain again and swaps
+nothing. The Python twin stays for the places with no engine module (the Mac's tests, a stock image).
+
+| Run | Log | What | Result |
+|---|---|---|---|
+| 206 | `run206-p768-rain-c-silent.log` | `Rain`, 60 s, no speaker | 66 times `stepper c`, 24 fps in all 11 lines, worst frame 52 to 55 ms |
+| 207 | `run207-p768-rain-c-music.log` | `Rain`, 60 s, the music | 66 times `stepper c`, 24 or 25 fps, worst frame 51 to 67 ms, 0 late, render mean 510 to 531 us, max 705 to 799 us |
+
+- `Rain` on the C stepper passes the fps line with the music. The worst frame is 12 ms longer in one line (67
+  against 55), over the 5 ms line, and within it (at most 60 ms) in 9 of 11 lines.
+- The rows of run201 to run205 for `rain` describe the mixed case and no longer the game.
+- The probe still presses every 900 ms, so each run starts the rain 66 times.
