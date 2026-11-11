@@ -1443,3 +1443,20 @@ of 32767. The bank is 295040 bytes. `App.switch` starts the loop once. `probe768
   and its Mac test. No log shows that the ear hears no gap.
 - Open: the PO's ear on the tune (theme `a` or `b`), its loudness against the game sounds, and the choice for
   `Rain`: accept the 2 fps, or a later card for a faster sum (the C sum of P767).
+
+### After the PO's decision on `Rain` (2026-11-11)
+
+The probe's presses swapped `Rain` between C and Python: run203 and run204 each print `stepper c` 33 times and
+`stepper python` 33 times. So their 18 and 16 fps are a mix of both steppers, and a case that nobody plays. The PO:
+"Let's get rid of the slow verson, leave only the fast version." A tap in `Rain` now starts the rain again and swaps
+nothing. The Python twin stays for the places with no engine module (the Mac's tests, a stock image).
+
+| Run | Log | What | Result |
+|---|---|---|---|
+| 206 | `run206-p768-rain-c-silent.log` | `Rain`, 60 s, no speaker | 66 times `stepper c`, 24 fps in all 11 lines, worst frame 52 to 55 ms |
+| 207 | `run207-p768-rain-c-music.log` | `Rain`, 60 s, the music | 66 times `stepper c`, 24 or 25 fps, worst frame 51 to 67 ms, 0 late, render mean 510 to 531 us, max 705 to 799 us |
+
+- `Rain` on the C stepper passes the fps line with the music. The worst frame is 12 ms longer in one line (67
+  against 55), over the 5 ms line, and within it in 7 of 11 lines.
+- The rows of run201 to run205 for `rain` describe the mixed case and no longer the game.
+- The probe still presses every 900 ms, so each run starts the rain 66 times.

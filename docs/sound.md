@@ -46,4 +46,4 @@ oldest voice that is not protected. `sound.VoiceSum` is the plain MicroPython su
 
 ## What it costs
 
-See bench.md, P768. In 13 of the 14 games the sound with the music costs at most 1 fps. `Rain` lost about 2 fps in one run: about 0.7 for the open speaker and about 1.5 for the music voice.
+See bench.md, P768. The sound with the music costs each of the 14 games at most 1 fps.

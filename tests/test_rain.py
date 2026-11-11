@@ -127,15 +127,14 @@ class CRainTest(unittest.TestCase):
         self.assertLessEqual(worst, 1, "float32 against Python's float may truncate 1 px apart")
         self.assertNotEqual(boxes_c, play(game_c, 1, 1000)[0])  # and they move
 
-    def test_a_tap_swaps_c_and_python(self):
+    def test_a_tap_keeps_the_stepper(self):
+        """The fast stepper stays (the PO, 2026-11-11): a tap starts again and swaps nothing."""
         with contextlib.redirect_stdout(io.StringIO()):
             game = rain.Rain()
             _, now = play(game, 1, 0)
-            names = []
-            for _ in range(2):
-                _, now = play(game, 1, now, pressed=True)
-                names.append(game.physics_plugin.name)
-        self.assertEqual(["python", "c"], names)
+            first = game.physics_plugin.name
+            play(game, 1, now, pressed=True)
+        self.assertEqual(first, game.physics_plugin.name)
 
 
 if __name__ == "__main__":
