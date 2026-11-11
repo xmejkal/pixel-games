@@ -1098,7 +1098,7 @@ ul{margin:0;padding-left:20px;max-width:72ch;display:grid;gap:6px} .m{color:var(
 <p class="m">Leave GAIN and NC empty. The speaker cable stays in its socket, and the display ribbon stays in the FireBeetle 2.</p></section>
 <section><h2>Which pad belongs to whom</h2><p>Recalculated with spark's pin assigner, with the display, the amplifier, the joystick and the microphone all counted, and then checked against the pins the ribbon really holds.</p>
 <div class="tw"><table><tr><th>Owner</th><th>FireBeetle 2 pads</th><th>GPIO</th><th>State</th></tr>
-<tr><td>Display, on the ribbon</td><td>D2, D3, D6, D7, D13, SCK, MI, MO</td><td>3, 38, 18, 9, 21, 17, 16, 15</td><td>in place, do not use</td></tr><tr><td>Amplifier</td><td>D12, D11, D10, A2</td><td>12, 13, 14, 6</td><td>wire now, same as before</td></tr><tr><td>Joystick</td><td>A0, A1, D5</td><td>4, 5, 7</td><td>kept free for later</td></tr><tr><td>Microphone</td><td>A3, A5, A4</td><td>8, 11, 10</td><td>later. SD moved from SDA to A4 on 2026-11-10, because SDA can carry pull-ups</td></tr><tr><td>Rotary encoder</td><td>SDA, SCL</td><td>1, 2</td><td>wired, with VCC from the 3.3 V rail</td></tr><tr><td>Board itself</td><td>D14 (user button), D9 (BOOT), TX, RX</td><td>47, 0, 43, 44</td><td>do not use</td></tr></table></div></section>
+<tr><td>Display, on the ribbon</td><td>D2, D3, D6, D7, D13, SCK, MI, MO</td><td>3, 38, 18, 9, 21, 17, 16, 15</td><td>in place, do not use</td></tr><tr><td>Amplifier</td><td>D12, D11, D10, A2</td><td>12, 13, 14, 6</td><td>wire now, same as before</td></tr><tr><td>Joystick</td><td>A0, A1, D5</td><td>4, 5, 7</td><td>kept free for later</td></tr><tr><td>Microphone</td><td>A3, A5, A4</td><td>8, 11, 10</td><td>later. SD moved from SDA to A4 on 2026-11-10, because SDA can carry pull-ups</td></tr><tr><td>Rotary encoder</td><td>RX, TX</td><td>44, 43</td><td>moved here from SDA and SCL on 2026-11-11, with VCC from the 3.3 V rail. The games take both pads from the serial console at their start</td></tr><tr><td>Nobody</td><td>SDA, SCL</td><td>1, 2</td><td>do not use: on this board something outside the chip holds both pads high, and a device answers on them at address 0x36 (bench.md, P757)</td></tr><tr><td>Board itself</td><td>D14 (user button), D9 (BOOT)</td><td>47, 0</td><td>do not use</td></tr></table></div></section>
 <section><h2>The display, DFR0664</h2><p>Drawn from DFRobot's dimension drawing. The board size, the holes, the pad row, the GDI connector and the MicroSD slot are to scale.</p>
 <div class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 600" role="img" aria-label="The DFR0664 display drawn to scale, front and back" font-family="Helvetica,Arial,sans-serif"><defs><marker id="arr" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L8 4L0 8z" fill="#20262b"/></marker></defs><rect width="900" height="600" fill="#fff"/>
 <text x="252.8" y="42.0" font-size="15" fill="#20262b" text-anchor="middle" font-weight="700">Front, as it lies on your bench</text>
@@ -2057,10 +2057,10 @@ ul{margin:0;padding-left:20px;max-width:72ch;display:grid;gap:6px} .m{color:var(
 <text x="1413.6" y="445.5" font-size="8.2" fill="#b8c2ca" text-anchor="start" font-weight="400">RST</text>
 <text x="1413.6" y="598.5" font-size="8.2" fill="#b8c2ca" text-anchor="start" font-weight="400">D14</text>
 <text x="1301.7" y="494.4" font-size="8.2" fill="#b8c2ca" text-anchor="middle" font-weight="400">BOOT</text>
-<circle cx="1060.0" cy="438.0" r="6" fill="#c9a24b" stroke="#000"/>
-<text x="1060.0" y="454.0" font-size="8" fill="#b8c2ca" text-anchor="middle" font-weight="400">RX</text>
-<circle cx="1078.0" cy="438.0" r="6" fill="#c9a24b" stroke="#000"/>
-<text x="1078.0" y="454.0" font-size="8" fill="#b8c2ca" text-anchor="middle" font-weight="400">TX</text>
+<circle cx="1060.0" cy="438.0" r="6" fill="#ffd34d" stroke="#000"/>
+<text x="1060.0" y="454.0" font-size="8.4" fill="#ffd34d" text-anchor="middle" font-weight="700">RX</text>
+<circle cx="1078.0" cy="438.0" r="6" fill="#ffd34d" stroke="#000"/>
+<text x="1078.0" y="454.0" font-size="8.4" fill="#ffd34d" text-anchor="middle" font-weight="700">TX</text>
 <circle cx="1096.0" cy="438.0" r="6" fill="#5bc0eb" stroke="#000"/>
 <text x="1096.0" y="454.0" font-size="8" fill="#8fd6f5" text-anchor="middle" font-weight="400">D2</text>
 <circle cx="1114.0" cy="438.0" r="6" fill="#5bc0eb" stroke="#000"/>
@@ -2073,10 +2073,10 @@ ul{margin:0;padding-left:20px;max-width:72ch;display:grid;gap:6px} .m{color:var(
 <text x="1168.0" y="454.0" font-size="8" fill="#8fd6f5" text-anchor="middle" font-weight="400">D7</text>
 <circle cx="1186.0" cy="438.0" r="6" fill="#c9a24b" stroke="#000"/>
 <text x="1186.0" y="454.0" font-size="8" fill="#b8c2ca" text-anchor="middle" font-weight="400">D9</text>
-<circle cx="1204.0" cy="438.0" r="6" fill="#ffd34d" stroke="#000"/>
-<text x="1204.0" y="454.0" font-size="8.4" fill="#ffd34d" text-anchor="middle" font-weight="700">SDA</text>
-<circle cx="1222.0" cy="438.0" r="6" fill="#ffd34d" stroke="#000"/>
-<text x="1222.0" y="454.0" font-size="8.4" fill="#ffd34d" text-anchor="middle" font-weight="700">SCL</text>
+<circle cx="1204.0" cy="438.0" r="6" fill="#c9a24b" stroke="#000"/>
+<text x="1204.0" y="454.0" font-size="8" fill="#b8c2ca" text-anchor="middle" font-weight="400">SDA</text>
+<circle cx="1222.0" cy="438.0" r="6" fill="#c9a24b" stroke="#000"/>
+<text x="1222.0" y="454.0" font-size="8" fill="#b8c2ca" text-anchor="middle" font-weight="400">SCL</text>
 <circle cx="1240.0" cy="438.0" r="6" fill="#5bc0eb" stroke="#000"/>
 <text x="1240.0" y="454.0" font-size="8" fill="#8fd6f5" text-anchor="middle" font-weight="400">MI</text>
 <circle cx="1258.0" cy="438.0" r="6" fill="#5bc0eb" stroke="#000"/>
@@ -2242,16 +2242,16 @@ ul{margin:0;padding-left:20px;max-width:72ch;display:grid;gap:6px} .m{color:var(
 <text x="756" y="317" font-size="12.5" fill="#566570" text-anchor="start" font-weight="400">size about 15 x 32 mm, estimated</text>
 <g id="w-enc-vcc" class="wire"><path d="M700.0 582.0 L826.0 582.0 L826.0 362.0" fill="none" stroke="#fff" stroke-width="7.5" stroke-linejoin="round"/><path d="M700.0 582.0 L826.0 582.0 L826.0 362.0" fill="none" stroke="#d0202a" stroke-width="4" stroke-linejoin="round"/><circle cx="700" cy="582" r="5.5" fill="#d0202a" stroke="#fff" stroke-width="1.5"/><circle cx="826" cy="362" r="5.5" fill="#d0202a" stroke="#fff" stroke-width="1.5"/></g>
 <g id="w-enc-gnd" class="wire"><path d="M718.0 564.0 L808.0 564.0 L808.0 380.0" fill="none" stroke="#fff" stroke-width="7.5" stroke-linejoin="round"/><path d="M718.0 564.0 L808.0 564.0 L808.0 380.0" fill="none" stroke="#20262b" stroke-width="4" stroke-linejoin="round"/><circle cx="718" cy="564" r="5.5" fill="#20262b" stroke="#fff" stroke-width="1.5"/><circle cx="808" cy="380" r="5.5" fill="#20262b" stroke="#fff" stroke-width="1.5"/></g>
-<g id="w-enc-ga" class="wire"><path d="M664.0 618.0 L862.0 618.0 L862.0 410.0 L1204.0 410.0 L1204.0 420.0" fill="none" stroke="#fff" stroke-width="7.5" stroke-linejoin="round"/><path d="M664.0 618.0 L862.0 618.0 L862.0 410.0 L1204.0 410.0 L1204.0 420.0" fill="none" stroke="#e07a10" stroke-width="4" stroke-linejoin="round"/><circle cx="664" cy="618" r="5.5" fill="#e07a10" stroke="#fff" stroke-width="1.5"/><circle cx="1204" cy="420" r="5.5" fill="#e07a10" stroke="#fff" stroke-width="1.5"/></g>
-<g id="w-enc-gb" class="wire"><path d="M682.0 600.0 L844.0 600.0 L844.0 395.0 L1222.0 395.0 L1222.0 420.0" fill="none" stroke="#fff" stroke-width="7.5" stroke-linejoin="round"/><path d="M682.0 600.0 L844.0 600.0 L844.0 395.0 L1222.0 395.0 L1222.0 420.0" fill="none" stroke="#1f9d55" stroke-width="4" stroke-linejoin="round"/><circle cx="682" cy="600" r="5.5" fill="#1f9d55" stroke="#fff" stroke-width="1.5"/><circle cx="1222" cy="420" r="5.5" fill="#1f9d55" stroke="#fff" stroke-width="1.5"/></g>
+<g id="w-enc-ga" class="wire"><path d="M664.0 618.0 L862.0 618.0 L862.0 410.0 L1060.0 410.0 L1060.0 420.0" fill="none" stroke="#fff" stroke-width="7.5" stroke-linejoin="round"/><path d="M664.0 618.0 L862.0 618.0 L862.0 410.0 L1060.0 410.0 L1060.0 420.0" fill="none" stroke="#e07a10" stroke-width="4" stroke-linejoin="round"/><circle cx="664" cy="618" r="5.5" fill="#e07a10" stroke="#fff" stroke-width="1.5"/><circle cx="1060" cy="420" r="5.5" fill="#e07a10" stroke="#fff" stroke-width="1.5"/></g>
+<g id="w-enc-gb" class="wire"><path d="M682.0 600.0 L844.0 600.0 L844.0 395.0 L1078.0 395.0 L1078.0 420.0" fill="none" stroke="#fff" stroke-width="7.5" stroke-linejoin="round"/><path d="M682.0 600.0 L844.0 600.0 L844.0 395.0 L1078.0 395.0 L1078.0 420.0" fill="none" stroke="#1f9d55" stroke-width="4" stroke-linejoin="round"/><circle cx="682" cy="600" r="5.5" fill="#1f9d55" stroke="#fff" stroke-width="1.5"/><circle cx="1078" cy="420" r="5.5" fill="#1f9d55" stroke="#fff" stroke-width="1.5"/></g>
 <rect x="836.00" y="353" width="101.1" height="18" rx="9" fill="#d0202a" stroke="#fff"/>
 <text x="886.55" y="366.2" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="700">VCC to + rail</text>
 <rect x="836.00" y="371" width="101.1" height="18" rx="9" fill="#20262b" stroke="#fff"/>
 <text x="886.55" y="384.2" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="700">GND to - rail</text>
-<rect x="899.85" y="401" width="74.3" height="18" rx="9" fill="#e07a10" stroke="#fff"/>
-<text x="937.00" y="414.2" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="700">GA to SDA</text>
-<rect x="989.85" y="386" width="74.3" height="18" rx="9" fill="#1f9d55" stroke="#fff"/>
-<text x="1027.00" y="399.2" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="700">GB to SCL</text>
+<rect x="871.00" y="401" width="68" height="18" rx="9" fill="#e07a10" stroke="#fff"/>
+<text x="905.00" y="414.2" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="700">GA to RX</text>
+<rect x="966.00" y="386" width="68" height="18" rx="9" fill="#1f9d55" stroke="#fff"/>
+<text x="1000.00" y="399.2" font-size="11.5" fill="#fff" text-anchor="middle" font-weight="700">GB to TX</text>
 <rect id="p-fb" class="part-ring" x="1017" y="423" width="437" height="192" rx="10"/>
 <rect id="p-amp" class="part-ring" x="250" y="458" width="151" height="140" rx="6"/>
 <circle id="p-mic" class="part-ring" cx="538" cy="519" r="61"/>
@@ -2267,16 +2267,17 @@ ul{margin:0;padding-left:20px;max-width:72ch;display:grid;gap:6px} .m{color:var(
 <tr><td>SD</td><td>FireBeetle 2 pad A4</td><td>j54</td><td>10</td></tr>
 </table></div>
 <p class="m">Use 3.3 V only for the microphone, because its absolute maximum is 3.63 V. The photo shows the microphone rotated on the middle of the breadboard, and it joins no row there. Its place here is free. Its size of about 15 mm and its pad positions are estimated from your photo, because no drawing exists for this module. The module matches the INMP441 in seller photos, and its chip marking is unread.</p></section>
-<section><h2>The rotary encoder, CJMCU-111</h2><p>You wired the encoder already. Its place in the guide picture comes from your bench photo of 2026-11-10. The photo shows the blue board right of the amplifier, with its four header pins in the half with rows f to j and the knob across the middle gap. The photo does not show single holes clearly, so the encoder's columns below are from the photo, about. The pad names printed on the encoder and on the FireBeetle 2 are what count.</p>
-<p>The probe on the board passed with your wiring on 2026-11-10, at 4 edges per click (run150). Your bench uses other wire colors than this page, and that is fine.</p>
+<section><h2>The rotary encoder, CJMCU-111</h2><p>The encoder is in the breadboard already, and two of its wires move: GA goes to the pad RX, and GB to the pad TX. Its place in the guide picture comes from your bench photo of 2026-11-10. The photo shows the blue board right of the amplifier, with its four header pins in the half with rows f to j and the knob across the middle gap. The photo does not show single holes clearly, so the encoder's columns below are from the photo, about. The pad names printed on the encoder and on the FireBeetle 2 are what count.</p>
+<p>On 2026-11-10 the probe counted 4 edges per click with GA on SDA and GB on SCL, with no sound (run150). With the sound on, the count stood still there. On this board something outside the chip holds SDA and SCL high, and a device answers on them at address 0x36 (bench.md, P757). So on 2026-11-11 the two wires moved to RX and TX in <code>requirements.json</code>. Nobody turned the knob on the new pads yet. Your bench uses other wire colors than this page, and that is fine.</p>
 <div class="tw"><table><tr><th>Color here</th><th>Encoder pad</th><th>Column</th><th>Goes to</th><th>Hole</th><th>GPIO</th></tr>
-<tr><td><span class="sw" style="background:#e07a10"></span>Orange</td><td>GA</td><td>from the photo, about column 24</td><td>FireBeetle 2 pad SDA</td><td>a54</td><td>1</td></tr>
-<tr><td><span class="sw" style="background:#1f9d55"></span>Green</td><td>GB</td><td>from the photo, about column 25</td><td>FireBeetle 2 pad SCL</td><td>a55</td><td>2</td></tr>
+<tr><td><span class="sw" style="background:#e07a10"></span>Orange</td><td>GA</td><td>from the photo, about column 24</td><td>FireBeetle 2 pad RX</td><td>a46</td><td>44</td></tr>
+<tr><td><span class="sw" style="background:#1f9d55"></span>Green</td><td>GB</td><td>from the photo, about column 25</td><td>FireBeetle 2 pad TX</td><td>a47</td><td>43</td></tr>
 <tr><td><span class="sw" style="background:#d0202a"></span>Red</td><td>VCC</td><td>from the photo, about column 26</td><td>top + rail, which is 3.3 V</td><td>any hole of the rail</td><td>power</td></tr>
 <tr><td><span class="sw" style="background:#20262b"></span>Black</td><td>GND</td><td>from the photo, about column 27</td><td>top - rail</td><td>any hole of the rail</td><td>ground</td></tr>
 </table></div>
 <p class="m">The photo shows the header at about columns 37 to 40 by the numbers printed on the far side of the breadboard. Counted from the FireBeetle 2 end, as in this picture, that is about columns 24 to 27. The picture puts the pins in row f and the wires in rows g to j, so that each wire has a free hole. The microphone moved to about column 17 in the guide picture, because the encoder now sits where it was. The microphone joins no row, so its place is free.</p>
-<p class="m">Feed VCC from 3.3 V only, never from 5 V. If the encoder has its own pull-ups to VCC, 5 V would reach the 3.3 V pads SDA and SCL. Nobody has confirmed pull-ups on this board, so the firmware turns on the chip's own pull-ups. The four pads sit in one row. GA is at the end away from the lone tan capacitor, and GND is at the end beside it. The push switch of the knob is not on the header, so the firmware cannot read a press.</p>
+<p class="m">Feed VCC from 3.3 V only, never from 5 V. If the encoder has its own pull-ups to VCC, 5 V would reach the 3.3 V pads RX and TX. Nobody has confirmed pull-ups on this board, so the firmware turns on the chip's own pull-ups. The four pads sit in one row. GA is at the end away from the lone tan capacitor, and GND is at the end beside it. The push switch of the knob is not on the header, so the firmware cannot read a press.</p>
+<p class="m">RX and TX belong to the board's serial console from each reset until the firmware takes them. The games take them at their start (<code>encoder.take_pads</code>), which is about 1 s after a reset. Until then the console holds TX high, and a turn of the knob can type into the console. So measure before you plug GB into TX, with the power off. Set the meter to ohms and measure from GB to GND. Turn the knob slowly between two clicks, and note the lowest number. If the meter shows OL the whole time, it measured nothing. If the lowest number is under 1 kΩ, stop: do not plug GB into TX.</p>
 <p class="m">No dimension drawing exists for this module. Its size of about 15 x 32 mm, the knob of about 15 mm, and the places of the encoder, the hole and the small parts on it are estimated from your photo and a shop photo. Only the pad spacing of 2.54 mm is standard.</p></section>
 <section><h2>Where each fact comes from</h2><ul>
 <li>FireBeetle 2 size and pad positions: DFRobot's dimension drawing V1.3, through the spark board record.</li>
@@ -2293,10 +2294,10 @@ ul{margin:0;padding-left:20px;max-width:72ch;display:grid;gap:6px} .m{color:var(
 <li>Display pins: <code>games/gdi.py</code> and the DFR0664 part record, read from the board schematic. </li>
 <li>Microphone pads and their order: the spark part record <code>inmp441-i2s-mic-round</code>, read from your photo of the pad side. Its wires are fixed in <code>requirements.json</code>: SCK on A3, WS on A5 and SD on A4. D14 stays free, because it is the user button that the games read.</li>
 <li>Encoder pads, their order and the 3.3 V rule: the spark part record <code>cjmcu-111-rotary-encoder</code>. One fact in that record is measured on the bench: 4 edges per click (run150). The other facts are still marked unverified.</li>
-<li>Encoder wires: spark's breadboard sheet for P758, <code>build/breadboard.md</code>, steps 5, 7, 23, 28 and 29. It joins GA to SDA (GPIO 1) and GB to SCL (GPIO 2).</li>
+<li>Encoder wires: spark's breadboard sheet for P758, <code>build/breadboard.md</code>, steps 5, 7, 23, 28 and 29. It joins GA to RX (GPIO 44) and GB to TX (GPIO 43), as <code>requirements.json</code> asks since 2026-11-11.</li>
 <li>Encoder shape and color: your photo and the shop photo in the drawer entry <code>cjmcu-111</code>. No dimension drawing exists, so its sizes are estimates.</li>
 <li>Encoder place: your bench photo of 2026-11-10. The columns are read from it, about, and no single hole is clear in it.</li>
-<li>Encoder wiring checked: the probe on the board passed with your wiring, at 4 edges per click (run150).</li>
+<li>Encoder wiring checked: not yet on RX and TX. On the old pads SDA and SCL the probe counted 4 edges per click (run150). With no wire, the pulse counter counted on RX and TX (run171), and the games took both pads at their start (run175).</li>
 <li>Encoder wire colors on this page: the encoder step page, <code>docs/p758-encoder-steps.html</code>. Your bench uses other colors.</li>
 <li>The columns are my choice, and they follow your photo roughly. The encoder is the exception: its place follows your bench photo.</li></ul></section>
 </main><script>
@@ -2396,12 +2397,16 @@ const STEPS=[
 "say": "Run a magenta jumper from the microphone's SD pad to the FireBeetle pad A4 (hole j54)."
 },
 {
+"id": "p-enc",
+"say": "Power still off: set the meter to ohms and measure from the encoder's GB to GND. Turn the knob slowly between two clicks, and note the lowest number. If it is under 1 kΩ, stop here."
+},
+{
 "id": "w-enc-ga",
-"say": "Run an orange jumper from the encoder's GA (about column 24) to the FireBeetle pad SDA (hole a54)."
+"say": "Run an orange jumper from the encoder's GA (about column 24) to the FireBeetle pad RX (hole a46)."
 },
 {
 "id": "w-enc-gb",
-"say": "Run a green jumper from the encoder's GB (about column 25) to the FireBeetle pad SCL (hole a55)."
+"say": "Run a green jumper from the encoder's GB (about column 25) to the FireBeetle pad TX (hole a47)."
 }
 ];
 (()=>{

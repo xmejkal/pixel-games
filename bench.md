@@ -987,7 +987,7 @@ the raw edge count for 180 s. The PO turned the knob by hand and counted the cli
 steps of 3 dB, and step 0 is silent. `ViperMasterVolume` (`games/volume_viper.py`) is the same scale as viper code.
 `probe733_games.py` runs them with `VOLUME` and `LEVEL`. Nobody flashed the board for this card, and these runs did
 not read its image. `crackle_c.mpy` is 90d7503d74fe (engine 1c15d73). Logs (git-ignored, kept on the Mac): `run151`
-to `run170`.
+to `run175`.
 
 ### Slices 1 and 2: the gain and its cost
 
@@ -1091,8 +1091,37 @@ the repository: they set up the encoder as `Encoder.on_board` does and print onc
   chip, and this board is V1.1 or earlier. Nobody read the chip's marking or the back silkscreen, which is how the
   record tells the versions apart. The encoder's contacts made edges on that device's SDA and SCL. What it does
   with such edges is not measured. The encoder's wires stay off these two pads.
-- Open: the fix (two other pads for GA and GB, and the low level measured there with the sound on), and the
-  module's own resistors. Not done: the PO's turn in Fire and in BurningBodies with a knob that works.
+- The fix is the move to the pads RX and TX, below. Not done: the PO's turn in Fire and in BurningBodies with a
+  knob that works.
+
+The move to the pads RX and TX, 2026-11-11 (the PO: "lets go with TX and RX though"). `requirements.json` puts GA on
+RX (GPIO44) and GB on TX (GPIO43). Every run below has no wire on the pads it tests, and nobody turned a knob.
+Entries 20 to 24 are scratch scripts, not in the repository.
+
+| entry | log | what ran | result |
+| --- | --- | --- | --- |
+| 20 | run171-p757-pads-txrx.log | RX and TX: the pads' registers as the script finds them and after `Pin(n, Pin.IN, Pin.PULL_UP)`. Then 5 detents made with the chip's pulls, counted by `machine.Encoder`, with the I2S closed and open | as found: IO_MUX 0xb00 on both pads. After `Pin()`: 0x1b00, output off. 20 edges for 5 detents with the I2S closed and with it open, and the count stays at 20 for 1 s at rest with the I2S open. The script also set the console's input to a constant 1 (`in_sel` 0xb8) and left it so |
+| 21 | run172-p757-pads-txrx-control.log | 20 low pulses of 2 ms on RX by the chip's pull-down, bytes counted at the REPL's input, with the pad as function 0 and as function 1 | 0 bytes in both. Not valid as a control: entry 20 left `in_sel` at 0xb8, so the console's input was a constant 1 in both stages |
+| 22 | run173-p757-pads-joystick.log | A0, A1 and D5, the joystick's reserved pads: 200 digital reads under each pull, and 200 ADC reads under each pull | each pad follows the chip's pulls: 1 in 0 of 200 reads under the pull-down and in 200 of 200 under the pull-up. ADC 0 mV under the pull-down and 3071 mV under the pull-up |
+| 23 | run174-p757-pads-console.log | after `machine.deepsleep(300)`, so the registers are the image's. The UART's own input bit (UART_STATUS_REG, bit 15) under the chip's pull-down and pull-up on RX, 200 reads each, and its break bit after 20 low pulses of 2 ms. Stage 1: the pad as the image has it. Stage 2: after `Pin(44, Pin.IN, Pin.PULL_UP)`. Stage 3: also with `in_sel` 0xb8 | stage 1: IO_MUX 0xb00, the bit reads 1 in 0 of 200 under the pull-down and 200 of 200 under the pull-up, break 1 (`int_raw` 0x82). Stage 2: IO_MUX 0x1b00, 200 of 200 under both pulls, break 0 (`int_raw` 0x2). Stage 3: the same as stage 2 |
+| 24 | run175a-p757-app-takes-pads-control.log, run175-p757-app-takes-pads.log | the board restarts through `machine.deepsleep(300)`, `main.py` starts `app.run`, and about 6 s after the USB port is back mpremote stops it. A script then reads the IO_MUX word of both pads and calls no `Pin()`. First with the board's `app.py` from before this change, then with the `app.py` of commit 9ec1212 | before: 0xb00 on both pads. With `encoder.take_pads` in `app.run`: 0x1b00 on both |
+
+- Measured, with no wire: the pulse counter counts on RX and TX, with the I2S open too (entry 20).
+  `Pin(n, Pin.IN, Pin.PULL_UP)` alone cuts the console's input from the RX pad (entry 23), so `take_pads` writes no
+  register. The games take both pads at their start (entry 24).
+- Read from the source, not measured: until `take_pads`, the console holds TX high and each `print` toggles it. A
+  byte on RX goes to the console, and the byte 0x03 stops the program (MicroPython v1.29, `ports/esp32/uart.c`).
+- A limit that stays: from the reset until `app.run` starts, the console owns both pads. A turn of the knob in that
+  time can type into the console. The full fix is an image with no serial console on these pads.
+- A control starts from a known state (entries 20 and 21). `mpremote reset` did not put `in_sel` back, and a restart
+  through deep sleep did (entry 23, "as found"). Three failed tries of entry 23 are kept: `run174a` (no restart
+  before it), `run174b` (the USB port was not back yet) and `run174c` (after a soft restart).
+- The pads A0, A1 and D5 have no wire and follow the chip's pulls (entry 22). They are a second place for an
+  encoder. No run tested an encoder there.
+- spark's build writes the pin map, the sheet and the board for the new pads, and its simulation stage fails:
+  `"44" is not a pin of board-esp32-s3-devkitc-1`. So `build/sim/` is from before the move. That is not a pass.
+- Open: the PO's meter reading from GB to GND with the power off, which the safety of TX rests on. Then his turn
+  with the wires on RX and TX: the count with the sound on, and 16 detents from silent to full in Fire.
 
 ### Slice 4: the save
 

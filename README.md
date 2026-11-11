@@ -101,7 +101,9 @@ Runs now:
   the knob through `machine.Encoder`, the ESP32-S3's pulse counter, so no interrupt runs. `detents()` gives the clicks,
   + one way and - the other. The bench measured 4 edges per click (bench.md, P758). The knob can rest 1 edge from a
   click's border, so a use that must not flicker calls `take_detents(now_ms)`: it has a dead band of 2 edges, and
-  its rest point follows the knob. No game uses the knob yet: only the probe does.
+  its rest point follows the knob. No game uses the knob yet: only the probe does. The encoder sits on the pads RX
+  and TX (`docs/wiring.html`), which the image gives to its serial console at each reset.
+  `encoder.take_pads(pins.ENC_A, pins.ENC_B)` takes them, and `app.run` calls it first.
 - The master volume (P757, `games/volume.py`): `MasterVolume` is one gain on the whole mix, the last step before
   the I2S. It has 16 steps of 3 dB, and step 0 is silent. A change of step ramps across one block, so it does not
   click. Give it to a driver: `CallbackRefill(mixer, i2s, sd, ring_samples, volume)`. `MasterVolume` is plain
@@ -109,11 +111,14 @@ Runs now:
   `VolumeKnob(encoder, volume, store)` turns the step, 1 step per click, from `poll(now_ms)` once per frame.
   `VolumeStore` keeps the step in `volume.txt`, and the knob saves it 3 s after the last turn. The save is off in the
   probe by default: each 37th save takes 2.4 s and stops the sound (bench.md, P757). The fix is a later card.
-  Status: the gain works, and the knob does not turn it yet. The PO turned the knob in Fire on 2026-11-11 and the
+  Status: the gain works, and the knob is not proven yet. The PO turned the knob in Fire on 2026-11-11 and the
   step did not move. Measured: a closed contact of the encoder reads 1.2 to 1.4 V, not 0 V, and with the I2S open
   the count stands still. That the first causes the second is likely, not proven (bench.md, P757, entries 11 to
-  17). A device at 0x36, likely the board's power chip, also answers on the pads SDA and SCL (entries 18 and 19),
-  so the encoder's wires are off them now. The fix is two other pads, and it is open. Set the step with `LEVEL`:
+  17). A device at 0x36, likely the board's power chip, also answers on the pads SDA and SCL (entries 18 and 19).
+  So the encoder moved to the pads RX (GA, GPIO44) and TX (GB, GPIO43) on 2026-11-11. With no wire, the pulse
+  counter counts there with the I2S open, and the games take both pads from the console at their start (entries 20
+  to 24). Nobody turned the knob on the new pads yet. Until the games start, about 1 s after a reset, a turn of the
+  knob can type into the console. Set the step with `LEVEL`:
   `VOLUME=ViperMasterVolume LEVEL=4 tools/crackle.sh 30 FireSound`. `KNOB=1` adds the knob, and `SAVE=1` the save.
 - The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a
   change, run `python3 ~/Development/spark/scripts/check_spine.py requirements.json --keep build --json` and copy

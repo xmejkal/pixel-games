@@ -29,7 +29,7 @@ button.go{background:var(--accent);border-color:var(--accent);color:#fff} button
 ul{margin:0;padding-left:20px;display:grid;gap:4px;max-width:74ch}
 </style></head><body><main>
 <h1>Wire the rotary encoder, step by step</h1>
-<p>Four wires join the CJMCU-111 encoder to your breadboard. Every wire you already have stays where it is. Find each pad by the name printed on the board. Use the buttons or the arrow keys.</p>
+<p>Four wires join the CJMCU-111 encoder to your breadboard. Every wire you already have stays where it is. Since 2026-11-11, GA and GB go to the pads RX and TX, not to SDA and SCL. Find each pad by the name printed on the board. Use the buttons or the arrow keys.</p>
 
 <div class="fig"><svg id="pic" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 430" font-family="Helvetica,Arial,sans-serif" role="img" aria-label="The encoder, the breadboard rails and the FireBeetle 2 pads">
 <rect width="960" height="430" fill="#f4f1ea"/>
@@ -64,15 +64,15 @@ ul{margin:0;padding-left:20px;display:grid;gap:4px;max-width:74ch}
 <!-- the four new wires -->
 <g class="wire later" id="w-vcc" fill="none" stroke-linejoin="round"><path d="M115 185 V40" stroke="#fff" stroke-width="8"/><path class="ink" d="M115 185 V40" stroke="#d0202a" stroke-width="4.5"/></g>
 <g class="wire later" id="w-gnd" fill="none" stroke-linejoin="round"><path d="M85 185 V70" stroke="#fff" stroke-width="8"/><path class="ink" d="M85 185 V70" stroke="#20262b" stroke-width="4.5"/></g>
-<g class="wire later" id="w-ga" fill="none" stroke-linejoin="round"><path d="M175 185 V120 H555.2 V170" stroke="#fff" stroke-width="8"/><path class="ink" d="M175 185 V120 H555.2 V170" stroke="#e07a10" stroke-width="4.5"/></g>
-<g class="wire later" id="w-gb" fill="none" stroke-linejoin="round"><path d="M145 185 V105 H580.6 V170" stroke="#fff" stroke-width="8"/><path class="ink" d="M145 185 V105 H580.6 V170" stroke="#1f9d55" stroke-width="4.5"/></g>
+<g class="wire later" id="w-ga" fill="none" stroke-linejoin="round"><path d="M175 185 V120 H352 V170" stroke="#fff" stroke-width="8"/><path class="ink" d="M175 185 V120 H352 V170" stroke="#e07a10" stroke-width="4.5"/></g>
+<g class="wire later" id="w-gb" fill="none" stroke-linejoin="round"><path d="M145 185 V105 H377.4 V170" stroke="#fff" stroke-width="8"/><path class="ink" d="M145 185 V105 H377.4 V170" stroke="#1f9d55" stroke-width="4.5"/></g>
 <!-- rings that pulse around what the step is about -->
 <g fill="none" stroke="#c8500f">
 <circle class="glow" data-for="usb" cx="897" cy="277" r="44"/>
 <rect class="glow" data-for="enc" x="44" y="160" width="182" height="170" rx="10"/>
 <circle class="glow" data-for="vcc" cx="115" cy="185" r="13"/><circle class="glow" data-for="gnd" cx="85" cy="185" r="13"/>
 <circle class="glow" data-for="ga" cx="175" cy="185" r="13"/><circle class="glow" data-for="gb" cx="145" cy="185" r="13"/>
-<circle class="glow" data-for="sda" cx="555.2" cy="170" r="13"/><circle class="glow" data-for="scl" cx="580.6" cy="170" r="13"/>
+<circle class="glow" data-for="rx" cx="352" cy="170" r="13"/><circle class="glow" data-for="tx" cx="377.4" cy="170" r="13"/>
 <circle class="glow" data-for="prail" cx="115" cy="40" r="13"/><circle class="glow" data-for="mrail" cx="85" cy="70" r="13"/>
 </g>
 </svg></div>
@@ -85,10 +85,11 @@ ul{margin:0;padding-left:20px;display:grid;gap:4px;max-width:74ch}
 </div>
 
 <div class="card"><p class="m">Where each fact comes from:</p><ul class="m">
-<li>The four wires: spark's breadboard sheet for P758 (<code>build/breadboard.md</code>, steps 5, 7, 23, 28 and 29), built from <code>requirements.json</code>. spark chose SDA and SCL, because every other free pin is wired or is the board's own button.</li>
+<li>The four wires: spark's breadboard sheet for P758 (<code>build/breadboard.md</code>, steps 5, 7, 23, 28 and 29), built from <code>requirements.json</code>. The PO chose RX and TX on 2026-11-11, and <code>requirements.json</code> names them. On this board something outside the chip holds SDA and SCL high, and a device answers on them at address 0x36 (<code>bench.md</code>, P757).</li>
 <li>The pad order of both rows: spark's board record. Both rows start flush at the end away from USB-C.</li>
 <li>The encoder's pads: the part record <code>cjmcu-111-rotary-encoder</code> (GA at the end away from the tan capacitor). VCC from 3.3 V only, never 5 V.</li>
-<li>No pull-up resistors are confirmed on the encoder, so the firmware turns on the chip's own pull-ups. The meter reading in step 7 tells whether the encoder has its own.</li>
+<li>No pull-up resistors are confirmed on the encoder, so the firmware turns on the chip's own pull-ups. The meter readings in step 5 tell whether the encoder has its own.</li>
+<li>RX and TX belong to the board's serial console from each reset until the games start, which is about 1 s. In that time the console holds TX high, and a turn of the knob can type into the console. So the reading from GB to GND in step 5 comes before the wire to TX.</li>
 </ul></div>
 </main>
 <script>
@@ -98,17 +99,17 @@ const NS="http://www.w3.org/2000/svg", pads=document.getElementById("pads");
 function pad(x,y,label,ty,hot){const c=document.createElementNS(NS,"circle");c.setAttribute("cx",x);c.setAttribute("cy",y);c.setAttribute("r",hot?7:6);
  c.setAttribute("fill",hot?"#f2c14e":"#c9a24b");pads.appendChild(c);const t=document.createElementNS(NS,"text");t.setAttribute("x",x);t.setAttribute("y",ty);
  t.textContent=label;if(hot)t.setAttribute("fill","#f2c14e");pads.appendChild(t);}
-R18.forEach((n,i)=>pad(352+i*25.4,170,n,190,n==="SDA"||n==="SCL"));
+R18.forEach((n,i)=>pad(352+i*25.4,170,n,190,n==="RX"||n==="TX"));
 R14.forEach((n,i)=>pad(352+i*25.4,384,n,370,false));
 const STEPS=[
- {c:"#566570",t:"Unplug the USB-C cable",x:"Do every step with the power off. The meter reading in step 7 also needs the power off.",glow:["usb"],wires:[]},
+ {c:"#566570",t:"Unplug the USB-C cable",x:"Do every step with the power off. The meter readings in step 5 also need the power off.",glow:["usb"],wires:[]},
  {c:"#16608f",t:"Put the encoder in the breadboard",x:"Turn it so that GND is on the left and the tan capacitor is beside it. Put each of its four pads in its own row, in a free place left of the FireBeetle 2. If the header is loose in the bag, solder it first.",glow:["enc"],wires:[]},
  {c:"#d0202a",t:"VCC to the + rail",x:"Run a red jumper from the encoder's VCC row to the + rail. The + rail carries 3.3 V from the board's 3V3 pad.",glow:["vcc","prail"],wires:["w-vcc"]},
  {c:"#20262b",t:"GND to the - rail",x:"Run a black jumper from the encoder's GND row to the - rail.",glow:["gnd","mrail"],wires:["w-gnd"]},
- {c:"#e07a10",t:"GA to SDA",x:"Run an orange jumper from the encoder's GA row to the board's pad printed SDA, on the 18-pin row. SDA is the ninth pad from the end away from USB-C.",glow:["ga","sda"],wires:["w-ga"]},
- {c:"#1f9d55",t:"GB to SCL",x:"Run a green jumper from the encoder's GB row to the pad printed SCL, the next pad after SDA toward USB-C.",glow:["gb","scl"],wires:["w-gb"]},
- {c:"#c8500f",t:"Measure, power still off",x:"Set the meter to ohms. Measure from VCC to GA, then from VCC to GB, and write both values down. A reading in kΩ means the encoder has its own pull-ups. An open reading (OL) means it has none, and the chip's pull-ups do the job.",glow:["vcc","ga","gb"],wires:[]},
- {c:"#1c262e",t:"Plug in and say “wired”",x:"Plug the USB-C cable back in. Tell Claude “wired” and the two readings. Claude then runs the probe, and you turn the knob 20 clicks one way and 20 back.",glow:["usb"],wires:[]}];
+ {c:"#c8500f",t:"Measure, power still off",x:"Set the meter to ohms. First measure from GB to GND. Turn the knob slowly between two clicks, and write down the lowest number. If the meter shows OL the whole time, it measured nothing. If the lowest number is under 1 kΩ, stop: do not plug GB into TX. Then measure from VCC to GA and from VCC to GB with the knob at rest, and write both down. A reading in kΩ means the encoder has its own pull-ups.",glow:["vcc","gnd","ga","gb"],wires:[]},
+ {c:"#e07a10",t:"GA to RX",x:"Run an orange jumper from the encoder's GA row to the board's pad printed RX, on the 18-pin row. RX is the first pad at the end away from USB-C.",glow:["ga","rx"],wires:["w-ga"]},
+ {c:"#1f9d55",t:"GB to TX",x:"Run a green jumper from the encoder's GB row to the pad printed TX, the next pad after RX toward USB-C.",glow:["gb","tx"],wires:["w-gb"]},
+ {c:"#1c262e",t:"Plug in and say “wired”",x:"Plug the USB-C cable back in. Tell Claude “wired” and the three readings. Claude then runs the probe, and you turn the knob.",glow:["usb"],wires:[]}];
 const ALL=["w-vcc","w-gnd","w-ga","w-gb"]; let i=0;
 const bar=document.getElementById("bar"); STEPS.forEach(()=>bar.appendChild(document.createElement("i")));
 function show(){const s=STEPS[i]; const doneWires=STEPS.slice(0,i).flatMap(x=>x.wires);
