@@ -157,7 +157,7 @@ class Marshmallow(Fire):
 
     def __init__(self):
         super().__init__()
-        self.covers = False  # the title needs its black fill
+        self.covers = False  # the title needs its black fill. play() sets it: the field then paints every pixel
 
     def setup(self):
         """restart() calls this each round: the field keeps burning, so a round does not start cold."""
@@ -176,6 +176,7 @@ class Marshmallow(Fire):
     def play(self, pressed, held):
         """Not Fire.play: a tap moves no mode."""
         flame, roast = self.flame, self.roast
+        self.covers = self.fire_plugin.field is not None  # no fill under the field: it cost 4 ms a frame (run208b)
         flame.update(self.ms, min(self.score, WILD_MAX))
         out = roast.update(self.ms, held, flame.top_px)
         level = flame.top_px * LEVELS // FLAME_MAX_PX

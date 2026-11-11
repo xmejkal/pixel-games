@@ -1,0 +1,89 @@
+=== run209c-p773-fire-control: GAME=Fire HOLD_MS=0 of 3000, SOUND=1, 60 s, no hand, 2026-11-11 16:07:44 +0100
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 7990496
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+fps fire 24
+time fire step 7.5 paint 9.6 send 4.1 gc 2.5 fps 24 worst 51 slowest 44 = step 7 paint 33 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 25 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 2.1 over 0.0 title 0.0
+heap fire alloc 155424 glyphs 19
+sound fire sent 316 of 314 between_max 45 late 0 render_max 855 plays 1 presses 0 render_mean 511
+fire linear fps 24 step 6.43 draw 6.51
+fps fire 24
+time fire step 7.6 paint 9.8 send 4.2 gc 2.4 fps 24 worst 61 slowest 44 = step 8 paint 33 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 25 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 157168 glyphs 19
+sound fire sent 313 of 313 between_max 46 late 0 render_max 722 plays 0 presses 0 render_mean 508
+fire linear fps 24 step 6.48 draw 6.51
+fps fire 24
+time fire step 7.5 paint 10.5 send 4.4 gc 2.4 fps 24 worst 64 slowest 47 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 27 over 0 title 0
+avg fire static 0.1 paint 7.3 fx 0.1 hud 2.2 over 0.0 title 0.0
+heap fire alloc 173552 glyphs 22
+sound fire sent 312 of 312 between_max 42 late 0 render_max 704 plays 0 presses 0 render_mean 515
+fire linear fps 24 step 6.53 draw 6.53
+fps fire 24
+time fire step 7.5 paint 11.1 send 4.2 gc 2.6 fps 24 worst 62 slowest 46 = step 7 paint 36 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 25 over 0 title 0
+avg fire static 0.1 paint 7.3 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 173408 glyphs 22
+sound fire sent 314 of 314 between_max 38 late 0 render_max 645 plays 0 presses 0 render_mean 511
+fire linear fps 24 step 6.57 draw 6.53
+fps fire 24
+time fire step 7.7 paint 10.0 send 4.3 gc 2.6 fps 24 worst 60 slowest 50 = step 7 paint 39 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 31 over 0 title 0
+avg fire static 0.1 paint 7.0 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 173328 glyphs 22
+sound fire sent 313 of 312 between_max 36 late 0 render_max 745 plays 0 presses 0 render_mean 509
+fire linear fps 24 step 6.54 draw 6.50
+fps fire 24
+time fire step 7.4 paint 10.1 send 4.5 gc 2.6 fps 24 worst 57 slowest 47 = step 7 paint 36 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 173776 glyphs 22
+sound fire sent 315 of 314 between_max 34 late 0 render_max 648 plays 0 presses 0 render_mean 511
+fire linear fps 24 step 6.53 draw 6.51
+fps fire 24
+time fire step 7.5 paint 10.2 send 4.4 gc 2.6 fps 24 worst 63 slowest 49 = step 7 paint 38 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 174288 glyphs 22
+sound fire sent 315 of 315 between_max 47 late 0 render_max 629 plays 0 presses 0 render_mean 504
+fire linear fps 24 step 6.48 draw 6.51
+fps fire 24
+time fire step 7.5 paint 9.7 send 4.0 gc 2.6 fps 24 worst 81 slowest 44 = step 8 paint 32 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 25 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.2 over 0.0 title 0.0
+heap fire alloc 173408 glyphs 22
+sound fire sent 314 of 313 between_max 46 late 0 render_max 806 plays 0 presses 0 render_mean 504
+fire linear fps 24 step 6.53 draw 6.50
+fps fire 24
+time fire step 7.5 paint 10.2 send 4.2 gc 2.6 fps 24 worst 64 slowest 48 = step 8 paint 36 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 28 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 173328 glyphs 22
+sound fire sent 313 of 312 between_max 46 late 0 render_max 807 plays 0 presses 0 render_mean 509
+fire linear fps 24 step 6.54 draw 6.50
+fps fire 24
+time fire step 7.5 paint 9.6 send 4.3 gc 2.6 fps 24 worst 49 slowest 45 = step 7 paint 34 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 26 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap fire alloc 173856 glyphs 22
+sound fire sent 314 of 314 between_max 44 late 0 render_max 706 plays 0 presses 0 render_mean 500
+fire linear fps 24 step 6.49 draw 6.49
+fps fire 24
+time fire step 7.5 paint 10.3 send 4.5 gc 2.6 fps 24 worst 61 slowest 45 = step 7 paint 35 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 26 over 0 title 0
+avg fire static 0.1 paint 7.3 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 173776 glyphs 22
+sound fire sent 313 of 312 between_max 46 late 0 render_max 685 plays 0 presses 0 render_mean 509
+fire linear fps 24 step 6.53 draw 6.52
+late 0 written 961280
+done
+exit 0

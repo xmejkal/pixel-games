@@ -394,6 +394,13 @@ class MarshmallowEngineTest(unittest.TestCase):
         self.assertEqual([False], self.base)
         self.assertEqual([mm.LOOK], fire.engine.looks)
 
+    def test_the_title_gets_its_fill_and_the_field_covers_the_screen_in_play(self):
+        game = self.game
+        self.assertFalse(game.covers)
+        game.step(0, True, False)  # the tap leaves the title
+        game.step(40, False, False)
+        self.assertTrue(game.covers)
+
     def test_one_field_over_two_rounds_it_burns_and_the_signals_come(self):
         game = self.game
         field = game.fire_plugin.field

@@ -1,0 +1,78 @@
+=== run208c-p773-marshmallow-hold: GAME=Marshmallow HOLD_MS=1300 of 3000, SOUND=1, 60 s, no hand, 2026-11-11 16:03:24 +0100
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 7989664
+frame tft
+ready
+marshmallow internal largest 31744
+marshmallow field internal
+game marshmallow
+fps marshmallow 25
+time marshmallow step 8.4 paint 14.2 send 3.5 gc 2.5 fps 25 worst 43 slowest 39 = step 0 paint 35 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 0 hud 14 over 0 title 31
+avg marshmallow static 4.7 paint 7.8 fx 0.1 hud 1.1 over 0.0 title 0.2
+heap marshmallow alloc 157184 glyphs 13
+sound marshmallow sent 315 of 313 between_max 38 late 0 render_max 907 plays 2 presses 0 render_mean 675
+fps marshmallow 24
+time marshmallow step 8.5 paint 14.1 send 3.4 gc 2.5 fps 24 worst 60 slowest 41 = step 9 paint 28 send 3 gc 0
+phases marshmallow static 6 paint 8 fx 1 hud 14 over 0 title 0
+avg marshmallow static 4.9 paint 7.7 fx 0.1 hud 1.1 over 0.0 title 0.0
+heap marshmallow alloc 157104 glyphs 14
+sound marshmallow sent 316 of 315 between_max 38 late 0 render_max 1042 plays 1 presses 0 render_mean 694
+fps marshmallow 24
+time marshmallow step 8.5 paint 14.0 send 3.3 gc 2.4 fps 24 worst 80 slowest 31 = step 15 paint 12 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 0 hud 1 over 0 title 0
+avg marshmallow static 4.9 paint 7.7 fx 0.1 hud 1.0 over 0.0 title 0.0
+heap marshmallow alloc 158832 glyphs 14
+sound marshmallow sent 313 of 313 between_max 38 late 0 render_max 874 plays 0 presses 0 render_mean 688
+fps marshmallow 24
+time marshmallow step 8.4 paint 14.2 send 3.4 gc 2.5 fps 24 worst 46 slowest 42 = step 9 paint 29 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 1 hud 15 over 0 title 0
+avg marshmallow static 4.9 paint 7.7 fx 0.1 hud 1.1 over 0.0 title 0.0
+heap marshmallow alloc 157328 glyphs 15
+sound marshmallow sent 313 of 313 between_max 38 late 0 render_max 973 plays 1 presses 0 render_mean 687
+fps marshmallow 24
+time marshmallow step 8.4 paint 14.2 send 3.3 gc 2.4 fps 24 worst 80 slowest 40 = step 9 paint 27 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 0 hud 13 over 0 title 0
+avg marshmallow static 4.9 paint 7.8 fx 0.1 hud 1.1 over 0.0 title 0.0
+heap marshmallow alloc 159472 glyphs 16
+sound marshmallow sent 313 of 312 between_max 38 late 0 render_max 937 plays 1 presses 0 render_mean 693
+fps marshmallow 24
+time marshmallow step 8.5 paint 14.1 send 3.3 gc 2.5 fps 24 worst 61 slowest 40 = step 9 paint 27 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 0 hud 13 over 0 title 0
+avg marshmallow static 4.9 paint 7.8 fx 0.1 hud 1.1 over 0.0 title 0.0
+heap marshmallow alloc 157968 glyphs 17
+sound marshmallow sent 315 of 315 between_max 41 late 0 render_max 944 plays 1 presses 0 render_mean 685
+fps marshmallow 24
+time marshmallow step 8.4 paint 14.1 send 3.4 gc 2.5 fps 24 worst 75 slowest 40 = step 10 paint 27 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 1 hud 12 over 0 title 0
+avg marshmallow static 4.9 paint 7.7 fx 0.1 hud 1.1 over 0.0 title 0.0
+heap marshmallow alloc 159456 glyphs 18
+sound marshmallow sent 316 of 315 between_max 30 late 0 render_max 935 plays 1 presses 0 render_mean 695
+fps marshmallow 24
+time marshmallow step 8.6 paint 13.7 send 3.4 gc 2.4 fps 24 worst 88 slowest 30 = step 14 paint 12 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 0 hud 1 over 0 title 0
+avg marshmallow static 4.6 paint 7.7 fx 0.1 hud 1.0 over 0.0 title 0.0
+heap marshmallow alloc 160112 glyphs 18
+sound marshmallow sent 313 of 313 between_max 34 late 0 render_max 954 plays 0 presses 0 render_mean 679
+fps marshmallow 24
+time marshmallow step 8.6 paint 14.0 send 3.3 gc 2.5 fps 24 worst 48 slowest 44 = step 9 paint 31 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 1 hud 17 over 0 title 0
+avg marshmallow static 4.7 paint 7.8 fx 0.1 hud 1.1 over 0.0 title 0.0
+heap marshmallow alloc 158768 glyphs 19
+sound marshmallow sent 314 of 312 between_max 30 late 0 render_max 943 plays 1 presses 0 render_mean 689
+fps marshmallow 24
+time marshmallow step 8.4 paint 14.2 send 3.4 gc 2.4 fps 24 worst 69 slowest 42 = step 10 paint 27 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 1 hud 13 over 0 title 0
+avg marshmallow static 5.0 paint 7.7 fx 0.2 hud 1.1 over 0.0 title 0.0
+heap marshmallow alloc 160800 glyphs 20
+sound marshmallow sent 312 of 313 between_max 34 late 0 render_max 993 plays 1 presses 0 render_mean 694
+fps marshmallow 24
+time marshmallow step 8.3 paint 14.2 send 3.4 gc 2.5 fps 24 worst 46 slowest 44 = step 9 paint 31 send 3 gc 0
+phases marshmallow static 5 paint 8 fx 2 hud 17 over 0 title 0
+avg marshmallow static 4.8 paint 7.9 fx 0.1 hud 1.1 over 0.0 title 0.0
+heap marshmallow alloc 159488 glyphs 21
+sound marshmallow sent 314 of 313 between_max 38 late 0 render_max 1056 plays 1 presses 0 render_mean 695
+late 0 written 960768
+done
+exit 0
