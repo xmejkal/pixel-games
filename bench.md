@@ -1189,3 +1189,23 @@ saves the step 3 s after its last change. The stress run saves each second, what
   a store in the NVS. Its worst save is under one block of 16 ms, but it is not measured beside the sound.
 - The step survives a restart of the probe: entry 7 read the 8 that entry 6 saved. Not done yet: the knob's own save
   on the board (turn, wait 3 s, reset the board, the same level). Nobody turned the knob in these runs.
+
+## P762 (#1049), 2026-11-11: the system overlay shows the volume
+
+The overlay (`games/overlay.py`) shows the volume's picture for 1 s after each change of the step. Entries 1 and 2
+ran `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, with nobody at the board.
+
+| # | log | what ran | result |
+|---|-----|----------|--------|
+| 1 | run177a-p762-nohand.log | no hand: the step stays at 8, and the overlay never shows | 8 sound lines, each with `late 0` and `pushes 0`. `between_max` 39 to 47 ms. Frame `worst` 56 to 69 ms, `slowest` 52 to 54 ms, mean paint 10.1 to 10.7 ms. `apply_max` at most 306 us. `windows_max 1` in each line. `written 720896 short -48` |
+| 2 | run177b-p762-spin.log | `SPIN_EVERY_MS=3000`: the probe turns the step from one end to the other, 1 step per frame, 12 times | 8 sound lines, each with `pushes 0`. `late` is a running count: 0, 0, 1, 3, 4, 4, 4, 4. `between_max` 44 to 49 ms. Frame `worst` 61 to 83 ms, `slowest` 54 to 70 ms, mean paint 11.4 to 14.3 ms. `apply_max` at most 385 us. `windows_max 1` in each line. `written 720128 short 96` |
+| 3 | run177c-p762-paint-time.log | `probe762_paint.py`: one repaint of the picture into its kept strip, the least of 5, no game, no sound | 3765 us. Its parts: the fill 217, the border 305, the text `vol` 1654, the 16 cells 1086, the text `16` 1120 |
+
+- Entry 1 is the control run. The overlay's code in the frame adds no `late` count while nothing shows.
+- The sound's margin in Fire is small. The longest gap between two refills was 47 ms in entry 1, and a gap over
+  48 ms is a `late` count (`games/sound.py`, `late_us`).
+- Entry 2 is the costly case: each frame of a spin paints the picture again. It made 4 late refills in 45 s.
+  Nobody listened, so no run shows that a late refill is heard.
+- A repaint takes 3.8 ms, and the two texts take 2.8 ms of it (entry 3). A cheaper repaint is a possible next step.
+- `windows_max` is 1 with and without the picture, so in Fire the picture adds no window. No other game ran.
+- Not shown by any run: the picture on the screen. Nobody looked at the board in these runs.
