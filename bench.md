@@ -1404,10 +1404,13 @@ and the fire loop. The 22 lines after the first:
 | 198 | `run198-p768-runner-silent.log` | 21.1 | 72 to 115 ms | - | - | - | - |
 | 199 | `run199-p768-runner-voices.log` | 20.9 | 77 to 112 ms | 0 | at most 38 ms | 847 us in the first line, then at most 862 us | 410 |
 
-- The four pass lines hold: the render is under 1000 us, 0 late refills, the mean fps differs by 0.3, and the worst
-  frame is not longer. The first render is no longer slow (PR 1: 2.4 ms).
+- The four pass lines hold: the render is under 1000 us, 0 late refills, the mean fps differs by 0.28 (21.14 and
+  20.86), and the longest frame is 112 ms against 115 ms (the shortest worst frame is 77 ms against 72 ms). The first render is no longer slow (PR 1: 2.4 ms).
 - The silent run is 0.9 fps under PR 1's silent run (run191, 22.0). One run each gives no verdict on the cause.
 - Not known from the log: if the fire loop played. The log counts plays and does not name them. The Mac test
   covers the cue, and the PO's ear is the check.
 - Not run: a switch of the game with the sound on, and the other 13 games (PR 3).
 - Open: the PO's ear on all sounds together and his hand on the knob.
+- After the review (PR 67): `Mixer.slot()` keeps what it read, a looping cue plays again when a render ended its
+  voice, and `Bank` refuses an index that starts below 0. `run200-p768-runner-fixes.log`, 30 s with all sounds: 0
+  late refills, a render of at most 880 us, 91 plays, no error.

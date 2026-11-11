@@ -43,5 +43,7 @@ class SoundCues:
         gain, voice = cue.gain * value // LEVELS, self.voices.get(name)
         if voice is not None and voice.live:
             voice.gain = gain  # one store: the voice plays on at its new gain, and 0 ends it
-        elif gain > 0:  # protected, so a burst of short sounds never takes the loop's voice
+            if voice.live or gain <= 0:
+                return
+        if gain > 0:  # also when a render ended the voice at its old gain of 0, just before the store  # protected, so a burst of short sounds never takes the loop's voice
             self.voices[name] = self.mixer.play(self.bank.get(cue.sound), True, cue.group, gain, True)

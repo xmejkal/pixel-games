@@ -140,6 +140,19 @@ class TestVoices(unittest.TestCase):
         mixer.stop()
         self.assertIsNone(mixer.pending)  # a stop is no play
 
+    def test_the_slot_search_reads_each_slot_once(self):
+        """A render can empty a slot between two reads (PR 67's refuter), so slot() keeps what it read."""
+        class ReadOnce(list):
+            def __getitem__(self, i):
+                raise AssertionError("slot() read a slot again")
+
+        mixer = Mixer(2)
+        first = mixer.play(array("h", [1] * 8))
+        mixer.play(array("h", [1] * 8))
+        mixer.voices = ReadOnce(mixer.voices)
+        self.assertEqual(mixer.slot(), 0)
+        self.assertEqual(first.born, 1)
+
 
 if __name__ == "__main__":
     unittest.main()

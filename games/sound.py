@@ -85,12 +85,12 @@ class Mixer:
         return voice
 
     def slot(self):
-        oldest = None
+        oldest, born = None, 0
         for i, voice in enumerate(self.voices):
             if voice is None:
                 return i
-            if not voice.protect and (oldest is None or voice.born < self.voices[oldest].born):
-                oldest = i
+            if not voice.protect and (oldest is None or voice.born < born):
+                oldest, born = i, voice.born  # a local: a render can empty the slot between two reads
         return oldest
 
     def stop(self, group=None):
@@ -112,7 +112,7 @@ class Mixer:
             voice = voices[i]
             if voice is None:
                 continue
-            gain = min(voice.gain, FULL) * min(self.group_gain[voice.group], FULL) >> 15
+            gain = min(voice.gain, FULL) * min(self.group_gain.get(voice.group, FULL), FULL) >> 15
             size, k, done = len(voice.sound), 0, voice.gain <= 0
             while k < n and not done:
                 m = min(n - k, size - voice.at)

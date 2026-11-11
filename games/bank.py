@@ -52,7 +52,7 @@ class Bank:
                 raise OSError("a short read of " + path)
         view, self.sounds = memoryview(mem), {}
         for name, (first, samples) in index.items():
-            if samples <= 0 or 2 * (first + samples) > nbytes:
+            if first < 0 or samples <= 0 or 2 * (first + samples) > nbytes:
                 raise ValueError("%s: %s ends before its %d samples" % (path, name, samples))
             self.sounds[name] = BankSound(mem, view, first, samples)
 
