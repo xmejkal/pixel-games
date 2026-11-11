@@ -1273,7 +1273,7 @@ per second. Entries 1 to 6 ran for 45 s each, between 12:17 and 12:24 CET, with 
 - Entry 2 is no clean spin run, because the PO turned the knob in it. It is the only run of this PR with a turned
   knob, and it has no late refill. He did not say what he saw on the screen.
 - In the spin runs the pane shows with no `show` call from the probe: the mean paint rose by 1 to 4 ms against the
-  runs with no spin, as in P762. Nobody looked at the screen for this record.
+  runs with no spin, as in P762. Nobody looked at the screen in the spin runs. The PO looked in entries 7 and 9.
 - With his hand the runs had 3 late refills in 90 s (entry 7) and 1 in 60 s (entry 9). He named no gap in the sound.
 - Entries 7 to 9 ran from 12:31 to 12:36 CET, on c3d0ee0. No run is on the code with the default 128: entries 8
   and 9 set 128 with `ALPHA`.
