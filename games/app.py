@@ -90,6 +90,7 @@ class App:
         self.game.signals = self.signals
         if self.cues:
             self.cues.follow(self.game, self.signals)
+            self.cues.music()
         self.out.reset()
         self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
