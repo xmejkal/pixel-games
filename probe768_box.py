@@ -43,9 +43,9 @@ class TimedMixer:
             render(buf)
             self.render_max = max(self.render_max, time.ticks_diff(time.ticks_us(), t))
 
-        def counted(sound, loop=False):
+        def counted(*args):
             self.plays += 1
-            return play(sound, loop)
+            return play(*args)
 
         mixer.render, mixer.play = timed, counted
 

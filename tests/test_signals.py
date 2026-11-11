@@ -167,9 +167,55 @@ class TestSoundCues(unittest.TestCase):
             game.signals.listen(name, lambda name, value: seen.append(name))
         game.state, game.dt, game.t = gfx.PLAY, 0.04, 1.0
         game.play(True, False)
-        self.assertEqual(seen, ["jump"])
+        self.assertEqual([name for name in seen if name != "fire"], ["jump"])
         game.die()
-        self.assertEqual(seen, ["jump", "die"])
+        self.assertEqual(seen[-1], "die")
+
+    def test_the_runner_emits_land_once_and_footsteps_only_on_the_ground(self):
+        seen = []
+        game = arcade.Runner()
+        game.signals = signals.Signals()
+        for name in ("jump", "land", "footstep"):
+            game.signals.listen(name, lambda name, value: seen.append(name))
+        game.state, game.dt, game.t = gfx.PLAY, 0.02, 0.0
+        game.track.spawn = lambda *args: None  # an empty track: nothing to hit
+        for frame in range(200):  # 4 s: a tap at 1 s, the rest on the ground
+            game.t += game.dt
+            game.play(frame == 50, False)
+        self.assertEqual(seen.count("jump"), 1)
+        self.assertEqual(seen.count("land"), 1)
+        air = seen[seen.index("jump"):seen.index("land")]
+        self.assertEqual(air, ["jump"])  # no footstep in the air
+        self.assertGreater(seen.count("footstep"), 10)  # 14 / 3 a second on the ground
+        self.assertLess(seen.count("footstep"), 20)
+
+    def test_a_looping_cue_is_one_voice_whose_gain_follows_the_signal(self):
+        class Burning(gfx.Game):
+            name = "burning"
+            cues = {"fire": cues.Cue("low", sound.FULL // 2, True), "jump": cues.Cue("high")}
+
+        mixer = sound.Mixer(2)
+        box = app.App(None, lambda: 99, lambda: 99, games=(Burning, Quiet), out=Out(), cues=cues.SoundCues(mixer, FakeBank()))
+        box.start()
+        game = box.game
+        game.emit("fire", 0)
+        self.assertEqual(mixer.voices, [None, None])  # level 0 starts nothing
+        game.emit("fire", 256)
+        fire = mixer.voices[0]
+        self.assertEqual(rendered(mixer, 6), [0, 1, 1, 0, 1, 1])  # 1, 2, 3 at half gain, looping
+        game.emit("fire", 128)
+        self.assertIs(mixer.voices[0], fire)  # the same voice, no new play
+        self.assertEqual(fire.gain, sound.FULL // 4)
+        for _ in range(3):
+            game.emit("jump")  # short sounds never take the loop's voice
+        self.assertIs(mixer.voices[0], fire)
+        game.emit("fire", 0)
+        rendered(mixer)
+        self.assertFalse(fire.live)
+        game.emit("fire", 256)  # the fire starts again as a new voice
+        self.assertTrue(any(v and v.loop and v is not fire for v in mixer.voices))
+        box.switch()
+        self.assertEqual(mixer.voices, [None, None])  # a switch ends the loop too
 
 
 if __name__ == "__main__":

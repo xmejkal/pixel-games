@@ -50,6 +50,7 @@ RUN_X = 52  # px: the runner's left edge
 # 2026-11-02) and a knee at 520, so a top near 600; the jump's reach and the gaps both scale with sqrt(base), so it still clears.
 SPEED_SLOPE, SPEED_ROOT, SPEED_KNEE = 6, 8, 620
 FIRE_STEP_MS = 80  # ms a heat step: 40 (burning's) cost 10 ms a frame in update and sank the Runner to 16 fps (bench.md P651)
+FIRE_SOUND_GAIN = 32768  # Q15: the fire loop's gain at the full flame, a choice for the PO's ear (P768)
 
 
 class Flappy(Game):
@@ -154,7 +155,9 @@ class Runner(Game):
     accent = ORANGE
     GROUND = 192
     BUFFER = 0.15  # seconds a tap in the air is kept for the landing
-    cues = {"jump": Cue("jump"), "die": Cue("die")}  # --- MVP (P768) ---
+    # --- MVP (P768) --- the PO: "steps, jump and fall, collect something, the fire ... as it gets bigger, dying"
+    cues = {"jump": Cue("jump"), "land": Cue("land"), "pickup": Cue("pickup"), "footstep": Cue("footstep"),
+            "die": Cue("die"), "fire": Cue("fire", FIRE_SOUND_GAIN, True)}
 
     def __init__(self):
         # --- MVP (P651) --- made once, before Game.__init__ runs setup; the trail only when the field exists
@@ -173,6 +176,8 @@ class Runner(Game):
         self.h, self.vy, self.buffer = 0.0, 0.0, 0.0
         self.odo, self.far, self.points = 0.0, 0.0, 0.0  # px the world moved, px at the base speed, and the exact score
         self.track, self.effects = track.Track(), track.Effects()
+        self.beat = 0  # the run cycle's frame at the last footstep check (P768)
+        self.emit("fire", 0)  # a new round: the last round's fire is silent (P768)
         self.jumped, self.landed = -1.0, -1.0  # when the last jump and the last landing began (self.t), for the pose
         self.covers = pictures.load()  # painted art on the board: its sky covers the screen, so no fill goes under it
 
@@ -214,7 +219,13 @@ class Runner(Game):
             if was > 0:
                 self.fx.burst(60, self.GROUND, c565(150, 110, 70), 5, 60.0, 0.4, 200.0)
                 self.landed = self.t
+                self.emit("land")
             self.vy = 0.0
+            beat = int(self.t * 14) % 6  # the run cycle of pose(): a foot is down at its frames 0 and 3
+            if beat != self.beat:
+                self.beat = beat
+                if beat % 3 == 0 and was <= 0:
+                    self.emit("footstep")
         effects = self.effects
         effects.step(dt)
         step = base * max(0.5, effects.factor(track.SLOW)) * dt  # two clocks at once: still at least half speed
@@ -225,6 +236,7 @@ class Runner(Game):
         dx = self.layer.update(self.ms, int(base * max(0.5, effects.factor(track.SLOW))) * FIRE_DRAG_PCT // 100)  # the fire moves with the world
         if self.trail is not None:  # --- MVP (P651) ---
             self.grow_fire(int(base))
+            self.emit("fire", self.fire_k)  # the fire's sound grows with the flame (P768)
             self.trail.scroll(dx)
             if self.fire_k:  # below FIRE_START_SPEED the burn is invisible, so it is skipped
                 self.trail.heat = self.fire_heat - random.randrange(FIRE_HEAT_JIT * self.fire_k // 256 + 1)
@@ -237,9 +249,11 @@ class Runner(Game):
             if tr.hit(t, step, was, self.h):
                 kind = t[1]
                 if kind.deadly:
+                    self.emit("fire", 0)  # play() does not run after a death, so the loop ends here (P768)
                     self.die(60, self.GROUND - self.h - 12)
                     return  # nothing after death counts
                 self.points += kind.points
+                self.emit("pickup")
                 if kind.effect:
                     effects.add(kind.effect, kind.seconds, kind.mult, kind.colour)
                 y = self.GROUND - self.h - 12
