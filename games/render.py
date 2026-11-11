@@ -130,7 +130,7 @@ class StOut:
         self.dirty.reset()
         self.canvas.reset_background()
 
-    def draw(self, game, us):
+    def draw(self, game, us, overlay=None):
         """Paint one frame and send it; adds the paint and send microseconds to us[1] and us[2]."""
         t1, cv = time.ticks_us(), self.canvas
         cv.start()
@@ -138,6 +138,8 @@ class StOut:
             game.paint_static(cv)
             cv.build_background(game.bg)
         game.draw(cv)
+        if overlay:  # --- MVP (P762) --- over the game, in the same frame
+            overlay.draw(cv)
         rects = self.dirty.changed(cv.ops)
         t2 = time.ticks_us()
         for x, y, w, h in chunks(spans(rects) if cv.full else rects, cv.px):

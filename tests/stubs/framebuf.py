@@ -19,6 +19,11 @@ class FrameBuffer:
     def text(self, *args):
         pass
 
+    def rect(self, x, y, w, h, c):
+        """The outline, as four fill_rects (P762: render.StOut replays a box through it)."""
+        for edge in ((x, y, w, 1), (x, y + h - 1, w, 1), (x, y, 1, h), (x + w - 1, y, 1, h)):
+            self.fill_rect(*edge, c)
+
     def fill_rect(self, x, y, w, h, c):
         if self.format != RGB565:
             return

@@ -121,6 +121,18 @@ Runs now:
   type into the console. That time is not measured. If the start stops before `take_pads`, the console keeps
   both pads. No run starts the board with a contact closed on RX. Set the step with `LEVEL`:
   `VOLUME=ViperMasterVolume LEVEL=4 tools/crackle.sh 30 FireSound`. `KNOB=1` adds the knob, and `SAVE=1` the save.
+- The system overlay (P762, `games/overlay.py`): one small picture over the running game, for system information.
+  `Overlay` holds one view and hides it 1 s after the last `show(view, now_ms)`. A view is any object with
+  `draw(cv)`, so a new kind of information is a new class. `VolumeView` is the first view: the volume's step as 16
+  cells and a number. The app owns the overlay (`App.overlay`), and each output draws it after the game.
+  Status: with `KNOB=1` the probe shows the volume at each turn of the knob, in Fire. The PO turned the knob and saw
+  it: "nice". That was the first form of the picture, painted whole at each step. No game shows it yet, because only
+  the probe has the knob. Now the first show paints both parts (4.4 ms), and a new step paints the cells and the
+  number again (2.2 ms). Without the overlay the fire's sound has 1 ms of margin in Fire: the longest gap between
+  two refills is 47 ms, and the limit is 48 ms. With the overlay and fast turns the gap reached 49 ms. The PO's
+  turns made 5 late refills in 120 s, with the first form of the picture (bench.md, P762). Nobody reported a gap in
+  the sound. The picture is solid. `ALPHA=192` on the command lets the game show through it, for about 1 ms more per frame:
+  `ALPHA=192 VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. Nobody looked at that picture yet.
 - The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a
   change, run `python3 ~/Development/spark/scripts/check_spine.py requirements.json --keep build --json` and copy
   `build/firmware/pins.py` to `games/pins.py`. The run ends in `problems` today, only because the reserved display pins
