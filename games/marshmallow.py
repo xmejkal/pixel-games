@@ -185,8 +185,10 @@ class Marshmallow(Fire):
         if out == SERVE:
             self.score += 1
             self.emit("serve")
+            self.pop(CENTRE, BOTTOM_Y)
         elif out == BURN:
             self.emit("burn")
+            self.fx.burst(CENTRE, BOTTOM_Y + roast.depth, GREY, 10, 110.0, 0.6)
             if roast.lost >= LIVES:
                 self.emit("flame", 0)  # play() does not run after a death, so the loop ends here
                 self.die()
