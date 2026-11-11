@@ -16,7 +16,7 @@
 # SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). With a VOLUME, games/volume.py and
 # games/volume_viper.py go to the board too, and with KNOB=1 games/encoder.py and games/pins.py (P757).
 # With KNOB=1 each change of the step also shows the volume on the screen for 1 s (P762): games/overlay.py goes to
-# the board with app.py, lcd.py and render.py. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the probe
+# the board with app.py, lcd.py, render.py and gfx.py. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the probe
 # spins the step to an end at this period.
 #
 # A look, such as "6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK in the crackle.py that this
@@ -72,7 +72,8 @@ if [ "$KNOB" = 1 ]; then
     mpremote cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py \
         + cp "$ROOT/games/app.py" :app.py  # app.run takes the encoder's pads, so the three stay in step (P757)
     mpremote cp "$ROOT/games/overlay.py" :overlay.py + cp "$ROOT/games/lcd.py" :lcd.py \
-        + cp "$ROOT/games/render.py" :render.py  # app.py passes the overlay to the outputs (P762)
+        + cp "$ROOT/games/render.py" :render.py + cp "$ROOT/games/gfx.py" :gfx.py  # app.py passes the overlay to the
+    # outputs, and both canvases' keep takes its alpha (P762)
 fi
 if [ "$GAME" = BurningBodies ]; then
     mpremote cp "$ROOT/games/burning.py" :burning.py + cp "$ROOT/games/plugins.py" :plugins.py

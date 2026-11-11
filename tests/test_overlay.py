@@ -230,6 +230,13 @@ class TftOutTest(unittest.TestCase):
         self.assertEqual(tft.calls[-1], "show")
         self.assertEqual(out.windows, 3)
 
+    def test_the_still_part_blends_and_the_level_part_stays_solid(self):
+        tft, layer = Tft(), overlay.Overlay()
+        layer.show(overlay.VolumeView(volume.MasterVolume(8)), 0)
+        lcd.TftOut(tft).draw(Game(), [0, 0, 0, 0], layer)
+        self.assertEqual([call[5] for call in tft.calls if call[0] == "blit"], [overlay.VolumeView.alpha, 255])
+        self.assertLess(overlay.VolumeView.alpha, 255)
+
     def test_a_hidden_overlay_and_two_arguments_blit_nothing(self):
         tft, layer = Tft(), overlay.Overlay()
         out = lcd.TftOut(tft)
