@@ -18,7 +18,7 @@ import gfx  # noqa: E402
 import lcd  # noqa: E402
 import marshmallow as mm  # noqa: E402
 import signals  # noqa: E402
-from marshmallow import BLACK, BURN, GOLDEN, SERVE, WHITE, Roast  # noqa: E402
+from marshmallow import BURN, DARK, GOLDEN, LATE, SERVE, WHITE, Roast  # noqa: E402
 
 FLAME_TOP = gfx.HEIGHT - mm.BOTTOM_Y  # a flame whose top is the marshmallow's bottom edge at depth 0: under is 0 there
 
@@ -66,44 +66,63 @@ class RoastTest(unittest.TestCase):
         depth = roast.depth  # 100 - 8 px lifted
         self.assertEqual(40 * (mm.BOTTOM_Y + depth), roast.browned)
 
-    def test_the_colour_is_white_under_golden_golden_under_black_else_black(self):
-        for browned, colour in ((0, WHITE), (mm.GOLDEN_AT - 1, WHITE), (mm.GOLDEN_AT, GOLDEN),
-                                (mm.BLACK_AT - 1, GOLDEN), (mm.BLACK_AT, BLACK)):
+    def test_the_colour_is_white_then_golden_then_dark_from_half_of_the_way_to_black(self):
+        half = (mm.GOLDEN_AT + mm.BLACK_AT + 1) // 2
+        for browned, colour in ((0, WHITE), (mm.GOLDEN_AT - 1, WHITE), (mm.GOLDEN_AT, GOLDEN), (half - 1, GOLDEN),
+                                (half, DARK), (mm.BLACK_AT - 1, DARK)):
             self.assertEqual(colour, roast_at(0, browned).colour(), browned)
 
-    def test_black_is_a_burn_once_it_browns_no_more_and_counts_a_lost_one(self):
+    def test_black_is_a_burn_a_lost_one_and_a_white_one_at_the_top(self):
         roast = roast_at(100, mm.BLACK_AT - 1)
+        roast.age = 500
         self.assertEqual(BURN, roast.update(40, True, gfx.HEIGHT))
-        self.assertEqual((1, BLACK), (roast.lost, roast.colour()))
-        browned = roast.browned
-        self.assertIsNone(roast.update(40, True, gfx.HEIGHT))  # still in the flames: no second burn, no more brown
-        self.assertEqual((1, browned), (roast.lost, roast.browned))
+        self.assertEqual((1, 0, 0, 0, WHITE), (roast.lost, roast.depth, roast.browned, roast.age, roast.colour()))
 
-    def test_a_black_one_at_the_top_is_replaced_by_a_white_one_with_no_outcome(self):
-        roast = roast_at(1, mm.BLACK_AT)
-        roast.lost = 1
-        self.assertIsNone(roast.update(40, False, FLAME_TOP))  # lifted to 0
-        self.assertEqual((0, 0, WHITE, 1), (roast.depth, roast.browned, roast.colour(), roast.lost))
+    def test_a_hold_with_no_end_burns_one_after_the_other(self):
+        roast = Roast()
+        outcomes = [roast.update(40, True, mm.FLAME_MAX_PX) for _ in range(1000)]
+        self.assertGreaterEqual(outcomes.count(BURN), mm.LIVES)
+        self.assertEqual(0, outcomes.count(SERVE))
+
+    def test_each_served_one_brings_black_nearer_down_to_the_least(self):
+        roast = Roast()
+        self.assertEqual(mm.BLACK_AT, roast.black_at())
+        roast.served = 3
+        self.assertEqual(mm.BLACK_AT - 3 * mm.BLACK_STEP, roast.black_at())
+        roast.browned, roast.depth = roast.black_at() - 1, 100
+        self.assertEqual(BURN, roast.update(40, True, gfx.HEIGHT))  # under the first limit, over this one
+        roast.served = 1000
+        self.assertEqual(mm.BLACK_MIN, roast.black_at())
+        self.assertGreater(mm.BLACK_MIN, mm.GOLDEN_AT)
+
+    def test_a_marshmallow_whose_time_ran_out_is_late_and_lost(self):
+        roast = Roast()
+        outcomes = [roast.update(40, False, 0) for _ in range(mm.TIME_MS // 40)]
+        self.assertEqual([None] * (len(outcomes) - 1) + [LATE], outcomes)
+        self.assertEqual((1, 0), (roast.lost, roast.age))
+
+    def test_each_served_one_shortens_the_time_down_to_the_least(self):
+        roast = Roast()
+        self.assertEqual(mm.TIME_MS, roast.time_ms())
+        roast.served = 2
+        self.assertEqual(mm.TIME_MS - 2 * mm.TIME_STEP_MS, roast.time_ms())
+        roast.served = 1000
+        self.assertEqual(mm.TIME_MIN_MS, roast.time_ms())
+
+    def test_the_least_time_is_enough_for_the_way_down_and_up(self):
+        way = mm.DEPTH_MAX * 1000 // mm.LOWER_PX_S + mm.DEPTH_MAX * 1000 // mm.LIFT_PX_S
+        self.assertGreater(mm.TIME_MIN_MS, way)
 
     def test_a_golden_one_at_the_top_is_served_and_a_white_one_comes(self):
         roast = roast_at(1, mm.GOLDEN_AT)
         self.assertEqual(SERVE, roast.update(40, False, FLAME_TOP))
         self.assertEqual((0, 0, WHITE, 0), (roast.depth, roast.browned, roast.colour(), roast.lost))
+        self.assertEqual((1, 0), (roast.served, roast.age))  # a new time for the white one
 
     def test_a_white_one_at_the_top_is_neither(self):
         roast = roast_at(1, mm.GOLDEN_AT - 1)
         self.assertIsNone(roast.update(40, False, FLAME_TOP))
         self.assertEqual(mm.GOLDEN_AT - 1, roast.browned)  # it keeps what it had
-
-    def test_the_third_lost_one_is_the_last_life(self):
-        roast = Roast()
-        for n in range(mm.LIVES):
-            roast.depth, roast.browned = 100, mm.BLACK_AT - 1
-            self.assertEqual(BURN, roast.update(40, True, gfx.HEIGHT))
-            self.assertEqual(n + 1, roast.lost)
-            roast.depth, roast.browned = 0, mm.BLACK_AT  # to the top, replaced by a white one
-            roast.update(40, False, FLAME_TOP)
-        self.assertEqual(mm.LIVES, roast.lost)
 
     def test_the_highest_flame_never_reaches_a_marshmallow_at_the_top(self):
         self.assertLessEqual(gfx.HEIGHT - mm.FLAME_MAX_PX, mm.BOTTOM_Y)
@@ -112,12 +131,14 @@ class RoastTest(unittest.TestCase):
         self.assertEqual(0, roast.browned)
 
     def test_lift_speed_saves_a_golden_one_from_the_deepest_place_under_the_highest_flame(self):
-        """By the constants: lifting from DEPTH_MAX at a still flame of FLAME_MAX_PX adds under_max squared over twice
-        the lift speed (px times ms), and golden plus that stays under black."""
+        """By the constants, for the first marshmallows: lifting from DEPTH_MAX at a still flame of FLAME_MAX_PX adds
+        under_max squared over twice the lift speed (px times ms), and golden plus that stays under the first black.
+        Under BLACK_MIN it does not: late in a round the deepest place under the highest flame is a burn."""
         under_max = mm.BOTTOM_Y + mm.DEPTH_MAX - (gfx.HEIGHT - mm.FLAME_MAX_PX)
         self.assertGreater(under_max, 0)
         extra = under_max * under_max * 1000 // (2 * mm.LIFT_PX_S)
         self.assertLess(mm.GOLDEN_AT + extra, mm.BLACK_AT)
+        self.assertGreater(mm.GOLDEN_AT + extra, mm.BLACK_MIN)
         for ms in (40, 60):  # and by steps of the longest frame, with the rounding of whole px
             roast = roast_at(mm.DEPTH_MAX, mm.GOLDEN_AT)
             outcomes = []
@@ -253,8 +274,12 @@ def cook(game):
 
 
 def burn_them(game):
-    """Hold until it is black, then lift it to the top, and again: every marshmallow is lost."""
-    return game.roast.browned < mm.BLACK_AT
+    """A hold with no end: every marshmallow goes black."""
+    return True
+
+
+def idle(game):
+    return False
 
 
 class Log:
@@ -295,6 +320,14 @@ class MarshmallowNoEngineTest(unittest.TestCase):
         self.assertEqual(mm.LIVES, self.log.names().count("burn"))
         self.assertEqual(1, self.log.names().count("die"))
         self.assertEqual(0, self.log.names().count("serve"))
+
+    def test_a_player_who_does_nothing_loses_by_the_time(self):
+        game = self.game
+        now = run(game, 0, 3000, idle, pressed_first=True)
+        self.assertEqual(gfx.OVER, game.state)
+        self.assertEqual((mm.LIVES, 0), (game.roast.lost, game.score))
+        self.assertEqual(mm.LIVES * mm.TIME_MS, now - test_fire.FRAME_MS)  # the first frame is the tap
+        self.assertEqual(mm.LIVES, self.log.names().count("burn"))  # a late one sounds as a burnt one
 
     def test_flame_0_is_emitted_just_before_the_death(self):
         run(self.game, 0, 3000, burn_them, pressed_first=True)
@@ -358,11 +391,24 @@ class MarshmallowNoEngineTest(unittest.TestCase):
 
     def test_the_marshmallow_is_drawn_at_its_depth(self):
         game = self.game
-        game.roast.depth, game.roast.browned = 100, mm.BLACK_AT
+        game.roast.depth, game.roast.browned = 100, mm.GOLDEN_AT
         cv = Recorder(Tft())
         cv.box = lambda *args: None
         game.paint(cv)
         self.assertIn((mm.CENTRE - mm.SIZE // 2, mm.BOTTOM_Y - mm.SIZE + 100, mm.SIZE, mm.SIZE), cv.fills)
+
+    def test_the_time_bar_shrinks_with_the_marshmallows_age(self):
+        game = self.game
+
+        def bar():
+            cv = Recorder(Tft())
+            cv.box = lambda *args: None
+            game.paint(cv)
+            return cv.fills[-1][2]
+
+        self.assertEqual(mm.TIME_BAR_PX, bar())
+        game.roast.age = mm.TIME_MS // 2
+        self.assertEqual(mm.TIME_BAR_PX // 2, bar())
 
 
 @unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/core/fx_fire.c is not built")
@@ -400,6 +446,29 @@ class MarshmallowEngineTest(unittest.TestCase):
         game.step(0, True, False)  # the tap leaves the title
         game.step(40, False, False)
         self.assertTrue(game.covers)
+
+    def test_no_fixed_rhythm_of_hold_and_release_plays_on(self):
+        """The refuter's find (P773): with no time limit and a fixed black, a player who never looked scored with no
+        end. The rhythms here are the ones that scored best then. The plain flame is not held to this: it is even,
+        and 4 of 175 rhythms still played on for 10 minutes there (Mac trial)."""
+        import random
+        random.seed(773)
+        best = 0
+        for release in (25, 30):  # frames
+            for hold in range(36, 58, 4):
+                with contextlib.redirect_stdout(io.StringIO()):
+                    game = mm.Marshmallow()
+                period = hold + release
+                frame = [0]
+
+                def rhythm(game):
+                    frame[0] += 1
+                    return frame[0] % period < hold
+
+                run(game, 0, 7500, rhythm, pressed_first=True)  # 5 minutes
+                self.assertEqual(gfx.OVER, game.state, (hold, release, game.score))
+                best = max(best, game.score)
+        self.assertLess(best, 40)
 
     def test_one_field_over_two_rounds_it_burns_and_the_signals_come(self):
         game = self.game

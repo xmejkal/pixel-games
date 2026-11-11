@@ -1,9 +1,10 @@
 """
 Marshmallow (P773): roast a marshmallow over a campfire. It hangs on a stick above the fire.
 
-How to play: hold BOOT to lower it into the flames and let go to lift it. The heat browns it from white to golden
-and then to black. Lift a golden one to the top of the screen and you score a point. A black one is lost. Three
-lost ones end the round. Each point makes the campfire higher and less steady.
+How to play: hold BOOT to lower it into the flames and let go to lift it. The heat browns it from white to golden,
+then dark, then black. Lift a golden or dark one to the top of the screen and you score a point. A black one is lost,
+and so is one whose time ran out (the bar under the score). Three lost ones end the round. Each point makes the
+campfire higher and less steady, the time shorter and black nearer to golden. Deep in the flames is fast and risky.
 
 The campfire is the heat field of fire.py. The game burns it itself at the bottom middle, and the field's own base is
 off, as in burning.py. Without the C engine a plain flame of bars takes its place, and the rules are the same.
@@ -15,33 +16,53 @@ from fire import FAST, MODES, SWAY, Fire, H, W
 from gfx import BEST, GREY, HEIGHT, HUD_RECT, ORANGE, RED, WIDTH, YELLOW, Game, c565
 
 # --- MVP (P773) --- the rules, in px, ms and ints. Mac trials of the burn, over fire.py's field with the look below.
-SERVE, BURN = 1, 2  # what Roast.update answers, besides None
-WHITE, GOLDEN, BLACK = 0, 1, 2  # what Roast.colour answers
+SERVE, BURN, LATE = 1, 2, 3  # what Roast.update answers, besides None
+WHITE, GOLDEN, DARK = 0, 1, 2  # what Roast.colour answers
 LIVES = 3  # lost marshmallows that end a round
-FLAME_MAX_PX = 200  # px: no flame is read higher, so the marshmallow at the top is safe (Mac trial: 222 px at most)
+FLAME_MAX_PX = 200  # px: no flame is read higher, so the marshmallow at the top is safe
 BOTTOM_Y = HEIGHT - FLAME_MAX_PX  # px: the marshmallow's bottom edge at the top, y 40: level with the highest flame
 SIZE = 16  # px, a marshmallow's side
 DEPTH_MAX = 180  # px it goes down: its bottom edge is then at y 220
 LOWER_PX_S = 120  # px a second while BOOT is held: the whole way takes 1.5 s
-LIFT_PX_S = 200  # px a second while it is not. test_marshmallow proves from the constants that it is fast enough
-GOLDEN_AT, BLACK_AT = 100000, 300000  # browned, in px times ms: the cooking so far. 40 px under the flame, golden takes
-# 2.5 s and black 7.5 s. The campfire in play (Mac, 1,400 frames) reaches 76 to 180 px high at 0 points and 102 to 200
-# at 5. At the lowest, 76 px, the deepest place is 56 px under it: golden in 1.8 s
+LIFT_PX_S = 200  # px a second while it is not
+# browned, in px times ms: the cooking so far. 40 px under the flame, golden takes 2.5 s
+GOLDEN_AT, BLACK_AT = 100000, 300000
+BLACK_STEP, BLACK_MIN = 10000, 140000  # each served one brings black nearer to golden, down to BLACK_MIN
+TIME_MS, TIME_STEP_MS, TIME_MIN_MS = 8000, 400, 3200  # the time a marshmallow has, shorter with each served one
 
 
 class Roast:
-    """The rules, with no display. depth: px down from the top. browned: the cooking, in px times ms. lost: the
-    marshmallows that went black. Ints only, so a frame makes nothing."""
+    """The rules, with no display. depth: px down from the top. browned: the cooking, in px times ms. age: the ms this
+    marshmallow hangs. served: the golden ones that reached the top. lost: the ones that went black or took too long.
+    Ints only, so a frame makes nothing."""
 
     def __init__(self):
-        self.depth, self.rest, self.browned, self.lost = 0, 0, 0, 0  # rest: px times ms short of the next whole px
+        self.depth, self.rest, self.browned, self.age = 0, 0, 0, 0  # rest: px times ms short of the next whole px
+        self.served, self.lost = 0, 0
+
+    def black_at(self):
+        """browned at which it goes black."""
+        return max(BLACK_MIN, BLACK_AT - BLACK_STEP * self.served)
+
+    def time_ms(self):
+        """The ms a marshmallow has, from white to served."""
+        return max(TIME_MIN_MS, TIME_MS - TIME_STEP_MS * self.served)
 
     def colour(self):
-        return WHITE if self.browned < GOLDEN_AT else GOLDEN if self.browned < BLACK_AT else BLACK
+        """DARK warns: it is over half of the way from golden to black."""
+        if self.browned < GOLDEN_AT:
+            return WHITE
+        return GOLDEN if 2 * self.browned < GOLDEN_AT + self.black_at() else DARK
+
+    def lose(self, outcome):
+        """A white one at the top for the lost one, so a hold with no end loses too."""
+        self.lost += 1
+        self.depth = self.rest = self.browned = self.age = 0
+        return outcome
 
     def update(self, ms, held, flame_px):
         """ms of play. held: BOOT is down. flame_px: the flame's height above the screen's bottom. Answers None, SERVE
-        (a golden one reached the top) or BURN (a marshmallow just went black)."""
+        (a golden one reached the top), BURN (it went black) or LATE (its time ran out)."""
         self.rest += (LOWER_PX_S if held else -LIFT_PX_S) * ms
         px = self.rest // 1000
         self.rest -= px * 1000
@@ -50,31 +71,32 @@ class Roast:
             self.depth = 0 if self.depth < 0 else DEPTH_MAX
             self.rest = 0
         under = BOTTOM_Y + self.depth - (HEIGHT - flame_px)  # px of the bottom edge below the flame's top
-        if under > 0 and self.browned < BLACK_AT:
+        if under > 0:
             self.browned += under * ms
-            if self.browned >= BLACK_AT:
-                self.lost += 1
-                return BURN
+            if self.browned >= self.black_at():
+                return self.lose(BURN)
         if self.depth == 0 and self.browned >= GOLDEN_AT:
-            served = self.browned < BLACK_AT
-            self.browned = 0  # a white one for the golden one served, and for a black one
-            return SERVE if served else None
-        return None
+            self.browned = self.age = 0  # a white one for the golden one served
+            self.served += 1
+            return SERVE
+        self.age += ms
+        return self.lose(LATE) if self.age >= self.time_ms() else None
 
 
 # --- MVP (P773) --- the flames. Mac trials of the burn at the bottom middle (24 cells wide, radius 4 cells) over the
 # look below, 800 steps each: the field's height over THRESHOLD 96, in cells, was the same in the whole field and in the
 # middle 24 columns (at most 6 cells apart in the other looks, 0 here). Heat 150 gave 82 px on average (50 to 118), heat
-# 200 gave 126 px (90 to 162) and heat 250 gave 182 px (136 to 222), so the lowest campfire is a third of the screen and
-# the highest three quarters.
+# 200 gave 126 px (90 to 162) and heat 250 gave 182 px (136 to 222). In play (6,000 frames, the wind is random, so the
+# numbers move by a few px) the height was 74 to 182 px at 0 points and 86 to 198 px at WILD_MAX with the high heat 220.
+# With the high heat 230 it passed FLAME_MAX_PX in 24 of 5,900 steps, so 220 is the limit.
 # decay, cool, sway, spots, spread, fast, embers, fade: no spots and no embers, the base is off
 LOOK = (33, 40, SWAY, 0, 1, FAST, 0, 8)
 BURN_HALF, BURN_RADIUS = 12, 4  # cells: the burned line is 2 * BURN_HALF + 1 wide, centred, with discs of this radius
 THRESHOLD = 96  # a cell counts as flame from this heat (the red of the palette)
 HEAT_LOW, HEAT_HIGH = 150, 200  # the burn's heat swings between these, a triangle wave
-WILD_MAX, HEAT_WILD = 5, 10  # a point raises the high heat by HEAT_WILD, up to WILD_MAX points: 250
+WILD_MAX, HEAT_WILD = 5, 4  # a point raises the high heat by HEAT_WILD, up to WILD_MAX points: 220
 WAVE_MS, WAVE_WILD_MS = 4000, 400  # the wave's period: each point makes it 400 ms shorter, 2 s at WILD_MAX
-PLAIN_PX = 68  # the plain flame's height is the heat less this: the Mac trial's px at heat 150 and 250 are 82 and 182
+PLAIN_PX = 68  # the plain flame's height is the heat less this: 82 px at heat 150 and 152 px at 220
 BAR_HALF = (32, 20, 8)  # px, the plain flame's red, orange and yellow bars
 BAR_COLOURS = (RED, ORANGE, YELLOW)
 CENTRE = WIDTH // 2
@@ -143,7 +165,8 @@ class PlainFlame(Flame):
 FLAME_GAIN = 32768  # Q15: the fire loop at the highest flame, the runner's gain (arcade.FIRE_SOUND_GAIN)
 FLAME_STEP = 16  # a new "flame" signal when the level moved by this much of LEVELS
 STICK = c565(120, 80, 40)
-SHADES = (c565(245, 240, 225), c565(222, 165, 55), c565(35, 28, 28))  # by WHITE, GOLDEN, BLACK
+SHADES = (c565(245, 240, 225), c565(222, 165, 55), c565(120, 70, 25))  # by WHITE, GOLDEN, DARK
+TIME_BAR_PX = 60  # px, the time bar's full width, under the HUD
 
 
 class Marshmallow(Fire):
@@ -160,7 +183,8 @@ class Marshmallow(Fire):
         self.covers = False  # the title needs its black fill. play() sets it: the field then paints every pixel
 
     def setup(self):
-        """restart() calls this each round: the field keeps burning, so a round does not start cold."""
+        """restart() calls this each round: the field keeps its heat, so a later round does not start cold. The first
+        round does: the field steps only in play."""
         if self.fire_plugin is None:
             super().setup()
             field = self.fire_plugin.field
@@ -178,6 +202,7 @@ class Marshmallow(Fire):
         flame, roast = self.flame, self.roast
         self.covers = self.fire_plugin.field is not None  # no fill under the field: it cost 4 ms a frame (run208b)
         flame.update(self.ms, min(self.score, WILD_MAX))
+        depth = roast.depth
         out = roast.update(self.ms, held, flame.top_px)
         level = flame.top_px * LEVELS // FLAME_MAX_PX
         if abs(level - self.level) >= FLAME_STEP:
@@ -187,9 +212,9 @@ class Marshmallow(Fire):
             self.score += 1
             self.emit("serve")
             self.pop(CENTRE, BOTTOM_Y)
-        elif out == BURN:
+        elif out:  # BURN or LATE: the lost one bursts where it was
             self.emit("burn")
-            self.fx.burst(CENTRE, BOTTOM_Y + roast.depth, GREY, 10, 110.0, 0.6)
+            self.fx.burst(CENTRE, BOTTOM_Y + depth, GREY, 10, 110.0, 0.6)
             if roast.lost >= LIVES:
                 self.emit("flame", 0)  # play() does not run after a death, so the loop ends here
                 self.die()
@@ -200,6 +225,8 @@ class Marshmallow(Fire):
         cv.fill(CENTRE - 1, 0, 3, y + SIZE // 2, STICK)
         cv.fill(CENTRE - SIZE // 2, y, SIZE, SIZE, SHADES[self.roast.colour()])
         cv.box(CENTRE - SIZE // 2, y, SIZE, SIZE, GREY)
+        left = self.roast.time_ms() - self.roast.age  # the time bar: what this marshmallow has left
+        cv.fill(CENTRE + 12, HUD_RECT[3] + 4, TIME_BAR_PX * left // TIME_MS, 4, YELLOW if 3 * left > TIME_MS else RED)
 
     def hud(self, cv):
         cv.keep((self.name, self.score, BEST.get(self.name, 0), self.roast.lost), HUD_RECT, self.draw_hud)

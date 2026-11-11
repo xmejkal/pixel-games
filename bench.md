@@ -1497,6 +1497,33 @@ The paint mean leaves out each run's first line, which holds the title (up to 17
   wrong header. Run210a repeats it: score 0, 0 frames held, 13 glyphs in every line.
 - The flame loop is a second voice beside the music: the render mean is 630 to 704 us against the control's 498 to
   515 us. The longest render of a window was 1122 us (run209a), and no late refill came from it.
+
+### After the review: new rules (2026-11-11)
+
+The refuter proved on the Mac that the first rules were no game: a fixed rhythm of hold and release scored with no
+end, and a player who did nothing never lost. Run209b agrees: the probe's blind hold raised the score. The rules now
+have a time for each marshmallow (8 s, less 0.4 s for each point, down to 3.2 s), a black that comes nearer to
+golden with each point, and a white marshmallow at once after a lost one. The high heat at 5 points went from 250 to
+220, so the flame stays under the marshmallow at the top (Mac, 5,900 steps: at most 198 px of 200).
+
+Mac trials with the C field (scratch scripts, 10 minutes of play at most): nothing done loses in 24 s, a hold with
+no end in 12 s. Of 175 fixed rhythms none played on, and the best reached 27 points in 88 s. A simple seeing player
+(it goes at most 60 px under the flame's top and lifts at golden) reached 26 to 95 points in four rounds. The wind
+is random, so these numbers move from run to run. With the plain flame, 4 of the 175 rhythms played on for 10
+minutes.
+
+| Run | Log | What | fps | Worst frame, ms | Late | Last line |
+|---|---|---|---|---|---|---|
+| 211a | `run211a-p773-marshmallow-nohand.log` | no hold | 23 or 24 | 59 to 95 | 0 | `score 0 held_frames 0` |
+| 211b | `run211b-p773-marshmallow-hold.log` | hold 1300 of 3000 ms | 24 or 25 | 42 to 88 | 0 | `score 2 held_frames 646` |
+
+- Run211a: the round ended after 24 s, as on the Mac, and the game-over screen stayed for the rest of the run,
+  because this probe presses nothing with no hold. The window with the death has 23 fps and the worst frame, 95 ms.
+- Run211b: the blind hold scored 2 points in 60 s. Its worst frame, 88 ms, is in a window with a death too.
+- In both runs every window with no death has a worst frame of at most 75 ms, inside the controls' 70 and 81 ms.
+- The frame of a death holds the HUD's new strip (22 to 26 ms) and the first game-over box (26 to 29 ms). Both are
+  `Game`'s code, shared by every game. `Fire` never dies, so the controls hold no such frame, and no run here
+  measures a death in another game. On the game-over screen the box takes 19.5 ms in each frame, at 24 fps.
 - Open: the PO's hand, eye and ear. No run shows how the game looks or plays, or how loud the flame is
-  (`FLAME_GAIN`).
+  (`FLAME_GAIN`). The numbers of the rules come from Mac trials with simple players, not from a person.
 

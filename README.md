@@ -38,15 +38,19 @@ Runs now:
 
 - Marshmallow (P773, `games/marshmallow.py`), first at power-on: a one-button game on the fire's heat field. A
   marshmallow hangs on a stick over a campfire. Hold BOOT to lower it into the flames, and let go to lift it. The
-  heat browns it from white to golden and then to black. A golden one that reaches the top is a point. A black one is
-  lost, and three lost ones end the round. Each point makes the campfire higher and less steady, up to 5 points.
+  heat browns it from white to golden, then dark, then black. A golden or dark one that reaches the top is a point.
+  A black one is lost, and so is one whose time ran out (the bar under the score). Three lost ones end the round.
+  Each point makes the campfire higher and less steady (up to 5 points), the time shorter (8 s down to 3.2 s) and
+  black nearer to golden. So deep in the flames is fast and risky, and the shallow way is safe and too slow. On the
+  Mac a player who does nothing loses in 24 s, a hold with no end in 12 s, and the best of 175 fixed rhythms of
+  hold and release reached 27 points. The plain flame is easier: 4 of the 175 rhythms played on for 10 minutes there.
   The game burns the campfire itself at the bottom middle (`HeatField.burn`, the field's own base is off) and reads
-  the flame's height from `HeatField.stats`. It plays `serve`, `burn`, `die` and a fire loop that follows the
+  the flame's height from `HeatField.stats`. It plays `serve`, `burn` (also for a late one), `die` and a fire loop that follows the
   flame's height. With no engine module a plain flame of three bars takes the campfire's place, with the same rules.
   On the board it keeps 24 fps with the sound and no late refill (bench.md, P773). The PO's hand, eye and ear on it
   are still open.
-- The fire (P595, `games/fire.py`), the scene under Marshmallow. Since P773 it is not in the box's list, and the
-  probes and `tools/crackle.sh` still run it: a heat field in C (`engine.HeatField`) burns over the whole
+- The fire (P595, `games/fire.py`), the scene under Marshmallow. Since P773 it is not in the box's list. The
+  probes and `tools/crackle.sh` still start it as `app.Fire`: a heat field in C (`engine.HeatField`) burns over the whole
   screen. A BOOT tap moves through three modes: linear (C writes the screen's frame), picture (the fire over the painted
   sky) and nearest. It needs the engine image. The flames rise from wandering hot spots, break into tongues, rise at two speeds, lean in gusts of wind and
   throw embers. On the board, B runs at 24 fps with 11.5 to 11.8 ms of step + draw, and the sky variant at 15 to

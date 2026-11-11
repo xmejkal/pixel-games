@@ -31,7 +31,8 @@ the voice. Emit 0 where the game ends, because `play` does not run after a death
 
 `Marshmallow` (P773) does the same with the bank as it is: `serve` plays `pickup`, `burn` plays `land`, and `flame`
 is the `fire` loop. Its level is the flame's height, `top_px * LEVELS // FLAME_MAX_PX`, sent when it moved by at
-least `FLAME_STEP` (16). The game emits `flame` with 0 before `die()` and at the start of each round.
+least `FLAME_STEP` (16). A marshmallow whose time ran out plays `burn` too. The game emits `flame` with 0 before
+`die()` and at each restart.
 
 ## The music
 
