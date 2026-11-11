@@ -19,6 +19,7 @@ if not hasattr(time, "ticks_add"):
 
 import app  # noqa: E402
 import gfx  # noqa: E402
+import overlay  # noqa: E402
 import volume  # noqa: E402
 
 
@@ -87,6 +88,22 @@ class TestAppKnob(unittest.TestCase):
         self.assertIsNone(box.volume_pane)
         self.assertEqual(box.overlay.panes, [])
         self.assertEqual(box.out.seen, [[]])
+
+    def test_a_pane_updates_after_the_switch(self):
+        class Other(Game):
+            name = "other"
+
+        class Watch(overlay.Pane):
+            def update(self, now_ms):
+                names.append(box.game.name)
+
+        names = []
+        box = app.App(None, lambda: 99, lambda: 99, games=(Game, Other), out=Out())
+        box.start()
+        box.overlay.add(Watch())
+        box.boot.update = lambda now: True  # a D14 press in this frame
+        box.frame()
+        self.assertEqual(names, ["other"])
 
     def test_open_knob_is_none_without_machine_encoder(self):
         self.assertIsNone(app.open_knob())  # the Mac has no machine module

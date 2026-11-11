@@ -1313,8 +1313,8 @@ first and second. Nobody pressed a button, so a game with a title screen stayed 
 - Road's second line is 12 frames per second in runs 0 and 2 and 21 in run 1. Runs 0 and 2 have different code and
   agree, so the knob does not explain it. The cause is not known, and this line compares nothing.
 - Run 1 against run 2, the cost of the picture: Road apart, the mean paint changed by -0.9 to +1.9 ms. In Fire, Balls,
-  Burning, Stack, Starfire and Cube it rose in both lines, by 0.8 to 1.5 ms. In the other games the two lines do
-  not agree on a rise. Each game had 3 spins but Road, which had 2. The frames per second are the same or 1 lower,
+  Burning, Stack, Starfire and Cube it rose in both lines, by 0.8 to 1.5 ms. Rain, Snake, Cave and Tunnel also rose in both lines (0.2 to 1.9 ms).
+  Flappy and Runner fell in both lines, and Gravpong's two lines do not agree. Each game had 3 spins but Road, which had 2. The frames per second are the same or 1 lower,
   but for Road's second line.
 - `windows_max` is the same in the three runs but in Rain (1, 1, 2) and Cave (1, 4, 4). Cave's 4 came with no
   picture on the screen (run 1), so the picture did not cause it.
@@ -1322,6 +1322,16 @@ first and second. Nobody pressed a button, so a game with a title screen stayed 
 - `worst` moves between the runs in both directions (Runner 111, 117, 76 ms in the first line), so one run per
   code gives no verdict on it.
 - Every caller of `app.run()` now gets the knob: `probe550.py`, `tools/probe635.py`, the p612 probes and each sound
-  run with `KNOB=0`. A run before this PR is no control for a run after it.
-- Not run: the sound with the box's knob (`tools/crackle.sh` with `KNOB=1`) on this code, a game in play, the
-  PO's hand and eye in the games.
+  run with `KNOB=0`. A run before this PR is no control for a run after it. `overlay.py` imported `volume.py` before this PR, and
+  `app.py` now also needs `encoder.py`'s `Encoder` and `pins.py`'s encoder pins on the board.
+- The sound with the box's knob (`run189-p764-box-sound-spin.log`, 12:52 CET, 45 s, no hand:
+  `VOLUME=ViperMasterVolume KNOB=1 SPIN_EVERY_MS=3000 tools/crackle.sh 45 FireSound`): 8 sound lines, `late 0` in
+  the first two, then a running count that ended at 3. `between_max` 43 to 50 ms, `edges 0`, `windows_max 1`,
+  23 or 24 frames per second, `written 720640 short 272`. PR A's same run had 0 late refills (run181b, with the
+  PO's turns) and 1 (run182c). One run each gives no verdict on the difference.
+- The tool with its new copy list and `KNOB=0`, so the box opens its own knob
+  (`run190-p764-box-sound-knob0.log`, 12:54 CET, 30 s, no hand: `VOLUME=ViperMasterVolume KNOB=0 tools/crackle.sh
+  30 FireSound`): 5 sound lines, `late 0` in each, `between_max` 40 to 47 ms, the step stayed 8, `done`.
+- Not tested and not run: `run()` with a caller's knob has no Mac test (the Mac has no `machine`). Runs 189 and
+  190 cover its two paths on the board. An error from `Encoder.on_board` in `open_knob()` stops `run()`.
+- Not run: a game in play, the PO's hand and eye in the games.

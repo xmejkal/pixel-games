@@ -13,11 +13,11 @@
 #     VOLUME=ViperMasterVolume KNOB=1 SAVE=1 tools/crackle.sh 60 FireSound   # the knob turns the step and saves it
 #
 # The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None), KNOB (default 0),
-# SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). With a VOLUME, games/volume.py and
-# games/volume_viper.py go to the board too, and with KNOB=1 games/encoder.py and games/pins.py (P757).
-# With KNOB=1 the probe passes its knob to the game box (P764), and each change of the step shows the volume on the
-# screen for 1 s (P762). With KNOB=0 the box opens its own knob, and the sound does not follow it. games/overlay.py goes to
-# the board with app.py, lcd.py, render.py and gfx.py. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the
+# SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). The game box's files go to the board in each run:
+# games/app.py, overlay.py, volume.py, encoder.py, pins.py, lcd.py, render.py and gfx.py. With a VOLUME,
+# games/volume_viper.py goes too. With KNOB=1 the probe passes its knob to the game box (P764), and each change of the
+# step shows the volume on the screen for 1 s (P762). With KNOB=0 the box opens its own knob, and the sound does not
+# follow it. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the
 # probe spins the step to an end at this period. ALPHA (default None: the pane's own value, 128, see-through) is how
 # solid the picture is over the game, and 255 is solid (P764).
 #
@@ -68,16 +68,12 @@ fi
 echo "crackle_c.mpy sha256 $(shasum -a 256 "$ROOT/engine/natmod/crackle/crackle_c.mpy" | cut -d' ' -f1), engine $(git -C "$ROOT/engine" rev-parse --short HEAD)"
 mpremote cp "$ROOT/engine/natmod/crackle/crackle_c.mpy" :crackle_c.mpy + cp "$CRACKLE_PY" :crackle.py \
     + cp "$ROOT/games/fire.py" :fire.py + cp "$ROOT/games/sound.py" :sound.py
+# The game box's own files, always: app.py imports each of them (the knob and the overlay, P764)
+mpremote cp "$ROOT/games/app.py" :app.py + cp "$ROOT/games/overlay.py" :overlay.py \
+    + cp "$ROOT/games/volume.py" :volume.py + cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py \
+    + cp "$ROOT/games/lcd.py" :lcd.py + cp "$ROOT/games/render.py" :render.py + cp "$ROOT/games/gfx.py" :gfx.py
 if [ -n "$VOLUME" ]; then
-    mpremote cp "$ROOT/games/volume.py" :volume.py + cp "$ROOT/games/volume_viper.py" :volume_viper.py
-fi
-if [ "$KNOB" = 1 ]; then
-    mpremote cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py \
-        + cp "$ROOT/games/app.py" :app.py  # app.run takes the encoder's pads, so the three stay in step (P757)
-    mpremote cp "$ROOT/games/volume.py" :volume.py  # app.py imports it for the box's knob (P764)
-    mpremote cp "$ROOT/games/overlay.py" :overlay.py + cp "$ROOT/games/lcd.py" :lcd.py \
-        + cp "$ROOT/games/render.py" :render.py + cp "$ROOT/games/gfx.py" :gfx.py  # app.py passes the overlay to the
-    # outputs, and both canvases' keep takes its alpha (P762)
+    mpremote cp "$ROOT/games/volume_viper.py" :volume_viper.py
 fi
 if [ "$GAME" = BurningBodies ]; then
     mpremote cp "$ROOT/games/burning.py" :burning.py + cp "$ROOT/games/plugins.py" :plugins.py
