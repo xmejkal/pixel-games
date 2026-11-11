@@ -71,8 +71,9 @@ the run, and the longest save of the window. With SAVE = 0 the probe reads and w
 never changes a measured run.
 SAVE_EVERY_MS (with SAVE and KNOB) is the stress run: a save at this period, whatever the knob does.
 SPIN_EVERY_MS (with KNOB, P762) is the overlay's stress run with no hand: at this period the probe turns the step
-itself from where it is to an end, 1 step per frame, down and then up by turns. Each step paints the volume's
-picture again, so this is the costly case of the overlay. The line at the end of a spin is `spin to <n>`.
+itself from where it is to an end, 1 step per frame, down and then up by turns. Each step paints the cells and the
+number of the volume's picture again, so this is the costly case of the overlay. The line at the end of a spin is
+`spin to <n>`. ALPHA under 255 lets the game show through the picture's still part (255: solid).
 """
 
 import math
@@ -98,6 +99,7 @@ KNOB = 0  # 1: the rotary encoder turns the volume's step (P757)
 SAVE = 0  # 1: the volume's step is read from volume.txt, and the knob saves it there (P757)
 SAVE_EVERY_MS = 0  # the stress run of the save: a save at this period (P757)
 SPIN_EVERY_MS = 0  # the stress run of the overlay: a spin of the step to an end at this period (P762)
+ALPHA = 255  # how solid the volume's picture is over the game: 255 solid, 192 a see-through first pick (P762)
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -429,6 +431,7 @@ class Probe:
                     store)
                 import overlay
                 self.volume.view = overlay.VolumeView(self.volume.volume)  # P762
+                self.volume.view.alpha = ALPHA
         self.first_pop_shown = False
         if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle", "FireSound"):  # P747, P751, P753
             import crackle

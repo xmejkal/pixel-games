@@ -1203,6 +1203,7 @@ ran `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, with nobody
 | 4 | run178-p762-hand.log | the same command for 120 s, with the PO's hand on the knob and his eye on the screen. The picture was still one kept picture | the PO: "nice". 123 changes of the step, between 0 and 16, some by 2 steps in one frame. 23 sound lines. `late` is a running count and ended at 5. `between_max` 38 to 49 ms. 22 to 24 frames per second, `worst` 59 to 93 ms, `slowest` 54 to 79 ms. `apply_max` at most 347 us. `windows_max 1` in each line. `written 1920256 short 256` |
 | 5 | run179a-p762-paint-time.log | `probe762_paint.py` after the split of the picture into a still part and a level part, at step 16 | the still part 2229 us, painted once. The level part (the cells and the number) 2204 us, painted at each new step |
 | 6 | run179b-p762-spin.log | entry 2 again with the split picture: `SPIN_EVERY_MS=3000`, 12 spins | 8 sound lines. `late` 1 in the first line and no more after it. `between_max` 39 to 48 ms. 23 to 24 frames per second, `worst` 59 to 109 ms, `slowest` 52 to 65 ms, mean paint 10.9 to 13.1 ms. `windows_max 1` in each line. `written 720384 short 128` |
+| 7 | run180-p762-spin-alpha.log | entry 6 again with the still part at alpha 192, so the game shows through it. The cells and the number stay solid | 8 sound lines. `late` 0 in the first two lines, then 2 to the end. `between_max` 35 to 49 ms. 23 to 24 frames per second, `worst` 65 to 77 ms, `slowest` 62 to 68 ms, mean paint 12.0 to 14.7 ms. `written 720128 short 80` |
 
 - Entry 1 is the control run. The overlay's code in the frame adds no `late` count while nothing shows.
 - The sound's margin in Fire is small. The longest gap between two refills was 47 ms in entry 1, and a gap over
@@ -1220,4 +1221,10 @@ ran `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, with nobody
 - The one late refill of entry 6 is in the 5 s of the first show, where both parts are painted in one frame.
   The cause is not shown by the run.
 - `windows_max` is 1 with and without the picture, so in Fire the picture adds no window. No other game ran.
+- The see-through picture ran (entry 7): 2 late refills against 1 for the solid picture (entry 6), one run on each side.
+  The mean paint was about 1 ms longer per frame. The driver blends each of the still part's 5600 pixels.
+- The plan's rule was: if a sound line is late with the blend, the picture stays solid. So `VolumeView.alpha` is 255.
+  `ALPHA=192` on the command shows the see-through picture. Nobody looked at it yet.
+- The rule assumed that the solid picture gives `late 0`. Entries 2, 4 and 6 show that it does not.
+  So the rule does not separate the two pictures, and the choice is the PO's.
 - Not shown by any run: the split picture under the PO's hand, and the picture in any game but Fire.
