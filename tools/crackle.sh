@@ -10,10 +10,11 @@
 #         voice: NativeCrackle (default), SampledCrackle, GrainCrackle or FireSound (P753)
 #     GAME=BurningBodies tools/crackle.sh 30 FireSound   # the game: Fire (default) or BurningBodies (P753)
 #     VOLUME=MasterVolume LEVEL=8 tools/crackle.sh 30 FireSound   # with the master volume at step 8 (P757)
+#     VOLUME=ViperMasterVolume KNOB=1 SAVE=1 tools/crackle.sh 60 FireSound   # the knob turns the step and saves it
 #
-# The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None), KNOB (default 0)
-# and MIC (default 0). With a VOLUME, games/volume.py and games/volume_viper.py go to the board too, and with KNOB=1
-# games/encoder.py and games/pins.py (P757).
+# The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None), KNOB (default 0),
+# SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). With a VOLUME, games/volume.py and
+# games/volume_viper.py go to the board too, and with KNOB=1 games/encoder.py and games/pins.py (P757).
 #
 # A look, such as "6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK in the crackle.py that this
 # run copies (GRAIN_LOOK for GrainCrackle and FireSound, such as "0, 32768": bed gain, pop gain).
@@ -33,6 +34,8 @@ VOLUME=${VOLUME:-}
 LEVEL=${LEVEL:-None}
 MIC=${MIC:-0}
 KNOB=${KNOB:-0}
+SAVE=${SAVE:-0}
+SAVE_EVERY_MS=${SAVE_EVERY_MS:-0}
 TOOLS=$(ls -d "$HOME"/.espressif/tools/xtensa-esp-elf/*/xtensa-esp-elf/bin | tail -1)
 IDF_PYTHON=$HOME/.espressif/python_env/idf5.5_py3.10_env/bin/python
 PROBE_DIR=$(mktemp -d)
@@ -44,7 +47,8 @@ PATH=$TOOLS:$PATH make -s -C "$ROOT/engine/natmod/crackle" ARCH=xtensawin CROSS=
 sed -e "s/^GAME = .*/GAME = \"$GAME\"/" -e 's/^REFILL = .*/REFILL = "CallbackRefill"/' -e 's/^IBUF = .*/IBUF = 2048/' \
     -e "s/^VOICE = .*/VOICE = \"$VOICE\"/" -e "s/^SECONDS = .*/SECONDS = $SECONDS_RUN/" \
     -e "s/^VOLUME = .*/VOLUME = \"$VOLUME\"/" -e "s/^LEVEL = .*/LEVEL = $LEVEL/" -e "s/^MIC = .*/MIC = $MIC/" \
-    -e "s/^KNOB = .*/KNOB = $KNOB/" \
+    -e "s/^KNOB = .*/KNOB = $KNOB/" -e "s/^SAVE = .*/SAVE = $SAVE/" \
+    -e "s/^SAVE_EVERY_MS = .*/SAVE_EVERY_MS = $SAVE_EVERY_MS/" \
     "$ROOT/probe733_games.py" > "$PROBE"
 LOOK_NAME=CRACKLE_LOOK
 case $VOICE in GrainCrackle | FireSound) LOOK_NAME=GRAIN_LOOK ;; esac

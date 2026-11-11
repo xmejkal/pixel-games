@@ -5,8 +5,8 @@ stock machine.I2S, and heard by a microphone.
     mpremote cp games/sound.py :sound.py
     mpremote cp games/volume.py :volume.py + cp games/volume_viper.py :volume_viper.py   # for a run with VOLUME (P757)
     mpremote cp games/encoder.py :encoder.py + cp games/pins.py :pins.py                 # for a run with KNOB (P757)
-    mpremote run probe733_games.py      # after sed set GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE, VOLUME, LEVEL, KNOB
-                                        # and SECONDS
+    mpremote run probe733_games.py      # after sed set GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE, VOLUME, LEVEL,
+                                        # KNOB, SAVE and SECONDS
 
 tools/crackle.sh runs it with a crackle (P747): it builds crackle_c.mpy and copies it and games/crackle.py first.
 
@@ -55,12 +55,18 @@ targets now and the loudest whoosh's level now.
 
 VOLUME (P757) is the master volume's class name: "MasterVolume" (in volume, the naive path), "ViperMasterVolume" (in
 volume_viper), or "" for the mix as it is: then the probe imports neither. LEVEL is its start step, 0 (silent) to 16
-(the mix as it is), or None for volume.DEFAULT_STEP. It is LEVEL because a step in this probe is a bench step. One
+(the mix as it is), or None for the saved step (with SAVE), else volume.DEFAULT_STEP. It is LEVEL because a step in
+this probe is a bench step. One
 more line every 5 s: `volume level <n> gain <n> apply_max <us>`: the step, the gain that the last block ended at
 (32768 is the mix as it is), and the longest apply of the window. With ViperMasterVolume, the first line is `scale
 match <1 or 0>`: 1 when the viper scale gave the naive scale's samples on the named blocks of volume_viper.
 KNOB = 1 (with a VOLUME): the rotary encoder on pins.ENC_A and pins.ENC_B turns the step, 1 step per detent, read once
 per frame. Lines: `level <n> edges <n>` at each change of the step, and `edges <n>` at the end of the 5 s volume line.
+SAVE = 1 (with a VOLUME): the step lives in volume.txt on the board. The first line is `stored level <n or None>`, the
+file's step, when LEVEL is None. With KNOB, the knob saves the step 3 s after its last change, and the 5 s volume line
+ends with `saves <n> save_max <ms> save_errors <n>`: the saves and the failed saves of the run, and the longest save of
+the window. With SAVE = 0 the probe reads and writes no file, so an old volume.txt never changes a measured run.
+SAVE_EVERY_MS (with SAVE and KNOB) is the stress run: a save at this period, whatever the knob does.
 """
 
 import math
@@ -83,6 +89,8 @@ VOICE = "tone"  # "silent", "Crackle", "NativeCrackle", "SampledCrackle", "Grain
 VOLUME = ""  # "MasterVolume" or "ViperMasterVolume": the master volume's class; "": the mix as it is (P757)
 LEVEL = None  # the volume's start step, 0 to 16; None: volume.DEFAULT_STEP
 KNOB = 0  # 1: the rotary encoder turns the volume's step (P757)
+SAVE = 0  # 1: the volume's step is read from volume.txt, and the knob saves it there (P757)
+SAVE_EVERY_MS = 0  # the stress run of the save: a save at this period (P757)
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -360,9 +368,30 @@ class TimedVolume:
     def report(self):
         """The 5 s line, then a new window. An apply between a read and its reset here can lose one apply_max."""
         apply_max, self.apply_max = self.apply_max, 0
-        print("volume level %d gain %d apply_max %d%s" % (
-            self.volume.step, self.volume.gain, apply_max,
-            " edges %d" % self.knob.encoder.edges() if self.knob else ""))
+        line, knob = "volume level %d gain %d apply_max %d" % (self.volume.step, self.volume.gain, apply_max), self.knob
+        if knob:
+            line += " edges %d" % knob.encoder.edges()
+            if knob.store:
+                save_max, knob.store.save_max = knob.store.save_max, 0
+                line += " saves %d save_max %d save_errors %d" % (knob.saves, save_max, knob.save_errors)
+        print(line)
+
+
+class TimedStore:
+    """A VolumeStore with the probe's clock (P757): save times itself, in ms. --- MVP (P757) ---"""
+
+    def __init__(self, store):
+        self.store, self.save_max = store, 0
+
+    def load(self):
+        return self.store.load()
+
+    def save(self, step):
+        t = time.ticks_ms()
+        try:
+            self.store.save(step)
+        finally:  # a failed save has a time too
+            self.save_max = max(self.save_max, time.ticks_diff(time.ticks_ms(), t))
 
 
 class Probe:
@@ -378,12 +407,17 @@ class Probe:
             if VOLUME == "ViperMasterVolume":
                 import volume_viper as home
                 print("scale match %d" % home.scale_match())
-            self.volume = TimedVolume(getattr(home, VOLUME)(volume.DEFAULT_STEP if LEVEL is None else LEVEL))
+            store, level = TimedStore(volume.VolumeStore()) if SAVE else None, LEVEL
+            if store and level is None:
+                level = store.load()
+                print("stored level %s" % level)
+            self.volume = TimedVolume(getattr(home, VOLUME)(volume.DEFAULT_STEP if level is None else level))
             if KNOB:
                 import encoder
                 import pins
                 self.volume.knob = volume.VolumeKnob(
-                    encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), self.volume.volume)
+                    encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), self.volume.volume,
+                    store)
         self.first_pop_shown = False
         if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle", "FireSound"):  # P747, P751, P753
             import crackle
@@ -395,12 +429,14 @@ class Probe:
         self.switches = self.pushes = self.skips = self.written_at = 0
         self.push_us, self.stalled = None, False
         self.start = self.report = self.next_switch = self.next_hit = self.open_at = self.opened_ms = self.sent_at = None
+        self.next_save = None
 
     def first(self, box, now):
         self.start = self.report = now
         self.next_switch = None if HITS else time.ticks_add(now, SWITCH_MS)
         self.next_hit = time.ticks_add(now, HIT_FROM_MS)
         self.open_at = time.ticks_add(now, TONE_OPEN_MS if MIC else 0)
+        self.next_save = time.ticks_add(now, SAVE_EVERY_MS)
         self.press_on_over(box)
         self.stamp_pushes(box)
         if MIC:
@@ -440,6 +476,9 @@ class Probe:
         knob = self.volume and self.volume.knob
         if knob and knob.poll(now):  # P757
             print("level %d edges %d" % (knob.volume.step, knob.encoder.edges()))
+        if SAVE_EVERY_MS and knob and knob.store and time.ticks_diff(now, self.next_save) >= 0:  # the stress run
+            self.next_save = time.ticks_add(now, SAVE_EVERY_MS)
+            knob.save()
         if not self.first_pop_shown and getattr(self.mixer, "first", None) is not None:
             self.first_pop_shown = True
             print("first pop %d" % (time.ticks_diff(self.mixer.first, self.opened_us) // 1000))

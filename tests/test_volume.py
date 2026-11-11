@@ -4,15 +4,22 @@ Run from the repository root: python3 -m unittest discover tests. --- MVP (P757)
 import math
 import os
 import sys
+import tempfile
+import time
 import unittest
 from array import array
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
+if not hasattr(time, "ticks_diff"):  # the same three as tests/test_sound.py, which looks for ticks_diff too
+    time.ticks_diff = lambda a, b: a - b
+    time.ticks_us = lambda: int(time.perf_counter() * 1e6)
+    time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import volume_viper  # noqa: E402
-from volume import DB_PER_STEP, DEFAULT_STEP, FULL, GAINS, STEPS, MasterVolume, VolumeKnob  # noqa: E402
+from volume import (DB_PER_STEP, DEFAULT_STEP, FULL, GAINS, SAVE_AFTER_MS, STEPS, MasterVolume,  # noqa: E402
+                    VolumeKnob, VolumeStore)
 from volume_viper import CASES, CORNERS, ViperMasterVolume  # noqa: E402
 
 
@@ -166,6 +173,77 @@ class VolumeKnobTest(unittest.TestCase):
         volume = MasterVolume(8)
         VolumeKnob(FakeEncoder(2), volume, louder=-1).poll(0)
         self.assertEqual(volume.step, 6)
+
+
+class FakeVolumeStore:
+    """Keeps each saved step in `steps`. With `broken`, save raises the OSError of a full or failed flash."""
+
+    def __init__(self, broken=False):
+        self.steps, self.broken = [], broken
+
+    def save(self, step):
+        if self.broken:
+            raise OSError(28)
+        self.steps.append(step)
+
+
+class VolumeKnobSaveTest(unittest.TestCase):
+    def test_the_save_waits_for_the_knob_to_rest_and_happens_once(self):
+        volume, store = MasterVolume(8), FakeVolumeStore()
+        knob = VolumeKnob(FakeEncoder(1, 1, 0, 1), volume, store)
+        for now_ms in (0, 40, 80, 2000):  # the last change is at 2000
+            knob.poll(now_ms)
+        knob.poll(2000 + SAVE_AFTER_MS - 1)
+        self.assertEqual(store.steps, [])
+        knob.poll(2000 + SAVE_AFTER_MS)
+        knob.poll(2000 + 2 * SAVE_AFTER_MS)
+        self.assertEqual((store.steps, knob.saves, knob.save_errors), ([11], 1, 0))
+
+    def test_a_step_that_came_back_to_the_saved_one_is_not_saved_again(self):
+        volume, store = MasterVolume(8), FakeVolumeStore()
+        knob = VolumeKnob(FakeEncoder(1, -1), volume, store)
+        for now_ms in (0, 40, 40 + SAVE_AFTER_MS):
+            knob.poll(now_ms)
+        self.assertEqual(store.steps, [])
+
+    def test_step_0_is_saved_like_any_step(self):
+        volume, store = MasterVolume(2), FakeVolumeStore()
+        knob = VolumeKnob(FakeEncoder(-5), volume, store)
+        knob.poll(0)
+        knob.poll(SAVE_AFTER_MS)
+        self.assertEqual(store.steps, [0])
+
+    def test_a_save_error_is_counted_and_tried_once(self):
+        volume = MasterVolume(8)
+        knob = VolumeKnob(FakeEncoder(1), volume, FakeVolumeStore(broken=True))
+        for now_ms in (0, SAVE_AFTER_MS, 2 * SAVE_AFTER_MS, 3 * SAVE_AFTER_MS):
+            knob.poll(now_ms)
+        self.assertEqual((knob.saves, knob.save_errors, volume.step), (0, 1, 9))
+
+    def test_with_no_store_nothing_is_saved(self):
+        knob = VolumeKnob(FakeEncoder(1), MasterVolume(8))
+        knob.poll(0)
+        knob.poll(SAVE_AFTER_MS)
+        self.assertEqual((knob.saves, knob.save_errors), (0, 0))
+
+
+class VolumeStoreTest(unittest.TestCase):
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.file = os.path.join(folder.name, "volume.txt")
+
+    def test_a_saved_step_loads_again(self):
+        for step in (0, 8, STEPS):
+            VolumeStore(self.file).save(step)
+            self.assertEqual(VolumeStore(self.file).load(), step)
+
+    def test_a_missing_file_bad_text_and_a_step_outside_the_range_load_as_none(self):
+        self.assertIsNone(VolumeStore(self.file).load())
+        for text in ("", "loud", "8.5", str(STEPS + 1), "-1"):
+            with open(self.file, "w") as f:
+                f.write(text)
+            self.assertIsNone(VolumeStore(self.file).load(), text)
 
 
 class ViperMasterVolumeTest(unittest.TestCase):

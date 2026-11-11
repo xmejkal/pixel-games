@@ -987,7 +987,7 @@ the raw edge count for 180 s. The PO turned the knob by hand and counted the cli
 steps of 3 dB, and step 0 is silent. `ViperMasterVolume` (`games/volume_viper.py`) is the same scale as viper code.
 `probe733_games.py` runs them with `VOLUME` and `LEVEL`. Nobody flashed the board for this card, and these runs did
 not read its image. `crackle_c.mpy` is 90d7503d74fe (engine 1c15d73). Logs (git-ignored, kept on the Mac): `run151`
-to `run156`.
+to `run160`.
 
 ### Slices 1 and 2: the gain and its cost
 
@@ -1047,3 +1047,26 @@ The tone through the microphone (`MIC = 1`, `FrameRefill` 4096 B), `tone_mean` a
 - Entry 5 is the pulse counter beside a game's load at rest: it counted no edge in 30 s.
 - Not done yet: the PO's turn of the knob in Fire and in BurningBodies (no click, 16 detents from silent to full,
   the level holds at rest, which way is louder).
+
+### Slice 4: the save
+
+`VolumeStore` keeps the step in `volume.txt` on the board (littlefs2, 3584 blocks of 4096 B, 2231 free). `VolumeKnob`
+saves the step 3 s after its last change. The stress run saves each second, whatever the knob does
+(`SAVE=1 SAVE_EVERY_MS=1000`). It ran as two runs of 30 s, not one of 60 s, because the probe leaves Fire after 30 s.
+
+| entry | log | what ran | result |
+| --- | --- | --- | --- |
+| 6 | run158a-p757-fire-save-stress.log | Fire with `FireSound`, `ViperMasterVolume`, `KNOB = 1`, a save each second, 30 s, hands off | `stored level None`, 24 saves, save_max 14 to 19 ms, save_errors 0, late 0, fps 24, 24, 24, 23, 23 |
+| 7 | run158b-p757-fire-save-stress.log | the same again | `stored level 8`, 22 saves, save_errors 0. One save took 2600 ms: in its 5 s line sent 155 of 313, between_max 2601 ms, late 1, short 40464 samples, fps 11, worst frame 2622 ms. The other lines: save_max 13 to 19 ms, fps 24, 23, 23, 24 |
+| 8 | run159-p757-save-times.log | 200 saves of `volume.txt` in a loop, no sound, no game | saves 14, 51, 88, 125, 162 and 199 took 2407 to 2417 ms each: each 37th save. The other 194 took 5.2 ms each (mean) |
+| 9 | run160-p757-nvs-times.log | 200 saves into the board's NVS (`esp32.NVS`: `set_i32`, `commit`), no sound, no game | 0.8 ms each (mean), the worst 10.6 ms, five saves over 5 ms (each 34th or 35th). The read gave the last value. The probe's key is erased again |
+
+- The save into a file breaks the sound. Each 37th save stops the game loop for 2.4 s. The sound's ring holds 64 ms,
+  so the speaker is silent for 2.5 s and the picture stands still. The other saves (13 to 19 ms beside the game)
+  made no `late` count.
+- The cause of the 2.4 s is not measured. The period of 37 saves is a fact of run159, on this board's file system
+  as it is filled now.
+- By the plan, the save stays behind `SAVE` (default 0), and the fix is a later card. Entry 9 is one candidate:
+  a store in the NVS. Its worst save is under one block of 16 ms, but it is not measured beside the sound.
+- The step survives a restart of the probe: entry 7 read the 8 that entry 6 saved. Not done yet: the knob's own save
+  on the board (turn, wait 3 s, reset the board, the same level). Nobody turned the knob in these runs.
