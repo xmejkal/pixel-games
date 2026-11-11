@@ -22,8 +22,13 @@ class Speaker:
         shutdown = Pin(pins.AUDIO_SHUTDOWN, Pin.OUT, value=0)
         i2s = I2S(0, sck=Pin(pins.I2S_BCLK), ws=Pin(pins.I2S_LRC), sd=Pin(pins.I2S_DIN), mode=I2S.TX, bits=16,
                   format=I2S.MONO, rate=sound.RATE, ibuf=IBUF)
-        self.refill = sound.CallbackRefill(self.mixer, i2s, shutdown, IBUF // 2, self.volume)
-        self.refill.open()
+        refill = sound.CallbackRefill(self.mixer, i2s, shutdown, IBUF // 2, self.volume)
+        try:
+            refill.open()
+        except Exception:  # a failed open leaves no I2S behind
+            refill.close()
+            raise
+        self.refill = refill
 
     def close(self):
         if self.refill:

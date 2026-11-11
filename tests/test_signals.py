@@ -121,7 +121,7 @@ class TestSoundCues(unittest.TestCase):
         box.game.emit("jump")
         self.assertEqual(rendered(mixer), [7, 8, 0, 0])
 
-    def test_die_is_emitted_by_every_game(self):
+    def test_die_plays_its_cue(self):
         box, mixer = self.box(Loud)
         box.game.die()
         self.assertEqual(rendered(mixer), [1, 2, 3, 0])
@@ -148,6 +148,8 @@ class TestSoundCues(unittest.TestCase):
         box.start()
         box.game.emit("jump")
         box.frame()
+        self.assertIsNone(box.cues)
+        self.assertIs(box.game.signals, box.signals)  # the game still emits, and nobody listens
 
     def test_the_runner_emits_jump_at_a_press_and_die_at_its_death(self):
         seen = []

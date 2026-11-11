@@ -8,7 +8,7 @@ from array import array
 
 # --- MVP (P768) ---
 class Bank:
-    """index: name -> (first sample, samples). Each sound is an array("h") on the heap: the bank is about 20 KB.
+    """index: name -> (first sample, samples). Each sound is an array("h") on the heap: the bank is 23 KB today.
     A bigger bank goes to engine.SoundBank, outside the GC heap, after a measurement (the plan of P768, step 6)."""
 
     def __init__(self, path, index):

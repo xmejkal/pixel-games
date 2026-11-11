@@ -213,7 +213,11 @@ def run(games=GAMES, knob=None, speaker=None):
     fire, boot = Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP), Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP)
     cues = None
     if speaker:  # --- MVP (P768) ---
-        cues = SoundCues(speaker.mixer, Bank("box_bank.raw", BOX_BANK_INDEX))
+        try:
+            cues = SoundCues(speaker.mixer, Bank("box_bank.raw", BOX_BANK_INDEX))
+        except (OSError, ValueError) as e:  # no bank on the board, or a short one: the silent box
+            print("sound off:", repr(e))
+            speaker = None
     app = App(display, fire.value, boot.value, games=games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob,
               cues=cues)
     app.fire.watch(fire)

@@ -1340,7 +1340,7 @@ first and second. Nobody pressed a button, so a game with a title screen stayed 
 
 The box (`app.run`) now takes a `Speaker`. `Runner` emits `jump` and `die`, and each plays its sound from
 `games/box_bank.raw` through one voice. `probe768_box.py` ran `Runner` for 120 s with no hand: a press every 900 ms
-while the game plays. The image and the board are those of P764. Each run has 22 `time` lines after the first.
+while the game plays. The image and the board are those of P764. Each run has 22 `time` lines and 22 `sound` lines after the first, and the table reads those 22.
 
 | Run | Log | Speaker | Mean fps | Worst frame, per 5 s | Late refills | `between_max` | `render_max` | Plays |
 |---|---|---|---|---|---|---|---|---|
@@ -1356,6 +1356,8 @@ while the game plays. The image and the board are those of P764. Each run has 22
 - The first render of each run takes about 2.4 ms: it makes the `Mixer`'s block of zeros. Later renders take at
   most 0.5 ms. `render_max` includes the probe's own timer.
 - Free flash with the bank on the board: 9084928 of 14680064 bytes. The bank is 23040 bytes.
+- Not run: a switch of the game (D14) with the `Speaker` open. Each run held one game. A switch collects the
+  heap and sets up a game, so its refills can be late. PR 3's run of all 14 games measures it.
 - Not run: the amplifier's tone check of the plan's step 1 (the PO dislikes tones). The runs with the sound are
   the amplifier's check. No microphone ran, so no run measured the delay from a press to its sound.
 - The PO, during run 193: "I wasn't able to lower the volumr now, btw. And the sounds should be nice and not
