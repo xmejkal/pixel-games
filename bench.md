@@ -1142,9 +1142,12 @@ Entries 20 to 24 are scratch scripts, not in the repository.
   with the wires on RX and TX: the count with the sound on, and 16 detents from silent to full in Fire.
 - The PO's meter, 2026-11-11, with the USB and the battery unplugged and the encoder's VCC and GND on the rails:
   "its about 180 kOhm and goes low when turned, from GB to VCC its around 6,6 kOhm". So GB to GND reads about
-  180 kΩ at rest, and GB to VCC about 6.6 kΩ. Both are readings in the circuit, not on a bare module. The
-  lowest number from GB to GND with the contact closed is not read yet, so the rule for TX is not answered yet.
+  180 kΩ at rest, and GB to VCC about 6.6 kΩ. Both are readings in the circuit, not on a bare module.
   Two web searches found no schematic of the CJMCU-111, as the part record says.
+- The PO's next reading, the same day, from GB to GND with the contact closed: "I think it's 3,3 kOhm". That is
+  above the limit of 1 kΩ, so the rule lets GB go on TX. The console's high level then drives about 1 mA into a
+  closed contact (3.3 V across 3.3 kΩ). His "I think" stays in the record: it is one reading, and run176 reads
+  the closed level on the pad as a second look. VCC to GA is not read yet.
 
 ### Slice 4: the save
 
