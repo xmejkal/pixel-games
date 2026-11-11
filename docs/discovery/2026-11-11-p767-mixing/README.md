@@ -19,8 +19,9 @@ run shows, [inference] is reasoning. "Not confirmed" marks what nobody read or r
 - Q3, what to reuse (two rounds, the second in [c-reuse-round2.md](c-reuse-round2.md)). As code: esp-dsp's
   `dsps_add_s16_aes3` and `dsps_mul_s16_aes3` (Apache 2.0, 16-bit, S3 assembly) as an optional fast path under
   our own small C sum. Its vector path needs 16-byte aligned buffers and a length that is a multiple of 8.
-  As design: CircuitPython's `audiomixer` (MIT, integer math, a clamp in its add) and SoLoud's voices and groups. Left out: `esp_audio_effects` (a prebuilt binary, for Espressif chips only),
-  the GMF and ADF frameworks, miniaudio and SoLoud as code (both mix in floating point). No build was tried.
+  As design: CircuitPython's `audiomixer` (MIT, integer math, a clamp in its add) and SoLoud's voices and groups.
+  Left out: `esp_audio_effects` (a prebuilt binary, for Espressif chips only), the GMF and ADF
+  frameworks, miniaudio and SoLoud as code (both mix in floating point). No build was tried.
 - Q4, the cost per 16 ms block. One C voice: at most 413 us (run145b). C pops plus 8 noise voices: 693 to 979 us
   (run149b, run149d), and 948 to 1054 us before the -O2 build (run148b). One sampled voice in the Python `Mixer`:
   at most 2.3 ms, with 0 late refills (run145e). The Python generator `Crackle`: 20.9 to 22.7 ms, too slow
