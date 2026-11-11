@@ -100,8 +100,17 @@ Runs now:
 - The rotary encoder (P758, `games/encoder.py`): `Encoder.on_board(pins.ENC_A, pins.ENC_B, EDGES_PER_DETENT)` reads
   the knob through `machine.Encoder`, the ESP32-S3's pulse counter, so no interrupt runs. `detents()` gives the clicks,
   + one way and - the other. The bench measured 4 edges per click (bench.md, P758). The knob can rest 1 edge from a
-  click's border, so a use that must not flicker needs a dead band. No game uses the knob yet: the master volume is
-  P757.
+  click's border, so a use that must not flicker calls `take_detents(now_ms)`: it has a dead band of 2 edges, and
+  its rest point follows the knob. No game uses the knob yet: only the probe does.
+- The master volume (P757, `games/volume.py`): `MasterVolume` is one gain on the whole mix, the last step before
+  the I2S. It has 16 steps of 3 dB, and step 0 is silent. A change of step ramps across one block, so it does not
+  click. Give it to a driver: `CallbackRefill(mixer, i2s, sd, ring_samples, volume)`. `MasterVolume` is plain
+  MicroPython (1.2 ms a block). `ViperMasterVolume` (`games/volume_viper.py`) gives the same samples in 0.1 ms.
+  `VolumeKnob(encoder, volume, store)` turns the step, 1 step per click, from `poll(now_ms)` once per frame.
+  `VolumeStore` keeps the step in `volume.txt`, and the knob saves it 3 s after the last turn. The save is off in the
+  probe by default: each 37th save takes 2.4 s and stops the sound (bench.md, P757). The fix is a later card.
+  Status: the probe turns the volume, and no game does yet. The PO's hand and ear did not test the knob yet. Try it
+  with `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 30 FireSound`, and add `SAVE=1` for the save.
 - The wiring comes from spark (P758): `requirements.json` names the board, the parts and the PO's wired pads. After a
   change, run `python3 ~/Development/spark/scripts/check_spine.py requirements.json --keep build --json` and copy
   `build/firmware/pins.py` to `games/pins.py`. The run ends in `problems` today, only because the reserved display pins
