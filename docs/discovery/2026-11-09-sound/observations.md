@@ -221,6 +221,8 @@ This file stays in pixel-games while the other session refactors spark. When tha
 | 210 | `tools/crackle.sh` with `KNOB=0` left the board's old `app.py`, so "the box opens its own knob" was not sure. A tool that copies files by condition can run old code. | the reviewer on Sonnet, read in the tool | acted | The tool copies the box's files in each run (run190). | No |
 | 211 | `open_knob()` catches only a missing `machine.Encoder`. An error from `Encoder.on_board` stops `run()` before the display opens. | the refuter on Opus, read in the code | raised | Named in pixel-games PR 63 and bench.md. Not changed. | No |
 | 212 | With the box's knob and the spin, the sound's late count ended at 3 in 45 s (run189), against 0 and 1 in PR A's two runs. One run each gives no verdict. | this session, run189 | raised | bench.md, P764, PR B. | No |
+| 213 | A research agent's page fetches failed where the docs moved (docs.lvgl.io to lvgl.io/docs/open), and its search limit ended the tries. It wrote "Not read" and did not fill the gap. One fetch of the new address by the session read the page. | the research agent on Sonnet (P766), then this session | acted | The LVGL events page is in the finding, pixel-games PR 64. The display and input-device pages stay "not read". | No |
+| 214 | MicroPython has an ESP32-P4 port: the download page of `ESP32_GENERIC_P4` shows stable v1.29.0 (2026-08-24), with variants for a C5 or C6 co-processor. A binding for the P4's PPA is not confirmed. | this session, the download page | raised | The finding of P766, source 11. | No |
 | 34 | The second pass of the refuter waits until after Q1, so that one pass covers all changed sections. | this session | acted | Step 8 of the discovery. | No |
 
 ## Time
