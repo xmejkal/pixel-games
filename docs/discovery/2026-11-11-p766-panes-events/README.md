@@ -14,7 +14,7 @@ Date: 2026-11-11. This is a finding with sources. It is not a design. Tags: [sou
   Keep the blit, the blend and the fill behind swappable parts. MicroPython has an ESP32-P4 port (stable v1.29.0).
   A binding for the PPA is not confirmed.
 - Q4. One system can hold buttons, knob, values, game state, timers, sound level and radio messages. ESP-NOW works in
-  MicroPython on ESP32 with both polling and a callback.
+  MicroPython on ESP32 with both polling and a callback. It is not tested on this project's S3 image.
 - Gaps: LVGL's display and encoder pages, MicroPython call costs, a PPA binding, input events in Godot or Unity.
 
 ## 1. How the standard systems do it
@@ -59,7 +59,8 @@ line 87) redraws a kept strip only when its key changes. App.frame names its sta
 
 ## 2. What fits MicroPython at 40 ms with the sound at its limit
 
-[repo] The refill callback is at its time limit (task text, gap over 48 ms is late). MasterVolume says set() and
+From the spike's task text, not checked here: the refill callback is at its time limit (a gap over 48 ms is late).
+[repo] MasterVolume says set() and
 apply() each store one int, so a callback between two bytecodes sees a whole value (games/volume.py docstring).
 [repo] Button.watch counts edges in a pin interrupt, and update() reads the counter in the frame (games/buttons.py,
 lines 29-43). The comment there says the interrupt is a soft interrupt, run after the current C call.
@@ -79,7 +80,8 @@ lines 29-43). The comment there says the interrupt is a soft interrupt, run afte
   use of Python objects, critical sections, using micropython.schedule).
 - [source] The page gives no time limit for an interrupt handler. It says only to return in "a short, predictable
   period of time". [4]
-- [repo] A cost the repo measured: gc.mem_free() "costs about 20 ms per MB allocated" (games/app.py, line 114). The
+- [repo] A comment in the code, with no run named: gc.mem_free() "costs about 20 ms per MB allocated" (games/app.py,
+  line 114). The
   loop turns the gc off with PSRAM and collects every 5 frames (GC_FRAMES).
 - Not confirmed: the cost of a Python call, of a bound method, and of an allocation. I did not search for them
   (limit reached). Also not confirmed: the size of the schedule queue. Measure on the board with time.ticks_us.
@@ -105,8 +107,9 @@ lines 29-43). The comment there says the interrupt is a soft interrupt, run afte
 - [source] The P4 PPA has two parts: SRM (scale, rotate, mirror) and BLEND (alpha blend of two layers of the same
   size, plus fill). Formats include RGB565. Scale factors are truncated to a step of 1/16 in the ESP-IDF driver. [6]
   (sections: 35.1, 35.3 and Perform PPA Operations), [7].
-- [source] The P4 datasheet lists the PPA, 2D-DMA, MIPI-DSI and an LCD interface. It does not list a separate 2D
-  graphics accelerator beyond the PPA. A comparison table in [9] says "2D accelerator (PPA): Yes" for P4. [8], [9]
+- [source] The P4 datasheet lists the PPA, 2D-DMA, MIPI-DSI and an LCD interface. I found no other 2D
+  graphics accelerator in it (one read, not a full search). A comparison table in [9] says "2D accelerator (PPA): Yes"
+  for P4. [8], [9]
 - [source] [9] says the P4 has no Bluetooth and gets Wi-Fi 6 "via co-processor". [inference] ESP-NOW on a P4 needs the
   companion chip, so a radio source must stay behind an interface.
 - [source] MicroPython has a download page for the board `ESP32_GENERIC_P4`: "applicable to most development boards
@@ -139,7 +142,8 @@ lines 29-43). The comment there says the interrupt is a soft interrupt, run afte
   chip, so I count it as likely. [10] (Introduction). Messages arrive by `recv()` (allocates), `irecv()` (reuses
   buffers), `recvinto()`, `any()` for polling, `irq()` for a callback (ESP32 only), or `aioespnow` for asyncio. The page
   warns that the scheduler stack can overflow and callbacks can be missed under heavy traffic. The default receive
-  buffer is 528 or 2972 bytes. A message holds 250 bytes in V1 and 1470 bytes in V2 (V2 needs ESP-IDF 5.4). Check
+  buffer is 528 or 2972 bytes. A message holds 250 bytes in V1 and 1470 bytes in V2 (the page says that two versions
+  exist since ESP-IDF 5.4). Check
   `espnow.MAX_DATA_LEN`. [10] (sections: Sending and Receiving Data, Callback Methods, Constants)
 - Not confirmed: that ESP-NOW runs on the S3 build the project uses. Test it on the board.
 - [source] LVGL's input events include `LV_EVENT_PRESSED`, `LV_EVENT_RELEASED`, `LV_EVENT_CLICKED`,
