@@ -987,7 +987,7 @@ the raw edge count for 180 s. The PO turned the knob by hand and counted the cli
 steps of 3 dB, and step 0 is silent. `ViperMasterVolume` (`games/volume_viper.py`) is the same scale as viper code.
 `probe733_games.py` runs them with `VOLUME` and `LEVEL`. Nobody flashed the board for this card, and these runs did
 not read its image. `crackle_c.mpy` is 90d7503d74fe (engine 1c15d73). Logs (git-ignored, kept on the Mac): `run151`
-to `run160`.
+to `run161`.
 
 ### Slices 1 and 2: the gain and its cost
 
@@ -995,7 +995,7 @@ The scale gives the same samples on the Mac and on the board, as bytecode and as
 
 | entry | log | what ran | result |
 | --- | --- | --- | --- |
-| 1 | run152-p757-scale-mac.log, run152-p757-scale-board.log | the naive scale on 10 named cases, the same script on both | the same `GAINS` table and the same 10 sums |
+| 1 | run152-p757-scale-mac.log, run152-p757-scale-board.log | the naive scale on 10 named cases of a scratch script (not the 8 `CASES` of `volume_viper`), the same script on both | the same `GAINS` table and the same 10 sums |
 | 2 | run152-p757-scale-board.log | the naive scale alone, 20 blocks each | a steady gain 1220 us a block (median), a ramp 1644 us |
 | 3 | run154-p757-emitters.log | the steady loop as bytecode and under `@micropython.native` | 1204 us and 681 us |
 | 4 | run155-p757-viper-board.log | `volume_viper.scale_match()`, then the viper scale alone | `scale match 1`, and 116 us a block, steady and ramp |
@@ -1038,13 +1038,16 @@ The tone through the microphone (`MIC = 1`, `FrameRefill` 4096 B), `tone_mean` a
 ### Slice 3: the knob
 
 `VolumeKnob` reads `Encoder.take_detents()` once per frame and turns the step, 1 step per detent. The dead band is
-2 edges, and the rest point follows the count after 500 ms with no change. Both numbers are not tuned on the bench.
+2 edges, and the rest point follows the count after 500 ms with no change, at most 1 edge from a whole detent. The
+three numbers are not tuned on the bench.
 
 | entry | log | what ran | result |
 | --- | --- | --- | --- |
 | 5 | run157-p757-fire-knob-rest.log | Fire with `FireSound`, `ViperMasterVolume` at step 8, `KNOB = 1`, 30 s, hands off | `edges 0` and step 8 in all five lines, no `level` line, fps 24, 24, 23, 23, 23, late 0, step 7.4 to 7.7 ms, apply_max 270 to 308 us |
 
-- Entry 5 is the pulse counter beside a game's load at rest: it counted no edge in 30 s.
+| 10 | run161-p757-fire-knob-review.log | the same as entry 5, after the review's changes (the bounded rest point, the `finally` in `render_block`) | `scale match 1`, `edges 0` and step 8 in all five lines, no `level` line, fps 24, 24, 24, 23, 24, late 0, step 7.4 to 7.6 ms, apply_max 247 to 387 us |
+
+- Entry 5 is the pulse counter beside a game's load at rest: it counted no edge in 30 s. Entry 10 is the same.
 - Not done yet: the PO's turn of the knob in Fire and in BurningBodies (no click, 16 detents from silent to full,
   the level holds at rest, which way is louder).
 

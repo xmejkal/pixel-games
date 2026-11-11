@@ -22,6 +22,7 @@ EDGES_PER_DETENT = 4  # the PO's CJMCU-111, 2026-11-10 (run150): 20 clicks back 
 FILTER_NS = 12000  # the glitch filter: 960 ticks of 80 MHz (the port stops at 1023), drops contact spikes under 12 us
 DEAD_EDGES = 2  # take_detents: up to this many edges from the rest point are no turn (P757). Not tuned on the bench
 REST_MS = 500  # take_detents: the knob rests when its count did not change for this long. Not tuned on the bench
+REST_EDGES = 1  # take_detents: the rest point follows the count at most this far from a whole detent. Not tuned
 
 
 class Encoder:
@@ -31,6 +32,7 @@ class Encoder:
     def __init__(self, counter, edges_per_detent):
         self.counter, self.edges_per_detent = counter, edges_per_detent
         self.anchor = None  # take_detents: the edge count where the knob rests
+        self.drift = 0  # the rest point minus its whole detent: -REST_EDGES to REST_EDGES
         self.last_edges = self.changed_ms = 0
 
     @classmethod
@@ -52,7 +54,8 @@ class Encoder:
         point and gives 0. A move of up to DEAD_EDGES edges from the rest point is no turn, so a knob that rests
         between two detents does not flicker: with 4 edges per detent, 3 to 6 edges are 1 detent. The rest point
         moves by whole detents, and it follows the count when the count did not change for REST_MS, because a
-        knob does not rest on a multiple of 4 (run150). now_ms is a time.ticks_ms()."""
+        knob does not rest on a multiple of 4 (run150). It follows at most REST_EDGES from its whole detent, so a
+        slow turn, or a hand that stops in the middle of a click, loses no edge. now_ms is a time.ticks_ms()."""
         edges = self.edges()
         if self.anchor is None:
             self.anchor, self.last_edges, self.changed_ms = edges, edges, now_ms
@@ -65,6 +68,7 @@ class Encoder:
             n = -n
         if n:
             self.anchor += n * self.edges_per_detent
-        elif moved and time.ticks_diff(now_ms, self.changed_ms) >= REST_MS:
-            self.anchor = edges
+        elif (moved and abs(self.drift + moved) <= REST_EDGES
+              and time.ticks_diff(now_ms, self.changed_ms) >= REST_MS):
+            self.anchor, self.drift = edges, self.drift + moved
         return n

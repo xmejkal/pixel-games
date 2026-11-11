@@ -28,7 +28,7 @@ has a lag over the ring minus two buffers. `pushes` counts the raw BOOT interrup
 has no restart: a lost schedule stops it, and the probe prints `stall <ms> pushes <n>` once. Also `switch <n> <ms>`, `align <n>` at open (the block's address modulo 16, which must be 0, D27), and at the end `written <samples>
 short <samples>`, then `done`. The App prints its own fps and time lines.
 
-MIC = 1 (D18, D22): the microphone on the second controller hears the speaker. It opens on the first frame, and the
+With MIC = 1 (D18, D22) the microphone on the second controller hears the speaker. It opens on the first frame, and the
 sound opens 2.5 s later, so the run measures the room first. Lines: `mic dma_free <B> largest <B>` before it opens,
 `gap <ms since the microphone opened> <length ms>`, and `mic <game> gaps <n> open <ms> lost <samples> blind <n>
 tone_mean <n> floor <n>` every 5 s and at the end. `open` is the length of a gap that has not ended yet, so a dead
@@ -56,16 +56,18 @@ targets now and the loudest whoosh's level now.
 VOLUME (P757) is the master volume's class name: "MasterVolume" (in volume, the naive path), "ViperMasterVolume" (in
 volume_viper), or "" for the mix as it is: then the probe imports neither. LEVEL is its start step, 0 (silent) to 16
 (the mix as it is), or None for the saved step (with SAVE), else volume.DEFAULT_STEP. It is LEVEL because a step in
-this probe is a bench step. One
-more line every 5 s: `volume level <n> gain <n> apply_max <us>`: the step, the gain that the last block ended at
+this probe is a bench step.
+One more line every 5 s: `volume level <n> gain <n> apply_max <us>`: the step, the gain that the last block ended at
 (32768 is the mix as it is), and the longest apply of the window. With ViperMasterVolume, the first line is `scale
 match <1 or 0>`: 1 when the viper scale gave the naive scale's samples on the named blocks of volume_viper.
-KNOB = 1 (with a VOLUME): the rotary encoder on pins.ENC_A and pins.ENC_B turns the step, 1 step per detent, read once
-per frame. Lines: `level <n> edges <n>` at each change of the step, and `edges <n>` at the end of the 5 s volume line.
-SAVE = 1 (with a VOLUME): the step lives in volume.txt on the board. The first line is `stored level <n or None>`, the
-file's step, when LEVEL is None. With KNOB, the knob saves the step 3 s after its last change, and the 5 s volume line
-ends with `saves <n> save_max <ms> save_errors <n>`: the saves and the failed saves of the run, and the longest save of
-the window. With SAVE = 0 the probe reads and writes no file, so an old volume.txt never changes a measured run.
+With KNOB = 1 (and a VOLUME) the rotary encoder on pins.ENC_A and pins.ENC_B turns the step, 1 step per detent, read
+once per frame. Lines: `level <n> edges <n>` at each change of the step, and `edges <n>` at the end of the 5 s volume
+line.
+With SAVE = 1 (and a VOLUME) the step lives in volume.txt on the board. A line at the start is
+`stored level <n or None>`, the file's step, when LEVEL is None. With KNOB, the knob saves the step 3 s after its last
+change, and the 5 s volume line ends with `saves <n> save_max <ms> save_errors <n>`: the saves and the failed saves of
+the run, and the longest save of the window. With SAVE = 0 the probe reads and writes no file, so an old volume.txt
+never changes a measured run.
 SAVE_EVERY_MS (with SAVE and KNOB) is the stress run: a save at this period, whatever the knob does.
 """
 
@@ -87,7 +89,7 @@ REFILL = "FrameRefill"  # or "CallbackRefill": a driver's class name in sound (P
 IBUF = 4096  # TX DMA bytes: 8 buffers of 256 samples, a ring of 128 ms; 2048 gives 4 buffers, 64 ms
 VOICE = "tone"  # "silent", "Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle" or "FireSound" (P747, P751, P753)
 VOLUME = ""  # "MasterVolume" or "ViperMasterVolume": the master volume's class; "": the mix as it is (P757)
-LEVEL = None  # the volume's start step, 0 to 16; None: volume.DEFAULT_STEP
+LEVEL = None  # the volume's start step, 0 to 16; None: the saved step (with SAVE), else volume.DEFAULT_STEP
 KNOB = 0  # 1: the rotary encoder turns the volume's step (P757)
 SAVE = 0  # 1: the volume's step is read from volume.txt, and the knob saves it there (P757)
 SAVE_EVERY_MS = 0  # the stress run of the save: a save at this period (P757)

@@ -69,7 +69,7 @@ class VolumeStore:
         """The saved step, or None: no file, text that is no number, or a number outside 0 to STEPS."""
         try:
             with open(self.path) as f:
-                step = int(f.read())
+                step = int(f.read(8))  # a step is 1 or 2 digits: a large file never fills the heap
         except (OSError, ValueError):
             return None
         return step if 0 <= step <= STEPS else None
@@ -86,7 +86,7 @@ class VolumeKnob:
 
     def __init__(self, encoder, volume, store=None, louder=LOUDER):
         self.encoder, self.volume, self.store, self.louder = encoder, volume, store, louder
-        self.saved, self.changed_ms = volume.step, None  # the caller started the volume at the stored step
+        self.saved, self.changed_ms = store.load() if store else None, None  # saved: the step in the store
         self.saves = self.save_errors = 0
 
     def poll(self, now_ms):

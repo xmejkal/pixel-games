@@ -8,6 +8,7 @@ import tempfile
 import time
 import unittest
 from array import array
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
@@ -178,8 +179,11 @@ class VolumeKnobTest(unittest.TestCase):
 class FakeVolumeStore:
     """Keeps each saved step in `steps`. With `broken`, save raises the OSError of a full or failed flash."""
 
-    def __init__(self, broken=False):
-        self.steps, self.broken = [], broken
+    def __init__(self, step=None, broken=False):
+        self.step, self.steps, self.broken = step, [], broken
+
+    def load(self):
+        return self.step
 
     def save(self, step):
         if self.broken:
@@ -200,11 +204,36 @@ class VolumeKnobSaveTest(unittest.TestCase):
         self.assertEqual((store.steps, knob.saves, knob.save_errors), ([11], 1, 0))
 
     def test_a_step_that_came_back_to_the_saved_one_is_not_saved_again(self):
-        volume, store = MasterVolume(8), FakeVolumeStore()
+        volume, store = MasterVolume(8), FakeVolumeStore(8)
         knob = VolumeKnob(FakeEncoder(1, -1), volume, store)
         for now_ms in (0, 40, 40 + SAVE_AFTER_MS):
             knob.poll(now_ms)
         self.assertEqual(store.steps, [])
+
+    def test_a_step_that_came_back_to_a_start_the_store_does_not_hold_is_saved(self):
+        volume, store = MasterVolume(8), FakeVolumeStore(5)  # the probe's LEVEL beside an older file
+        knob = VolumeKnob(FakeEncoder(1, -1), volume, store)
+        for now_ms in (0, 40, 40 + SAVE_AFTER_MS):
+            knob.poll(now_ms)
+        self.assertEqual(store.steps, [8])
+
+    def test_a_turn_back_after_a_save_is_saved_too(self):
+        volume, store = MasterVolume(8), FakeVolumeStore(8)
+        knob = VolumeKnob(FakeEncoder(1, 0, -1), volume, store)
+        for now_ms in (0, SAVE_AFTER_MS, SAVE_AFTER_MS + 40, 2 * SAVE_AFTER_MS + 40):
+            knob.poll(now_ms)
+        self.assertEqual(store.steps, [9, 8])
+
+    def test_the_save_waits_across_the_wrap_of_ticks_ms(self):
+        period = 1 << 30
+        with mock.patch.object(time, "ticks_diff", lambda a, b: (a - b + period // 2) % period - period // 2):
+            volume, store = MasterVolume(8), FakeVolumeStore(8)
+            knob = VolumeKnob(FakeEncoder(1), volume, store)
+            knob.poll(period - 1000)
+            knob.poll(SAVE_AFTER_MS - 1001)
+            self.assertEqual(store.steps, [])
+            knob.poll(SAVE_AFTER_MS - 1000)
+            self.assertEqual(store.steps, [9])
 
     def test_step_0_is_saved_like_any_step(self):
         volume, store = MasterVolume(2), FakeVolumeStore()
@@ -240,7 +269,7 @@ class VolumeStoreTest(unittest.TestCase):
 
     def test_a_missing_file_bad_text_and_a_step_outside_the_range_load_as_none(self):
         self.assertIsNone(VolumeStore(self.file).load())
-        for text in ("", "loud", "8.5", str(STEPS + 1), "-1"):
+        for text in ("", "loud", "8.5", str(STEPS + 1), "-1", "8" * 100000):
             with open(self.file, "w") as f:
                 f.write(text)
             self.assertIsNone(VolumeStore(self.file).load(), text)
@@ -258,7 +287,8 @@ class ViperMasterVolumeTest(unittest.TestCase):
     def test_scale_match_sees_a_scale_that_differs(self):
         class OffByOne(MasterVolume):
             def scale(self, buf, start, end):
-                buf[5] = 1  # the naive scale leaves this corner at 0
+                MasterVolume.scale(self, buf, start, end)
+                buf[5] = 1  # the naive scale leaves this corner, a 0, at 0: one sample of one block differs
 
         kept, volume_viper.ViperMasterVolume = volume_viper.ViperMasterVolume, OffByOne
         try:

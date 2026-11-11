@@ -82,9 +82,11 @@ class Refill:
 
     def render_block(self):
         """The mixer's next block, then the master volume: the last gain before the I2S (P757)."""
-        self.mixer.render(self.block)
-        if self.volume is not None:
-            self.volume.apply(self.block)
+        try:
+            self.mixer.render(self.block)
+        finally:  # a render that failed part way still gets the volume: no block is louder than the step
+            if self.volume is not None:
+                self.volume.apply(self.block)
 
     def stamp(self):
         now = time.ticks_us()

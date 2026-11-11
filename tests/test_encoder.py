@@ -5,6 +5,7 @@ import os
 import sys
 import time
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
@@ -14,7 +15,7 @@ if not hasattr(time, "ticks_diff"):  # the same three as tests/test_sound.py, wh
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import pins  # noqa: E402
-from encoder import Encoder  # noqa: E402
+from encoder import REST_MS, Encoder  # noqa: E402
 
 
 class FakeCounter:
@@ -89,24 +90,45 @@ class TakeDetentsTest(unittest.TestCase):  # --- MVP (P757) ---
         for edges, detents in ((2, 0), (3, 1), (4, 1), (6, 1), (7, 2), (-2, 0), (-3, -1), (-6, -1), (-7, -2)):
             self.assertEqual(self.take(self.knob_at(0), edges, 40), detents, edges)
 
-    def test_a_click_that_ends_1_edge_short_does_not_lose_the_next_clicks(self):
-        knob, turned = self.knob_at(9), []
-        for k, edges in enumerate((6, 3, 0, -3)):  # four clicks back of 3 edges each, a rest after each
-            turned.append(self.take(knob, edges, 1000 * k + 40))
-            self.assertEqual(self.take(knob, edges, 1000 * k + 600), 0)  # at rest: the rest point follows the count
-        self.assertEqual(turned, [-1, -1, -1, -1])  # with a rest point that moves only by 4, the third click is lost
-
-    def test_a_wobble_after_2_lost_edges_and_a_rest_is_no_turn(self):
+    def test_the_rest_point_follows_a_knob_that_rests_1_edge_off(self):
         knob = self.knob_at(0)
-        self.assertEqual(self.take(knob, 2, 40), 0)  # a click that lost 2 of its 4 edges: no detent
-        self.assertEqual(self.take(knob, 2, 600), 0)  # at rest: the rest point is now 2
-        self.assertEqual([self.take(knob, edges, 700 + 40 * k) for k, edges in enumerate((3, 4, 2, 1, 0, 2))], [0] * 6)
+        self.assertEqual(self.take(knob, 1, 40), 0)
+        self.assertEqual(self.take(knob, 1, 40 + REST_MS), 0)  # at rest: the rest point is now 1
+        self.assertEqual([self.take(knob, edges, 600 + 40 * k) for k, edges in enumerate((3, -1, 1))], [0, 0, 0])
+        self.assertEqual(self.take(knob, -2, 800), -1)  # a click back that ends 1 edge short still counts
+        self.assertEqual(self.take(knob, -6, 840), -1)
 
-    def test_a_slow_turn_still_counts(self):
-        knob, turned = self.knob_at(5), []
-        for k in range(1, 9):  # 1 edge each 400 ms: the count changes before the knob counts as at rest
-            turned.append(self.take(knob, 5 + k, 400 * k))
-        self.assertEqual(sum(turned), 2)
+    def test_a_turn_of_a_detent_and_a_half_keeps_its_half(self):
+        knob = self.knob_at(0)
+        self.assertEqual(self.take(knob, 6, 40), 1)
+        self.assertEqual(self.take(knob, 8, 80), 1)  # a rest point that jumped to 6 would see 2 edges and no detent
+
+    def test_a_slow_turn_loses_no_detent(self):
+        for ms_per_edge in (400, 600, 2500):  # under REST_MS, over it (the refuter's case), and far over it
+            knob, turned, now_ms = self.knob_at(5), 0, 0
+            for k in range(1, 9):
+                for _ in range(ms_per_edge // 40):  # a poll each 40 ms
+                    now_ms += 40
+                    turned += self.take(knob, 5 + k, now_ms)
+            self.assertEqual(turned, 2, ms_per_edge)
+            self.assertEqual(self.take(knob, 5 + 8, now_ms + 1000), 0)
+            self.assertEqual(self.take(knob, 5 + 4, now_ms + 1040), -1, ms_per_edge)  # no click is lost on the way back
+
+    def test_a_hand_that_stops_in_the_middle_of_a_click_loses_no_edge(self):
+        knob = self.knob_at(0)
+        self.assertEqual(self.take(knob, 2, 40), 0)
+        self.assertEqual(self.take(knob, 2, 40 + 2 * REST_MS), 0)  # 2 edges are too far for the rest point to follow
+        self.assertEqual(self.take(knob, 4, 1100), 1)
+
+    def test_the_rest_follows_across_the_wrap_of_ticks_ms(self):
+        period = 1 << 30
+        with mock.patch.object(time, "ticks_diff", lambda a, b: (a - b + period // 2) % period - period // 2):
+            self.counter = FakeCounter(0)
+            knob = Encoder(self.counter, 4)
+            self.assertEqual(knob.take_detents(period - 100), 0)
+            self.assertEqual(self.take(knob, 1, period - 60), 0)
+            self.assertEqual(self.take(knob, 1, REST_MS - 60), 0)  # REST_MS later: the rest point is now 1
+            self.assertEqual(self.take(knob, 3, REST_MS), 0)
 
     def test_the_rest_point_does_not_follow_a_knob_that_still_turns(self):
         knob = self.knob_at(0)
