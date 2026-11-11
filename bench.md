@@ -1245,7 +1245,7 @@ between 12:17 and 12:24 CET. Each run has 8 sound lines, 23 or 24 frames per sec
 | # | log | what ran | result |
 |---|-----|----------|--------|
 | 1 | run181a-p764-nohand.log | this PR's code, no hand, no spin: the pane never shows | `late 1` from the first line on, and no more after it. `between_max` 36 to 48 ms. Frame `worst` 56 to 99 ms, `slowest` 51 to 54 ms, mean paint 10.1 to 10.8 ms. `written 720384 short 176` |
-| 2 | run181b-p764-spin.log | `SPIN_EVERY_MS=3000`, the pane's own alpha (192). The knob turned during the run: 37 `level` lines and 164 edges, between the second and the fifth volume line. Who turned it is not recorded | `late 0` in each line. `between_max` 41 to 47 ms. `worst` 60 to 82 ms, `slowest` 57 to 64 ms, mean paint 11.8 to 14.5 ms. `written 720128 short 80` |
+| 2 | run181b-p764-spin.log | `SPIN_EVERY_MS=3000`, the pane's own alpha (192). The knob turned during the run: 37 `level` lines and 164 edges, between the second and the fourth volume line. The PO turned it: "i did turn it" | `late 0` in each line. `between_max` 41 to 47 ms. `worst` 60 to 82 ms, `slowest` 57 to 64 ms, mean paint 11.8 to 14.5 ms. `written 720128 short 80` |
 | 3 | run181c-p764-spin-solid.log | `ALPHA=255 SPIN_EVERY_MS=3000`: 12 spins, the solid picture, edges 0 | `late` is a running count: 0, 0, 1, 1, 1, 2, 2, 2. `between_max` 40 to 49 ms. `worst` 58 to 94 ms, `slowest` 52 to 62 ms, mean paint 11.0 to 13.0 ms. `written 720640 short 16` |
 | 4 | run182a-p764-master-nohand.log | the control: `master`'s code (4a7bb01's files, worktree `pixel-p762`), `ALPHA=255`, no hand, no spin | `late 0` in the first line, then 1 to the end. `between_max` 44 to 48 ms. `worst` 54 to 75 ms, `slowest` 52 to 56 ms, mean paint 10.3 to 11.2 ms. `written 720384 short 224` |
 | 5 | run182b-p764-nohand.log | entry 1 again | `late 0` in each line. `between_max` 40 to 46 ms. `worst` 54 to 70 ms, `slowest` 51 to 53 ms, mean paint 10.0 to 10.7 ms. `written 720384 short 112` |
@@ -1258,8 +1258,8 @@ between 12:17 and 12:24 CET. Each run has 8 sound lines, 23 or 24 frames per sec
   (P762), and a run with nothing on the screen can cross it.
 - The spin runs are a record only, as the plan says: 1 late refill see-through (entry 6) against 2 solid (entry 3),
   one run each. That is the other order than in P762 (2 against 1), so no rule rests on it.
-- Entry 2 is no clean spin run, because the knob turned in it. It is the only run of this PR with a turned knob, and
-  it has no late refill.
+- Entry 2 is no clean spin run, because the PO turned the knob in it. It is the only run of this PR with a turned
+  knob, and it has no late refill. He did not say what he saw on the screen.
 - In the spin runs the pane shows with no `show` call from the probe: the mean paint rose by 1 to 4 ms against the
   runs with no spin, as in P762. Nobody looked at the screen for this record.
 - Not run: the PO's eye on the see-through picture, and any game but Fire.
