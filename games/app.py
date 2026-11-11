@@ -82,6 +82,8 @@ class App:
         """Move to the next game and say its name."""
         self.index = (self.index + 1) % len(self.games)
         self.game = None
+        if self.cues:
+            self.cues.stop()  # --- MVP (P768) --- before the next game's setup, so the last game's sound does not play over it
         gc.collect()
         self.game = self.games[self.index]()
         self.signals.clear()  # --- MVP (P768) --- the last game's listeners go
@@ -230,7 +232,11 @@ def run(games=GAMES, knob=None, speaker=None):
     app.start()
     try:
         if speaker:  # after the first game's setup: a refill that waits behind it is late (run192: 14 at the open)
-            speaker.open()
+            try:
+                speaker.open()
+            except Exception as e:  # no I2S: the silent box
+                print("sound off:", repr(e))
+                speaker = None
         due = time.ticks_ms()
         while True:  # the s3lcd port may lose USB at init; the lines still print in case it stays
             app.frame()

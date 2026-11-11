@@ -18,9 +18,13 @@ class SoundCues:
     def __init__(self, mixer, bank):
         self.mixer, self.bank, self.cues = mixer, bank, {}
 
-    def follow(self, game, signals):
-        """The last game's sound stops, and this game's cues are listened for."""
+    def stop(self):
+        """The sound stops, and no cue plays until the next follow()."""
+        self.cues = {}
         self.mixer.stop()
+
+    def follow(self, game, signals):
+        """This game's cues are listened for."""
         self.cues = game.cues
         for name in self.cues:
             signals.listen(name, self.on)

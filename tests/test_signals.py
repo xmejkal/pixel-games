@@ -143,6 +143,14 @@ class TestSoundCues(unittest.TestCase):
         box.game.emit("jump")
         self.assertEqual(rendered(mixer), [0, 0, 0, 0])
 
+    def test_the_speaker_gets_the_knobs_volume(self):
+        class Knob:
+            volume = object()
+
+        self.assertIs(app.open_speaker(Knob()).volume, Knob.volume)
+        self.assertIsNone(app.open_speaker().volume)
+        self.assertIsNone(app.open_speaker().refill)  # nothing opens before open()
+
     def test_the_box_with_no_cues_is_silent_and_runs(self):
         box = app.App(None, lambda: 99, lambda: 99, games=(Loud,), out=Out())
         box.start()
