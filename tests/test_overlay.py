@@ -1,7 +1,8 @@
-"""The system overlay (P762) on the Mac: how long a view shows, what VolumeView paints, and that both outputs draw
-the overlay after the game and send its area again in the frame after it hides. framebuf comes from tests/stubs and
+"""The system overlay (P762, P764) on the Mac: how long a pane shows, that panes show side by side, what VolumePane
+paints and when it shows itself, and that both outputs draw the overlay after the game and send its area again in the
+frame after it hides. framebuf comes from tests/stubs and
 time gets the MicroPython ticks functions, as in test_hud.
-Run from the repository root: python3 -B -m unittest tests.test_overlay. --- MVP (P762) ---"""
+Run from the repository root: python3 -B -m unittest tests.test_overlay. --- MVP (P764) ---"""
 
 import os
 import sys
@@ -27,13 +28,14 @@ import volume  # noqa: E402
 GAME_RECT = (4, 4, 10, 10)  # what the fake game draws, away from the overlay's RECT
 
 
-class View:
-    """A view that counts its draws."""
+class Count(overlay.Pane):
+    """A pane that counts its draws, into a list that the test can share."""
 
-    draws = 0
+    def __init__(self, name="pane", log=None):
+        self.name, self.log = name, [] if log is None else log
 
     def draw(self, cv):
-        self.draws += 1
+        self.log.append(self.name)
 
 
 class Clip:
@@ -42,7 +44,7 @@ class Clip:
     clip = None
 
 
-class PaintCount(overlay.VolumeView):
+class PaintCount(overlay.VolumePane):
     paints = levels = 0
 
     def paint(self, cv):
@@ -52,6 +54,13 @@ class PaintCount(overlay.VolumeView):
     def paint_level(self, cv):
         self.levels += 1
         super().paint_level(cv)
+
+
+def shown(step=8, now=0):
+    """A VolumePane that is visible from now on, for HOLD_MS."""
+    pane = overlay.VolumePane(volume.MasterVolume(step))
+    pane.show(now)
+    return pane
 
 
 class Game:
@@ -114,38 +123,69 @@ def touches(sent, rect):
 
 
 class OverlayTest(unittest.TestCase):
-    def test_a_view_shows_for_hold_ms_after_show(self):
-        layer, view, cv = overlay.Overlay(), View(), Clip()
-        layer.show(view, 5000)
+    def test_a_pane_shows_for_hold_ms_after_show(self):
+        layer, cv = overlay.Overlay(), Clip()
+        pane = layer.add(Count())
+        pane.show(5000)
         layer.update(5000 + overlay.HOLD_MS - 1)
         layer.draw(cv)
-        self.assertEqual(view.draws, 1)
-        self.assertEqual(cv.clip, gfx.FULL)  # the view draws on the whole screen, whatever clip the game left
+        self.assertEqual(len(pane.log), 1)
+        self.assertEqual(cv.clip, gfx.FULL)  # the pane draws on the whole screen, whatever clip the game left
         layer.update(5000 + overlay.HOLD_MS)
         layer.draw(cv)
-        self.assertEqual(view.draws, 1)
-        self.assertIsNone(layer.view)
+        self.assertEqual(len(pane.log), 1)
+        self.assertFalse(pane.visible)
 
     def test_a_second_show_moves_the_end(self):
-        layer, view = overlay.Overlay(), View()
-        layer.show(view, 5000)
-        layer.show(view, 5600)
+        layer = overlay.Overlay()
+        pane = layer.add(Count())
+        pane.show(5000)
+        pane.show(5600)
         layer.update(5000 + overlay.HOLD_MS)
-        self.assertIs(layer.view, view)
+        self.assertTrue(pane.visible)
         layer.update(5600 + overlay.HOLD_MS)
-        self.assertIsNone(layer.view)
+        self.assertFalse(pane.visible)
 
-    def test_with_no_view_draw_does_nothing(self):
+    def test_each_pane_has_its_own_hold_ms(self):
+        layer = overlay.Overlay()
+        short, long = layer.add(Count()), layer.add(Count())
+        long.hold_ms = 3 * overlay.HOLD_MS
+        short.show(0)
+        long.show(0)
+        layer.update(overlay.HOLD_MS)
+        self.assertEqual((short.visible, long.visible), (False, True))
+
+    def test_two_panes_show_at_once_and_draw_in_the_order_of_add(self):
+        layer, log = overlay.Overlay(), []
+        first, second, hidden = (layer.add(Count(name, log)) for name in ("first", "second", "hidden"))
+        second.show(0)
+        first.show(0)
+        layer.update(1)
+        layer.draw(Clip())
+        self.assertEqual(log, ["first", "second"])
+
+    def test_a_pane_with_no_end_stays_visible(self):
+        layer = overlay.Overlay()
+        pane = layer.add(Count())
+        pane.visible = True  # no show(): until stays None
+        layer.update(1000 * overlay.HOLD_MS)
+        layer.draw(Clip())
+        self.assertEqual((pane.visible, len(pane.log)), (True, 1))
+
+    def test_with_no_visible_pane_draw_does_nothing(self):
         layer = overlay.Overlay()
         layer.update(0)
         layer.draw(None)  # a canvas would raise here
+        layer.add(Count())
+        layer.update(0)
+        layer.draw(None)
 
 
-class VolumeViewTest(unittest.TestCase):
+class VolumePaneTest(unittest.TestCase):
     def lit(self, step):
         cv, x, y = gfx.Canvas(), overlay.RECT[0], overlay.RECT[1]
         cv.start()
-        overlay.VolumeView(volume.MasterVolume(step)).draw(cv)
+        overlay.VolumePane(volume.MasterVolume(step)).draw(cv)
         cells = [op for op in cv.ops if op[4] == 0 and (op[2] - op[0], op[3] - op[1]) == (6, 12)]
         self.assertEqual(len(cells), volume.STEPS)
         self.assertEqual([op[0] for op in cells], [x + 40 + 8 * i for i in range(volume.STEPS)])
@@ -157,7 +197,7 @@ class VolumeViewTest(unittest.TestCase):
             lit, _ = self.lit(step)
             self.assertEqual(lit, [i < step for i in range(volume.STEPS)], step)
 
-    def test_the_panel_covers_its_rect_and_stays_inside_it(self):
+    def test_the_picture_covers_its_rect_and_stays_inside_it(self):
         _, ops = self.lit(16)
         x, y, w, h = overlay.RECT
         self.assertEqual(ops[0][:6], (x, y, x + w, y + h, 0, gfx.DARK))
@@ -172,14 +212,33 @@ class VolumeViewTest(unittest.TestCase):
     def test_a_new_step_paints_only_the_cells_and_the_number_again(self):
         for cv in (gfx.Canvas(), lcd.TftCanvas(Tft())):
             vol = volume.MasterVolume(8)
-            view = PaintCount(vol)
+            pane = PaintCount(vol)
             cv.start()
-            view.draw(cv)
-            view.draw(cv)
-            self.assertEqual((view.paints, view.levels), (1, 1))
+            pane.draw(cv)
+            pane.draw(cv)
+            self.assertEqual((pane.paints, pane.levels), (1, 1))
             vol.set(9)
-            view.draw(cv)
-            self.assertEqual((view.paints, view.levels), (1, 2))
+            pane.draw(cv)
+            self.assertEqual((pane.paints, pane.levels), (1, 2))
+
+    def test_a_change_of_the_step_shows_the_pane_and_the_start_does_not(self):
+        vol = volume.MasterVolume(8)
+        layer = overlay.Overlay()
+        pane = layer.add(overlay.VolumePane(vol))
+        layer.update(0)
+        self.assertFalse(pane.visible)  # the step at the start is no change
+        vol.set(9)  # no show() call: the pane watches the step
+        layer.update(40)
+        self.assertTrue(pane.visible)
+        layer.update(40 + overlay.HOLD_MS - 1)
+        self.assertTrue(pane.visible)
+        vol.set(9)  # the same step moves no end
+        layer.update(40 + overlay.HOLD_MS)
+        self.assertFalse(pane.visible)
+        vol.set(8)
+        layer.update(5000)
+        layer.update(5000 + overlay.HOLD_MS - 1)
+        self.assertTrue(pane.visible)
 
     def test_the_level_part_lies_inside_the_picture_and_holds_the_cells_and_the_number(self):
         x, y, w, h = overlay.RECT
@@ -187,7 +246,7 @@ class VolumeViewTest(unittest.TestCase):
         self.assertTrue(x < lx and lx + lw < x + w and y < ly and ly + lh < y + h)
         cv = gfx.Canvas()
         cv.start()
-        overlay.VolumeView(volume.MasterVolume(16)).paint_level(cv)
+        overlay.VolumePane(volume.MasterVolume(16)).paint_level(cv)
         self.assertEqual(cv.ops[0][:6], (lx, ly, lx + lw, ly + lh, 0, gfx.DARK))
         for op in cv.ops:
             self.assertTrue(lx <= op[0] and op[2] <= lx + lw and ly <= op[1] and op[3] <= ly + lh, op)
@@ -197,7 +256,8 @@ class StOutTest(unittest.TestCase):
     def test_the_frame_after_the_hide_sends_the_rect_again(self):
         display, layer, game = Display(), overlay.Overlay(), Game()
         out = render.StOut(display, False)
-        view = overlay.VolumeView(volume.MasterVolume(8))
+        vol = volume.MasterVolume(8)
+        layer.add(overlay.VolumePane(vol))
 
         def frame(now):
             del display.sent[:]
@@ -207,11 +267,11 @@ class StOutTest(unittest.TestCase):
 
         frame(0)  # the first frame sends the whole screen
         self.assertEqual(frame(40), [])  # a still game sends nothing
-        layer.show(view, 40)
+        vol.set(9)  # the pane shows from the next update on, at 80
         self.assertTrue(covers(frame(80), overlay.RECT))
         self.assertFalse(touches(frame(120), overlay.RECT))  # shown and not changed: nothing to send
-        self.assertTrue(covers(frame(40 + overlay.HOLD_MS), overlay.RECT))  # hidden: the game shows there again
-        self.assertEqual(frame(80 + overlay.HOLD_MS), [])
+        self.assertTrue(covers(frame(80 + overlay.HOLD_MS), overlay.RECT))  # hidden: the game shows there again
+        self.assertEqual(frame(120 + overlay.HOLD_MS), [])
 
     def test_only_a_shown_overlay_draws_its_picture(self):
         x, y, w, h = overlay.RECT
@@ -224,7 +284,10 @@ class StOutTest(unittest.TestCase):
         self.assertFalse(pictures())
         out.draw(Game(), [0, 0, 0, 0], layer)  # hidden
         self.assertFalse(pictures())
-        layer.show(overlay.VolumeView(volume.MasterVolume(8)), 0)
+        pane = layer.add(overlay.VolumePane(volume.MasterVolume(8)))
+        out.draw(Game(), [0, 0, 0, 0], layer)  # added and not visible
+        self.assertFalse(pictures())
+        pane.show(0)
         out.draw(Game(), [0, 0, 0, 0], layer)
         self.assertTrue(pictures())
 
@@ -233,27 +296,31 @@ class TftOutTest(unittest.TestCase):
     def test_the_overlay_is_drawn_after_the_game_and_before_show(self):
         tft, layer = Tft(), overlay.Overlay()
         out = lcd.TftOut(tft)
-        layer.show(overlay.VolumeView(volume.MasterVolume(8)), 0)
+        layer.add(shown())
         out.draw(Game(), [0, 0, 0, 0], layer)
         blits = [i for i, call in enumerate(tft.calls) if call[0] == "blit"]
         self.assertEqual(len(blits), 2)  # the still part, then the cells and the number over it
-        self.assertEqual(tft.calls[blits[0]][3:5], (overlay.RECT[3], overlay.RECT[2]))  # the panel's w and h: turned
+        self.assertEqual(tft.calls[blits[0]][3:5], (overlay.RECT[3], overlay.RECT[2]))  # the picture's w and h: turned
         self.assertEqual(tft.calls[blits[1]][3:5], (overlay.LEVEL_RECT[3], overlay.LEVEL_RECT[2]))
         self.assertLess(tft.calls.index("fill_rect"), blits[0])  # the game's rectangle
         self.assertEqual(tft.calls[-1], "show")
         self.assertEqual(out.windows, 3)
 
-    def test_the_still_part_blends_and_the_level_part_stays_solid(self):
-        tft, layer = Tft(), overlay.Overlay()
-        view = overlay.VolumeView(volume.MasterVolume(8))
-        view.alpha = 192
-        layer.show(view, 0)
-        lcd.TftOut(tft).draw(Game(), [0, 0, 0, 0], layer)
-        self.assertEqual([call[5] for call in tft.calls if call[0] == "blit"], [192, 255])
+    def test_the_still_part_blends_at_the_panes_alpha_and_the_level_part_stays_solid(self):
+        self.assertEqual(overlay.VolumePane.alpha, 192)
+        for alpha, want in ((None, 192), (255, 255), (128, 128)):  # None: the class's own value
+            tft, layer = Tft(), overlay.Overlay()
+            pane = layer.add(shown())
+            if alpha is not None:
+                pane.alpha = alpha
+            lcd.TftOut(tft).draw(Game(), [0, 0, 0, 0], layer)
+            self.assertEqual([call[5] for call in tft.calls if call[0] == "blit"], [want, 255])
+        self.assertEqual(overlay.VolumePane.alpha, 192)  # a value set on one pane stays that pane's
 
     def test_a_hidden_overlay_and_two_arguments_blit_nothing(self):
         tft, layer = Tft(), overlay.Overlay()
         out = lcd.TftOut(tft)
+        layer.add(overlay.VolumePane(volume.MasterVolume(8)))
         out.draw(Game(), [0, 0, 0, 0], layer)
         out.draw(Game(), [0, 0, 0, 0])
         self.assertFalse([call for call in tft.calls if call[0] == "blit"])
