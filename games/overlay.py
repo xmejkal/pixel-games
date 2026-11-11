@@ -15,7 +15,7 @@ two kept strips stay in memory after the pane hides, about 15 KB. With an alpha 
 still part on lcd.py. The cells and the number stay solid: they read well, and their copy stays on the driver's fast
 path. On render.py both parts are solid.
 
-The app owns the overlay (App.overlay). Each output draws it after the game and before the frame goes to the display.
+The app owns the overlay (App.overlay) and adds the volume pane when it has a knob (App.volume_pane, P764). Each output draws it after the game and before the frame goes to the display.
 Nothing here erases a hidden pane: each output sends the areas of the frame before again (render.Dirty, and the
 driver's tiles in lcd.py).
 
@@ -77,7 +77,7 @@ class VolumePane(Pane):
     """The master volume's step, `volume.step` of a MasterVolume: `vol`, one cell per step, and the number. It shows
     at each change of the step."""
 
-    alpha = 192  # the PO: "see through, it should be setting of each pane"
+    alpha = 128  # the PO: "see through, it should be setting of each pane". At 192: "it could be more see through"
 
     def __init__(self, volume):
         self.volume, self.seen = volume, volume.step  # seen: the step of the last update, so the start shows nothing
