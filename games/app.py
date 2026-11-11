@@ -2,6 +2,8 @@
 The game box: the fire effect (P595), the ball pit (P598), the rain demo of the C engine (P593) and ten one-button games
 on the GDI display.
 The BOOT button plays, the board's own button (D14) moves to the next game from any state.
+The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
+It changes a step only: the game box has no sound yet, and the step is not saved. App(knob=None) has no volume pane.
 
 run() prints `ready` once the display is set up, then `game <name>` at the start and after each D14 press. Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
@@ -23,10 +25,11 @@ from balls import BallPit
 from burning import BurningBodies
 from fire import Fire
 from lcd import open_tft
-from overlay import Overlay
+from overlay import Overlay, VolumePane
 from rain import Rain
 from render import StOut
 from space3d import CubeTiming, Starfire
+from volume import MasterVolume, VolumeKnob
 from world3d import Road, Tunnel
 
 FPS_EVERY_MS = 5000
@@ -49,7 +52,7 @@ GAMES = (Fire, BallPit, BurningBodies, Rain, Flappy, Runner, Snake, Stack, Cave,
 class App:
     """Owns the display, the two buttons and the current game. frame() is one pass of the loop."""
 
-    def __init__(self, display, read_fire, read_boot, games=GAMES, full=False, gc_floor=0, out=None):
+    def __init__(self, display, read_fire, read_boot, games=GAMES, full=False, gc_floor=0, out=None, knob=None):
         self.display, self.games = display, games
         self.fire = buttons.Button(read_fire, buttons.BOOT_BUTTON_ON)  # BOOT plays: holding it is safe once running
         self.boot = buttons.Button(read_boot, pins.ONBOARD_BUTTON_ON)  # D14 switches: a long hold powers the board off
@@ -58,6 +61,8 @@ class App:
         self.index = len(games) - 1
         self.game = None
         self.overlay = Overlay()  # --- MVP (P762) --- system information over every game
+        self.knob = knob  # --- MVP (P764) --- the volume's knob, or None: then the overlay has no volume pane
+        self.volume_pane = self.overlay.add(VolumePane(knob.volume)) if knob else None
 
     def start(self):
         self.out.clear()
@@ -88,11 +93,13 @@ class App:
         before = us[:]
         now = time.ticks_ms()
         pressed, switched = self.fire.update(now), self.boot.update(now)  # Input
-        self.overlay.update(now)
+        if self.knob:
+            self.knob.poll(now)  # --- MVP (P764) ---
         if switched:
             self.switch()
         else:
             self.game.step(now, pressed, self.fire.held)  # FixedUpdate, Update, LateUpdate
+        self.overlay.update(now)  # after the switch, so a turn shows in this frame and a pane sees this frame's game
         game = self.game
         if game.state != self.state:  # the title and the game over are quiet: collect there
             self.state = game.state
@@ -141,14 +148,29 @@ def open_st7789():
     return display, FRAME_MODE == "full" or (FRAME_MODE == "auto" and free > FULL_FRAME_FREE)
 
 
-def run(games=GAMES):
-    """The loop main.py starts."""
+# --- MVP (P764) ---
+def open_knob():
+    """The rotary encoder as the volume's knob, or None when this image has no machine.Encoder.
+    The step is not saved."""
+    try:
+        import machine
+
+        machine.Encoder
+    except (ImportError, AttributeError):
+        return None
+    return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), MasterVolume())
+
+
+def run(games=GAMES, knob=None):
+    """The loop main.py starts. knob: a caller's VolumeKnob (the probe's). With none, the box opens its own, so two
+    encoders never share the counter unit."""
     import select
     import sys
 
     from machine import Pin
 
     encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first: until here a turn of the knob can type into the console (P757)
+    knob = knob or open_knob()  # --- MVP (P764) ---
     out = open_tft(SPI_HZ) if BACKEND == "s3lcd" else None  # None: no s3lcd in this image
     display, full = None, False
     if out:
@@ -164,7 +186,7 @@ def run(games=GAMES):
     # D14 also drives the power chip's PWRON (boards/firebeetle2-esp32s3.json, hardware_revisions, V1.1 and earlier):
     # held about 5 s, it powered the board off on 2026-11-02. So BOOT is the game button and D14 only a short press.
     fire, boot = Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP), Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP)
-    app = App(display, fire.value, boot.value, games=games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out)
+    app = App(display, fire.value, boot.value, games=games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob)
     app.fire.watch(fire)
     app.boot.watch(boot)
     if full:
