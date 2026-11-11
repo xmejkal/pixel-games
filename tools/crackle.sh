@@ -16,7 +16,8 @@
 # SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). With a VOLUME, games/volume.py and
 # games/volume_viper.py go to the board too, and with KNOB=1 games/encoder.py and games/pins.py (P757).
 # With KNOB=1 each change of the step also shows the volume on the screen for 1 s (P762): games/overlay.py goes to
-# the board with app.py, lcd.py and render.py.
+# the board with app.py, lcd.py and render.py. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the probe
+# spins the step to an end at this period.
 #
 # A look, such as "6, 24, 6000, 12000, 28400, 31600, 3, 4000, 224", replaces CRACKLE_LOOK in the crackle.py that this
 # run copies (GRAIN_LOOK for GrainCrackle and FireSound, such as "0, 32768": bed gain, pop gain).
@@ -38,6 +39,7 @@ MIC=${MIC:-0}
 KNOB=${KNOB:-0}
 SAVE=${SAVE:-0}
 SAVE_EVERY_MS=${SAVE_EVERY_MS:-0}
+SPIN_EVERY_MS=${SPIN_EVERY_MS:-0}
 TOOLS=$(ls -d "$HOME"/.espressif/tools/xtensa-esp-elf/*/xtensa-esp-elf/bin | tail -1)
 IDF_PYTHON=$HOME/.espressif/python_env/idf5.5_py3.10_env/bin/python
 PROBE_DIR=$(mktemp -d)
@@ -51,6 +53,7 @@ sed -e "s/^GAME = .*/GAME = \"$GAME\"/" -e 's/^REFILL = .*/REFILL = "CallbackRef
     -e "s/^VOLUME = .*/VOLUME = \"$VOLUME\"/" -e "s/^LEVEL = .*/LEVEL = $LEVEL/" -e "s/^MIC = .*/MIC = $MIC/" \
     -e "s/^KNOB = .*/KNOB = $KNOB/" -e "s/^SAVE = .*/SAVE = $SAVE/" \
     -e "s/^SAVE_EVERY_MS = .*/SAVE_EVERY_MS = $SAVE_EVERY_MS/" \
+    -e "s/^SPIN_EVERY_MS = .*/SPIN_EVERY_MS = $SPIN_EVERY_MS/" \
     "$ROOT/probe733_games.py" > "$PROBE"
 LOOK_NAME=CRACKLE_LOOK
 case $VOICE in GrainCrackle | FireSound) LOOK_NAME=GRAIN_LOOK ;; esac

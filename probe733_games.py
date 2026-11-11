@@ -70,6 +70,9 @@ change, and the 5 s volume line ends with `saves <n> save_max <ms> save_errors <
 the run, and the longest save of the window. With SAVE = 0 the probe reads and writes no file, so an old volume.txt
 never changes a measured run.
 SAVE_EVERY_MS (with SAVE and KNOB) is the stress run: a save at this period, whatever the knob does.
+SPIN_EVERY_MS (with KNOB, P762) is the overlay's stress run with no hand: at this period the probe turns the step
+itself from where it is to an end, 1 step per frame, down and then up by turns. Each step paints the volume's
+picture again, so this is the costly case of the overlay. The line at the end of a spin is `spin to <n>`.
 """
 
 import math
@@ -94,6 +97,7 @@ LEVEL = None  # the volume's start step, 0 to 16; None: the saved step (with SAV
 KNOB = 0  # 1: the rotary encoder turns the volume's step (P757)
 SAVE = 0  # 1: the volume's step is read from volume.txt, and the knob saves it there (P757)
 SAVE_EVERY_MS = 0  # the stress run of the save: a save at this period (P757)
+SPIN_EVERY_MS = 0  # the stress run of the overlay: a spin of the step to an end at this period (P762)
 SECONDS = 120
 SWITCH_MS = 30_000
 REPORT_MS = 5000
@@ -444,6 +448,7 @@ class Probe:
         self.next_hit = time.ticks_add(now, HIT_FROM_MS)
         self.open_at = time.ticks_add(now, TONE_OPEN_MS if MIC else 0)
         self.next_save = time.ticks_add(now, SAVE_EVERY_MS)
+        self.next_spin, self.spin = time.ticks_add(now, SPIN_EVERY_MS), 0  # spin: the step per frame, or 0
         self.press_on_over(box)
         self.stamp_pushes(box)
         if MIC:
@@ -486,6 +491,16 @@ class Probe:
             box.overlay.show(self.volume.view, now)  # P762: on the screen from the next frame, for 1 s
         if knob:
             self.volume.windows_max = max(self.volume.windows_max, getattr(box.out, "windows", 0) or 0)
+        if SPIN_EVERY_MS and knob:  # --- MVP (P762) --- the overlay's stress run
+            step = knob.volume.step
+            if not self.spin and time.ticks_diff(now, self.next_spin) >= 0:
+                self.spin = -1 if step else 1
+            knob.volume.set(step + self.spin)
+            if knob.volume.step != step:
+                box.overlay.show(self.volume.view, now)
+            elif self.spin:  # at an end
+                self.spin, self.next_spin = 0, time.ticks_add(now, SPIN_EVERY_MS)
+                print("spin to %d" % step)
         if SAVE_EVERY_MS and knob and knob.store and time.ticks_diff(now, self.next_save) >= 0:  # the stress run
             self.next_save = time.ticks_add(now, SAVE_EVERY_MS)
             knob.save()
