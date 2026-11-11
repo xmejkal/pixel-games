@@ -109,6 +109,44 @@ class TestBank(unittest.TestCase):
                 self.assertTrue(len(b.get(cue.sound)), "%s: %s" % (game.name, cue.sound))
 
 
+class MusicBank(FakeBank):
+    sounds = dict(FakeBank.sounds, music=array("h", [5, 6]))
+
+
+class TestMusic(unittest.TestCase):
+    def box(self):
+        mixer = sound.Mixer(2)
+        box = app.App(None, lambda: 99, lambda: 99, games=(Loud, Quiet), out=Out(), cues=cues.SoundCues(mixer, MusicBank()))
+        box.start()
+        return box, mixer
+
+    def test_the_music_loops_under_a_games_sound(self):
+        box, mixer = self.box()
+        box.game.emit("jump")
+        self.assertEqual(rendered(mixer), [5 + 7, 6 + 8, 5, 6])
+
+    def test_the_music_plays_on_over_a_switch_as_one_voice(self):
+        box, mixer = self.box()
+        voice = box.cues.music_voice
+        rendered(mixer, 1)
+        box.switch()
+        self.assertIs(box.cues.music_voice, voice)
+        self.assertEqual((voice.group, voice.protect), (sound.MUSIC, True))
+        self.assertEqual(rendered(mixer), [6, 5, 6, 5])
+
+    def test_a_burst_of_sounds_never_takes_the_musics_voice(self):
+        box, mixer = self.box()
+        for _ in range(5):
+            box.game.emit("jump")
+        self.assertTrue(box.cues.music_voice.live)
+
+    def test_the_group_gain_of_the_music_silences_only_the_music(self):
+        box, mixer = self.box()
+        mixer.group_gain[sound.MUSIC] = 0
+        box.game.emit("jump")
+        self.assertEqual(rendered(mixer), [7, 8, 0, 0])
+
+
 class TestSoundCues(unittest.TestCase):
     def box(self, *games):
         mixer = sound.Mixer()

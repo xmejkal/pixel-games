@@ -3,10 +3,11 @@ Which sound a signal plays (P768). A game lists its cues in a class attribute, `
 listens for them and plays each cue's sound from the bank on the mixer.
 """
 
-from sound import SFX
+from sound import MUSIC, SFX
 from volume import FULL
 
 LEVELS = 256  # a looping cue's signal value: 0 (off) to LEVELS (the cue's gain)
+MUSIC_SOUND = "music"  # the bank's background loop, the same in every game
 
 
 # --- MVP (P768) ---
@@ -23,6 +24,18 @@ class SoundCues:
 
     def __init__(self, mixer, bank):
         self.mixer, self.bank, self.cues, self.voices = mixer, bank, {}, {}
+        self.music_voice = None
+
+    def music(self, gain=FULL):
+        """The background music plays: one protected loop in the group music. It plays on over a switch of the
+        game, so a second call does nothing. A bank with no music is a box with no music."""
+        if self.music_voice is not None and self.music_voice.live:
+            return
+        try:
+            sound = self.bank.get(MUSIC_SOUND)
+        except KeyError:
+            return
+        self.music_voice = self.mixer.play(sound, True, MUSIC, gain, True)
 
     def stop(self):
         """The game's sounds stop, and no cue plays until the next follow()."""
