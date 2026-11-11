@@ -21,7 +21,10 @@
 
 ### Changes since the last build
 
-- Nothing to change on the bench.
+- Take out the jumper from board SCL to the row of Cjmcu111RotaryEncoder GB.
+- Take out the jumper from board SDA to the row of Cjmcu111RotaryEncoder GA.
+- Run a jumper from board RX to the row of Cjmcu111RotaryEncoder GA.
+- Run a jumper from board TX to the row of Cjmcu111RotaryEncoder GB.
 
 ### Steps
 
