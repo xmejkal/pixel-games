@@ -74,6 +74,7 @@ fi
 if [ "$KNOB" = 1 ]; then
     mpremote cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py \
         + cp "$ROOT/games/app.py" :app.py  # app.run takes the encoder's pads, so the three stay in step (P757)
+    mpremote cp "$ROOT/games/volume.py" :volume.py  # app.py imports it for the box's knob (P764)
     mpremote cp "$ROOT/games/overlay.py" :overlay.py + cp "$ROOT/games/lcd.py" :lcd.py \
         + cp "$ROOT/games/render.py" :render.py + cp "$ROOT/games/gfx.py" :gfx.py  # app.py passes the overlay to the
     # outputs, and both canvases' keep takes its alpha (P762)

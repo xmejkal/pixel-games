@@ -131,8 +131,9 @@ Runs now:
   one, so every game shows the volume for 1 s when the knob turns. To see it, start the box and turn the knob. The
   box has no sound yet, and it does not save the step. The sound probe passes its own knob to the box, so only one
   encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the box opens its
-  own knob, and the sound does not follow it. Nobody ran the box with the knob on the board yet. Tests ran on the
-  Mac only (`tests/test_app_knob.py`). The picture is see-through by default (`VolumePane.alpha` is 128), and
+  own knob, and the sound does not follow it. A run with no hand went through all 14 games with the knob
+  open, and with the pane shown by a spin of the step (`probe764_box.py`, bench.md, P764, PR B). The PO's hand and
+  eye in the games are still open. The picture is see-through by default (`VolumePane.alpha` is 128), and
   `ALPHA=255` on the command makes it solid. The PO turned the knob in the probe and saw it at 192 ("it could be
   more see through") and at 128 ("yes, nice"). The blend costs about 1 ms more per frame while the picture shows,
   measured at 192 (bench.md, P762). Now the first show paints

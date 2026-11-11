@@ -1278,3 +1278,50 @@ per second. Entries 1 to 6 ran for 45 s each, between 12:17 and 12:24 CET, with 
 - Entries 7 to 9 ran from 12:31 to 12:36 CET, on c3d0ee0. No run is on the code with the default 128: entries 8
   and 9 set 128 with `ALPHA`.
 - Not run: any game but Fire.
+
+## P764 (#1051), 2026-11-11: the knob in the game box (PR B)
+
+The game box opens the rotary encoder as the volume's knob, polls it in each frame and adds the volume pane
+(alpha 128). `probe764_box.py` runs the box over all 14 games, 12 s each, and prints one `box` line per game. Each
+run is `mpremote run probe764_box.py` with no hand on the board: 12:40 to 12:43 CET (`run186-p764-box-master.log`),
+12:44 to 12:46 (`run187-p764-box-knob.log`) and 12:46 to 12:49 (`run188-p764-box-spin.log`, with
+`SPIN_EVERY_MS = 3000`). Run 0 has `master`'s `app.py` and `overlay.py` on the board. Runs 1 and 2 have this PR's
+`app.py`, `overlay.py`, `volume.py`, `encoder.py` and `pins.py`. Each cell holds the two `time` lines of a game,
+first and second. Nobody pressed a button, so a game with a title screen stayed there or played its own demo.
+
+| game | run 0: `master` (0b79320), no knob | run 1: this code, no spin | run 2: this code, the spin | windows_max |
+| --- | --- | --- | --- | --- |
+| fire | fps 24, 24; worst 50, 53 ms; step 7.0, 7.0 ms; paint 9.6, 9.4 ms | fps 24, 24; worst 60, 60 ms; step 7.4, 7.5 ms; paint 10.5, 10.3 ms | fps 24, 24; worst 66, 59 ms; step 7.4, 7.4 ms; paint 11.6, 11.5 ms | 1, 1, 1 |
+| balls | fps 24, 24; worst 54, 53 ms; step 2.6, 2.6 ms; paint 7.7, 7.3 ms | fps 24, 24; worst 57, 61 ms; step 2.8, 2.9 ms; paint 7.9, 8.2 ms | fps 24, 24; worst 61, 58 ms; step 2.9, 2.9 ms; paint 9.3, 9.0 ms | 1, 1, 1 |
+| burning | fps 24, 24; worst 54, 61 ms; step 8.7, 8.9 ms; paint 16.0, 16.8 ms | fps 24, 24; worst 57, 69 ms; step 9.0, 9.1 ms; paint 16.3, 17.0 ms | fps 24, 24; worst 57, 62 ms; step 8.8, 9.1 ms; paint 17.4, 17.8 ms | 1, 1, 1 |
+| rain | fps 24, 23; worst 62, 65 ms; step 2.3, 2.5 ms; paint 27.0, 26.7 ms | fps 24, 23; worst 70, 71 ms; step 2.7, 2.8 ms; paint 28.5, 28.3 ms | fps 23, 23; worst 80, 76 ms; step 2.6, 2.7 ms; paint 29.1, 28.8 ms | 1, 1, 2 |
+| flappy | fps 22, 20; worst 79, 63 ms; step 0.8, 0.5 ms; paint 33.1, 41.0 ms | fps 22, 20; worst 85, 67 ms; step 1.1, 0.7 ms; paint 32.3, 39.8 ms | fps 22, 20; worst 84, 70 ms; step 1.0, 0.6 ms; paint 32.2, 38.9 ms | 4, 4, 4 |
+| runner | fps 22, 19; worst 111, 69 ms; step 3.7, 0.4 ms; paint 31.0, 43.6 ms | fps 22, 20; worst 117, 68 ms; step 4.1, 0.8 ms; paint 30.1, 41.7 ms | fps 22, 19; worst 76, 115 ms; step 4.2, 1.0 ms; paint 30.0, 41.5 ms | 4, 4, 4 |
+| snake | fps 24, 25; worst 66, 40 ms; step 0.7, 0.7 ms; paint 18.5, 11.8 ms | fps 24, 24; worst 70, 41 ms; step 1.0, 0.9 ms; paint 17.7, 11.6 ms | fps 24, 24; worst 78, 42 ms; step 0.9, 0.9 ms; paint 18.0, 12.5 ms | 4, 4, 4 |
+| stack | fps 25, 25; worst 42, 40 ms; step 0.7, 0.7 ms; paint 13.3, 11.2 ms | fps 25, 25; worst 41, 41 ms; step 1.0, 1.0 ms; paint 13.0, 11.0 ms | fps 25, 25; worst 43, 43 ms; step 1.0, 1.0 ms; paint 14.2, 12.3 ms | 1, 1, 1 |
+| cave | fps 22, 21; worst 80, 62 ms; step 0.9, 0.4 ms; paint 34.5, 39.5 ms | fps 22, 20; worst 86, 66 ms; step 1.1, 0.7 ms; paint 33.9, 39.6 ms | fps 21, 20; worst 72, 72 ms; step 1.1, 0.6 ms; paint 34.1, 40.2 ms | 1, 4, 4 |
+| tunnel | fps 23, 21; worst 79, 76 ms; step 1.0, 0.5 ms; paint 28.9, 39.0 ms | fps 23, 21; worst 68, 65 ms; step 1.3, 0.8 ms; paint 27.7, 38.6 ms | fps 22, 20; worst 77, 62 ms; step 1.2, 0.7 ms; paint 29.6, 39.6 ms | 4, 4, 4 |
+| road | fps 21, 12; worst 120, 93 ms; step 0.9, 0.6 ms; paint 36.7, 51.4 ms | fps 22, 21; worst 69, 129 ms; step 1.0, 1.2 ms; paint 34.4, 36.8 ms | fps 21, 12; worst 113, 96 ms; step 1.2, 0.8 ms; paint 36.5, 53.0 ms | 4, 4, 4 |
+| starfire | fps 24, 24; worst 66, 54 ms; step 1.2, 1.4 ms; paint 21.3, 25.5 ms | fps 24, 24; worst 67, 54 ms; step 1.4, 1.6 ms; paint 21.4, 25.5 ms | fps 24, 24; worst 66, 52 ms; step 1.4, 1.6 ms; paint 22.4, 27.0 ms | 4, 4, 4 |
+| cube | fps 24, 24; worst 66, 68 ms; step 0.8, 0.9 ms; paint 20.2, 15.7 ms | fps 24, 24; worst 79, 67 ms; step 1.0, 1.2 ms; paint 19.0, 15.8 ms | fps 24, 24; worst 74, 67 ms; step 1.0, 1.2 ms; paint 20.5, 17.1 ms | 4, 4, 4 |
+| gravpong | fps 23, 22; worst 64, 54 ms; step 0.9, 0.5 ms; paint 29.7, 33.6 ms | fps 24, 23; worst 59, 63 ms; step 1.1, 0.7 ms; paint 27.7, 30.8 ms | fps 23, 23; worst 58, 65 ms; step 1.1, 0.7 ms; paint 28.4, 30.7 ms | 4, 4, 4 |
+
+- Each log has 188 lines, 14 `box` lines and `done`, with no error and no traceback. Run 0 prints `knob 0`, and
+  runs 1 and 2 print `knob 1`.
+- Run 0 against run 1, the cost of the open knob and its poll: the mean step rose by 0.1 to 0.5 ms in each game
+  (Road's second line by 0.6 ms). The frames per second are the same or differ by 1, but for Road's second line.
+- Road's second line is 12 frames per second in runs 0 and 2 and 21 in run 1. Runs 0 and 2 have different code and
+  agree, so the knob does not explain it. The cause is not known, and this line compares nothing.
+- Run 1 against run 2, the cost of the picture: Road apart, the mean paint changed by -0.9 to +1.9 ms. In Fire, Balls,
+  Burning, Stack, Starfire and Cube it rose in both lines, by 0.8 to 1.5 ms. In the other games the two lines do
+  not agree on a rise. Each game had 3 spins but Road, which had 2. The frames per second are the same or 1 lower,
+  but for Road's second line.
+- `windows_max` is the same in the three runs but in Rain (1, 1, 2) and Cave (1, 4, 4). Cave's 4 came with no
+  picture on the screen (run 1), so the picture did not cause it.
+- In run 1 the step stayed 8 in each game: the knob did not turn.
+- `worst` moves between the runs in both directions (Runner 111, 117, 76 ms in the first line), so one run per
+  code gives no verdict on it.
+- Every caller of `app.run()` now gets the knob: `probe550.py`, `tools/probe635.py`, the p612 probes and each sound
+  run with `KNOB=0`. A run before this PR is no control for a run after it.
+- Not run: the sound with the box's knob (`tools/crackle.sh` with `KNOB=1`) on this code, a game in play, the
+  PO's hand and eye in the games.

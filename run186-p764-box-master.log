@@ -1,0 +1,188 @@
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6305648
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+knob 0
+fire linear fps 24 step 6.40 draw 6.47
+fps fire 24
+time fire step 7.0 paint 9.6 send 4.5 gc 2.1 fps 24 worst 50 slowest 48 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 30 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 133968 glyphs 18
+fire linear fps 24 step 6.45 draw 6.48
+fps fire 24
+time fire step 7.0 paint 9.4 send 4.2 gc 2.1 fps 24 worst 53 slowest 50 = step 6 paint 39 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 32 over 0 title 0
+avg fire static 0.1 paint 6.7 fx 0.1 hud 2.2 over 0.0 title 0.0
+heap fire alloc 135120 glyphs 18
+box fire windows_max 1 spins 0 level -1
+game balls
+balls n 10 fps 24 step 1.87 draw 4.28 hits 50
+fps balls 24
+time balls step 2.6 paint 7.7 send 5.3 gc 2.9 fps 24 worst 54 slowest 50 = step 2 paint 44 send 3 gc 0
+phases balls static 0 paint 7 fx 0 hud 39 over 0 title 0
+avg balls static 0.1 paint 7.1 fx 0.2 hud 3.7 over 0.0 title 0.0
+heap balls alloc 203360 glyphs 25
+balls n 10 fps 24 step 1.88 draw 4.28 hits 0
+fps balls 24
+time balls step 2.6 paint 7.3 send 4.6 gc 2.8 fps 24 worst 53 slowest 49 = step 2 paint 43 send 3 gc 0
+phases balls static 0 paint 5 fx 0 hud 38 over 0 title 0
+avg balls static 0.1 paint 4.5 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap balls alloc 204928 glyphs 25
+box balls windows_max 1 spins 0 level -1
+burning internal largest 31744
+burning field internal
+game burning
+burning linear fps 24 step 7.92 draw 13.49
+fps burning 24
+time burning step 8.7 paint 16.0 send 3.7 gc 2.2 fps 24 worst 54 slowest 46 = step 8 paint 33 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 41 over 0 title 0
+avg burning static 0.1 paint 15.5 fx 0.2 hud 2.9 over 0.0 title 0.0
+heap burning alloc 140976 glyphs 28
+burning linear fps 24 step 8.13 draw 13.69
+fps burning 24
+time burning step 8.9 paint 16.8 send 3.9 gc 2.2 fps 24 worst 61 slowest 57 = step 9 paint 44 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 27 over 0 title 0
+avg burning static 0.1 paint 14.0 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap burning alloc 142752 glyphs 28
+box burning windows_max 1 spins 0 level -1
+stepper c
+game rain
+rain c n 160 fps 24 step 0.30 read 1.38 draw 19.27
+fps rain 24
+time rain step 2.3 paint 27.0 send 3.5 gc 2.2 fps 24 worst 62 slowest 60 = step 1 paint 55 send 3 gc 0
+phases rain static 4 paint 24 fx 0 hud 27 over 0 title 0
+avg rain static 4.6 paint 25.0 fx 0.2 hud 3.4 over 0.0 title 0.0
+heap rain alloc 143600 glyphs 29
+rain c n 160 fps 23 step 0.33 read 1.45 draw 18.69
+fps rain 23
+time rain step 2.5 paint 26.7 send 3.4 gc 2.2 fps 23 worst 65 slowest 63 = step 3 paint 57 send 3 gc 0
+phases rain static 4 paint 24 fx 0 hud 29 over 0 title 0
+avg rain static 4.6 paint 18.9 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap rain alloc 142896 glyphs 29
+box rain windows_max 1 spins 0 level -1
+game flappy
+fps flappy 22
+time flappy step 0.8 paint 33.1 send 4.0 gc 2.4 fps 22 worst 79 slowest 65 = step 14 paint 47 send 3 gc 12
+phases flappy static 7 paint 24 fx 2 hud 28 over 34 title 30
+avg flappy static 9.3 paint 16.1 fx 0.3 hud 2.0 over 10.0 title 6.3
+heap flappy alloc 150528 glyphs 32
+fps flappy 20
+time flappy step 0.5 paint 41.0 send 3.3 gc 2.3 fps 20 worst 63 slowest 61 = step 0 paint 58 send 3 gc 0
+phases flappy static 7 paint 13 fx 0 hud 0 over 35 title 0
+avg flappy static 7.4 paint 12.5 fx 0.1 hud 0.8 over 19.9 title 0.0
+heap flappy alloc 150528 glyphs 32
+box flappy windows_max 4 spins 0 level -1
+game runner
+fps runner 22
+time runner step 3.7 paint 31.0 send 3.8 gc 2.5 fps 22 worst 111 slowest 109 = step 23 paint 83 send 3 gc 12
+phases runner static 7 paint 16 fx 3 hud 28 over 35 title 46
+avg runner static 9.9 paint 14.8 fx 0.4 hud 4.1 over 8.2 title 7.5
+heap runner alloc 167952 glyphs 35
+fps runner 19
+time runner step 0.4 paint 43.6 send 3.3 gc 2.3 fps 19 worst 69 slowest 67 = step 0 paint 63 send 3 gc 0
+phases runner static 7 paint 16 fx 0 hud 0 over 38 title 0
+avg runner static 7.4 paint 15.6 fx 0.1 hud 0.8 over 19.4 title 0.0
+heap runner alloc 153520 glyphs 35
+box runner windows_max 4 spins 0 level -1
+game snake
+fps snake 24
+time snake step 0.7 paint 18.5 send 3.4 gc 2.4 fps 24 worst 66 slowest 64 = step 12 paint 49 send 3 gc 11
+phases snake static 10 paint 16 fx 0 hud 13 over 38 title 39
+avg snake static 11.8 paint 5.5 fx 0.1 hud 0.9 over 5.9 title 7.0
+heap snake alloc 151136 glyphs 36
+fps snake 25
+time snake step 0.7 paint 11.8 send 3.4 gc 2.3 fps 25 worst 40 slowest 17 = step 0 paint 12 send 3 gc 0
+phases snake static 10 paint 1 fx 0 hud 0 over 0 title 0
+avg snake static 9.4 paint 1.2 fx 0.1 hud 0.8 over 0.0 title 0.0
+heap snake alloc 150400 glyphs 36
+box snake windows_max 4 spins 0 level -1
+game stack
+fps stack 25
+time stack step 0.7 paint 13.3 send 3.4 gc 2.4 fps 25 worst 42 slowest 33 = step 0 paint 29 send 3 gc 0
+phases stack static 10 paint 4 fx 0 hud 18 over 0 title 10
+avg stack static 11.0 paint 2.6 fx 0.1 hud 1.1 over 0.0 title 2.9
+heap stack alloc 151104 glyphs 36
+fps stack 25
+time stack step 0.7 paint 11.2 send 3.3 gc 2.3 fps 25 worst 40 slowest 16 = step 0 paint 12 send 3 gc 0
+phases stack static 7 paint 3 fx 0 hud 0 over 0 title 0
+avg stack static 7.2 paint 2.8 fx 0.1 hud 0.9 over 0.0 title 0.0
+heap stack alloc 151104 glyphs 36
+box stack windows_max 1 spins 0 level -1
+game cave
+fps cave 22
+time cave step 0.9 paint 34.5 send 3.4 gc 2.5 fps 22 worst 80 slowest 78 = step 16 paint 58 send 3 gc 12
+phases cave static 11 paint 22 fx 7 hud 9 over 19 title 35
+avg cave static 12.3 paint 11.5 fx 0.4 hud 1.2 over 7.5 title 6.0
+heap cave alloc 158432 glyphs 36
+fps cave 21
+time cave step 0.4 paint 39.5 send 3.2 gc 2.3 fps 21 worst 62 slowest 54 = step 0 paint 51 send 3 gc 0
+phases cave static 9 paint 22 fx 0 hud 1 over 17 title 0
+avg cave static 9.0 paint 15.7 fx 0.1 hud 1.0 over 13.5 title 0.0
+heap cave alloc 153312 glyphs 36
+box cave windows_max 1 spins 0 level -1
+game tunnel
+fps tunnel 23
+time tunnel step 1.0 paint 28.9 send 4.3 gc 2.6 fps 23 worst 79 slowest 65 = step 15 paint 47 send 3 gc 12
+phases tunnel static 9 paint 22 fx 5 hud 31 over 24 title 32
+avg tunnel static 10.2 paint 14.3 fx 0.6 hud 1.4 over 10.3 title 5.4
+heap tunnel alloc 168032 glyphs 36
+fps tunnel 21
+time tunnel step 0.5 paint 39.0 send 3.2 gc 2.4 fps 21 worst 76 slowest 51 = step 0 paint 48 send 3 gc 0
+phases tunnel static 7 paint 14 fx 0 hud 1 over 24 title 0
+avg tunnel static 7.2 paint 14.0 fx 0.1 hud 1.1 over 16.5 title 0.0
+heap tunnel alloc 185392 glyphs 36
+box tunnel windows_max 4 spins 0 level -1
+game road
+fps road 21
+time road step 0.9 paint 36.7 send 3.8 gc 2.8 fps 21 worst 120 slowest 118 = step 16 paint 80 send 20 gc 13
+phases road static 22 paint 22 fx 4 hud 10 over 33 title 44
+avg road static 16.6 paint 19.5 fx 0.2 hud 1.7 over 6.6 title 6.2
+heap road alloc 232016 glyphs 36
+fps road 12
+time road step 0.6 paint 51.4 send 20.8 gc 2.8 fps 12 worst 93 slowest 87 = step 0 paint 65 send 20 gc 0
+phases road static 21 paint 20 fx 7 hud 1 over 32 title 0
+avg road static 12.6 paint 19.6 fx 0.5 hud 1.1 over 17.3 title 0.0
+heap road alloc 153968 glyphs 36
+box road windows_max 4 spins 0 level -1
+game starfire
+fps starfire 24
+time starfire step 1.2 paint 21.3 send 4.3 gc 2.6 fps 24 worst 66 slowest 54 = step 0 paint 27 send 26 gc 0
+phases starfire static 21 paint 20 fx 0 hud 11 over 24 title 26
+avg starfire static 13.4 paint 8.8 fx 0.1 hud 1.0 over 3.3 title 4.3
+heap starfire alloc 232944 glyphs 36
+fps starfire 24
+time starfire step 1.4 paint 25.5 send 3.3 gc 2.9 fps 24 worst 54 slowest 37 = step 1 paint 32 send 3 gc 0
+phases starfire static 17 paint 17 fx 3 hud 1 over 0 title 0
+avg starfire static 10.9 paint 13.2 fx 0.2 hud 1.1 over 0.0 title 0.0
+heap starfire alloc 182928 glyphs 36
+box starfire windows_max 4 spins 0 level -1
+game cube
+fps cube 24
+time cube step 0.8 paint 20.2 send 3.6 gc 2.5 fps 24 worst 66 slowest 64 = step 12 paint 49 send 3 gc 11
+phases cube static 17 paint 15 fx 5 hud 23 over 17 title 45
+avg cube static 9.2 paint 11.2 fx 0.4 hud 1.3 over 0.9 title 7.7
+heap cube alloc 165024 glyphs 37
+fps cube 24
+time cube step 0.9 paint 15.7 send 3.3 gc 2.5 fps 24 worst 68 slowest 66 = step 15 paint 47 send 3 gc 12
+phases cube static 5 paint 13 fx 5 hud 1 over 23 title 0
+avg cube static 5.1 paint 8.3 fx 0.3 hud 1.0 over 0.7 title 0.0
+heap cube alloc 214384 glyphs 37
+box cube windows_max 4 spins 0 level -1
+game gravpong
+fps gravpong 23
+time gravpong step 0.9 paint 29.7 send 3.6 gc 2.6 fps 23 worst 64 slowest 62 = step 0 paint 58 send 3 gc 0
+phases gravpong static 14 paint 13 fx 3 hud 10 over 32 title 44
+avg gravpong static 14.0 paint 5.8 fx 0.4 hud 1.1 over 14.6 title 6.6
+heap gravpong alloc 158368 glyphs 37
+fps gravpong 22
+time gravpong step 0.5 paint 33.6 send 3.6 gc 2.3 fps 22 worst 54 slowest 51 = step 0 paint 47 send 3 gc 0
+phases gravpong static 13 paint 1 fx 0 hud 1 over 33 title 0
+avg gravpong static 12.1 paint 1.5 fx 0.1 hud 0.8 over 18.8 title 0.0
+heap gravpong alloc 161504 glyphs 37
+box gravpong windows_max 4 spins 0 level -1
+done
