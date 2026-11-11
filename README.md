@@ -36,7 +36,17 @@ If the board stays dark after a long press of its D14 button, hold D14 for 1 to 
 
 Runs now:
 
-- The fire (P595, `games/fire.py`), first at power-on: a heat field in C (`engine.HeatField`) burns over the whole
+- Marshmallow (P773, `games/marshmallow.py`), first at power-on: a one-button game on the fire's heat field. A
+  marshmallow hangs on a stick over a campfire. Hold BOOT to lower it into the flames, and let go to lift it. The
+  heat browns it from white to golden and then to black. A golden one that reaches the top is a point. A black one is
+  lost, and three lost ones end the round. Each point makes the campfire higher and less steady, up to 5 points.
+  The game burns the campfire itself at the bottom middle (`HeatField.burn`, the field's own base is off) and reads
+  the flame's height from `HeatField.stats`. It plays `serve`, `burn`, `die` and a fire loop that follows the
+  flame's height. With no engine module a plain flame of three bars takes the campfire's place, with the same rules.
+  On the board it keeps 24 fps with the sound and no late refill (bench.md, P773). The PO's hand, eye and ear on it
+  are still open.
+- The fire (P595, `games/fire.py`), the scene under Marshmallow. Since P773 it is not in the box's list, and the
+  probes and `tools/crackle.sh` still run it: a heat field in C (`engine.HeatField`) burns over the whole
   screen. A BOOT tap moves through three modes: linear (C writes the screen's frame), picture (the fire over the painted
   sky) and nearest. It needs the engine image. The flames rise from wandering hot spots, break into tongues, rise at two speeds, lean in gusts of wind and
   throw embers. On the board, B runs at 24 fps with 11.5 to 11.8 ms of step + draw, and the sky variant at 15 to
@@ -163,7 +173,7 @@ Runs now:
   `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
   guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Fourteen games. Four are effect scenes: fire, the ball pit, bodies on fire and rain. Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
+- Fourteen games. Three are effect scenes: the ball pit, bodies on fire and rain. Marshmallow is a game on the fire's field (P773). Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 

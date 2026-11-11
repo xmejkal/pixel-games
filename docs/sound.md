@@ -29,6 +29,10 @@ A cue with `loop=True` is one voice that plays on, as the fire of `Runner`: `"fi
 signal carries a level from 0 to 256: `self.emit("fire", self.fire_k)`. The level scales the cue's gain, and 0 ends
 the voice. Emit 0 where the game ends, because `play` does not run after a death.
 
+`Marshmallow` (P773) does the same with the bank as it is: `serve` plays `pickup`, `burn` plays `land`, and `flame`
+is the `fire` loop. Its level is the flame's height, `top_px * LEVELS // FLAME_MAX_PX`, sent when it moved by at
+least `FLAME_STEP` (16). The game emits `flame` with 0 before `die()` and at the start of each round.
+
 ## The music
 
 `App.switch` calls `cues.music()`. It starts the bank's sound `music` once, as a protected loop in the group
