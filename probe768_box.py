@@ -23,7 +23,8 @@ import time
 
 SOUND = 1  # 0: the control run, no I2S
 GAME = "Runner"  # a class name in app, or "" for all the games of the box
-SWITCH_S = 0  # with all the games: the seconds in each, then the probe switches. 0: no switch
+SWITCH_S = 0  # with all the games: the seconds in each, then the probe switches. 0: no switch. Set SECONDS to
+# SWITCH_S times the games (14 * 12 = 168). The first `sound` line after a switch holds part of the last game.
 SECONDS = 120
 PRESS_EVERY_MS = 900
 REPORT_MS = 5000

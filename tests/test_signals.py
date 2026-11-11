@@ -148,6 +148,11 @@ class TestMusic(unittest.TestCase):
 
 
 class TestSoundCues(unittest.TestCase):
+    def test_a_bank_with_no_music_gives_a_box_with_no_music(self):
+        box, mixer = self.box(Loud)
+        self.assertIsNone(box.cues.music_voice)
+        self.assertEqual(rendered(mixer), [0, 0, 0, 0])
+
     def box(self, *games):
         mixer = sound.Mixer()
         box = app.App(None, lambda: 99, lambda: 99, games=games, out=Out(), cues=cues.SoundCues(mixer, FakeBank()))

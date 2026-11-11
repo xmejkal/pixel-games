@@ -26,7 +26,7 @@ class SoundCues:
         self.mixer, self.bank, self.cues, self.voices = mixer, bank, {}, {}
         self.music_voice = None
 
-    def music(self, gain=FULL):
+    def music(self):
         """The background music plays: one protected loop in the group music. It plays on over a switch of the
         game, so a second call does nothing. A bank with no music is a box with no music."""
         if self.music_voice is not None and self.music_voice.live:
@@ -35,7 +35,7 @@ class SoundCues:
             sound = self.bank.get(MUSIC_SOUND)
         except KeyError:
             return
-        self.music_voice = self.mixer.play(sound, True, MUSIC, gain, True)
+        self.music_voice = self.mixer.play(sound, True, MUSIC, FULL, True)
 
     def stop(self):
         """The game's sounds stop, and no cue plays until the next follow()."""
