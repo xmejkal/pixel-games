@@ -1,7 +1,7 @@
 """
-The game's sound (P748): one Mixer, and the drivers that feed its samples to the I2S ring.
+The game's sound (P748, P768): one Mixer that sums its voices, and the drivers that feed its samples to the I2S ring.
 
-A sound is an array("h") of 16 kHz mono samples. The game calls mixer.play(sound), and a driver calls
+A sound is an array("h") of 16 kHz mono samples, or a bank.BankSound. The game calls mixer.play(sound), which returns its Voice, and a driver calls
 mixer.render(buf) when the ring has room. FrameRefill refills once per frame from the game loop: the naive path, which
 stays working (D26). CallbackRefill refills from the stock I2S.irq callback, so a slow frame does not starve the ring
 (D25). A later C mixer, or a C task on the second core (P747, D27), keeps the same render(buf).
@@ -16,47 +16,120 @@ gc.collect(). The task's queue holds one buffer, so only the handler writes. The
 import time
 from array import array
 
+from volume import FULL
+
 RATE = 16000
 REFILL_SAMPLES = 256  # one DMA buffer, 16 ms, a multiple of 8 samples (D27)
 
 
-# --- MVP ---
+# --- MVP (P768) ---
+MUSIC, SFX = "music", "sfx"  # the groups: voices that share one gain
+
+
+class Voice:
+    """One sound that plays now. A caller that keeps its Voice can set `gain` (Q15, one store) while it plays: 0 ends
+    it. `live` is False once the mixer dropped it. `protect`: the full case never takes it."""
+
+    def __init__(self, sound, loop, group, gain, protect, born):
+        self.sound, self.at, self.loop, self.group, self.gain = sound, 0, loop, group, gain
+        self.mem, self.first = getattr(sound, "mem", sound), getattr(sound, "first", 0)  # for the viper sum
+        self.protect, self.born, self.live = protect, born, True
+
+
+class VoiceSum:
+    """The strategy that sums the voices: plain Python, the reference (D26). sound_viper.ViperVoiceSum gives the
+    same samples faster. One overflow rule on every path: each product is shifted by 15 before it is added, the sum
+    is a 32-bit int, and one clip brings it to 16 bits."""
+
+    def add(self, acc, k, voice, n, gain):
+        """acc[k:k + n] += the voice's next n samples * gain >> 15."""
+        sound, at = voice.sound, voice.at
+        for i in range(n):
+            acc[k + i] += (sound[at + i] * gain) >> 15
+
+    def clip(self, acc, buf, n):
+        """buf[:n] = acc[:n] clipped to 16 bits, and acc[:n] = 0 for the next block."""
+        for i in range(n):
+            x = acc[i]
+            buf[i] = 32767 if x > 32767 else -32768 if x < -32768 else x
+            acc[i] = 0
+
+
 class Mixer:
-    """One voice: the last play wins. render(buf) renders sound, not the screen. Its contract holds for every mixer,
-    also a later one in C: buf is an array("h") of int16 mono samples at RATE, len(buf) is a multiple of 8, buf is
-    aligned to 16 bytes, and render fills all of buf and never waits. stop() ends the sound at the next render. Its slices allocate small views. `pending` is not
-    None while a play waits for the next render: the drivers read it to time a play (Refill.stamp)."""
+    """`voices` sounds at once, summed by `voice_sum` (a VoiceSum). The mixer picks the slot of a play: a free one,
+    else the oldest voice that is not protected, so Mixer() has one voice and the last play wins. render(buf) renders
+    sound, not the screen. Its contract holds for every mixer, also a later one in C: buf is an array("h") of int16
+    mono samples at RATE, len(buf) is a multiple of 8, buf is aligned to 16 bytes, and render fills all of buf and
+    never waits. `pending` is not None while a play waits for the next render: the drivers read it to time a play
+    (Refill.stamp). A driver's callback runs render between two bytecodes of the game, so play and stop change a
+    slot with one store, and render never allocates."""
 
-    def __init__(self):
-        self.pending = None  # (sound, loop): play's one store, so a callback between two bytecodes sees all of it or none
-        self.sound, self.loop, self.at = None, False, 0
-        self.zeros = memoryview(array("h"))
+    def __init__(self, voices=1, voice_sum=None):
+        self.voices, self.sum = [None] * voices, voice_sum or VoiceSum()
+        self.group_gain = {MUSIC: FULL, SFX: FULL}
+        self.acc = array("i", bytes(4 * REFILL_SAMPLES))
+        self.pending, self.born = None, 0
 
-    def play(self, sound, loop=False):
-        self.pending = (memoryview(sound), loop) if len(sound) else (None, False)  # an empty loop never ends a render
+    def play(self, sound, loop=False, group=SFX, gain=FULL, protect=False):
+        """Starts the sound at the next render and returns its Voice, or None when nothing plays: an empty sound, or
+        every slot protected."""
+        slot = self.slot() if len(sound) else None
+        if slot is None:
+            return None
+        self.born += 1
+        voice, old = Voice(sound, loop, group, gain, protect, self.born), self.voices[slot]
+        if old:
+            old.live = False
+        self.voices[slot] = voice
+        self.pending = voice  # last, so a callback sees a whole voice in its slot
+        return voice
 
-    def stop(self):
-        self.pending = (None, False)
+    def slot(self):
+        oldest, born = None, 0
+        for i, voice in enumerate(self.voices):
+            if voice is None:
+                return i
+            if not voice.protect and (oldest is None or voice.born < born):
+                oldest, born = i, voice.born  # a local: a render can empty the slot between two reads
+        return oldest
+
+    def stop(self, group=None):
+        """Ends the voices of the group, or all of them, at the next render."""
+        voices = self.voices
+        for i in range(len(voices)):
+            voice = voices[i]
+            if voice and (group is None or voice.group == group):
+                voice.live = False
+                voices[i] = None
 
     def render(self, buf):
-        if self.pending is not None:
-            (self.sound, self.loop), self.at, self.pending = self.pending, 0, None
-        out, n, k = memoryview(buf), len(buf), 0
-        while k < n and self.sound is not None:
-            m = min(n - k, len(self.sound) - self.at)
-            out[k:k + m] = self.sound[self.at:self.at + m]
-            k += m
-            self.at += m
-            if self.at == len(self.sound):
-                self.at = 0
-                if not self.loop:
-                    self.sound = None
-        if k < n:
-            if len(self.zeros) < n:
-                self.zeros = memoryview(array("h", (0 for _ in range(n))))
-            out[k:] = self.zeros[:n - k]
+        self.pending = None
+        n, voices, add = len(buf), self.voices, self.sum.add
+        if len(self.acc) < n:  # only a block longer than the drivers' own
+            self.acc = array("i", bytes(4 * n))
+        acc = self.acc
+        for i in range(len(voices)):
+            voice = voices[i]
+            if voice is None:
+                continue
+            gain = min(voice.gain, FULL) * min(self.group_gain.get(voice.group, FULL), FULL) >> 15
+            size, k, done = len(voice.sound), 0, voice.gain <= 0
+            while k < n and not done:
+                m = min(n - k, size - voice.at)
+                if gain > 0:
+                    add(acc, k, voice, m, gain)
+                k += m
+                voice.at += m
+                if voice.at == size:
+                    voice.at, done = 0, not voice.loop
+            if done:
+                voice.live = False
+                voices[i] = None
+        self.sum.clip(acc, buf, n)
+# --- MVP (P768) ---
 
 
+# --- MVP ---
 class Refill:
     """The strategy that feeds the mixer's samples to the I2S ring. open() starts the sound and then the amplifier.
     close() stops them in PHYS-13's order. A refill later than the ring minus one block can find the ring empty: that
@@ -180,5 +253,5 @@ class CallbackRefill(Refill):
         self.closed = True
         super().close()
 # --- MVP ---
-# --- Later, not MVP: a row in bench.md P748, not code: more than one voice summed, a C mixer (P747), a C task
+# --- Later, not MVP: a row in bench.md P748, not code: a C mixer (P747), a C task
 # on the second core (D27) ---
