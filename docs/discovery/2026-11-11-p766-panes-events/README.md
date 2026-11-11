@@ -5,16 +5,16 @@ Date: 2026-11-11. This is a finding with sources. It is not a design. Tags: [sou
 
 ## Short version
 
-- Q1. Standard systems keep a tree of objects, send events to listeners, and redraw only marked areas. LVGL itself is
-  not confirmed (my fetches failed). Godot and Game Programming Patterns are confirmed. Use direct listeners for state
+- Q1. Standard systems keep a tree of objects, send events to listeners, and redraw only marked areas. LVGL's events page,
+  Godot and Game Programming Patterns are read. LVGL's display and input-device pages are not. Use direct listeners for state
   changes, and a small queue only where the sender must not wait (interrupts, radio).
 - Q2. The official rule for interrupts is: short code, no heap allocation, use micropython.schedule. No timing numbers
   for a Python call or a callback were found. Measure them on the board.
 - Q3. S3 has a second core, LCD_CAM and PIE. P4 adds the PPA (scale, rotate, mirror, blend), MIPI-DSI and 2D-DMA.
-  Keep the blit, the blend and the fill behind swappable parts. MicroPython support for P4 is not confirmed.
+  Keep the blit, the blend and the fill behind swappable parts. MicroPython has an ESP32-P4 port (stable v1.29.0). A binding for the PPA is not confirmed.
 - Q4. One system can hold buttons, knob, values, game state, timers, sound level and radio messages. ESP-NOW works in
   MicroPython on ESP32 with both polling and a callback.
-- Gaps: LVGL pages, MicroPython call costs, P4 MicroPython port, input events in Godot or Unity.
+- Gaps: LVGL's display and encoder pages, MicroPython call costs, a PPA binding, input events in Godot or Unity.
 
 ## 1. How the standard systems do it
 
@@ -25,7 +25,7 @@ line 87) redraws a kept strip only when its key changes. App.frame names its sta
 
 | Option | What it is | Cost or risk | Fit here | Source |
 |---|---|---|---|---|
-| Object tree, dirty areas | Parent and child objects. Change marks area | Not confirmed | Like render.Dirty | [1] |
+| Object tree, dirty areas | Parent and child objects. Change marks area | Cost not on the page | Like render.Dirty | [1] |
 | Signals (observer) | Object emits. Listeners connect | Sender waits for listeners | Good for values | [2], [3] |
 | Event queue | Events wait in a ring buffer. A loop reads them | Stale data, hidden loops | Good for interrupts | [3] |
 | Poll in each frame | The frame reads each source | Work each frame. A tap can fall between | Works now | [repo] |
@@ -37,10 +37,20 @@ line 87) redraws a kept strip only when its key changes. App.frame names its sta
   poor fit when the sender needs a response". A central queue is a global variable. Receivers must not assume the
   world is unchanged. Queues hide feedback loops. A ring buffer avoids allocation. [3] (sections: When to Use It,
   Keep in Mind, A Ring Buffer).
-- Not confirmed: LVGL object tree, event bubbling, invalidated areas and input devices. I tried the old and new
-  docs.lvgl.io addresses. They redirect to lvgl.io/docs/open, and the pages I tried there (also with the 9.2 path)
-  gave redirects or HTTP 404. The search limit ended my tries. The council should read the LVGL pages on events, on
-  the display (refresh) and on input devices (indev) before it copies any LVGL idea.
+- [source] LVGL 9.5, events page, read after the first pass. A callback joins a widget with
+  `lv_obj_add_event_cb(btn, my_event_cb, LV_EVENT_CLICKED, user_data)`: one object, one event code as a filter, and
+  the caller's data. A widget takes several callbacks: "The events will be called in the order as they were added."
+  [1] (section: Adding Events to a Widget)
+- [source] LVGL: an event goes to the parent only by choice: "If lv_obj_add_flag(widget, LV_OBJ_FLAG_EVENT_BUBBLE)
+  is enabled all events will be sent to a Widget's parent as well." A changed value has its own code,
+  `LV_EVENT_VALUE_CHANGED` ("Widget's value has changed (i.e. slider moved)"). [1]
+- [source] LVGL: "Besides Widgets, events can be registered for displays and input devices as well"
+  (`lv_display_add_event_cb`, `lv_indev_add_event_cb`). The display sends `LV_EVENT_INVALIDATE_AREA` ("An area is
+  invalidated (marked for redraw)") and `LV_EVENT_REFR_REQUEST`. During a draw, a change to a widget is forbidden. [1]
+- [inference] LVGL matches the split below: the same callback form for widgets, the display and the inputs, a filter
+  by event code, a redraw that follows marked areas, and no state change in the draw stage.
+- Not confirmed: LVGL's display page (how areas join and flush) and its input-device page (the encoder). Not read.
+  The first pass's fetches of docs.lvgl.io failed: the pages moved to lvgl.io/docs/open.
 - Not confirmed: Unity's event system. I used Godot only, as the task allows one engine.
 - Recommendation: [inference] split by timing. A state change (volume step, game state) fits a direct listener that
   runs in the frame, with the value captured in the event. An interrupt or radio source fits a ring buffer that the
@@ -98,8 +108,13 @@ lines 29-43). The comment there says the interrupt is a soft interrupt, run afte
   graphics accelerator beyond the PPA. A comparison table in [9] says "2D accelerator (PPA): Yes" for P4. [8], [9]
 - [source] [9] says the P4 has no Bluetooth and gets Wi-Fi 6 "via co-processor". [inference] ESP-NOW on a P4 needs the
   companion chip, so a radio source must stay behind an interface.
-- Not confirmed: the state of MicroPython support for the ESP32-P4. I did not search for it (limit reached). Not
-  confirmed: whether MicroPython can start a task on the second core of the S3.
+- [source] MicroPython has a download page for the board `ESP32_GENERIC_P4`: "applicable to most development boards
+  based on ESP32-P4", with at least 16 MiB of flash. Its latest stable release there is v1.29.0 (2026-08-24). Its
+  variants are Generic (chip revision 3.x or later, or no co-processor in use), PRE REV3 (revisions 0.x and 1.x), and
+  C5 or C6 WiFi/BLE "for boards with an external ESP32-C5 coprocessor". [11] A search summary says that v1.27.0
+  (December 2025) added the port. I did not read the release notes.
+- Not confirmed: a MicroPython binding for the PPA, the DSI display or the P4's other graphics parts. Not searched.
+  Also not confirmed: whether MicroPython can start a task on the second core of the S3.
 - Recommendation: [inference] keep four things swappable: the blit to the display (SPI now, LCD_CAM or DSI later),
   the blend and fill of a pane (Python now, C with PIE, PPA on P4), the volume scaling, and the radio. Each is one
   interface with the plain MicroPython version always working, as the PO's rule says (memory: naive path stays).
@@ -126,27 +141,29 @@ lines 29-43). The comment there says the interrupt is a soft interrupt, run afte
   buffer is 528 or 2972 bytes. A message holds 250 bytes in V1 and 1470 bytes in V2 (V2 needs ESP-IDF 5.4). Check
   `espnow.MAX_DATA_LEN`. [10] (sections: Sending and Receiving Data, Callback Methods, Constants)
 - Not confirmed: that ESP-NOW runs on the S3 build the project uses. Test it on the board.
-- Not confirmed: how LVGL or Unity model buttons, encoders and joysticks (see question 1).
+- [source] LVGL's input events include `LV_EVENT_PRESSED`, `LV_EVENT_RELEASED`, `LV_EVENT_CLICKED`,
+  `LV_EVENT_LONG_PRESSED`, `LV_EVENT_LONG_PRESSED_REPEAT` and `LV_EVENT_KEY`. [1] [inference] These are kinds of one
+  event shape, which fits "a source id, a kind and ints" below.
+- Not confirmed: how LVGL models an encoder or a joystick (its input-device page), and Unity's model.
 - Recommendation: [inference] one event shape for all sources: a source id, a kind and ints. Sources that change
   slowly (state, value) use listeners. Sources that arrive in bursts (buttons, radio, level) fill a ring buffer that
   the frame drains once. For ESP-NOW prefer `irecv(0)` in the frame over `irq()`, so no callback runs between frames.
 
 ## What stays unknown
 
-- LVGL: object tree, invalidated areas, input devices, event bubbling. Fetches redirected or returned 404.
+- LVGL: how the display joins and flushes invalidated areas, and how an encoder becomes events. Pages not read.
 - Unity's event system and any input-event model from a game engine. Not searched.
 - The cost in microseconds of a Python call, a bound-method call, an allocation and a schedule call on this board.
 - The length of the micropython.schedule queue.
-- The state of MicroPython for ESP32-P4, and any MicroPython binding for the PPA.
+- Any MicroPython binding for the P4's PPA or DSI, and the s3lcd driver's state on the P4.
 - Whether MicroPython can run work on the S3 second core.
 - Whether the project's S3 image has ESP-NOW enabled.
 - Real P4 numbers for PPA speed. The sources give features, not times.
 
 ## Sources
 
-1. LVGL docs (events, display, indev). Not read. Tried
-   https://docs.lvgl.io/master/details/common-widget-features/events.html and
-   https://docs.lvgl.io/9.2/overview/event.html (both redirect to https://lvgl.io/docs/open/...).
+1. LVGL 9.5, Events: https://lvgl.io/docs/open/9.5/common-widget-features/events (read 2026-11-11, all but the
+   last 1,200 characters). The display and input-device pages are not read.
 2. Godot, Using signals: https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html
 3. Game Programming Patterns, Event Queue: https://gameprogrammingpatterns.com/event-queue.html
 4. MicroPython, Writing interrupt handlers: https://docs.micropython.org/en/latest/reference/isr_rules.html
@@ -163,3 +180,4 @@ lines 29-43). The comment there says the interrupt is a soft interrupt, run afte
 9. Espressif, Edge-AI with ESP32-S3 workshop, SoC table:
    https://developer.espressif.com/workshops/edge-ai-with-esp32-s3/introduction/
 10. MicroPython, espnow: https://docs.micropython.org/en/latest/library/espnow.html
+11. MicroPython, download page of ESP32_GENERIC_P4: https://micropython.org/download/ESP32_GENERIC_P4/
