@@ -1,6 +1,6 @@
 """
-The game box: the marshmallow roast on the fire effect (P773, P595), the ball pit (P598), the rain demo of the C engine
-(P593) and ten one-button games on the GDI display.
+The game box: the marshmallow roast on the fire effect (P773, P595), the ball pit (P598), the bucket game on the C
+engine's bodies (P773, once the rain demo of P593) and ten one-button games on the GDI display.
 The BOOT button plays, the board's own button (D14) moves to the next game from any state.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
 The step is not saved. App(knob=None) has no volume pane.
@@ -26,13 +26,13 @@ from arcade2 import Cave, GravityPong, Stack
 from balls import BallPit
 from bank import Bank
 from box_bank import BOX_BANK_INDEX
+from bucket import Bucket
 from burning import BurningBodies
 from cues import SoundCues
 from fire import Fire  # noqa: F401  the probes and tools/crackle.sh start it as app.Fire
 from lcd import open_tft
 from marshmallow import Marshmallow
 from overlay import Overlay, VolumePane
-from rain import Rain
 from render import StOut
 from signals import Signals
 from space3d import CubeTiming, Starfire
@@ -54,7 +54,7 @@ FRAME_MODE = "auto"
 # "s3lcd" is russhughes' C driver (smooth on the bench); "st7789" is our driver with dirty boxes. s3lcd falls back to
 # st7789 when the image has no such module.
 BACKEND = "s3lcd"
-GAMES = (Marshmallow, BallPit, BurningBodies, Rain, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
+GAMES = (Marshmallow, BallPit, BurningBodies, Bucket, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
 
 
 class App:
