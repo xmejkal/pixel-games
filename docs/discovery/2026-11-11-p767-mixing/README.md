@@ -2,7 +2,8 @@
 
 Date: 2026-11-11. This is a finding with sources. It is not a design and it holds no code. Two parts carry the
 detail and the sources: [a-mixing.md](a-mixing.md) (questions 1 and 2) and
-[b-reuse-cost-sources.md](b-reuse-cost-sources.md) (questions 3 to 5). Tags: [source] says what a page says,
+[b-reuse-cost-sources.md](b-reuse-cost-sources.md) (questions 3 to 5), and
+[c-reuse-round2.md](c-reuse-round2.md) (question 3 again, six candidates against eight wants). Tags: [source] says what a page says,
 [repo] says what the code or a run shows, [inference] is reasoning. "Not confirmed" marks what nobody read or ran.
 
 ## Short version
@@ -14,8 +15,11 @@ detail and the sources: [a-mixing.md](a-mixing.md) (questions 1 and 2) and
 - Q2, how a game starts a sound. A direct call is the base in miniaudio, Godot and SDL_mixer. Recommendation:
   `play(name)` for an event sound, and one call for the looping background. A fade is a gain ramp. Ducking (the
   background gets quieter under an event sound) is a plain rule. A table from event names to sounds can come later.
-- Q3, what to reuse. No mixer library's code. Reuse the design and the names of SoLoud and of CircuitPython's
-  `audiomixer`, and write the sum as our own small C function. The libraries' size and fit are not confirmed.
+- Q3, what to reuse (two rounds, the second in [c-reuse-round2.md](c-reuse-round2.md)). As code: esp-dsp's
+  `dsps_add_s16_aes3` and `dsps_mul_s16_aes3` (Apache 2.0, 16-bit, S3 assembly) as an optional fast path under
+  our own small C sum. As design: CircuitPython's `audiomixer` (MIT, integer math, a clamp after each add) and
+  SoLoud's voices and groups. Left out: `esp_audio_effects` (a prebuilt binary, for Espressif chips only),
+  the GMF and ADF frameworks, miniaudio and SoLoud as code (both mix in floating point). No build was tried.
 - Q4, the cost. One C voice renders a 16 ms block in at most 413 to 979 us (run145b to run149d). One Python voice
   took 20.9 to 22.7 ms, which is too slow. No run summed N sampled voices. Six measurements come first.
 - Q5, the sounds. The repository holds a CC0 fire recording and `engine.SoundBank`. Kenney's "Interface Sounds"
@@ -73,8 +77,8 @@ The mixer picks the voice so that a game holds no table of voices. This is the o
 
 - No source gave a number of voices, a ducking share or a fade time for this board. They are set by a
   measurement and by the owner's ear.
-- Not confirmed: the size, the float need and a build with no operating system for SoLoud, miniaudio and
-  SDL_mixer. The licenses of Espressif's `esp_audio_render` and `esp_audio_effects`. FMOD from full pages, and
-  all of Wwise. Kenney's other packs. Who owns the output of jsfxr.
+- Not confirmed: that esp-dsp links into the `build.sh` image, and its size there. A build trial answers it.
+  The overflow rule: esp-dsp's plain C add does not saturate and its S3 add does, so the Python twin must pick
+  one rule. FMOD from full pages, and all of Wwise. Kenney's other packs. Who owns the output of jsfxr.
 - Not measured: `Mixer.render` alone, and every sum of N sampled voices in Python, viper and C. The list of six
   measurements is in part B, question 4.
