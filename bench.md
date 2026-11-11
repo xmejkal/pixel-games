@@ -1374,3 +1374,40 @@ while the game plays. The image and the board are those of P764. Each run has 22
 - After the review, `run195-p768-runner-sound-20s.log` (20 s, the fixed code): 3 sound lines, `late 0`, `done`.
 - The PO after run 194: "yeah, ok, go on automatically, add all the sounds and overlays". His hand on the knob
   with the box's sound is not confirmed in words.
+
+## P768 (#1058), 2026-11-11: the voices, the fire and Runner's sounds (PR 2)
+
+`Mixer(voices, voice_sum)` sums its voices. `VoiceSum` is the plain Python reference, and `ViperVoiceSum`
+(`games/sound_viper.py`) is the fast one. `probe768_sum.py` measured one render of 256 samples, 100 times, with
+looping voices at gain 20000 and no game beside it (`run197-p768-sum.log`, and `run196-p768-sum.log` before the bank
+moved):
+
+| Voices | `VoiceSum` mean / max | `ViperVoiceSum` mean / max |
+|---|---|---|
+| 0 (silent) | 2017 / 2134 us | 129 / 228 us |
+| 1 | 3777 / 3940 us | 261 / 396 us |
+| 2 | 5543 / 5709 us | 396 / 549 us |
+| 4 | 9080 / 9242 us | 664 / 821 us |
+| 8 | 16150 / 16297 us | 1200 / 1391 us |
+
+- `sum match 1`: the viper sum gave the plain sum's samples on the board, from an array and from a bank's bytes.
+- The pass line was a render of at most 1000 us. The viper sum passes with 4 voices and fails with 8, so the
+  `Speaker` has 4 voices. The plain sum is the reference: with 4 voices it takes 9 ms of each 16 ms block.
+- `gc.collect()` with nothing else on the heap: 548 to 611 us. With a 300000-byte `array("h")` on the heap: 9915 to
+  19206 us. With the same bytes in an `engine.SoundBank`: 548 to 801 us. So `Bank` keeps the file in a `SoundBank`.
+
+`Runner`, 120 s, no hand, a press every 900 ms (`probe768_box.py`), with `jump`, `land`, `pickup`, `footstep`, `die`
+and the fire loop. The 22 lines after the first:
+
+| Run | Log | Mean fps | Worst frame, per 5 s | Late refills | `between_max` | `render_max` | Plays |
+|---|---|---|---|---|---|---|---|
+| 198 | `run198-p768-runner-silent.log` | 21.1 | 72 to 115 ms | - | - | - | - |
+| 199 | `run199-p768-runner-voices.log` | 20.9 | 77 to 112 ms | 0 | at most 38 ms | 847 us in the first line, then at most 862 us | 410 |
+
+- The four pass lines hold: the render is under 1000 us, 0 late refills, the mean fps differs by 0.3, and the worst
+  frame is not longer. The first render is no longer slow (PR 1: 2.4 ms).
+- The silent run is 0.9 fps under PR 1's silent run (run191, 22.0). One run each gives no verdict on the cause.
+- Not known from the log: if the fire loop played. The log counts plays and does not name them. The Mac test
+  covers the cue, and the PO's ear is the check.
+- Not run: a switch of the game with the sound on, and the other 13 games (PR 3).
+- Open: the PO's ear on all sounds together and his hand on the knob.

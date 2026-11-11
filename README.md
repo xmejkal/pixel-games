@@ -133,8 +133,13 @@ Runs now:
   it is not yet confirmed). A
   game emits a signal by name (`self.emit("jump")`) and names its cues (`cues = {"jump": Cue("jump")}`).
   `SoundCues` plays the cue's sound from the bank (`games/box_bank.raw`, made by `tools/sound_bank.py`) through
-  the `Speaker`'s `Mixer`. `main.py` opens the `Speaker`. `app.run()` with no speaker is the silent box. One voice
-  plays, so the last sound wins. Music, the fire and more voices are P768's next PRs (bench.md, P768). The box
+  the `Speaker`'s `Mixer`. `main.py` opens the `Speaker`. `app.run()` with no speaker is the silent box. Since
+  PR 2 the `Mixer` sums 4 voices (`VoiceSum` in plain Python, `ViperVoiceSum` in `games/sound_viper.py`), and
+  `Runner` also plays `land`, `pickup`, `footstep` and a fire loop that gets louder as the flame grows. A cue with
+  `loop=True` is one voice: its signal carries a level from 0 to 256 (`self.emit("fire", self.fire_k)`), and 0 ends
+  it. To add a sound, add it to `tools/sound_bank.py`, run the tool, and name the cue in the game's `cues`.
+  `games/box_bank.SOURCES.md` gives each sound's source and license. Music in every game is P768's last PR
+  (bench.md, P768). The box
   does not save the step. The sound probe passes its own knob to the box, so only one
   encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the box opens its
   own knob, and the sound does not follow it. A run with no hand went through all 14 games with the knob
