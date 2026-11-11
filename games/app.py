@@ -187,7 +187,7 @@ def open_speaker(knob=None):
 
 def run(games=GAMES, knob=None, speaker=None):
     """The loop main.py starts. knob: a caller's VolumeKnob (the probe's). With none, the box opens its own, so two
-    encoders never share the counter unit. speaker: a Speaker that run() opens after the display, or None for the
+    encoders never share the counter unit. speaker: a Speaker that run() opens after the first game's setup, or None for the
     silent box (P768)."""
     import select
     import sys
@@ -214,7 +214,6 @@ def run(games=GAMES, knob=None, speaker=None):
     cues = None
     if speaker:  # --- MVP (P768) ---
         cues = SoundCues(speaker.mixer, Bank("box_bank.raw", BOX_BANK_INDEX))
-        speaker.open()
     app = App(display, fire.value, boot.value, games=games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob,
               cues=cues)
     app.fire.watch(fire)
@@ -226,6 +225,8 @@ def run(games=GAMES, knob=None, speaker=None):
     print("ready")
     app.start()
     try:
+        if speaker:  # after the first game's setup: a refill that waits behind it is late (run192: 14 at the open)
+            speaker.open()
         due = time.ticks_ms()
         while True:  # the s3lcd port may lose USB at init; the lines still print in case it stays
             app.frame()

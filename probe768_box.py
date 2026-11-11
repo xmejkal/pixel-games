@@ -6,7 +6,7 @@ Copy the games to the board (also box_bank.raw), then, from the repository root:
     mpremote run probe768_box.py      # after sed set SOUND, GAME, SECONDS and PRESS_EVERY_MS
 
 The probe runs the game box (app.run) and hooks App.frame, as probe764_box.py does. SOUND = 1 passes the box a
-Speaker, as main.py does, so one I2S opens. SOUND = 0 is the control run: the same game and presses, and no I2S.
+Speaker with the knob's volume, as main.py does, so one I2S opens and the knob turns the sound. SOUND = 0 is the control run: the same game and presses, and no I2S.
 With no hand, the probe presses the game button every PRESS_EVERY_MS while the game plays, and once on the game-over
 screen, so the game plays most of the time. 0 is no press: a hand plays.
 
@@ -101,7 +101,8 @@ class Probe:
 def main():
     import app
 
-    speaker = app.open_speaker() if SOUND else None  # no knob: the mix as it is
+    knob = app.open_knob()  # as main.py: the knob's volume is the Speaker's master volume
+    speaker = app.open_speaker(knob) if SOUND else None
     probe = Probe(speaker)
     frame = app.App.frame
 
@@ -111,7 +112,7 @@ def main():
 
     app.App.frame = hooked
     try:
-        app.run(games=(getattr(app, GAME),), speaker=speaker)
+        app.run(games=(getattr(app, GAME),), knob=knob, speaker=speaker)
     except Done:
         pass
     print("done")

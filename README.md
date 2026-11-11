@@ -129,7 +129,12 @@ Runs now:
   (`App.overlay`), and each output draws it after the game.
   Status: the game box opens the rotary encoder as the volume's knob (`app.open_knob`) and adds the pane when it has
   one, so every game shows the volume for 1 s when the knob turns. To see it, start the box and turn the knob. The
-  box has no sound yet, and it does not save the step. The sound probe passes its own knob to the box, so only one
+  box plays its first sounds since P768 (PR 1): `Runner` plays `jump` and `die`, and the knob sets their volume. A
+  game emits a signal by name (`self.emit("jump")`) and names its cues (`cues = {"jump": Cue("jump")}`).
+  `SoundCues` plays the cue's sound from the bank (`games/box_bank.raw`, made by `tools/sound_bank.py`) through
+  the `Speaker`'s `Mixer`. `main.py` opens the `Speaker`. `app.run()` with no speaker is the silent box. One voice
+  plays, so the last sound wins. Music, the fire and more voices are P768's next PRs (bench.md, P768). The box
+  does not save the step. The sound probe passes its own knob to the box, so only one
   encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the box opens its
   own knob, and the sound does not follow it. A run with no hand went through all 14 games with the knob
   open, and with the pane shown by a spin of the step (`probe764_box.py`, bench.md, P764, PR B). The PO's hand and

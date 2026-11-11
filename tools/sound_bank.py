@@ -5,37 +5,37 @@ The game box's sound bank (P768), made on the Mac:
     python3 tools/sound_bank.py            # writes games/box_bank.raw and games/box_bank.py
     python3 tools/sound_bank.py --wav DIR  # also one WAV file per sound in DIR, to hear them on the Mac
 
-Each sound is generated here, from a sine sweep and seeded noise, so no sound has a license of another owner.
+Each sound is generated here, from soft sine notes, so no sound has a license of another owner.
 The bank is 16 kHz mono int16, little-endian. The index gives each sound's first sample and its length.
 --- MVP (P768) ---
 """
 
 import math
 import os
-import random
 import struct
 import sys
 import wave
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RATE = 16000
-FADE = 80  # samples of fade in, 5 ms, so a sound does not click
+ATTACK = 160  # samples of a smooth rise, 10 ms, so a sound starts soft and does not click
 
 
-def sweep(ms, hz_from, hz_to, peak, noise=0.0, seed=768):
-    """A sine that glides from hz_from to hz_to and dies away, with a share of noise."""
-    n, phase, out, rand = RATE * ms // 1000, 0.0, [], random.Random(seed)
+def note(ms, hz_from, hz_to, peak):
+    """A soft sine note: it glides from hz_from to hz_to, rises smoothly, and fades to nothing at its end."""
+    n, phase, out = RATE * ms // 1000, 0.0, []
     for i in range(n):
         k = i / n
         phase += 2 * math.pi * (hz_from + (hz_to - hz_from) * k) / RATE
-        level = min(1.0, i / FADE) * (1 - k) ** 2
-        out.append(int(peak * level * ((1 - noise) * math.sin(phase) + noise * rand.uniform(-1, 1))))
+        rise = 0.5 - 0.5 * math.cos(math.pi * min(1.0, i / ATTACK))
+        out.append(int(peak * rise * (1 - k) ** 2 * math.sin(phase)))
     return out
 
 
+# The PO, 2026-11-11: "the sounds should be nice and not aggressive". So: pure sines, no noise, low peaks (of 32767).
 SOUNDS = (
-    ("jump", sweep(130, 330, 990, 9000)),
-    ("die", sweep(500, 520, 70, 11000, noise=0.35)),
+    ("jump", note(120, 440, 660, 3000)),  # a small rising "boop"
+    ("die", note(140, 659, 659, 3200) + note(140, 523, 523, 3200) + note(320, 392, 370, 3200)),  # three notes down
 )
 
 
