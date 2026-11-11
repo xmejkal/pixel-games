@@ -15,6 +15,7 @@ from test_fire import Engine, Recorder, Tft  # noqa: E402
 import cues  # noqa: E402
 import fire  # noqa: E402
 import gfx  # noqa: E402
+import lcd  # noqa: E402
 import marshmallow as mm  # noqa: E402
 import signals  # noqa: E402
 from marshmallow import BLACK, BURN, GOLDEN, SERVE, WHITE, Roast  # noqa: E402
@@ -123,3 +124,312 @@ class RoastTest(unittest.TestCase):
             while roast.depth:
                 outcomes.append(roast.update(ms, False, mm.FLAME_MAX_PX))
             self.assertEqual([None] * (len(outcomes) - 1) + [SERVE], outcomes, ms)
+
+
+class FakeField:
+    """Records the burns, answers a set stats(): (total, height in cells)."""
+
+    def __init__(self):
+        self.burns, self.thresholds, self.height = [], [], 0
+
+    def burn(self, *args):
+        self.burns.append(args)
+
+    def stats(self, threshold):
+        self.thresholds.append(threshold)
+        return 0, self.height
+
+
+class FakePlugin:
+    """A FirePlugin that stepped (step_us) or not, with a field that is a FakeField."""
+
+    def __init__(self):
+        self.field, self.step_us, self.drawn = FakeField(), 0, 0
+
+    def take_step_us(self):
+        us, self.step_us = self.step_us, 0
+        return us
+
+    def draw(self, cv):
+        self.drawn += 1
+
+
+class WaveTest(unittest.TestCase):
+    def heats(self, wild, ms=40, frames=200):
+        flame = mm.PlainFlame()
+        out = []
+        for _ in range(frames):
+            flame.update(ms, wild)
+            out.append(flame.top_px + mm.PLAIN_PX)
+        return out
+
+    def test_the_heat_swings_between_the_low_and_the_high_heat_of_the_wild(self):
+        for wild in (0, 3, mm.WILD_MAX):
+            heats = self.heats(wild)
+            self.assertEqual((mm.HEAT_LOW, mm.HEAT_HIGH + wild * mm.HEAT_WILD), (min(heats), max(heats)), wild)
+
+    def test_a_wilder_campfire_swings_faster(self):
+        def crossings(wild):  # how often the heat passes the middle going up, in 20 s
+            heats = self.heats(wild, frames=500)
+            mid = (mm.HEAT_LOW + mm.HEAT_HIGH + wild * mm.HEAT_WILD) // 2
+            return sum(1 for a, b in zip(heats, heats[1:]) if a < mid <= b)
+        self.assertLess(crossings(0), crossings(mm.WILD_MAX))
+        self.assertEqual(20000 // mm.WAVE_MS, crossings(0))
+
+    def test_a_reset_starts_the_wave_again(self):
+        flame = mm.PlainFlame()
+        flame.update(1000, 0)
+        first = flame.top_px
+        flame.reset()
+        flame.update(1000, 0)
+        self.assertEqual(first, flame.top_px)
+
+    def test_the_plain_flame_is_the_heat_less_plain_px_and_is_drawn_as_three_bars_that_get_shorter(self):
+        flame = mm.PlainFlame()
+        flame.update(40, 0)
+        heat = mm.HEAT_LOW + (mm.HEAT_HIGH - mm.HEAT_LOW) * 40 // (mm.WAVE_MS // 2)
+        self.assertEqual(heat - mm.PLAIN_PX, flame.top_px)
+        cv = Recorder(Tft())
+        flame.draw(cv)
+        self.assertEqual(3, len(cv.fills))
+        tops = [y for _, y, _, _ in cv.fills]
+        self.assertEqual(sorted(tops), tops)
+        self.assertEqual(gfx.HEIGHT - flame.top_px, tops[0])
+        self.assertTrue(all(y + h == gfx.HEIGHT for _, y, _, h in cv.fills))
+
+    def test_the_plain_flame_stays_inside_the_highest_flame_the_roast_trusts(self):
+        top = mm.HEAT_HIGH + mm.WILD_MAX * mm.HEAT_WILD - mm.PLAIN_PX
+        self.assertLessEqual(top, mm.FLAME_MAX_PX)
+
+
+class CampfireTest(unittest.TestCase):
+    def test_each_frame_burns_a_line_at_the_bottom_middle_at_the_waves_heat(self):
+        plugin = FakePlugin()
+        flame = mm.Campfire(plugin)
+        flame.update(40, 0)
+        flame.update(40, 0)
+        y = fire.H - 1 - mm.BURN_RADIUS
+        x0, x1 = fire.W // 2 - mm.BURN_HALF, fire.W // 2 + mm.BURN_HALF
+        heat = mm.HEAT_LOW + (mm.HEAT_HIGH - mm.HEAT_LOW) * 40 // (mm.WAVE_MS // 2)
+        self.assertEqual((x0, y, x1, y, mm.BURN_RADIUS, heat), plugin.field.burns[0])
+        self.assertEqual(2, len(plugin.field.burns))
+        self.assertGreater(plugin.field.burns[1][5], heat)  # the wave rises
+
+    def test_the_height_is_read_only_after_a_step_in_px_and_cut_at_the_highest_flame(self):
+        plugin = FakePlugin()
+        flame = mm.Campfire(plugin)
+        plugin.field.height = 50
+        flame.update(40, 0)  # the field did not step: no read
+        self.assertEqual(([], 0), (plugin.field.thresholds, flame.top_px))
+        plugin.step_us = 450
+        flame.update(40, 0)
+        self.assertEqual(([mm.THRESHOLD], 100), (plugin.field.thresholds, flame.top_px))
+        flame.update(40, 0)  # the step was taken: no second read
+        self.assertEqual(1, len(plugin.field.thresholds))
+        plugin.field.height, plugin.step_us = 120, 450  # 240 px, the whole field
+        flame.update(40, 0)
+        self.assertEqual(mm.FLAME_MAX_PX, flame.top_px)
+
+    def test_it_draws_through_the_plugin(self):
+        plugin = FakePlugin()
+        mm.Campfire(plugin).draw(Recorder(Tft()))
+        self.assertEqual(1, plugin.drawn)
+
+
+def run(game, now, frames, hold, pressed_first=False):
+    """frames frames of 40 ms from now, or until the round is over. hold(game) says whether BOOT is down. The first
+    frame may be a tap. Answers the last frame's time."""
+    for k in range(frames):
+        now += test_fire.FRAME_MS
+        game.step(now, pressed_first and k == 0, hold(game))
+        if game.state == gfx.OVER:
+            break
+    return now
+
+
+def cook(game):
+    """Hold while the marshmallow is white: it comes up golden and is lifted."""
+    return game.roast.colour() == WHITE
+
+
+def burn_them(game):
+    """Hold until it is black, then lift it to the top, and again: every marshmallow is lost."""
+    return game.roast.browned < mm.BLACK_AT
+
+
+class Log:
+    """A signals.Signals with every signal of the cues noted as (name, value)."""
+
+    def __init__(self, game):
+        self.log, self.signals = [], signals.Signals()
+        for name in ("serve", "burn", "flame", "die"):
+            self.signals.listen(name, lambda n, v: self.log.append((n, v)))
+        game.signals = self.signals
+
+    def names(self):
+        return [n for n, _ in self.log]
+
+
+class MarshmallowNoEngineTest(unittest.TestCase):
+    def setUp(self):
+        fire.engine = None
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.game = mm.Marshmallow()
+        self.log = Log(self.game)
+
+    def test_it_is_a_scene_on_fire_with_one_mode_a_title_and_a_plain_flame(self):
+        game = self.game
+        self.assertIsInstance(game, fire.Fire)
+        self.assertEqual(("marshmallow", "hold to roast", gfx.Game.TITLE_MS), (game.name, game.hint, game.TITLE_MS))
+        self.assertEqual(1, len(game.MODES))
+        self.assertIsInstance(game.flame, mm.PlainFlame)
+        self.assertFalse(game.covers)
+        self.assertEqual({"serve", "burn", "die", "flame"}, set(game.cues))
+        self.assertTrue(game.cues["flame"].loop)
+
+    def test_a_whole_round_to_a_death_by_three_lost_marshmallows(self):
+        game = self.game
+        run(game, 0, 3000, burn_them, pressed_first=True)
+        self.assertEqual(gfx.OVER, game.state)
+        self.assertEqual((mm.LIVES, 0), (game.roast.lost, game.score))
+        self.assertEqual(mm.LIVES, self.log.names().count("burn"))
+        self.assertEqual(1, self.log.names().count("die"))
+        self.assertEqual(0, self.log.names().count("serve"))
+
+    def test_flame_0_is_emitted_just_before_the_death(self):
+        run(self.game, 0, 3000, burn_them, pressed_first=True)
+        self.assertEqual([("burn", None), ("flame", 0), ("die", None)], self.log.log[-3:])
+
+    def test_a_cooked_one_is_a_point_and_the_campfire_gets_wilder(self):
+        game = self.game
+        seen = []
+        real = game.flame.update
+        game.flame.update = lambda ms, wild: (seen.append(wild), real(ms, wild))[1]
+        now = run(game, 0, 600, cook, pressed_first=True)
+        self.assertGreaterEqual(game.score, 2)
+        self.assertEqual(game.score, self.log.names().count("serve"))
+        self.assertEqual(min(game.score, mm.WILD_MAX), seen[-1])
+        game.score = 9
+        run(game, now, 3, cook)
+        self.assertEqual(mm.WILD_MAX, seen[-1])
+
+    def test_the_flame_signal_carries_the_level_when_it_moved_by_a_step(self):
+        run(self.game, 0, 200, cook, pressed_first=True)
+        levels = [v for n, v in self.log.log if n == "flame"]
+        self.assertTrue(levels)
+        self.assertTrue(all(0 <= v <= cues.LEVELS for v in levels))
+        self.assertTrue(all(abs(a - b) >= mm.FLAME_STEP for a, b in zip(levels, levels[1:])), levels)
+
+    def test_a_new_round_starts_a_new_roast_and_a_silent_flame(self):
+        game = self.game
+        now = run(game, 0, 3000, burn_them, pressed_first=True)
+        before = game.flame
+        n = len(self.log.log)
+        game.step(now + 1000, True, False)  # past OVER_MS
+        self.assertEqual(gfx.PLAY, game.state)
+        self.assertIs(before, game.flame)
+        self.assertEqual((0, 0, 0), (game.roast.lost, game.roast.depth, game.score))
+        self.assertEqual(("flame", 0), self.log.log[n])
+
+    def test_the_hud_key_holds_the_lost_ones(self):
+        keys = []
+
+        class Cv:
+            def keep(self, key, rect, draw, alpha=255):
+                keys.append((key, rect))
+
+        game = self.game
+        game.hud(Cv())
+        game.roast.lost = 2
+        game.hud(Cv())
+        self.assertEqual(0, keys[0][0][-1])
+        self.assertEqual(2, keys[1][0][-1])
+        self.assertEqual((gfx.HUD_RECT, gfx.HUD_RECT), (keys[0][1], keys[1][1]))
+
+    def test_the_title_the_play_and_the_game_over_draw_without_an_error(self):
+        game = self.game
+        for steps in (0, 3, 3000):
+            if steps:
+                run(game, 0, steps, burn_them, pressed_first=True)
+            tft = Tft()
+            game.draw(lcd.TftCanvas(tft))
+            self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame), game.state)
+        self.assertEqual(gfx.OVER, game.state)
+
+    def test_the_marshmallow_is_drawn_at_its_depth(self):
+        game = self.game
+        game.roast.depth, game.roast.browned = 100, mm.BLACK_AT
+        cv = Recorder(Tft())
+        cv.box = lambda *args: None
+        game.paint(cv)
+        self.assertIn((mm.CENTRE - mm.SIZE // 2, mm.BOTTOM_Y - mm.SIZE + 100, mm.SIZE, mm.SIZE), cv.fills)
+
+
+@unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/core/fx_fire.c is not built")
+class MarshmallowEngineTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        test_fire.FireTest.setUpClass.__func__(cls)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.tmp.cleanup()
+
+    def setUp(self):
+        fire.engine = Engine(self.lib)
+        self.base = []
+        field = fire.engine.HeatField
+        set_base = field.set_base
+        field.set_base = lambda f, on: (self.base.append(on), set_base(f, on))[1]
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.game = mm.Marshmallow()
+        self.log = Log(self.game)
+
+    def tearDown(self):
+        fire.engine = None
+
+    def test_the_game_has_a_campfire_on_the_field_with_its_base_off(self):
+        game = self.game
+        self.assertIsInstance(game.flame, mm.Campfire)
+        self.assertEqual([False], self.base)
+        self.assertEqual([mm.LOOK], fire.engine.looks)
+
+    def test_one_field_over_two_rounds_it_burns_and_the_signals_come(self):
+        game = self.game
+        field = game.fire_plugin.field
+        now = run(game, 0, 3000, burn_them, pressed_first=True)
+        self.assertEqual(gfx.OVER, game.state)
+        self.assertEqual(mm.LIVES, self.log.names().count("burn"))
+        self.assertEqual([("flame", 0), ("die", None)], self.log.log[-2:])
+        burns = len(fire.engine.burns)
+        self.assertGreater(burns, 0)
+        self.assertEqual((fire.W // 2 - mm.BURN_HALF, fire.W // 2 + mm.BURN_HALF),
+                         (fire.engine.burns[0][0], fire.engine.burns[0][2]))
+        game.step(now + 1000, True, False)  # past OVER_MS: a new round
+        self.assertEqual(gfx.PLAY, game.state)
+        self.assertIs(field, game.fire_plugin.field)  # the same field: the round did not make a new one
+        self.assertTrue(any(bytes(field.heat[:fire.W * fire.H])))  # and it did not start cold
+        run(game, now + 1000, 600, cook)
+        self.assertGreater(len(fire.engine.burns), burns)
+        self.assertGreaterEqual(game.score, 1)
+        self.assertGreaterEqual(self.log.names().count("serve"), 1)
+        self.assertEqual([False], self.base)  # set_base(False) once, not each round
+        self.assertEqual([mm.LOOK], fire.engine.looks)
+        self.assertTrue(all(0 <= v <= cues.LEVELS for n, v in self.log.log if n == "flame"))
+
+    def test_the_campfire_rises_into_the_range_the_rules_trust_and_is_drawn(self):
+        game = self.game
+        now = run(game, 0, 200, lambda g: False, pressed_first=True)
+        tops = []
+        for _ in range(200):
+            now = run(game, now, 1, lambda g: False)
+            tops.append(game.flame.top_px)
+        self.assertTrue(min(tops) > 0 and max(tops) <= mm.FLAME_MAX_PX, (min(tops), max(tops)))
+        tft = Tft()
+        game.draw(lcd.TftCanvas(tft))
+        self.assertEqual({"tft"}, set(fire.engine.targets))
+        self.assertNotEqual(bytes(len(tft.frame)), bytes(tft.frame))
+
+
+if __name__ == "__main__":
+    unittest.main()
