@@ -1140,6 +1140,11 @@ Entries 20 to 24 are scratch scripts, not in the repository.
   `"44" is not a pin of board-esp32-s3-devkitc-1`. So `build/sim/` is from before the move. That is not a pass.
 - Open: the PO's meter reading from GB to GND with the power off, which the safety of TX rests on. Then his turn
   with the wires on RX and TX: the count with the sound on, and 16 detents from silent to full in Fire.
+- The PO's meter, 2026-11-11, with the USB and the battery unplugged and the encoder's VCC and GND on the rails:
+  "its about 180 kOhm and goes low when turned, from GB to VCC its around 6,6 kOhm". So GB to GND reads about
+  180 kΩ at rest, and GB to VCC about 6.6 kΩ. Both are readings in the circuit, not on a bare module. The
+  lowest number from GB to GND with the contact closed is not read yet, so the rule for TX is not answered yet.
+  Two web searches found no schematic of the CJMCU-111, as the part record says.
 
 ### Slice 4: the save
 
