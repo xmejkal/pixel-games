@@ -127,9 +127,12 @@ Runs now:
   one `overlay.add(...)` line. `VolumePane` is the first pane: the volume's step as 16 cells and a number. It
   watches the volume's step, so each change shows it for 1 s, and no caller shows it. The app owns the overlay
   (`App.overlay`), and each output draws it after the game.
-  Status: with `KNOB=1` the probe adds the pane, and it shows at each turn of the knob, in Fire:
-  `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. No game shows it yet, because only the probe has
-  the knob (the next step of P764). The picture is see-through by default (`VolumePane.alpha` is 192), for about
+  Status: the game box opens the rotary encoder as the volume's knob (`app.open_knob`) and adds the pane when it has
+  one, so every game shows the volume for 1 s when the knob turns. To see it, start the box and turn the knob. The
+  box has no sound yet, and it does not save the step. The sound probe passes its own knob to the box, so only one
+  encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the box opens its
+  own knob, and the sound does not follow it. Nobody ran the box with the knob on the board yet. Tests ran on the
+  Mac only (`tests/test_app_knob.py`). The picture is see-through by default (`VolumePane.alpha` is 192), for about
   1 ms more per frame while it shows, and `ALPHA=255` on the command makes it solid. Nobody looked at the
   see-through picture yet. The PO saw the solid one, painted whole at each step: "nice". Now the first show paints
   both parts (4.4 ms), and a new step paints the cells and the number again (2.2 ms). With nothing on the
