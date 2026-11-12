@@ -45,7 +45,7 @@ Every subject, with the button pattern that made its picture (`tools/render_scen
 | subject | button | what the picture shows | picture |
 | --- | --- | --- | --- |
 | the fire | tap: next mode | Tongues of flame over a white-hot base, in the linear mode, with the label's mode and frame rate. | <a href="docs/screenshots/fire.gif"><img src="docs/screenshots/fire.png" width="160"></a> |
-| the rain | tap: again | 160 boxes fall on the C engine's bodies, bounce on their planes and pile up. | <a href="docs/screenshots/rain.gif"><img src="docs/screenshots/rain.png" width="160"></a> |
+| the rain | tap: again | 160 boxes fall as the C engine's bodies, bounce and rest near the bottom, each on its own line, then fall again from the top. | <a href="docs/screenshots/rain.gif"><img src="docs/screenshots/rain.png" width="160"></a> |
 | Marshmallow | hold to roast | The marshmallow deep in the campfire after the first point. | <a href="docs/screenshots/marshmallow.gif"><img src="docs/screenshots/marshmallow.png" width="160"></a> |
 | the ball pit | tap pours, hold shakes | 120 balls in twelve pours, each pour in its own colour. | <a href="docs/screenshots/ballpit.gif"><img src="docs/screenshots/ballpit.png" width="160"></a> |
 | the bodies on fire | tap: next mode | Eight falling bodies burn trails into the field and flare where they land. | <a href="docs/screenshots/burningbodies.gif"><img src="docs/screenshots/burningbodies.png" width="160"></a> |
