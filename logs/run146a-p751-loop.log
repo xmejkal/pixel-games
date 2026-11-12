@@ -1,11 +1,11 @@
-cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.VL4SRWtwwv/crackle.py :crackle.py
-cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+cp ~/Development/pixel-p751/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+cp ~/Development/pixel-p751/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.raw :fire_bank.raw
+cp ~/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p751/games/fire_bank.raw :fire_bank.raw
 bank load 226 ms, 246960 bytes
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd

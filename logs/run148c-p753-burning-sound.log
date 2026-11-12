@@ -1,16 +1,16 @@
-cp /Users/petr/Development/pixel-p753/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p753/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.hwKIxAu7vP/crackle.py :crackle.py
 Up to date: crackle.py
-cp /Users/petr/Development/pixel-p753/games/fire.py :fire.py
+cp ~/Development/pixel-p753/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p753/games/sound.py :sound.py
+cp ~/Development/pixel-p753/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p753/games/burning.py :burning.py
+cp ~/Development/pixel-p753/games/burning.py :burning.py
 Up to date: burning.py
-cp /Users/petr/Development/pixel-p753/games/plugins.py :plugins.py
+cp ~/Development/pixel-p753/games/plugins.py :plugins.py
 Up to date: plugins.py
-cp /Users/petr/Development/pixel-p753/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p753/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
 fire_bank.raw is on the board
 bank load 230 ms, 246960 bytes, psram

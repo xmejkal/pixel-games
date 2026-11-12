@@ -1,31 +1,31 @@
 crackle_c.mpy sha256 90d7503d74fe745cc13efb85c31626f4e771f6ae4658501be10cb3344d150b29, engine 1c15d73
-cp /Users/petr/Development/pixel-p764-a/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p764-a/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.9Q8m8JY4B8/crackle.py :crackle.py
 Up to date: crackle.py
-cp /Users/petr/Development/pixel-p764-a/games/fire.py :fire.py
+cp ~/Development/pixel-p764-a/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p764-a/games/sound.py :sound.py
+cp ~/Development/pixel-p764-a/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p764-a/games/volume.py :volume.py
+cp ~/Development/pixel-p764-a/games/volume.py :volume.py
 Up to date: volume.py
-cp /Users/petr/Development/pixel-p764-a/games/volume_viper.py :volume_viper.py
+cp ~/Development/pixel-p764-a/games/volume_viper.py :volume_viper.py
 Up to date: volume_viper.py
-cp /Users/petr/Development/pixel-p764-a/games/encoder.py :encoder.py
+cp ~/Development/pixel-p764-a/games/encoder.py :encoder.py
 Up to date: encoder.py
-cp /Users/petr/Development/pixel-p764-a/games/pins.py :pins.py
+cp ~/Development/pixel-p764-a/games/pins.py :pins.py
 Up to date: pins.py
-cp /Users/petr/Development/pixel-p764-a/games/app.py :app.py
+cp ~/Development/pixel-p764-a/games/app.py :app.py
 Up to date: app.py
-cp /Users/petr/Development/pixel-p764-a/games/overlay.py :overlay.py
+cp ~/Development/pixel-p764-a/games/overlay.py :overlay.py
 Up to date: overlay.py
-cp /Users/petr/Development/pixel-p764-a/games/lcd.py :lcd.py
+cp ~/Development/pixel-p764-a/games/lcd.py :lcd.py
 Up to date: lcd.py
-cp /Users/petr/Development/pixel-p764-a/games/render.py :render.py
+cp ~/Development/pixel-p764-a/games/render.py :render.py
 Up to date: render.py
-cp /Users/petr/Development/pixel-p764-a/games/gfx.py :gfx.py
+cp ~/Development/pixel-p764-a/games/gfx.py :gfx.py
 Up to date: gfx.py
-cp /Users/petr/Development/pixel-p764-a/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p764-a/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
 fire_bank.raw is on the board
 scale match 1

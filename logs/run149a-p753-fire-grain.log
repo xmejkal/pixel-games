@@ -1,10 +1,10 @@
 crackle_c.mpy sha256 90d7503d74fe745cc13efb85c31626f4e771f6ae4658501be10cb3344d150b29, engine 1c15d73
-cp /Users/petr/Development/pixel-p753/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p753/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.46GX8f7exV/crackle.py :crackle.py
-cp /Users/petr/Development/pixel-p753/games/fire.py :fire.py
-cp /Users/petr/Development/pixel-p753/games/sound.py :sound.py
+cp ~/Development/pixel-p753/games/fire.py :fire.py
+cp ~/Development/pixel-p753/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p753/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p753/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
 fire_bank.raw is on the board
 bank load 233 ms, 246960 bytes, psram

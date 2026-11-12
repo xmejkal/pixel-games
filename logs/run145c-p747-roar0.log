@@ -1,9 +1,9 @@
-cp /Users/petr/Development/pixel-p747/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p747/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.6dhYhEl5IR/crackle.py :crackle.py
-cp /Users/petr/Development/pixel-p747/games/fire.py :fire.py
+cp ~/Development/pixel-p747/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p747/games/sound.py :sound.py
+cp ~/Development/pixel-p747/games/sound.py :sound.py
 Up to date: sound.py
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
