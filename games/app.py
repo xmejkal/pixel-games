@@ -27,11 +27,11 @@ from balls import BallPit
 from bank import Bank
 from box_bank import BOX_BANK_INDEX
 from bucket import Bucket
-from burning import BurningBodies
 from cues import SoundCues
 from fire import Fire  # noqa: F401  the probes and tools/crackle.sh start it as app.Fire
 from lcd import open_tft
 from marshmallow import Marshmallow
+from meteors import Meteors
 from overlay import Overlay, VolumePane
 from render import StOut
 from signals import Signals
@@ -54,7 +54,7 @@ FRAME_MODE = "auto"
 # "s3lcd" is russhughes' C driver (smooth on the bench); "st7789" is our driver with dirty boxes. s3lcd falls back to
 # st7789 when the image has no such module.
 BACKEND = "s3lcd"
-GAMES = (Marshmallow, BallPit, BurningBodies, Bucket, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
+GAMES = (Marshmallow, BallPit, Meteors, Bucket, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
 
 
 class App:
