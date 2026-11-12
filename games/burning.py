@@ -36,8 +36,8 @@ from plugins import PhysicsPlugin
 
 N = 8  # bodies on fire
 BODY = 8  # px, a body's side
-COAL = c565(60, 40, 30)  # a dark body, so its flames show around it
-COALS = (COAL,) * N
+COAL_SHADE = c565(60, 40, 30)  # a dark body, so its flames show around it
+COALS = (COAL_SHADE,) * N
 DRIFT = 120  # px/s: a drop's sideways speed is -DRIFT to DRIFT
 LAG = 0.5  # the burn trails the body by this many frames of its motion
 RADIUS = 3  # cells: the disc each burn writes

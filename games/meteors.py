@@ -18,7 +18,7 @@ from array import array
 
 import plugins
 from burning import BODY, N, BurningBodies
-from burning import COAL as BODY_SHADE
+from burning import COAL_SHADE
 from cues import Cue
 from fire import MODES
 from gfx import GREEN, HEIGHT, PLAY, RED, WHITE, WIDTH, Game
@@ -58,46 +58,57 @@ def fall_ms():
 
 FALL_MS = fall_ms()
 LAND_MS = FALL_MS - 200  # the ms a walker has from a drop to the meteor at its head
-TOP = WIDTH - WALKER_W  # the walker's left edge, at most
+WALKER_MAX_X = WIDTH - WALKER_W  # the walker's left edge, at most
 MARGIN_PX = 8  # px of ground kept free on each side of a meteor, for the frame's travel
 SAFE_PX = 48  # px: the fair aim leaves the walker a free stretch this wide, which it can reach before the meteor lands
 AIM_TRIES = 8  # kinds of aim tried for one drop; if none is fair, the drop is skipped
 
 
-def blocked(marks):
-    """The walker's left edges that a mark or a coal at any of marks (the left edges of the meteors' ground places, -1
-    for none) blocks, as merged [lo, hi, [marks]] with lo and hi open ends. Made at a drop, not in a frame."""
+def blocked(places, left):
+    """The walker's left edges that the meteors block, as merged [lo, hi, [(place, ms)]] with lo and hi open ends.
+    places: each meteor's ground place (its left edge), -1 for none. left: the ms until it is at the walker's head, 0
+    for a coal. Made at a drop, not in a frame."""
     out = []
-    for h in sorted(m for m in marks if m >= 0):
+    for h, ms in sorted((places[i], left[i]) for i in range(len(places)) if places[i] >= 0):
         lo, hi = h - WALKER_W - MARGIN_PX, h + BODY + MARGIN_PX
         if out and lo <= out[-1][1]:
             out[-1][1] = max(out[-1][1], hi)
-            out[-1][2].append(h)
+            out[-1][2].append((h, ms))
         else:
-            out.append([lo, hi, [h]])
+            out.append([lo, hi, [(h, ms)]])
     return out
 
 
 def room(zones, x, direction):
-    """The widest free stretch, in px, that a walker at left edge x going in direction can reach before a meteor that
-    drops now lands. In a free gap it is the gap. Inside a blocked place it must leave by an end that no meteor of the
-    place is in the way of, in time (a turn costs TURN_MS), and it is the gap that end opens into."""
+    """The widest free stretch, in px, that a walker at left edge x going in direction can reach alive. In a free gap
+    it is the gap. Inside a blocked place it leaves by an end, and it must clear each meteor on its way, by MARGIN_PX,
+    before that meteor is at its head (a coal never lets it pass; a turn costs TURN_MS). The stretch is the gap that
+    end opens into."""
     inside = [z for z in zones if z[0] < x < z[1]]
     if not inside:
-        return min([z[0] for z in zones if z[0] >= x] + [TOP]) - max([z[1] for z in zones if z[1] <= x] + [0])
-    lo, hi, marks = inside[0]
+        return min([z[0] for z in zones if z[0] >= x] + [WALKER_MAX_X]) - max([z[1] for z in zones if z[1] <= x] + [0])
+    lo, hi, meteors = inside[0]
     best = 0
     for end in (lo, hi):
-        if not 0 <= end <= TOP:
+        if not 0 <= end <= WALKER_MAX_X:
             continue
-        if end == lo and any(m + BODY <= x for m in marks) or end == hi and any(m - WALKER_W >= x for m in marks):
-            continue  # a meteor is between the walker and that end
-        if abs(end - x) * 1000 // WALK_PX_S + (TURN_MS if (end - x) * direction < 0 else 0) > LAND_MS:
+        turn = TURN_MS if (end - x) * direction < 0 else 0
+        if any(px * 1000 // WALK_PX_S + turn > ms for px, ms in on_the_way(meteors, x, end == lo)):
             continue
         gap = end - max([z[1] for z in zones if z[1] <= end] + [0]) if end == lo else \
-            min([z[0] for z in zones if z[0] >= end] + [TOP]) - end
+            min([z[0] for z in zones if z[0] >= end] + [WALKER_MAX_X]) - end
         best = max(best, gap)
     return best
+
+
+def on_the_way(meteors, x, leftward):
+    """For each meteor that a walker at x passes under going left (leftward) or right: the px it walks to clear it by
+    MARGIN_PX, and the meteor's ms."""
+    for h, ms in meteors:
+        if leftward and h < x + WALKER_W:
+            yield x - (h - WALKER_W - MARGIN_PX), ms
+        elif not leftward and h + BODY > x:
+            yield h + BODY + MARGIN_PX - x, ms
 
 
 class Rules:
@@ -139,17 +150,17 @@ class Rules:
         self.clock = min(self.clock, drop)
         return False
 
-    def fair(self, marks, land_x):
-        """Whether a meteor at land_x leaves the walker a free stretch of SAFE_PX it can reach in time, or at least no
-        less than before. marks: the ground places of the meteors out now, -1 for none."""
-        before = room(blocked(marks), self.walker_x, self.dir)
-        after = room(blocked(list(marks) + [land_x]), self.walker_x, self.dir)
+    def fair(self, places, left, land_x):
+        """Whether a new meteor at land_x leaves the walker a free stretch of SAFE_PX that it can reach alive, or at
+        least no less than before. places, left: the meteors out now, as blocked() takes them."""
+        before = room(blocked(places, left), self.walker_x, self.dir)
+        after = room(blocked(list(places) + [land_x], list(left) + [LAND_MS]), self.walker_x, self.dir)
         return after >= SAFE_PX or after >= before
 
-    def aim(self, marks):
+    def aim(self, places, left):
         """A drop that lands on its mark: (land_x, the drift vx, the start x0), with x0 and land_x both on the screen,
         or None. A drop lands anywhere, on the walker or ahead of it; one that leaves the walker no safe stretch (fair)
-        is not taken, and another kind is tried."""
+        is not taken, and another kind is tried. places, left: the meteors out now, as blocked() takes them."""
         for _ in range(AIM_TRIES):
             vx = random.randrange(-DRIFT, DRIFT + 1)
             shift = vx * FALL_MS // 1000  # px the drift carries it
@@ -160,7 +171,7 @@ class Rules:
             else:  # at the walker: where it is, then where it will be if it goes on
                 land_x = self.walker_x + (WALKER_W - BODY) // 2 + (self.dir * WALK_PX_S * FALL_MS // 1000 if kind == 2 else 0)
                 land_x = min(max(land_x, lo), hi)
-            if self.fair(marks, land_x):
+            if self.fair(places, left, land_x):
                 return land_x, vx, land_x - shift
         return None
 
@@ -193,6 +204,7 @@ class Meteors(BurningBodies):
         round parks every body again, so the field keeps its heat and makes no new one."""
         if self.fire_plugin is None:
             self.phase, self.landed, self.land_x = bytearray(N), bytearray(N), array("h", [-1] * N)
+            self.dropped, self.left = array("i", [0] * N), array("h", [0] * N)  # played_ms at each drop; ms, at a drop
             super().setup()
         else:
             self.start_bodies()
@@ -229,12 +241,16 @@ class Meteors(BurningBodies):
         return -1
 
     def drop(self, i):
-        """A meteor above the screen that lands on its mark."""
-        aim = self.rules.aim(self.land_x)
+        """A meteor above the screen that lands on its mark. The fair aim gets each meteor's ms until it is at the
+        walker's head: 0 for a coal or a landed one."""
+        now, left, phase, landed, dropped = self.rules.played_ms, self.left, self.phase, self.landed, self.dropped
+        for j in range(N):
+            left[j] = max(0, LAND_MS - (now - dropped[j])) if phase[j] == FALL and not landed[j] else 0
+        aim = self.rules.aim(self.land_x, left)
         if aim is None:  # no fair place: no meteor this time
             return
         land_x, vx, x0 = aim
-        self.phase[i], self.landed[i], self.land_x[i], self.rest_y[i] = FALL, 0, land_x, GROUND_Y
+        phase[i], landed[i], self.land_x[i], self.rest_y[i], dropped[i] = FALL, 0, land_x, GROUND_Y, now
         self.put(i, x0, -BODY, 0)
         self.physics_plugin.spawn(i, x0, -BODY, vx, 0, GROUND_Y)
         self.slept[i], self.has_prev[i] = None, False
@@ -275,8 +291,9 @@ class Meteors(BurningBodies):
         self.step_bodies()
         if self.state != PLAY:
             return
+        out = plugin.out  # read in place: no tuple a body
         for i in range(N):
-            if phase[i] != PARKED and rules.hits(*plugin.place(i)):
+            if phase[i] != PARKED and rules.hits(out[3 * i], out[3 * i + 1]):
                 self.kill()
                 return
         free = self.free_body()
@@ -288,12 +305,13 @@ class Meteors(BurningBodies):
         out, fill, phase = self.physics_plugin.out, cv.fill, self.phase
         for i in range(N):
             if phase[i] != PARKED:
-                fill(out[3 * i], out[3 * i + 1], BODY, BODY, BODY_SHADE)
+                fill(out[3 * i], out[3 * i + 1], BODY, BODY, COAL_SHADE)
 
     def paint(self, cv):
         """The scene's picture, then a red mark under each meteor that has not landed, and the walker."""
         super().paint(cv)
-        phase, landed, land_x, fill = self.phase, self.landed, self.land_x, cv.fill
+        phase, landed, fill = self.phase, self.landed, cv.fill
+        land_x = self.land_x
         for i in range(N):
             if phase[i] == FALL and not landed[i]:
                 fill(land_x[i], HEIGHT - MARK_H, BODY, MARK_H, RED)

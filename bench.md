@@ -1570,8 +1570,9 @@ than the control.
 | 213c | `run213c-p773-meteors-idle.log` | `Meteors`, idle, a new round about each 5 s | 23 or 24 | 59 to 92 | 15.6 to 19.7 | 0 | `score 5 held_frames 0` |
 
 - Run213b passes every line. The bot lived the whole run (score 58 at the end of 60 s with the title).
-- Run213c fails the worst-frame line in 1 of its 11 windows: 92 ms against 87 ms. Its slow frames are the frames
-  of a death or a restart: step 24 to 32 ms and gc 13 ms in that frame. They are `Game`'s cost for a round's end, as
+- Run213c fails the worst-frame line in 2 of its 11 windows: 92 and 88 ms against 87 ms. It has 23 fps in 1 window,
+  under the 24 fps line. Its slow frames are the frames of a death or a restart: step 24 to 32 ms and gc 13 ms in
+  that frame. They are `Game`'s cost for a round's end, as
   in Marshmallow (88 to 95 ms, P773 above). Not fixed in this story.
 - The control has 23 fps in 10 of its 11 windows, so the control itself is under the 24 fps line.
 - Open: the PO's hand, eye and ear. No run shows how the game looks or plays.

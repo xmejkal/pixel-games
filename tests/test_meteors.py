@@ -37,6 +37,8 @@ import signals  # noqa: E402
 import world_lib  # noqa: E402
 from meteors import COAL, FALL, PARKED, Meteors, Rules  # noqa: E402
 
+COALS = [0] * 8  # the ms of eight meteors that are coals: they block always
+
 FRAME_MS = 42
 
 
@@ -62,16 +64,16 @@ class RulesTest(unittest.TestCase):
         rules = Rules()
         while rules.dir > 0:
             rules.move(60, False)
-        self.assertEqual(mt.TOP, rules.walker_x)
+        self.assertEqual(mt.WALKER_MAX_X, rules.walker_x)
         self.assertEqual(-1, rules.dir)
         rules.move(60, False)
-        self.assertEqual(mt.TOP - (mt.WALK_PX_S * 60 + 999) // 1000, rules.walker_x)  # going left, a part px counts
+        self.assertEqual(mt.WALKER_MAX_X - (mt.WALK_PX_S * 60 + 999) // 1000, rules.walker_x)  # going left, a part px counts
         while rules.dir < 0:
             rules.move(60, False)
         self.assertEqual((0, 1), (rules.walker_x, rules.dir))
         rules.move(60, False)
         self.assertEqual(mt.WALK_PX_S * 60 // 1000, rules.walker_x)
-        self.assertEqual(mt.WIDTH, mt.TOP + mt.WALKER_W)
+        self.assertEqual(mt.WIDTH, mt.WALKER_MAX_X + mt.WALKER_W)
 
     def test_a_tap_turns_it_but_not_within_turn_ms_of_the_last_turn(self):
         rules = Rules()
@@ -141,7 +143,7 @@ class RulesTest(unittest.TestCase):
         while y < mt.HEIGHT:  # as the bodies fall, from y = -BODY
             v += mt.GRAVITY_PX * plugins.DT
             y += v * plugins.DT
-        up = v * plugins.RESTITUTION if hasattr(plugins, "RESTITUTION") else v * 0.35
+        up = v * plugins.RESTITUTION
         self.assertGreaterEqual(mt.WALKER_H, up * up / (2 * mt.GRAVITY_PX))
 
 
@@ -152,11 +154,11 @@ class AimTest(unittest.TestCase):
         random.seed(5)
 
     def test_an_aim_starts_and_lands_on_the_screen_at_both_edges(self):
-        for walker, direction in ((0, -1), (0, 1), (mt.TOP, 1), (mt.TOP, -1), (150, 1)):
+        for walker, direction in ((0, -1), (0, 1), (mt.WALKER_MAX_X, 1), (mt.WALKER_MAX_X, -1), (150, 1)):
             rules = walker_at(walker, direction)
             seen = set()
             for _ in range(400):
-                land_x, vx, x0 = rules.aim([-1] * 8)
+                land_x, vx, x0 = rules.aim([-1] * 8, COALS)
                 self.assertTrue(0 <= land_x <= mt.WIDTH - mt.BODY and 0 <= x0 <= mt.WIDTH - mt.BODY, (walker, land_x, x0))
                 self.assertLessEqual(abs(vx), mt.DRIFT)
                 self.assertLessEqual(abs(x0 + vx * mt.FALL_MS / 1000 - land_x), 1)  # the drift carries it to its mark
@@ -165,7 +167,7 @@ class AimTest(unittest.TestCase):
 
     def test_a_drop_aims_at_the_walker_and_ahead_of_it(self):
         rules = walker_at(100, 1)
-        spots = {rules.aim([-1] * 8)[0] for _ in range(300)}
+        spots = {rules.aim([-1] * 8, COALS)[0] for _ in range(300)}
         here = 100 + (mt.WALKER_W - mt.BODY) // 2
         ahead = here + mt.WALK_PX_S * mt.FALL_MS // 1000
         self.assertTrue({here, ahead} <= spots)
@@ -176,54 +178,67 @@ class AimTest(unittest.TestCase):
     def test_a_mark_that_leaves_less_than_safe_px_is_not_fair(self):
         rules = walker_at(50)
         coal = self.marks(100)  # blocks 80 to 116: the walker's gap is 0 to 80
-        self.assertTrue(rules.fair(coal, 200))
-        self.assertFalse(rules.fair(coal, 20))  # leaves 36 to 80: 44 px
-        self.assertFalse(rules.fair(coal, 30))
-        self.assertFalse(rules.fair(coal, 60))  # on the walker: its ends open into 40 and 4 px
-        self.assertEqual(44, mt.room(mt.blocked(list(coal) + [20]), 50, 1))
+        self.assertTrue(rules.fair(coal, COALS, 200))
+        self.assertFalse(rules.fair(coal, COALS, 20))  # leaves 36 to 80: 44 px
+        self.assertFalse(rules.fair(coal, COALS, 30))
+        self.assertFalse(rules.fair(coal, COALS, 60))  # on the walker: its ends open into 40 and 4 px
+        self.assertEqual(44, mt.room(mt.blocked(list(coal) + [20], COALS + [0]), 50, 1))
 
     def test_a_mark_on_the_walker_is_fair_when_it_can_leave_in_time_into_a_wide_gap(self):
-        self.assertTrue(walker_at(150).fair(self.marks(), 150 + 2))
-        self.assertTrue(walker_at(150, -1).fair(self.marks(), 150 + 2))
+        self.assertTrue(walker_at(150).fair(self.marks(), COALS, 150 + 2))
+        self.assertTrue(walker_at(150, -1).fair(self.marks(), COALS, 150 + 2))
         old = mt.LAND_MS
         self.addCleanup(setattr, mt, "LAND_MS", old)
         mt.LAND_MS = 100  # no time to cross 20 px, and to turn
-        self.assertFalse(walker_at(150, -1).fair(self.marks(), 152))
+        self.assertFalse(walker_at(150, -1).fair(self.marks(), COALS, 152))
+
+    def test_an_escape_that_passes_under_a_falling_meteor_must_clear_it_before_it_lands(self):
+        """The refuter's case (seed 32 at 60 ms): the walker under a falling meteor at 202, going left; a new mark at 161
+        closes the left. The right needs a turn and 18 px under the meteor at 202: fair only if that one lands later."""
+        rules = walker_at(200, -1)
+        soon, late = self.marks(202), self.marks(202)
+        self.assertFalse(rules.fair(soon, [200] + [0] * 7, 161))
+        self.assertTrue(rules.fair(late, [mt.LAND_MS] + [0] * 7, 161))
+
+    def test_a_coal_beside_the_walker_bars_only_its_own_side(self):
+        coal = self.marks(100 - mt.BODY - 4)  # within the margin on the left, not touching
+        zones = mt.blocked(coal, COALS)
+        self.assertGreater(mt.room(zones, 100, -1), mt.SAFE_PX)  # it turns and leaves to the right
 
     def test_fair_at_both_walls(self):
-        self.assertTrue(walker_at(0, -1).fair(self.marks(), 0))  # leaves right, into 292 px
-        self.assertTrue(walker_at(mt.TOP, 1).fair(self.marks(), mt.WIDTH - mt.BODY))
+        self.assertTrue(walker_at(0, -1).fair(self.marks(), COALS, 0))  # leaves right, into 292 px
+        self.assertTrue(walker_at(mt.WALKER_MAX_X, 1).fair(self.marks(), COALS, mt.WIDTH - mt.BODY))
         coal = self.marks(60)  # the left wall's gap is 0 to 40: already under SAFE_PX
         rules = walker_at(0, -1)
-        self.assertTrue(rules.fair(coal, 250))  # no worse than before
-        self.assertFalse(rules.fair(coal, 20))  # would leave nothing
-        rules = walker_at(mt.TOP, 1)
-        self.assertTrue(rules.fair(self.marks(250), 20))
-        self.assertFalse(rules.fair(self.marks(250), 280))
+        self.assertTrue(rules.fair(coal, COALS, 250))  # no worse than before
+        self.assertFalse(rules.fair(coal, COALS, 20))  # would leave nothing
+        rules = walker_at(mt.WALKER_MAX_X, 1)
+        self.assertTrue(rules.fair(self.marks(250), COALS, 20))
+        self.assertFalse(rules.fair(self.marks(250), COALS, 280))
 
     def test_fair_with_coals_and_marks_on_both_sides(self):
         rules = walker_at(120)
         both = self.marks(60, 200)  # blocks 40 to 76 and 180 to 216: the gap is 76 to 180
-        self.assertTrue(rules.fair(both, 150))  # leaves 76 to 130: 54 px
-        self.assertFalse(rules.fair(both, 140))  # leaves 76 to 120: 44 px
-        self.assertFalse(rules.fair(both, 130))  # on the walker: its ends open into 34 px
-        self.assertTrue(rules.fair(both, 100))  # leaves 116 to 180
-        self.assertTrue(rules.fair(both, 20))  # outside the gap
+        self.assertTrue(rules.fair(both, COALS, 150))  # leaves 76 to 130: 54 px
+        self.assertFalse(rules.fair(both, COALS, 140))  # leaves 76 to 120: 44 px
+        self.assertFalse(rules.fair(both, COALS, 130))  # on the walker: its ends open into 34 px
+        self.assertTrue(rules.fair(both, COALS, 100))  # leaves 116 to 180
+        self.assertTrue(rules.fair(both, COALS, 20))  # outside the gap
 
     def test_no_aim_leaves_the_walker_cut_off_and_a_crowded_ground_skips_the_drop(self):
         random.seed(11)
         rules = walker_at(50)
         coal = self.marks(100)
         for _ in range(300):
-            aim = rules.aim(coal)
+            aim = rules.aim(coal, COALS)
             if aim is not None:
-                self.assertTrue(rules.fair(coal, aim[0]), aim)
+                self.assertTrue(rules.fair(coal, COALS, aim[0]), aim)
 
     def test_when_every_try_is_unfair_the_drop_is_skipped(self):
         rules = walker_at(20)  # a coal at 60 leaves it 0 to 40: a drop at 0 would leave 16 to 40
         tries = itertools.cycle([-mt.DRIFT, 0, 0])  # the drift, the kind, the place
         with mock.patch.object(mt.random, "randrange", lambda *args: next(tries)):
-            self.assertIsNone(rules.aim(self.marks(60)))
+            self.assertIsNone(rules.aim(self.marks(60), COALS))
 
 
 def new_game():
@@ -239,7 +254,7 @@ def start(game):
 
 def aim_at(land_x, vx=0):
     shift = vx * mt.FALL_MS // 1000
-    return lambda marks: (land_x, vx, land_x - shift)
+    return lambda places, left: (land_x, vx, land_x - shift)
 
 
 def calm(game):
@@ -279,15 +294,15 @@ def rhythm(period):
 def bot(game, t, ms):
     """Keeps out of every place a mark or a coal blocks, leaves one that falls on it by the end into the wider gap, and
     turns only at the ends of its gap."""
-    rules, top = game.rules, mt.TOP
-    zones = mt.blocked(game.land_x)
+    rules, top = game.rules, mt.WALKER_MAX_X
+    zones = mt.blocked(game.land_x, COALS)  # the bot keeps out of every mark, as of a coal
     x = rules.walker_x
     inside = [z for z in zones if z[0] < x < z[1]]
     if inside:
         lo, hi, marks = inside[0]
         ends = [e for e in (lo, hi) if 0 <= e <= top
-                and not (e == lo and any(m + mt.BODY <= x for m in marks))
-                and not (e == hi and any(m - mt.WALKER_W >= x for m in marks))]
+                and not (e == lo and any(m + mt.BODY <= x for m, _ in marks))
+                and not (e == hi and any(m - mt.WALKER_W >= x for m, _ in marks))]
         if not ends:
             return False
         width = lambda e: e - max([z[1] for z in zones if z[1] <= e] + [0]) if e == lo else min(
@@ -549,8 +564,11 @@ class MeteorsTest(SeededTest):
         game.rules.walker_x = 0
         spawns = []
         game.drop = lambda i: spawns.append(i)
-        run(game, now, 5, idle)
+        now, _ = run(game, now, 5, idle)
         self.assertEqual([], spawns)
+        game.park(3)  # one body frees: one meteor, never a burst
+        run(game, now, 5, idle)
+        self.assertEqual([3], spawns)
 
     def test_a_restart_keeps_the_field_and_the_bodies_and_resets_the_time_and_the_score(self):
         game = self.game
@@ -568,18 +586,16 @@ class MeteorsTest(SeededTest):
         self.assertIs(effects_, game.effects)
         self.assertEqual((physics, field), game.plugins)
 
-    def test_two_rounds_drop_at_different_places(self):
-        game = self.game
-        rounds = []
-        for _ in range(2):
-            rounds.append([game.rules.aim([-1] * mt.N)[0] for _ in range(20)])
+    def test_a_round_never_seeds_random_so_two_rounds_drop_at_different_places(self):
+        with mock.patch.object(burning.random, "seed") as seed:
+            game = new_game()
             game.restart()
-        self.assertNotEqual(rounds[0], rounds[1])
+        seed.assert_not_called()
 
     def test_a_skipped_aim_leaves_the_body_parked(self):
         game = self.game
         start(game)
-        game.rules.aim = lambda marks: None
+        game.rules.aim = lambda places, left: None
         game.drop(0)
         self.assertEqual(PARKED, game.phase[0])
 
@@ -643,17 +659,22 @@ class CMeteorsTest(SeededTest):
     def tearDown(self):
         plugins.engine = None
 
-    def test_c_and_python_give_the_same_deaths_for_one_seed(self):
-        for player in (idle, bot):
-            deaths = []
-            for c in (True, False):
-                plugins.engine = world_lib.engine() if c else None
-                random.seed(773)
-                game = new_game()
-                self.assertEqual("c" if c else "python", game.physics_plugin.name)
-                run(game, start(game), 1500, player, 42, 40000)
-                deaths.append((game.state, game.rules.played_ms // 100, list(game.phase)))
-            self.assertEqual(deaths[0], deaths[1], player.__name__)
+    def test_c_and_python_give_the_same_game_within_a_frame(self):
+        """C steps in float and Python in double: a falling meteor's read y may differ by 1 px, so a death may come one
+        frame apart (the refuter: 2 of 320 runs). The outcome is the same."""
+        for seed in (773, 4, 15, 30):
+            for player in (idle, bot):
+                ends = []
+                for c in (True, False):
+                    plugins.engine = world_lib.engine() if c else None
+                    random.seed(seed)
+                    game = new_game()
+                    self.assertEqual("c" if c else "python", game.physics_plugin.name)
+                    run(game, start(game), 1500, player, 42, 40000)
+                    ends.append((game.state, game.rules.played_ms))
+                (state_c, ms_c), (state_py, ms_py) = ends
+                self.assertEqual(state_c, state_py, (seed, player.__name__))
+                self.assertLessEqual(abs(ms_c - ms_py), 42, (seed, player.__name__))
 
 
 if __name__ == "__main__":
