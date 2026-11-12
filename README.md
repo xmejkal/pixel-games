@@ -12,7 +12,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `art/` | the painted art: one set per game, the brush and the export |
 | `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
 | `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang). The engine's own tests run with the same command in `engine/` |
-| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py SUBJECT out.png FRAMES...` draws a game, a scene or the overlay on the Mac, the board's way, to a PNG sheet, and with `--gif OUT.gif --every K` to a GIF; `--list` names the subjects and `--all docs/screenshots` writes every picture below from the tool's own table (needs clang, Pillow and the MicroPython clone under `~/esp` for the font). `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
+| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py SUBJECT out.png FRAMES...` draws a game, a scene or the overlay on the Mac, the board's way, to a PNG sheet, and with `--gif OUT.gif --every K` to a GIF. `--list` names the subjects, and `--all docs/screenshots` writes every picture below from the tool's own table. It needs clang, Pillow and the MicroPython clone under `~/esp` for the letters. `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
 | `logs/` | the kept logs of some runs in `bench.md`, named by run number |
@@ -22,15 +22,15 @@ The repository is also a log of how the games got smooth: every step was measure
 
 ## What it looks like
 
-The frames come from the Mac stand-ins, not from photos of the display: the games and the engines are the board's own Python and C, and `tests/drawing_tft.py` stands in for the display driver. Each GIF keeps one frame in every one to four and shows it for as long as those frames took, so it runs at the board's pace.
+The frames come from a Mac program that runs the games' own Python and C with a stand-in for the display (`tests/drawing_tft.py`), not from photos of the board. Each GIF keeps one frame in every one to four and shows it for as long as those frames took, so it runs at the board's pace.
 
 ![Marshmallow](docs/screenshots/marshmallow.gif)
 
-Marshmallow: a hold lowers the marshmallow into the campfire and a release lifts it; the three lives and the time bar sit in the score bar.
+Marshmallow: a hold lowers the marshmallow into the campfire and a release lifts it. The three lives sit in the score bar, and the yellow bar above the fire runs down.
 
 ![The fire](docs/screenshots/fire.gif)
 
-The fire: the heat field burns over the whole screen with its label.
+The fire: the heat field burns over the whole screen, and its label says the mode (linear) and the frame rate.
 
 ![The ball pit](docs/screenshots/ballpit.gif)
 
@@ -44,21 +44,21 @@ Every subject, with the button pattern that made its picture (`tools/render_scen
 
 | subject | button | what the picture shows | picture |
 | --- | --- | --- | --- |
-| the fire | tap: next mode | The heat field in its linear mode, the flames leaning in the wind. | <a href="docs/screenshots/fire.gif"><img src="docs/screenshots/fire.png" width="160"></a> |
+| the fire | tap: next mode | Tongues of flame over a white-hot base, in the linear mode, with the label's mode and frame rate. | <a href="docs/screenshots/fire.gif"><img src="docs/screenshots/fire.png" width="160"></a> |
 | the rain | tap: again | 160 boxes fall on the C engine's bodies, bounce on their planes and pile up. | <a href="docs/screenshots/rain.gif"><img src="docs/screenshots/rain.png" width="160"></a> |
 | Marshmallow | hold to roast | The marshmallow deep in the campfire after the first point. | <a href="docs/screenshots/marshmallow.gif"><img src="docs/screenshots/marshmallow.png" width="160"></a> |
 | the ball pit | tap pours, hold shakes | 120 balls in twelve pours, each pour in its own colour. | <a href="docs/screenshots/ballpit.gif"><img src="docs/screenshots/ballpit.png" width="160"></a> |
 | the bodies on fire | tap: next mode | Eight falling bodies burn trails into the field and flare where they land. | <a href="docs/screenshots/burningbodies.gif"><img src="docs/screenshots/burningbodies.png" width="160"></a> |
-| Bucket | hold: right | The bucket on its rail, a box falling, the first catch's burst. | <a href="docs/screenshots/bucket.gif"><img src="docs/screenshots/bucket.png" width="160"></a> |
+| Bucket | hold: right | The bucket on its rail at the first catch, with the point's burst at its edge and two missed boxes piled below the rail. | <a href="docs/screenshots/bucket.gif"><img src="docs/screenshots/bucket.png" width="160"></a> |
 | Flappy | tap to flap | The painted morning scrolls by and the bird flaps between the pipes. | <a href="docs/screenshots/flappy.gif"><img src="docs/screenshots/flappy.png" width="160"></a> |
 | Runner | tap jump, hold higher | The painted runner jumps over a cactus in front of the mountains. | <a href="docs/screenshots/runner.gif"><img src="docs/screenshots/runner.png" width="160"></a> |
-| Snake | tap turns right | The snake moves on its grid and turns right at each tap; the red square is the food. | <a href="docs/screenshots/snake.gif"><img src="docs/screenshots/snake.png" width="160"></a> |
-| Stack | tap to drop | The crane drops a floor at each tap; two floors stand, and the sign shows the price. | <a href="docs/screenshots/stack.gif"><img src="docs/screenshots/stack.png" width="160"></a> |
+| Snake | tap turns right | The snake moves on its grid and turns right at each tap. The red square is the food. | <a href="docs/screenshots/snake.gif"><img src="docs/screenshots/snake.png" width="160"></a> |
+| Stack | tap to drop | The crane drops a floor at each tap. Two floors stand, and the sign shows the price. | <a href="docs/screenshots/stack.gif"><img src="docs/screenshots/stack.png" width="160"></a> |
 | Cave | hold to climb | The helicopter climbs while the button is held and sinks when it is not, between the cave's walls. | <a href="docs/screenshots/cave.gif"><img src="docs/screenshots/cave.png" width="160"></a> |
 | Tunnel | tap turns the ship | The ship rides the tunnel's walls and a tap turns it. | <a href="docs/screenshots/tunnel.gif"><img src="docs/screenshots/tunnel.png" width="160"></a> |
 | Road | tap lane, hold boost | The car on a road that bends, the mountains and the sun behind it. | <a href="docs/screenshots/road.gif"><img src="docs/screenshots/road.png" width="160"></a> |
 | Starfire | tap fires | The laser from the ship's nose, the reticle on a target and a point. | <a href="docs/screenshots/starfire.gif"><img src="docs/screenshots/starfire.png" width="160"></a> |
-| CubeTiming | tap: mark faces you | A wire cube turns over the timing bar; a tap marks the face that faces you, and a lost life flashes red. | <a href="docs/screenshots/cubetiming.gif"><img src="docs/screenshots/cubetiming.png" width="160"></a> |
+| CubeTiming | tap: mark faces you | A wire cube turns over the timing bar. A tap marks the face that faces you, and a lost life flashes red. | <a href="docs/screenshots/cubetiming.gif"><img src="docs/screenshots/cubetiming.png" width="160"></a> |
 | GravityPong | tap flips paddle | The ball falls under gravity onto the paddle, which flips its way at each tap. | <a href="docs/screenshots/gravitypong.gif"><img src="docs/screenshots/gravitypong.png" width="160"></a> |
 | the overlay | turn the knob | The volume pane over the ball pit, see-through at alpha 128, so the balls show through its dark part. | <a href="docs/screenshots/overlay.gif"><img src="docs/screenshots/overlay.png" width="160"></a> |
 

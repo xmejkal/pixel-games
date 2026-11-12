@@ -13,7 +13,9 @@ by side; the GIF holds the frames from the first count to the last, every K-th, 
 --tap N presses on one frame in every N, --hold N holds N frames and releases N (0 holds every frame); the first frame
 presses, so the picture starts in play, unless --title keeps the title. --filter (P608) sets a heat field's filter after
 setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering. --all DIR writes every subject's PNG and
-GIF from its SUBJECTS row, which --list prints: the rows are the source of the README's pictures. --- MVP (P795) ---"""
+GIF from its SUBJECTS row, which --list prints, the subjects one after the other in one process (the files are the
+same as from single runs), and refuses the flags above: the rows are the source of the README's pictures.
+--- MVP (P795) ---"""
 
 import argparse
 import contextlib
@@ -57,6 +59,7 @@ FILTERS = {"nearest": fire.NEAREST, "linear": fire.LINEAR}  # --- MVP (P608) ---
 FONT_PATH = os.path.expanduser("~/esp/micropython-v1.29.0/extmod/font_petme128_8x8.h")  # build.sh's clone
 FONT_BYTES = 96 * 8  # the characters 32 to 127, eight column bytes each
 GAP = 10  # px between the sheet's frames
+EVERY = 2  # the GIF's frames kept, one in this many, unless --every says
 PALETTE_FRAMES = 8  # the images a GIF's palette is taken from
 
 
@@ -82,7 +85,7 @@ SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the p
     "marshmallow": Subject(Marshmallow, Marshmallow.hint, 5, 200, every=4, hold=40, shot=195),
     "ballpit": Subject(balls.BallPit, "tap pours, hold shakes", 5, 130, every=3, tap=10),
     "burningbodies": Subject(BurningBodies, "tap: next mode", 20, 100),
-    "bucket": Subject(Bucket, Bucket.hint, 5, 150, every=3, hold=15),
+    "bucket": Subject(Bucket, Bucket.hint, 5, 150, every=3, hold=15, shot=146),
     "flappy": Subject(Flappy, Flappy.hint, 5, 70, every=3, tap=12, shot=60),
     "runner": Subject(Runner, Runner.hint, 10, 75, every=3, hold=40),
     "snake": Subject(Snake, Snake.hint, 5, 80, tap=20, shot=45),
@@ -103,8 +106,10 @@ class Font:
 
     def __init__(self, path):
         with open(path) as f:
-            body = f.read().split("[] = {", 1)[1]
-        self.bytes = bytes(int(h, 16) for h in re.findall(r"0x([0-9a-fA-F]{2})", body))
+            parts = f.read().split("[] = {", 1)
+        if len(parts) < 2:
+            raise ValueError("%s is not a font header" % path)
+        self.bytes = bytes(int(h, 16) for h in re.findall(r"0x([0-9a-fA-F]{2})", parts[1]))
         if len(self.bytes) != FONT_BYTES:
             raise ValueError("%s holds %d font bytes, not %d" % (path, len(self.bytes), FONT_BYTES))
 
@@ -223,7 +228,7 @@ def main():
     text.add_argument("--font", default=FONT_PATH, metavar="PATH", help="font_petme128_8x8.h (default: %(default)s)")
     text.add_argument("--no-text", action="store_true", help="draw without letters")
     parser.add_argument("--gif", metavar="OUT.gif", help="also a GIF of the frames from the first count to the last")
-    parser.add_argument("--every", type=int, default=2, metavar="K", help="the GIF keeps every K-th frame (default 2)")
+    parser.add_argument("--every", type=int, metavar="K", help="the GIF keeps every K-th frame (default %d)" % EVERY)
     parser.add_argument("subject", nargs="?", choices=sorted(SUBJECTS))
     parser.add_argument("out", nargs="?", help="the PNG sheet, one frame per count")
     parser.add_argument("counts", type=int, nargs="*", metavar="FRAMES", help="the frames to show")
@@ -237,8 +242,15 @@ def main():
             Font(args.font).install()
         except OSError:
             parser.error("no font at %s: build.sh clones it, or give --font PATH or --no-text" % args.font)
+        except ValueError as e:
+            parser.error("%s: give --font PATH or --no-text" % e)
     mag_filter = FILTERS[args.filter] if args.filter else None
     if args.all:
+        given = [flag for flag, value in (("--tap", args.tap), ("--hold", args.hold), ("--title", args.title),
+                                          ("--seed", args.seed), ("--gif", args.gif), ("--every", args.every))
+                 if value is not None and value is not False]  # 0 is a seed
+        if given or args.subject:
+            parser.error("--all takes every setting from the SUBJECTS rows, not %s" % " ".join(given or [args.subject]))
         os.makedirs(args.all, exist_ok=True)
         for name, row in SUBJECTS.items():
             images = list(itertools.islice(frames(row, hold_ms=row.last * FRAME_MS), row.last))
@@ -256,7 +268,7 @@ def main():
     write_sheet([images[n - 1] for n in args.counts], args.out)
     print(args.out)
     if args.gif:
-        write_gif(images[first - 1:last], args.gif, args.every)
+        write_gif(images[first - 1:last], args.gif, args.every or EVERY)
         print(args.gif)
 
 

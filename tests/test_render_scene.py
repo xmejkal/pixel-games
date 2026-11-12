@@ -55,6 +55,13 @@ def count(img, colour=None):
     return sum(n for n, c in img.getcolors(1 << 16) if (c != (0, 0, 0) if colour is None else c == colour))
 
 
+def panel(colour):
+    """An image() RGB back to the uint16 it came from, in panel order."""
+    r, g, b = colour
+    v = ((r * 31 + 127) // 255 << 11) | ((g * 63 + 127) // 255 << 5) | (b * 31 + 127) // 255
+    return ((v & 0xFF) << 8) | (v >> 8)
+
+
 def rgb(panel):
     """A panel-order uint16 as the image()'s RGB."""
     v = ((panel & 0xFF) << 8) | (panel >> 8)
@@ -94,10 +101,14 @@ class FontTest(unittest.TestCase):
         self.assertEqual(checker, dots(self.fb, 0, 0))
         self.assertEqual(checker, dots(self.fb, 8, 0))
 
-    def test_a_short_header_is_refused_and_no_font_draws_nothing(self):
+    def test_a_short_header_or_no_header_is_refused_and_no_font_draws_nothing(self):
         path = os.path.join(self.tmp.name, "font.h")
         with open(path, "w") as f:
             f.write("static const uint8_t font_petme128_8x8[] = {\n 0x01, 0x02,\n};\n")
+        with self.assertRaises(ValueError):
+            render_scene.Font(path)
+        with open(path, "w") as f:
+            f.write("not a header\n")
         with self.assertRaises(ValueError):
             render_scene.Font(path)
         framebuf.FONT = None
@@ -140,6 +151,24 @@ class BlitTest(unittest.TestCase):
     def test_a_short_buffer_is_refused(self):
         with self.assertRaises(ValueError):
             DrawingTft().blit_buffer(bytes(10), 0, 0, 3, 2)
+
+    def test_alpha_and_key_are_masked_as_the_cs_bytes(self):
+        img = self.picture(100, 50, key=0x14444)  # the C sees 0x4444
+        self.assertEqual(0, count(img, rgb(0x4444)))
+        tft = DrawingTft()
+        tft.blit_buffer(array("H", [0x1111]).tobytes(), 5, 6, 1, 1, 256 + 255)  # the C sees 255: no blend
+        self.assertEqual(0x1111, memoryview(tft.frame).cast("H")[6 * lcd.PANEL_W + 5])
+
+    def test_a_fill_half_off_the_panel_is_clipped(self):
+        for x, y, on in ((-5, 3, 10), (235, 318, 10), (-20, -20, 0), (240, 0, 0)):
+            with self.subTest(x=x, y=y):
+                tft = DrawingTft()
+                tft.fill_rect(x, y, 10, 2, 1)
+                self.assertEqual(on, sum(1 for v in memoryview(tft.frame).cast("H") if v))
+        tft = DrawingTft()
+        tft.fill_rect(-5, 3, 10, 2, 1)
+        self.assertEqual([(x, y) for y in (3, 4) for x in range(5)],
+                         [(k % lcd.PANEL_W, k // lcd.PANEL_W) for k, v in enumerate(memoryview(tft.frame).cast("H")) if v])
 
 
 @unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/driver/src/blend565.h is not built")
@@ -242,6 +271,19 @@ class ButtonsTest(unittest.TestCase):
         self.assertEqual((True, True), render_scene.buttons(3, tap=3, title=True))
 
 
+class GifTest(unittest.TestCase):
+    def test_write_gif_keeps_every_kth_image_at_its_time_and_loops(self):
+        images = [Image.new("RGB", (8, 8), (40 * k, 0, 255 - 40 * k)) for k in range(6)]
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "out.gif")
+            render_scene.write_gif(images, path, 2)
+            gif = Image.open(path)
+            self.assertEqual((3, 80, 0), (gif.n_frames, gif.info["duration"], gif.info["loop"]))
+            self.assertEqual((8, 8), gif.size)
+            gif.seek(2)
+            self.assertEqual(images[4].getpixel((0, 0)), gif.convert("RGB").getpixel((0, 0)))
+
+
 class ToolTest(unittest.TestCase):
     """The tool as a subprocess: each run is one process, so the module state it sets stays out of this one."""
 
@@ -260,6 +302,24 @@ class ToolTest(unittest.TestCase):
         self.assertEqual(2, run.returncode)
         self.assertIn(missing, run.stderr)
         self.assertFalse(os.path.exists(os.path.join(self.tmp.name, "out.png")))
+
+    def test_a_file_that_is_not_a_header_is_a_refusal_that_names_the_path(self):
+        path = os.path.join(self.tmp.name, "font.h")
+        with open(path, "w") as f:
+            f.write("not a header\n")
+        run = self.run_tool("--font", path, "snake", os.path.join(self.tmp.name, "out.png"), "1")
+        self.assertEqual(2, run.returncode)
+        self.assertIn(path, run.stderr)
+        self.assertNotIn("Traceback", run.stderr)
+
+    def test_all_refuses_the_single_run_flags(self):
+        for flags in (("--tap", "3"), ("--hold", "2"), ("--title",), ("--seed", "0"), ("--gif", "x.gif"), ("--every", "3"),
+                      ("snake",)):
+            with self.subTest(flags):
+                run = self.run_tool("--no-text", "--all", os.path.join(self.tmp.name, "all"), *flags)
+                self.assertEqual(2, run.returncode)
+                self.assertIn(flags[0], run.stderr)
+                self.assertFalse(os.path.exists(os.path.join(self.tmp.name, "all")))
 
     @unittest.skipUnless(shutil.which("clang"), NO_CLANG)
     def test_no_text_draws(self):
@@ -316,6 +376,30 @@ class SmokeTest(unittest.TestCase):
         first, _ = self.sheet("flappy")
         self.assertTrue(all(first.getpixel((x, y)) in colours for x in range(320)), first.getpixel((0, y)))
         self.assertGreater(len(colours), 1)
+
+
+@unittest.skipUnless(shutil.which("clang"), NO_CLANG)
+class OverlayBlendTest(unittest.TestCase):
+    """The overlay subject blends: a pixel in the pane's dark part over the ball pit is neither the pane's own colour
+    nor the pit's pixel without the pane (VolumePane.alpha is 128)."""
+
+    FRAME = 30
+
+    def test_the_pane_lets_the_pit_show_through(self):
+        import overlay
+        x, y = overlay.RECT[0] + 2, overlay.RECT[1] + 2  # inside the box's grey edge, left of the "vol" text
+        with tempfile.TemporaryDirectory() as tmp:
+            pixels = {}
+            for name in ("overlay", "ballpit"):
+                out = os.path.join(tmp, name + ".png")
+                run = subprocess.run([sys.executable, "-B", TOOL, "--no-text", name, out, str(self.FRAME)], cwd=ROOT,
+                                     capture_output=True, text=True)
+                self.assertEqual(0, run.returncode, run.stderr[-800:])
+                pixels[name] = Image.open(out).getpixel((x, y))
+        dark = rgb(gfx.DARK)
+        self.assertNotEqual(dark, pixels["overlay"])
+        self.assertNotEqual(pixels["ballpit"], pixels["overlay"])
+        self.assertEqual(rgb(blend(gfx.DARK, panel(pixels["ballpit"]), 128)), pixels["overlay"])
 
 
 if __name__ == "__main__":

@@ -36,6 +36,12 @@ class DrawingTft(Tft):
     def fill(self, c):
         self.fill_rect(0, 0, W, H, c)
 
+    def fill_rect(self, x, y, w, h, c):
+        """s3lcd.c's _fill_rect: the rectangle clipped to the panel (test_fire's wraps into the next row)."""
+        x0, y0, x1, y1 = max(x, 0), max(y, 0), min(x + w, W), min(y + h, H)
+        if x1 > x0 and y1 > y0:
+            Tft.fill_rect(self, x0, y0, x1 - x0, y1 - y0, c)
+
     def track(self, on):
         pass
 
@@ -72,6 +78,7 @@ class DrawingTft(Tft):
             return
         if w > len(buf) // 2 // h:
             raise ValueError("buffer smaller than width * height * 2")
+        alpha, key = alpha & 255, key & 0xFFFF if key >= 0 else key  # the C's uint8_t and uint16_t
         src, dst = memoryview(buf).cast("H"), memoryview(self.frame).cast("H")
         if alpha == 255 and 0 <= x <= W - w and 0 <= y <= H - h:
             for yy in range(h):
