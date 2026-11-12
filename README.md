@@ -15,6 +15,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene on the Mac to a PNG (needs clang and Pillow). `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
+| `logs/` | the logs that the runs in `bench.md` cite, one file per run |
 | `p537-finding.md` | the options for smooth motion, ranked, with a plan in slices |
 | `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565). Also the wiring guides: `wiring.html` (every wire, with pictures) and `p758-encoder-steps.html` (the encoder, one wire per step) |
 

@@ -8,11 +8,11 @@ rodata size:  96
 bss size:     0
 GOT entries:  11
 GEN crackle_c.mpy
-cp /Users/petr/Development/pixel-p747/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p747/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
-cp /Users/petr/Development/pixel-p747/games/crackle.py :crackle.py
-cp /Users/petr/Development/pixel-p747/games/fire.py :fire.py
-cp /Users/petr/Development/pixel-p747/games/sound.py :sound.py
+cp ~/Development/pixel-p747/games/crackle.py :crackle.py
+cp ~/Development/pixel-p747/games/fire.py :fire.py
+cp ~/Development/pixel-p747/games/sound.py :sound.py
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
 mem 6295136

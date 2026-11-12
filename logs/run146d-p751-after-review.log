@@ -1,10 +1,10 @@
-cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.NHUJye4w7k/crackle.py :crackle.py
-cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+cp ~/Development/pixel-p751/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+cp ~/Development/pixel-p751/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p751/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
 fire_bank.raw is on the board
 bank load 219 ms, 246960 bytes, psram

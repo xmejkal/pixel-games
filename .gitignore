@@ -1,5 +1,6 @@
 __pycache__/
 *.log
+!logs/*.log
 backup/
 *.bin
 node_modules/

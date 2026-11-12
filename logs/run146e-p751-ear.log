@@ -1,14 +1,14 @@
 # run146e (P751), 2026-11-10 19:25 to 20:20 Europe/Prague: the PO's ear on the board, Fire, CallbackRefill 2048
 # 1. the grains bed (old bank), tools/crackle.sh 20 GrainCrackle
-cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.LXcMbXycTo/crackle.py :crackle.py
 Up to date: crackle.py
-cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+cp ~/Development/pixel-p751/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+cp ~/Development/pixel-p751/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p751/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
 fire_bank.raw is on the board
 bank load 219 ms, 246960 bytes, psram
@@ -50,14 +50,14 @@ crackle fire render_max 434 pop_median 7 pop_max 23 pops 17 dropped 0
 written 320768 short -48
 done
 # 2. pops alone, GRAIN_LOOK 0, 32768 (20 s, then 30 s)
-cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.3Qu8LKEIWR/crackle.py :crackle.py
-cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+cp ~/Development/pixel-p751/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+cp ~/Development/pixel-p751/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p751/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
 fire_bank.raw is on the board
 bank load 221 ms, 246960 bytes, psram
@@ -98,15 +98,15 @@ sound fire sent 313 of 313 between_max 39 lag_max 23 late 0 short 48 pushes 0
 crackle fire render_max 459 pop_median 11 pop_max 19 pops 25 dropped 0
 written 320768 short 32
 done
-cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.0oyHa7fWDO/crackle.py :crackle.py
 Up to date: crackle.py
-cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+cp ~/Development/pixel-p751/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+cp ~/Development/pixel-p751/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p751/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
 fire_bank.raw is on the board
 bank load 221 ms, 246960 bytes, psram
@@ -168,16 +168,16 @@ switch 1 18
 written 481024 short 304
 done
 # 3. roar-only bed (new bank), 25 s, then 30 s
-cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.jD9dZDi6MY/crackle.py :crackle.py
-cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+cp ~/Development/pixel-p751/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+cp ~/Development/pixel-p751/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p751/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.raw :fire_bank.raw
+cp ~/Development/pixel-p751/games/fire_bank.raw :fire_bank.raw
 bank load 218 ms, 246960 bytes, psram
 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
 backend s3lcd
@@ -224,15 +224,15 @@ sound fire sent 315 of 315 between_max 44 lag_max 28 late 0 short -96 pushes 0
 crackle fire render_max 428 pop_median 11 pop_max 23 pops 17 dropped 0
 written 400128 short 128
 done
-cp /Users/petr/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp ~/Development/pixel-p751/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
 Up to date: crackle_c.mpy
 cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.z6wDeu1gAB/crackle.py :crackle.py
 Up to date: crackle.py
-cp /Users/petr/Development/pixel-p751/games/fire.py :fire.py
+cp ~/Development/pixel-p751/games/fire.py :fire.py
 Up to date: fire.py
-cp /Users/petr/Development/pixel-p751/games/sound.py :sound.py
+cp ~/Development/pixel-p751/games/sound.py :sound.py
 Up to date: sound.py
-cp /Users/petr/Development/pixel-p751/games/fire_bank.py :fire_bank.py
+cp ~/Development/pixel-p751/games/fire_bank.py :fire_bank.py
 Up to date: fire_bank.py
 fire_bank.raw is on the board
 bank load 218 ms, 246960 bytes, psram
