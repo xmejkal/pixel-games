@@ -74,8 +74,18 @@ Runs now:
   bodies, then the field's hot part again, cut out with a soft edge (P639). A BOOT tap walks three modes: linear,
   picture (over the sky) and nearest. `tools/render_scene.py` draws it on the Mac. Smoke is later (cut by the PO,
   2026-11-04).
-- The rain (P593, `games/rain.py`), fourth: 160 boxes fall, stepped by the C engine, and a BOOT tap starts
-  the rain again. On the board, C ran at 24 to 25 fps with a 0.22 ms step, and the Python twin at 8 to 9 fps with a
+- Bucket (P773, `games/bucket.py`), fourth: a one-button game on the rain's physics. Boxes drop one by one, straight
+  down. Hold BOOT and the bucket on the rail goes right, let go and it goes left. A box in the bucket is a point. A
+  missed box bounces onto the pile in its column, and a column of 3 boxes reaches the rail and ends the round. Each
+  point of the first 10 makes the boxes come faster (a box each 1.5 s, down to 1 s). On the Mac, with frames of 42
+  ms, 60 ms and random 20 to 90 ms, a player who does nothing loses in 14 to 54 s, a hold with no end in 14 to 51 s,
+  and 50 fixed rhythms of hold and release (42 and 60 ms only) lost in 61 s at the latest. A bot that steers to the lowest box lasted the
+  whole 600 s of the trial every time, and one that gets columns 0 and 31 in turn at full speed misses none (a trial
+  script that is not in the repository made these numbers; the bucket is 64 px wide and goes 360 px a second). The bodies do not touch each other, so the pile is a
+  count per column, and a missed box bounces on its column's top. It plays `catch`, `miss` and `die`. The PO's hand,
+  eye and ear on it are still open.
+- The rain (P593, `games/rain.py`), the scene under Bucket. Since P773 it is not in the box's list: 160 boxes fall,
+  stepped by the C engine, and a BOOT tap starts the rain again. On the board, C ran at 24 to 25 fps with a 0.22 ms step, and the Python twin at 8 to 9 fps with a
   28 ms step (bench.md P590). Since P768 the box runs only the C stepper. The Python twin steps the rain where no
   engine module exists (the Mac's tests, a stock image).
 - The bodies' API (P590): `engine.Bodies(n)` in C and its twin `motion.Bodies(n)` in Python take the same calls:
@@ -178,7 +188,7 @@ Runs now:
   `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
   guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Fourteen games. Three are effect scenes: the ball pit, bodies on fire and rain. Marshmallow is a game on the fire's field (P773). Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
+- Fourteen games. Two are effect scenes: the ball pit and bodies on fire. Marshmallow is a game on the fire's field and Bucket a game on the rain's physics (P773). Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 

@@ -1,0 +1,93 @@
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 5892032
+frame tft
+ready
+stepper c
+game rain
+rain c n 160 fps 24 step 0.29 read 1.41 draw 12.88
+fps rain 24
+time rain step 2.5 paint 19.8 send 3.5 gc 2.5 fps 24 worst 58 slowest 46 = step 2 paint 40 send 3 gc 0
+phases rain static 4 paint 17 fx 0 hud 21 over 0 title 0
+avg rain static 4.6 paint 13.1 fx 0.1 hud 1.7 over 0.0 title 0.0
+heap rain alloc 155408 glyphs 14
+sound rain sent 316 of 315 between_max 29 late 0 render_max 757 plays 1 presses 0 render_mean 550
+stepper c
+stepper c
+stepper c
+stepper c
+stepper c
+fps rain 24
+time rain step 2.9 paint 21.0 send 3.3 gc 2.4 fps 24 worst 78 slowest 50 = step 1 paint 45 send 3 gc 0
+phases rain static 4 paint 21 fx 0 hud 24 over 0 title 0
+avg rain static 4.6 paint 14.3 fx 0.1 hud 1.7 over 0.0 title 0.0
+heap rain alloc 156176 glyphs 14
+sound rain sent 313 of 312 between_max 31 late 0 render_max 756 plays 0 presses 0 render_mean 558
+stepper c
+stepper c
+fps rain 24
+time rain step 2.7 paint 21.5 send 3.7 gc 2.4 fps 24 worst 55 slowest 51 = step 4 paint 43 send 3 gc 0
+phases rain static 4 paint 21 fx 0 hud 23 over 0 title 0
+avg rain static 4.6 paint 14.5 fx 0.1 hud 2.1 over 0.0 title 0.0
+heap rain alloc 156240 glyphs 14
+sound rain sent 314 of 313 between_max 34 late 0 render_max 776 plays 0 presses 0 render_mean 560
+stepper c
+fps rain 24
+time rain step 2.5 paint 22.0 send 3.6 gc 2.4 fps 24 worst 58 slowest 49 = step 3 paint 42 send 3 gc 0
+phases rain static 4 paint 21 fx 0 hud 22 over 0 title 0
+avg rain static 4.7 paint 14.7 fx 0.1 hud 2.0 over 0.0 title 0.0
+heap rain alloc 173472 glyphs 18
+sound rain sent 313 of 313 between_max 30 late 0 render_max 743 plays 0 presses 0 render_mean 558
+rain c n 160 fps 24 step 0.31 read 1.42 draw 14.77
+fps rain 24
+time rain step 2.9 paint 26.0 send 3.4 gc 2.7 fps 24 worst 65 slowest 58 = step 2 paint 52 send 3 gc 0
+phases rain static 4 paint 22 fx 0 hud 28 over 0 title 0
+avg rain static 4.7 paint 16.5 fx 0.1 hud 1.8 over 0.0 title 0.0
+heap rain alloc 173328 glyphs 20
+sound rain sent 314 of 313 between_max 34 late 0 render_max 845 plays 0 presses 0 render_mean 581
+rain c n 160 fps 23 step 0.32 read 1.70 draw 16.66
+fps rain 23
+time rain step 2.9 paint 26.7 send 3.4 gc 2.6 fps 23 worst 74 slowest 63 = step 2 paint 58 send 3 gc 0
+phases rain static 4 paint 24 fx 0 hud 29 over 0 title 0
+avg rain static 4.6 paint 17.0 fx 0.1 hud 2.4 over 0.0 title 0.0
+heap rain alloc 175312 glyphs 21
+sound rain sent 313 of 313 between_max 34 late 0 render_max 827 plays 0 presses 0 render_mean 586
+rain c n 160 fps 23 step 0.31 read 1.61 draw 16.52
+fps rain 23
+time rain step 2.8 paint 24.8 send 3.4 gc 2.6 fps 23 worst 91 slowest 62 = step 2 paint 55 send 3 gc 0
+phases rain static 4 paint 22 fx 0 hud 29 over 0 title 0
+avg rain static 4.6 paint 17.3 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap rain alloc 175376 glyphs 21
+sound rain sent 314 of 314 between_max 31 late 0 render_max 851 plays 0 presses 0 render_mean 592
+rain c n 160 fps 24 step 0.32 read 1.73 draw 17.36
+fps rain 24
+time rain step 2.9 paint 24.6 send 3.4 gc 2.7 fps 24 worst 70 slowest 68 = step 2 paint 62 send 3 gc 0
+phases rain static 4 paint 23 fx 0 hud 33 over 0 title 0
+avg rain static 4.6 paint 17.6 fx 0.1 hud 2.0 over 0.0 title 0.0
+heap rain alloc 174128 glyphs 21
+sound rain sent 314 of 313 between_max 33 late 0 render_max 861 plays 0 presses 0 render_mean 586
+rain c n 160 fps 23 step 0.33 read 1.73 draw 17.98
+fps rain 23
+time rain step 2.9 paint 25.5 send 3.5 gc 2.6 fps 23 worst 74 slowest 65 = step 2 paint 59 send 3 gc 0
+phases rain static 4 paint 24 fx 0 hud 30 over 0 title 0
+avg rain static 4.6 paint 18.2 fx 0.1 hud 2.3 over 0.0 title 0.0
+heap rain alloc 175328 glyphs 21
+sound rain sent 314 of 313 between_max 33 late 0 render_max 862 plays 0 presses 0 render_mean 583
+rain c n 160 fps 23 step 0.32 read 1.75 draw 17.26
+fps rain 23
+time rain step 2.9 paint 25.3 send 3.5 gc 2.6 fps 23 worst 66 slowest 63 = step 2 paint 57 send 3 gc 0
+phases rain static 4 paint 22 fx 0 hud 30 over 0 title 0
+avg rain static 4.7 paint 17.8 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap rain alloc 175328 glyphs 21
+sound rain sent 314 of 313 between_max 34 late 0 render_max 858 plays 0 presses 0 render_mean 582
+rain c n 160 fps 23 step 0.33 read 1.72 draw 17.73
+fps rain 23
+time rain step 3.0 paint 24.9 send 3.4 gc 2.7 fps 23 worst 69 slowest 62 = step 2 paint 55 send 3 gc 0
+phases rain static 4 paint 23 fx 0 hud 28 over 0 title 0
+avg rain static 4.6 paint 17.8 fx 0.1 hud 2.2 over 0.0 title 0.0
+heap rain alloc 173584 glyphs 21
+sound rain sent 313 of 313 between_max 37 late 0 render_max 852 plays 0 presses 0 render_mean 585
+rain c n 160 fps 23 step 0.32 read 1.87 draw 18.50
+late 0 written 961280
+score 0 held_frames 40
+done

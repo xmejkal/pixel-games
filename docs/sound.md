@@ -34,6 +34,8 @@ is the `fire` loop. Its level is the flame's height, `top_px * LEVELS // FLAME_M
 least `FLAME_STEP` (16). A marshmallow whose time ran out plays `burn` too. The game emits `flame` with 0 before
 `die()` and at each restart.
 
+`Bucket` (P773) uses the bank as it is too: `catch` plays `pickup` and `miss` plays `land`. It has no loop.
+
 ## The music
 
 `App.switch` calls `cues.music()`. It starts the bank's sound `music` once, as a protected loop in the group

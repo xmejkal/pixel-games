@@ -1530,3 +1530,24 @@ at 16 points: the campfire at 5, the time at 12 and the black limit at 16.
 - Open: the PO's hand, eye and ear. No run shows how the game looks or plays, or how loud the flame is
   (`FLAME_GAIN`). The numbers of the rules come from Mac trials with simple players, not from a person.
 
+
+## P773 (#1065), 2026-11-12: Bucket, the game on the rain's physics
+
+`Bucket` took `Rain`'s place in `app.GAMES`. Each run is 60 s with the sound and the music. The probe is a scratch
+copy of the Marshmallow probe, not in the repository. In the `Bucket` run a bot in the probe holds BOOT while the
+bucket's middle is left of the lowest falling box, so the whole run is play. The board held b3518d6's `bucket.py`
+and `app.py`.
+
+The plan's pass lines: at least 24 fps, the worst frame at most the control's plus 5 ms, and no more late refills
+than the control.
+
+| Run | Log | What | fps | Worst frame, ms | Paint mean, ms | Late | Last line |
+|---|---|---|---|---|---|---|---|
+| 212a | `run212a-p773-rain-control.log` | `Rain`, the control, no hand | 23 or 24 | 55 to 91 | 19.8 to 26.7 | 0 | `score 0 held_frames 40` |
+| 212b | `run212b-p773-bucket-bot.log` | `Bucket`, the steering bot | 24 or 25 | 40 to 64 | 8.0 to 12.8 | 0 | `score 54 held_frames 710` |
+
+- Run212b passes every line. Its worst frame (64 ms) is under the control's (91 ms), because `Bucket` draws at most
+  8 boxes and the pile, against the rain's 160 boxes.
+- The control has 23 fps in 5 of its 11 windows, so the control itself is under the 24 fps line.
+- The bot scored 54 and did not lose in 60 s. The first window holds the title, so its paint mean is the highest.
+- Open: the PO's hand, eye and ear. No run shows how the game looks or plays.
