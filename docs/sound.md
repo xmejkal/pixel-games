@@ -36,6 +36,9 @@ least `FLAME_STEP` (16). A marshmallow whose time ran out plays `burn` too. The 
 
 `Bucket` (P773) uses the bank as it is too: `catch` plays `pickup` and `miss` plays `land`. It has no loop.
 
+`Meteors` (P773) uses the bank as it is: `land` plays `land` once for each meteor, at its first hit on the ground.
+Its bodies keep the crackle of `BurningBodies` when the probe's voice is `FireSound`.
+
 ## The music
 
 `App.switch` calls `cues.music()`. It starts the bank's sound `music` once, as a protected loop in the group

@@ -67,7 +67,7 @@ Runs now:
   restitution_threshold)` takes Box2D v3's names, and the pit uses 0.5, 0.7 and 100 px/s. Each hit is an event with
   its speed, and the HUD counts the hits a second. On the board, about 100 balls keep 23 to 24 fps (run99d, run100), and 320 run at 6 to 8 fps (run104, run100).
   A settled pile's step takes 4.2 ms at 100 balls and 13.8 ms at 300 (bench.md, P598). It needs the engine image.
-- The bodies on fire (P596, P607, `games/burning.py`), third: eight falling bodies on the rain's physics each carry
+- The bodies on fire (P596, P607, `games/burning.py`), the scene under Meteors. Since P773 it is not in the box's list: eight falling bodies on the rain's physics each carry
   an `effects.FireTrail`, which burns heat into the fire's field behind them (`HeatField.burn`), and the field's own base is off (`HeatField.set_base`), so only the bodies
   burn. A hit at 600 px/s or faster flares up at the body's plane: C reports the hit with its speed as an event, and
   Python decides the flare (P590). The flames show behind and in front of a body: the scene draws the field, the
@@ -84,6 +84,16 @@ Runs now:
   script that is not in the repository made these numbers; the bucket is 64 px wide and goes 360 px a second). The bodies do not touch each other, so the pile is a
   count per column, and a missed box bounces on its column's top. It plays `catch`, `miss` and `die`. The PO's hand,
   eye and ear on it are still open.
+- Meteors (P773, `games/meteors.py`), the game on the bodies on fire: a walker walks the ground and never stops. A
+  BOOT tap turns it round, and it turns at each screen edge. Burning meteors fall, each onto a red mark on the
+  ground, bounce straight up and lie as a coal for 4 s. One touch of a meteor or a coal ends the round, and the score
+  is the seconds lived. A new meteor drops each 2.5 s, 50 ms sooner for each second lived, down to 1 s. Of each three
+  drops, about one lands anywhere, one on the walker and one where it is going. A fair aim (`Rules.fair`) never drops
+  a meteor that leaves the walker no free stretch of 48 px that it can reach in time. On the Mac (frames of 42 ms,
+  60 ms and random 20 to 90 ms, 16 seeds), an idle walker dies within 7 s, a tap every frame within 16 s, and every
+  blind rhythm within 18 s. A bot that keeps out of the marks and the coals lived the whole 180 s in 96 runs (a trial
+  script that is not in the repository made these numbers). It plays `land` and `die`. The PO's hand, eye and ear
+  on it are still open.
 - The rain (P593, `games/rain.py`), the scene under Bucket. Since P773 it is not in the box's list: 160 boxes fall,
   stepped by the C engine, and a BOOT tap starts the rain again. On the board, C ran at 24 to 25 fps with a 0.22 ms step, and the Python twin at 8 to 9 fps with a
   28 ms step (bench.md P590). Since P768 the box runs only the C stepper. The Python twin steps the rain where no
@@ -188,7 +198,7 @@ Runs now:
   `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
   guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Fourteen games. Two are effect scenes: the ball pit and bodies on fire. Marshmallow is a game on the fire's field and Bucket a game on the rain's physics (P773). Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
+- Fourteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 

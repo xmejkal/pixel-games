@@ -1551,3 +1551,27 @@ than the control.
 - The control has 23 fps in 5 of its 11 windows, so the control itself is under the 24 fps line.
 - The bot scored 54 and did not lose in 60 s. The first window holds the title, so its paint mean is the highest.
 - Open: the PO's hand, eye and ear. No run shows how the game looks or plays.
+
+
+## P773 (#1065), 2026-11-12: Meteors, the game on the bodies on fire
+
+`Meteors` took `BurningBodies`' place in `app.GAMES`. Each run is 60 s with the sound and the music. The probe is a
+scratch copy of the Bucket probe, not in the repository. The board held 835c886's `meteors.py`, `burning.py` and
+`app.py`. In run213b the probe runs the Mac trial's bot, which taps to keep out of the marks and the coals. In run213c
+the walker is idle, and the probe taps only on the game-over screen, so the round ends and starts again about each 5 s.
+
+The plan's pass lines: at least 24 fps, the worst frame at most the control's plus 5 ms, and no more late refills
+than the control.
+
+| Run | Log | What | fps | Worst frame, ms | Paint mean, ms | Late | Last line |
+|---|---|---|---|---|---|---|---|
+| 213a | `run213a-p773-burning-control.log` | `BurningBodies`, the control, no hand | 23 or 24 | 63 to 82 | 17.1 to 17.9 | 0 | `score 0 held_frames 0` |
+| 213b | `run213b-p773-meteors-bot.log` | `Meteors`, the bot | 24 | 52 to 71 | 15.4 to 16.8 | 0 | `score 58 held_frames 0` |
+| 213c | `run213c-p773-meteors-idle.log` | `Meteors`, idle, a new round about each 5 s | 23 or 24 | 59 to 92 | 15.6 to 19.7 | 0 | `score 5 held_frames 0` |
+
+- Run213b passes every line. The bot lived the whole run (score 58 at the end of 60 s with the title).
+- Run213c fails the worst-frame line in 1 of its 11 windows: 92 ms against 87 ms. Its slow frames are the frames
+  of a death or a restart: step 24 to 32 ms and gc 13 ms in that frame. They are `Game`'s cost for a round's end, as
+  in Marshmallow (88 to 95 ms, P773 above). Not fixed in this story.
+- The control has 23 fps in 10 of its 11 windows, so the control itself is under the 24 fps line.
+- Open: the PO's hand, eye and ear. No run shows how the game looks or plays.
