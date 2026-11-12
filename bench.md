@@ -1,6 +1,6 @@
 # Bench log (P511 #706)
 
-The log that each run wrote is in `logs/`, under the run's number (for example `logs/run185-p764-hand-alpha128.log`).
+The logs that were kept are in `logs/`, under their run's number (for example `logs/run185-p764-hand-alpha128.log`). Most runs have no kept log, and a run can have several.
 
 ## Builds (no board)
 
