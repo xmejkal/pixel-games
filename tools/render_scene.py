@@ -57,6 +57,7 @@ FILTERS = {"nearest": fire.NEAREST, "linear": fire.LINEAR}  # --- MVP (P608) ---
 FONT_PATH = os.path.expanduser("~/esp/micropython-v1.29.0/extmod/font_petme128_8x8.h")  # build.sh's clone
 FONT_BYTES = 96 * 8  # the characters 32 to 127, eight column bytes each
 GAP = 10  # px between the sheet's frames
+PALETTE_FRAMES = 8  # the images a GIF's palette is taken from
 
 
 class Subject:
@@ -76,15 +77,15 @@ class Subject:
 
 
 SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the presses and counts set by eye (P795)
-    "fire": Subject(fire.Fire, "tap: next mode", 5, 65, seed=fire.SEED),
-    "rain": Subject(rain.Rain, "tap: again", 5, 105),
-    "marshmallow": Subject(Marshmallow, Marshmallow.hint, 5, 165, every=4, hold=40),
-    "ballpit": Subject(balls.BallPit, "tap pours, hold shakes", 5, 130, every=3, tap=25),
-    "burningbodies": Subject(BurningBodies, "tap: next mode", 5, 85),
-    "bucket": Subject(Bucket, Bucket.hint, 5, 125, every=3),
-    "flappy": Subject(Flappy, Flappy.hint, 5, 70, tap=12, shot=60),
-    "runner": Subject(Runner, Runner.hint, 5, 75, hold=40),
-    "snake": Subject(Snake, Snake.hint, 5, 105, tap=25),
+    "fire": Subject(fire.Fire, "tap: next mode", 30, 84, seed=fire.SEED),
+    "rain": Subject(rain.Rain, "tap: again", 10, 110),
+    "marshmallow": Subject(Marshmallow, Marshmallow.hint, 5, 200, every=4, hold=40, shot=195),
+    "ballpit": Subject(balls.BallPit, "tap pours, hold shakes", 5, 130, every=3, tap=10),
+    "burningbodies": Subject(BurningBodies, "tap: next mode", 20, 100),
+    "bucket": Subject(Bucket, Bucket.hint, 5, 150, every=3, hold=15),
+    "flappy": Subject(Flappy, Flappy.hint, 5, 70, every=3, tap=12, shot=60),
+    "runner": Subject(Runner, Runner.hint, 10, 75, every=3, hold=40),
+    "snake": Subject(Snake, Snake.hint, 5, 80, tap=20, shot=45),
     "stack": Subject(Stack, Stack.hint, 5, 72, tap=25),
     "cave": Subject(Cave, Cave.hint, 3, 28, every=1, hold=1, shot=25),
     "tunnel": Subject(Tunnel, Tunnel.hint, 5, 62, tap=25, shot=60),
@@ -92,7 +93,7 @@ SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the p
     "starfire": Subject(Starfire, Starfire.hint, 5, 105, hold=3),
     "cubetiming": Subject(CubeTiming, CubeTiming.hint, 5, 99, tap=25),
     "gravitypong": Subject(GravityPong, GravityPong.hint, 5, 99, tap=16),
-    "overlay": Subject(balls.BallPit, "turn the knob", 5, 80, every=3, tap=25, show=0),
+    "overlay": Subject(balls.BallPit, "turn the knob", 5, 80, every=3, tap=10, show=0),
 }
 
 
@@ -112,14 +113,22 @@ class Font:
 
 
 class FrameClock:
-    """time's ticks on the frame clock: ticks_ms and ticks_us read the frame's time, so the fps labels say the frame
-    rate and do not drift with the Mac's speed."""
+    """time's ticks on the frame clock: ticks_ms reads the frame's time, and ticks_us counts one microsecond per call
+    from it, so a step takes time (Marshmallow's Campfire reads the flame only after a step that took time) and the
+    fps labels say the frame rate, not the Mac's speed."""
 
     def __init__(self):
-        self.ms = 0
+        self.ms, self.calls = 0, 0
+
+    def frame(self, ms):
+        self.ms, self.calls = ms, 0
+
+    def ticks_us(self):
+        self.calls += 1
+        return self.ms * 1000 + self.calls
 
     def install(self):
-        time.ticks_ms, time.ticks_us = lambda: self.ms, lambda: self.ms * 1000
+        time.ticks_ms, time.ticks_us = lambda: self.ms, self.ticks_us
         time.ticks_diff, time.ticks_add = lambda a, b: a - b, lambda a, b: a + b
 
 
@@ -166,7 +175,8 @@ def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, ho
     tft, us = DrawingTft(), [0, 0, 0, 0]
     out = lcd.TftOut(tft)  # one per subject: its kept strips live on its canvas
     for k in itertools.count():
-        clock.ms = now = FRAME_MS * (k + 1)
+        now = FRAME_MS * (k + 1)
+        clock.frame(now)
         pressed, held = buttons(k, tap, hold, title)
         with quiet:
             game.step(now, pressed, held)
@@ -187,10 +197,14 @@ def write_sheet(images, path):
 
 
 def write_gif(images, path, every):
-    """Every every-th image as a GIF frame of every * FRAME_MS ms, looping, on one palette taken from the middle
-    image."""
+    """Every every-th image as a GIF frame of every * FRAME_MS ms, looping, on one palette taken from PALETTE_FRAMES
+    images spread over the run (a pit gains a colour with each pour)."""
     run = images[::every]
-    palette = run[len(run) // 2].quantize(256)
+    spread = run[::max(1, len(run) // PALETTE_FRAMES)][:PALETTE_FRAMES]
+    sample = Image.new("RGB", (320 * len(spread), 240))
+    for k, img in enumerate(spread):
+        sample.paste(img, (320 * k, 0))
+    palette = sample.quantize(256)
     run = [img.quantize(palette=palette) for img in run]
     run[0].save(path, save_all=True, append_images=run[1:], duration=every * FRAME_MS, loop=0, optimize=True)
 
