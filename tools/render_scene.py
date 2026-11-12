@@ -75,24 +75,24 @@ class Subject:
                                                                     self.seed)
 
 
-SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay
-    "fire": Subject(fire.Fire, "tap: next mode", 5, 55, seed=fire.SEED),
-    "rain": Subject(rain.Rain, "tap: again", 5, 55),
-    "marshmallow": Subject(Marshmallow, Marshmallow.hint, 5, 55, hold=40),
-    "ballpit": Subject(balls.BallPit, "tap pours, hold shakes", 5, 55, tap=25),
-    "burningbodies": Subject(BurningBodies, "tap: next mode", 5, 55),
-    "bucket": Subject(Bucket, Bucket.hint, 5, 55, hold=10),
-    "flappy": Subject(Flappy, Flappy.hint, 5, 55, tap=10),
-    "runner": Subject(Runner, Runner.hint, 5, 55, tap=10),
-    "snake": Subject(Snake, Snake.hint, 5, 55, tap=10),
-    "stack": Subject(Stack, Stack.hint, 5, 55, tap=10),
-    "cave": Subject(Cave, Cave.hint, 5, 55, hold=3),
-    "tunnel": Subject(Tunnel, Tunnel.hint, 5, 55, tap=10),
-    "road": Subject(Road, Road.hint, 5, 55, tap=10),
-    "starfire": Subject(Starfire, Starfire.hint, 5, 55, tap=10),
-    "cubetiming": Subject(CubeTiming, CubeTiming.hint, 5, 55, tap=10),
-    "gravitypong": Subject(GravityPong, GravityPong.hint, 5, 55, tap=10),
-    "overlay": Subject(balls.BallPit, "turn the knob", 5, 55, tap=25, show=0),
+SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the presses and counts set by eye (P795)
+    "fire": Subject(fire.Fire, "tap: next mode", 5, 65, seed=fire.SEED),
+    "rain": Subject(rain.Rain, "tap: again", 5, 105),
+    "marshmallow": Subject(Marshmallow, Marshmallow.hint, 5, 165, every=4, hold=40),
+    "ballpit": Subject(balls.BallPit, "tap pours, hold shakes", 5, 130, every=3, tap=25),
+    "burningbodies": Subject(BurningBodies, "tap: next mode", 5, 85),
+    "bucket": Subject(Bucket, Bucket.hint, 5, 125, every=3),
+    "flappy": Subject(Flappy, Flappy.hint, 5, 70, tap=12, shot=60),
+    "runner": Subject(Runner, Runner.hint, 5, 75, hold=40),
+    "snake": Subject(Snake, Snake.hint, 5, 105, tap=25),
+    "stack": Subject(Stack, Stack.hint, 5, 72, tap=25),
+    "cave": Subject(Cave, Cave.hint, 3, 28, every=1, hold=1, shot=25),
+    "tunnel": Subject(Tunnel, Tunnel.hint, 5, 62, tap=25, shot=60),
+    "road": Subject(Road, Road.hint, 5, 105),
+    "starfire": Subject(Starfire, Starfire.hint, 5, 105, hold=3),
+    "cubetiming": Subject(CubeTiming, CubeTiming.hint, 5, 99, tap=25),
+    "gravitypong": Subject(GravityPong, GravityPong.hint, 5, 99, tap=16),
+    "overlay": Subject(balls.BallPit, "turn the knob", 5, 80, every=3, tap=25, show=0),
 }
 
 
@@ -158,22 +158,24 @@ def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, ho
         ov = overlay.Overlay()
         pane = ov.add(overlay.VolumePane(volume.MasterVolume()))
         pane.hold_ms = hold_ms
-    with contextlib.redirect_stdout(io.StringIO()):
+    quiet = contextlib.redirect_stdout(io.StringIO())  # the games' own lines (the stepper, the mode, the reports)
+    with quiet:
         game = row.game()
         if mag_filter is not None:
             game.fire_plugin.set_filter(mag_filter)
-        tft, us = DrawingTft(), [0, 0, 0, 0]
-        out = lcd.TftOut(tft)  # one per subject: its kept strips live on its canvas
-        for k in itertools.count():
-            clock.ms = now = FRAME_MS * (k + 1)
-            pressed, held = buttons(k, tap, hold, title)
+    tft, us = DrawingTft(), [0, 0, 0, 0]
+    out = lcd.TftOut(tft)  # one per subject: its kept strips live on its canvas
+    for k in itertools.count():
+        clock.ms = now = FRAME_MS * (k + 1)
+        pressed, held = buttons(k, tap, hold, title)
+        with quiet:
             game.step(now, pressed, held)
             if pane:
                 if k == row.show:
                     pane.show(now)
                 ov.update(now)
             out.draw(game, us, ov)
-            yield tft.image()
+        yield tft.image()
 
 
 def write_sheet(images, path):
