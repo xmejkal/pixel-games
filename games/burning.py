@@ -73,11 +73,15 @@ def flare_size(speed):
 
 class BurningBodies(Fire):
     name = "burning"
+    # --- MVP (P773) --- a game made from this scene sets its own physics, seed and first drops (games/meteors.py)
+    GRAVITY, FRICTION, FLARE_MIN = plugins.GRAVITY, plugins.FRICTION, FLARE_MIN
+    SEED = SEED  # None: no seed, so two rounds differ
     LOOK = (BURN_DECAY, BURN_COOL, SWAY, 0, 1, FAST, 0, BURN_FADE)  # no spots, no embers: the base is off
 
     def setup(self):
-        random.seed(SEED)
-        self.physics_plugin = PhysicsPlugin(N, plugins.engine is not None)
+        if self.SEED is not None:
+            random.seed(self.SEED)
+        self.physics_plugin = PhysicsPlugin(N, plugins.engine is not None, gravity=self.GRAVITY, friction=self.FRICTION)
         self.played_ms = 0
         self.prev = array("h", [0] * (2 * N))  # --- MVP (P753) --- each body's x, y at the last frame it moved
         self.has_prev = [False] * N  # False after drop(i) and while asleep: that frame's move is 0
@@ -89,6 +93,10 @@ class BurningBodies(Fire):
         if self.fire_plugin.field is not None:
             self.fire_plugin.field.set_base(False)
         self.attach_effects()
+        self.start_bodies()
+
+    def start_bodies(self):
+        """The first drops of a round: all N."""
         for i in range(N):
             self.drop(i)
 
@@ -122,6 +130,11 @@ class BurningBodies(Fire):
         are read, their events handled and their trails burned, also in a tap's frame. --- MVP (P633) ---"""
         super().play(pressed, held)
         self.played_ms += self.ms
+        self.step_bodies()
+
+    def step_bodies(self):
+        """The bodies the plugin stepped in FixedUpdate: read, followed by the crackle, their events handled and their
+        trails burned. --- MVP (P773) ---"""
         plugin = self.physics_plugin
         self.add_us(0, plugin.take_step_us())
         t = time.ticks_us()
@@ -155,7 +168,7 @@ class BurningBodies(Fire):
     def flare(self, body, speed):
         """A hit at FLARE_MIN or faster burns a disc at the body's x, as read, and its plane: it has bounced up since,
         so its read y is not where it landed. Only a scene with a field has it as a handler."""
-        if speed >= FLARE_MIN:
+        if speed >= self.FLARE_MIN:
             cx, cy = cell(body.place()[0], self.rest_y[body.i], BODY)
             radius, heat = flare_size(speed)
             self.fire_plugin.field.burn(cx, cy, cx, cy, radius, heat)
@@ -163,13 +176,17 @@ class BurningBodies(Fire):
     def paint(self, cv):
         """Without the field, the bodies alone; with it, Fire.paint times draw_layers. --- MVP (P639) ---"""
         if self.fire_plugin.field is None:
-            self.physics_plugin.draw(cv, BODY, COALS)
+            self.draw_bodies(cv)
         super().paint(cv)
+
+    def draw_bodies(self, cv):
+        """The bodies as boxes. A game made from this scene draws only the bodies it uses. --- MVP (P773) ---"""
+        self.physics_plugin.draw(cv, BODY, COALS)
 
     def draw_layers(self, cv):
         """The flames behind the bodies, the bodies, then the same flames' hot part in front of them, cut out at
         FRONT_ALPHA, so a body burns inside its fire (the PO's pick from the Mac frames, 2026-11-06)."""
         plugin = self.fire_plugin
         plugin.draw(cv)
-        self.physics_plugin.draw(cv, BODY, COALS)
+        self.draw_bodies(cv)
         plugin.draw_over(cv, FRONT_ALPHA)

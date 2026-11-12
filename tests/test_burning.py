@@ -7,6 +7,7 @@ import contextlib
 import ctypes
 import io
 import os
+import random
 import re
 import shutil
 import subprocess
@@ -335,6 +336,48 @@ class BurningTest(unittest.TestCase):
         game.effects.update()
         c = (60 + burning.BODY // 2) // 2, (4 + burning.BODY // 2) // 2
         self.assertEqual((c[0], c[1], c[0], c[1], burning.RADIUS, burning.HEAT), fire.engine.burns[-1])
+
+    # --- MVP (P773) --- the hooks Meteors uses: the setup's first drops, the physics numbers, the seed and step_bodies
+    def test_setup_seeds_596_and_drops_all_bodies_as_before(self):
+        fire.engine = None
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = burning.BurningBodies()
+        bodies = game.physics_plugin.bodies
+        self.assertEqual([206, 73, 120, 22, 165, 252, 306, 232], [int(v) for v in bodies.x])
+        self.assertEqual([-46, -52, -117, -145, -120, -91, -240, -120], [int(v) for v in bodies.y])
+        self.assertEqual([117, 52, -62, 112, 37, -104, -99, 41], [int(v) for v in bodies.vx])
+        self.assertEqual([221, 219, 230, 213, 231, 195, 195, 228], [int(v) for v in bodies.rest_y])
+        self.assertEqual((596, plugins.GRAVITY, plugins.FRICTION, burning.FLARE_MIN),
+                         (game.SEED, game.GRAVITY, game.FRICTION, game.FLARE_MIN))
+        self.assertEqual((0.01, plugins.GRAVITY, 0.35, plugins.FRICTION), game.physics_plugin.world)
+
+    def test_a_subclass_sets_the_seed_the_gravity_and_the_first_drops(self):
+        class Quiet(burning.BurningBodies):
+            SEED, GRAVITY, FRICTION = None, 400.0, 0.0
+
+            def start_bodies(self):
+                self.started = True
+
+        fire.engine = None
+        random.seed(5)
+        want = random.random()
+        random.seed(5)
+        with contextlib.redirect_stdout(io.StringIO()):
+            game = Quiet()
+        self.assertEqual(want, random.random())  # setup drew no number and did not seed
+        self.assertTrue(game.started)
+        self.assertEqual((0.01, 400.0, 0.35, 0.0), game.physics_plugin.world)
+
+    def test_step_bodies_is_the_read_the_follow_the_events_and_the_trails_of_a_frame(self):
+        game = self.scene()
+        game.rest_y[0], game.physics_plugin.places[0] = 200, (100, 100)
+        game.physics_plugin.next = [(0, HIT, 1000)]
+        game.ms = 40
+        game.physics_plugin.fixed_update(40)
+        game.step_bodies()
+        self.assertEqual(2, len(fire.engine.burns))  # the flare, then the trail
+        self.assertEqual(0, game.played_ms)  # the clock is play's
+
 
 if __name__ == "__main__":
     unittest.main()
