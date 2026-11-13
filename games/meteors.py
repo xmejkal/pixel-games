@@ -3,9 +3,9 @@ Meteors (P773): stay alive under a rain of burning meteors. A small walker walks
 stops.
 
 How to play: tap BOOT to turn the walker round. It also turns at each screen edge. A mark on the ground shows where a
-meteor will land: a dark shadow at the meteor's full width (a red bar without the painted art). A meteor lands, bounces and then lies as a burning coal for a while, so the safe ground shrinks.
-The walker dies when it touches a meteor, in the air or as a coal. The score is the seconds it lived. Meteors come
-faster as time goes on, up to a limit.
+meteor will land: a dark shadow at the meteor's full width (a red bar without the painted art). A meteor lands,
+bounces and then lies as a burning coal for a while, so the safe ground shrinks. The walker dies when it touches a
+meteor, in the air or as a coal. The score is the seconds it lived. Meteors come faster as time goes on, up to a limit.
 
 The meteors are the bodies of burning.py, on the rain's physics (plugins.PhysicsPlugin: engine.Bodies, or its twin in
 Python) and the fire field of fire.py. A meteor is dropped to land on its mark: Rules.aim picks the mark and the drift
@@ -211,9 +211,9 @@ ROCKS = tuple("meteors_rock%d" % i for i in range(ROCK_FRAMES))
 EMBERS = tuple("meteors_coal%d" % i for i in range(COAL_FRAMES))
 PUFFS = tuple("meteors_smoke%d" % i for i in range(SMOKE_FRAMES))
 ASH = (c565(40, 34, 50), c565(84, 74, 96))  # the burst at a hit: dark ash, never fire colours
-# fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade for the painted look, set by eye on Mac frames:
-# more cooling and fade, no fast patches and a decay under 32, so a falling meteor's heat dies within about 40 px of
-# it, a tail behind a rock and not a column to the top of the screen. The flat look keeps the scene's (BurningBodies)
+# fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade for the painted look, set by eye on Mac
+# frames: more cooling and fade, no fast patches and a decay under 32, so a falling meteor's heat dies within about
+# 40 px of it, a tail behind a rock and not a column to the top of the screen. The flat look keeps BurningBodies'.
 TAIL_LOOK = (30, 200, 1, 0, 1, 0, 0, 120)
 
 
@@ -425,8 +425,8 @@ class Meteors(BurningBodies):
         fill(self.rules.walker_x, HEIGHT - WALKER_H, WALKER_W, WALKER_H, GREEN if self.state == PLAY else WHITE)
 
     def paint_impacts(self, cv):
-        """The frame's shake (the ground band drawn again, higher), each recent impact's light on the ground, and the ground
-        band's white flash."""
+        """The frame's shake (the ground band drawn again, higher), each recent impact's light on the ground, and the
+        ground band's white flash."""
         if self.shake < len(SHAKE):
             self.dy = -SHAKE[self.shake]
             self.shake += 1

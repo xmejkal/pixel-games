@@ -50,8 +50,8 @@ class CommittedPicturesTest(unittest.TestCase):
 
     def test_every_picture_the_game_draws_is_there_and_none_is_empty(self):
         names = [n for poses in game.POSES.values() for n in poses] + list(game.ROCKS) + list(game.EMBERS) + list(
-            game.PUFFS) + ["meteors_sky", "meteors_ground", "meteors_halo", "meteors_glow", "meteors_shadow", "meteors_ring",
-                           "meteors_flash"]
+            game.PUFFS) + ["meteors_sky", "meteors_ground", "meteors_halo", "meteors_glow", "meteors_shadow",
+                           "meteors_ring", "meteors_flash"]
         self.assertEqual(sorted(names), sorted(n for n in self.art if n.startswith("meteors_")))
         for name in names:
             with self.subTest(name=name):
