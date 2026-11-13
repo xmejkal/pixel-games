@@ -105,13 +105,14 @@ FLOOR = 3  # px, the bucket's floor
 # --- MVP (P773, story 4) --- the painted look: art/sets/bucket.py's sizes and places, which the board has no art/ to
 # read (tests/test_bucket_art.py pins them), and the effects' numbers, set by eye on Mac frames of tools/render_scene.py
 HUES = 4  # the crates' woods: a crate's hue is (its column + its place in the pile) % HUES
-BUCKET_H, TIPPED_W, TIPPED_H = 13, 80, 44  # the bucket's picture (its rim 1 px over the walls), and tipped over
+BUCKET_H, TIPPED_H = 23, 54  # px: the bucket's picture (the rim 1 px over the walls, the rope handle 10 px over
+# the rim), and its height tipped over
 CHIMNEYS = ((31, 88), (69, 89), (99, 102))  # each chimney's top in the painted village, where its smoke rises
 GLINTS = ((250, 154), (262, 156), (254, 159), (268, 153), (244, 160))  # the river's shimmer under the sun
 GLINT_MS = 160  # each glint's frame lasts this long
 SMOKE_MS = 420  # a puff from each chimney this often
 COIN_MS, COIN_TO = 520, (10, 2)  # a caught crate's coin flies this long, to the score
-SPARKLES, SPARKLE_MS, SPARKLE = 6, 420, 9  # the sparkles round a catch, each for a part of SPARKLE_MS; their size
+SPARKLES, SPARKLE_MS, SPARKLE = 8, 480, 11  # the sparkles round a catch, each for a part of SPARKLE_MS; their size
 GOLD = (c565(255, 226, 120), c565(255, 190, 70), c565(255, 250, 220))  # the bits of light thrown up at a catch
 DUST = (c565(206, 184, 148), c565(176, 156, 126))
 PUFF_SIZES = ((5, 4), (7, 5), (10, 7))  # a chimney's puff as it grows, drawn see-through
@@ -198,7 +199,7 @@ class Bucket(Game):
                 self.coins.append([x, RAIL_Y - SIZE, self.last])
                 del self.coins[:-4]
                 dice = self.dice
-                for _ in range(8):
+                for _ in range(12):
                     self.fx.add(x + dice.below(SIZE), RAIL_Y - 6, dice.spread(70), -60 - dice.below(90),
                                 GOLD[dice.below(3)], 0.3 + dice.below(20) / 100, 260.0)
             else:
@@ -226,9 +227,9 @@ class Bucket(Game):
             phase[i] = FREE
             if self.art:  # a puff of dust where it lands
                 dice = self.dice
-                for _ in range(6):
-                    self.fx.add(x + dice.below(SIZE), y + SIZE - 2, dice.spread(40), -10 - dice.below(30),
-                                DUST[dice.below(2)], 0.3 + dice.below(20) / 100, 60.0)
+                for _ in range(10):
+                    self.fx.add(x + dice.below(SIZE), y + SIZE - 2, dice.spread(50), -14 - dice.below(36),
+                                DUST[dice.below(2)], 0.4 + dice.below(25) / 100, 60.0)
 
     def paint_static(self, cv):
         pictures.draw(cv, "bucket_scene", 0, 0)  # the painted village; without it the black fill (covers is False)
@@ -292,7 +293,8 @@ class Bucket(Game):
             if t < SPARKLE_MS:
                 for k in range(SPARKLES):  # the sparkles: each in turn, round the catch
                     if k * SPARKLE_MS // SPARKLES <= t < (k + 2) * SPARKLE_MS // SPARKLES:
-                        draw(cv, "bucket_sparkle", x + (k * 23) % 34 - 16, y - 4 - (k * 17) % 18)
+                        draw(cv, "bucket_sparkle", x + (SIZE - SPARKLE) // 2 + (k * 29) % 50 - 25,
+                             y - SPARKLE // 2 - (k * 17) % 26)
             if t < COIN_MS:  # the coin: up and over to the score, faster as it goes
                 f = t * t * 1000 // (COIN_MS * COIN_MS)
                 draw(cv, "bucket_coin", x + (COIN_TO[0] - x) * f // 1000, y + (COIN_TO[1] - y) * f // 1000

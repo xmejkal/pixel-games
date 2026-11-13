@@ -441,19 +441,37 @@ def pile(height, mix):
     return img
 
 
-BUCKET = (64, 13)  # px: games/bucket.py's BUCKET_W, and its walls' 12 px and a 1 px rim above them
-TIPPED = (80, 44)  # px: the bucket tipped over at the round's end, round its foot's right corner
+TUB = (64, 13)  # px: games/bucket.py's BUCKET_W, and its walls' 12 px and a 1 px rim above them
+HANDLE = 10  # px the rope handle arcs above the rim
+BUCKET = (64, 13 + HANDLE)  # px: the tub and its handle
+TIPPED = (80, 54)  # px: the bucket tipped over at the round's end, round its foot's right corner
+ROPE, ROPE_D = (214, 186, 128), (150, 116, 70)
 STAVE, BAND, BAND_L, RIVET = (184, 110, 54), (60, 58, 70), (156, 156, 170), (214, 212, 220)
 INSIDE = (66, 38, 24)
 STAVES = 9
 
 
 def bucket_pixels():
-    """The bucket, BUCKET px, pixel by pixel: a tub that narrows to its foot, nine staves in turn lighter and darker
-    and lit from the sun on the right, two iron bands with a lit edge and rivets, the dark inside of its mouth, a lit
-    rim, and a dark-brown outline."""
-    w, h = BUCKET
+    """The bucket, BUCKET px, pixel by pixel: a rope handle arcing over a tub that narrows to its foot, nine staves in
+    turn lighter and darker and lit from the sun on the right, two iron bands with a lit edge and rivets, the dark
+    inside of its mouth, a lit rim, and a dark-brown outline."""
     img = Image.new("RGBA", BUCKET)
+    img.paste(tub_pixels(), (0, HANDLE))
+    w = BUCKET[0]
+    last = None
+    for x in range(3, w - 3):  # the rope: a half ellipse from one end of the rim to the other, twisted
+        t = (x - w / 2) / (w / 2 - 3)
+        y = round(HANDLE - (HANDLE - 1) * max(0.0, 1 - t * t) ** 0.5)
+        for yy in range(min(y, last if last is not None else y), max(y, last if last is not None else y) + 1):
+            img.putpixel((x, yy), (ROPE if (x + yy) % 3 else ROPE_D) + (255,))
+        last = y
+    return img
+
+
+def tub_pixels():
+    """The tub alone, TUB px."""
+    w, h = TUB
+    img = Image.new("RGBA", TUB)
     for y in range(h):
         x0 = round(3 * max(0, y - 1) / (h - 1))  # the taper
         x1 = w - 1 - x0
@@ -491,6 +509,7 @@ def bucket(tipped=False):
     w, h = TIPPED
     big = Image.new("RGBA", (w * 4, h * 4))
     big.paste(img.resize((BUCKET[0] * 4, BUCKET[1] * 4), Image.NEAREST), (0, (h - BUCKET[1]) * 4))
+    big = big.convert("RGBA")
     big = big.rotate(-30, Image.BICUBIC, center=((BUCKET[0] - 3) * 4, h * 4))
     small = big.resize(TIPPED, Image.BOX)
     a = small.getchannel("A").point(lambda v: 255 if v >= 128 else 0)
@@ -508,16 +527,16 @@ def coin():
 
 
 def sparkle():
-    """A four-pointed star of light, 9 px, with a small diagonal glint."""
-    img = Image.new("RGBA", (9, 9))
-    for d in range(-4, 5):
+    """A four-pointed star of light, 11 px, with a small diagonal glint."""
+    img = Image.new("RGBA", (11, 11))
+    for d in range(-5, 6):
         c = (255, 252, 226, 255) if abs(d) < 2 else (255, 222, 120, 255) if abs(d) < 4 else (250, 170, 60, 255)
-        img.putpixel((4 + d, 4), c)
-        img.putpixel((4, 4 + d), c)
+        img.putpixel((5 + d, 5), c)
+        img.putpixel((5, 5 + d), c)
     for d in (-1, 1):
-        img.putpixel((4 + d, 4 + d), (255, 236, 170, 255))
-        img.putpixel((4 + d, 4 - d), (255, 236, 170, 255))
-    img.putpixel((4, 4), (255, 255, 255, 255))
+        img.putpixel((5 + d, 5 + d), (255, 236, 170, 255))
+        img.putpixel((5 + d, 5 - d), (255, 236, 170, 255))
+    img.putpixel((5, 5), (255, 255, 255, 255))
     return img
 
 
