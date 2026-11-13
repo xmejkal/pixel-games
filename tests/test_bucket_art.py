@@ -44,10 +44,15 @@ class CommittedPicturesTest(unittest.TestCase):
                 self.assertEqual(size, tuple(self.art[name][:2]))
         self.assertEqual(game.TIPPED_H, self.art["bucket_tipped"][1])
 
-    def test_the_bucket_stands_on_the_rail_its_tub_the_walls_height_and_a_rim(self):
+    def test_the_bucket_stands_on_the_rail_its_mouth_over_the_walls_and_its_foot_narrower(self):
         img = picture("bucket_bucket")
+        a = img.getchannel("A")
         self.assertEqual(game.BUCKET_H - 1, opaque_rows(img)[-1])  # drawn at RAIL_Y - BUCKET_H: its foot on the rail
-        self.assertEqual(game.WALL_H + 1, art_set.TUB[1])
+        self.assertGreater(art_set.TUB[1], game.WALL_H)  # its mouth is at the walls' top or higher
+        rim, foot = (sum(1 for x in range(img.width) if a.getpixel((x, y))) for y in (art_set.HANDLE + 1,
+                                                                                     game.BUCKET_H - 1))
+        self.assertEqual(game.BUCKET_W, rim)  # the rim spans the bucket's width
+        self.assertLess(foot, rim)  # it narrows to its foot
 
     def test_a_pile_column_is_the_crates_in_the_woods_the_falling_crates_show(self):
         """A crate that falls in a column shows the wood (column + its place on the pile) % HUES, so it keeps its

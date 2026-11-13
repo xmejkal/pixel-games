@@ -52,7 +52,7 @@ Every subject, with the button pattern that made its picture (`tools/render_scen
 | Marshmallow | hold to roast | The marshmallow deep in the campfire after the first point. | <a href="docs/screenshots/marshmallow.gif"><img src="docs/screenshots/marshmallow.png" width="160"></a> |
 | the ball pit | tap pours, hold shakes | 120 balls in twelve pours, each pour in its own colour. | <a href="docs/screenshots/ballpit.gif"><img src="docs/screenshots/ballpit.png" width="160"></a> |
 | the bodies on fire | tap: next mode | Eight falling bodies burn trails into the field and flare where they land. | <a href="docs/screenshots/burningbodies.gif"><img src="docs/screenshots/burningbodies.png" width="160"></a> |
-| Bucket | hold: right | The village at the golden hour, the river with the sun's glint and smoke from the chimneys. The coin of the third catch flies up to the score, with sparkles round the bucket, and two missed crates lie at the ends of the pile. | <a href="docs/screenshots/bucket.gif"><img src="docs/screenshots/bucket.png" width="160"></a> |
+| Bucket | hold: right | The village at the golden hour, the river with the sun's glint and smoke from the chimneys. The coin of the third catch flies up to the score, with sparkles round the bucket, and two missed crates lie on the meadow under the rail. | <a href="docs/screenshots/bucket.gif"><img src="docs/screenshots/bucket.png" width="160"></a> |
 | Meteors | tap: turn | The walker runs over a plain at dusk. A meteor lands behind him: the ground flashes white and the impact's light spreads on the plain. A coal burns at the left. | <a href="docs/screenshots/meteors.gif"><img src="docs/screenshots/meteors.png" width="160"></a> |
 | Rescue | tap turns, hold sprays | The fireman stands and sprays the burning crater. The water lands at the foot of the one flame that rises from it. Nobody in the game is drawn burning. | <a href="docs/screenshots/rescue.gif"><img src="docs/screenshots/rescue.png" width="160"></a> |
 | Flappy | tap to flap | The painted morning scrolls by and the bird flaps between the pipes. | <a href="docs/screenshots/flappy.gif"><img src="docs/screenshots/flappy.png" width="160"></a> |
@@ -141,17 +141,19 @@ Runs now:
   bounce straight up and lie as a coal for 4 s. The mark is a dark shadow at the meteor's full width, from the drop
   on, with a thin white ring round it in the last 300 ms before the landing. One touch of a meteor or a coal on the
   walker's box (12 x 32 px) ends the round, and the score is the seconds lived. The painted walker's hand or foot can
-  reach out of the box, and a meteor that touches only a hand or a foot there does not kill. A new meteor drops each 2.5 s, 50 ms sooner for each second lived, down to 1 s. Of each three
-  drops, about one lands anywhere, one on the walker and one where it is going. A fair aim (`Rules.fair`) never drops
-  a meteor that leaves the walker no free stretch of 48 px that it can reach in time. On the Mac (frames of 42 ms,
-  60 ms and random 20 to 90 ms, 16 seeds), an idle walker dies within 7 s, a tap every frame within 16 s, and every
-  blind rhythm within 18 s. A bot that keeps out of the marks and the coals lived the whole 180 s in 96 runs (a trial
-  script that is not in the repository made these numbers). It plays `land` and `die`. Painted
-  (`art/sets/meteors.py`): a violet to rose dusk over a cool plain, and the walker as a dark silhouette with a cyan
-  scarf, his run from motion capture (CMU subject 9, trial 1), its pose set by where he is, so his feet do not slide.
-  The fire runs in its picture mode over the dusk. A meteor is a glowing rock with a spark trail, and it dims to a
-  coal. An impact lights the ground, flashes it white for two frames, throws up bits of rock and shakes the picture
-  2 px. A hit flashes his scarf red, and a puff of smoke hides him: nobody is drawn burning. The flat shapes stay for a
+  reach out of the box, and a meteor that touches only a hand or a foot there does not kill. A new meteor drops each
+  2.5 s, 50 ms sooner for each second lived, down to 1 s. Of each three drops, about one lands anywhere, one on the
+  walker and one where it is going. A fair aim (`Rules.fair`) never drops a meteor that leaves the walker no free
+  stretch of 48 px that it can reach in time. On the Mac (frames of 42 ms, 60 ms and random 20 to 90 ms, 16 seeds), an
+  idle walker dies within 7 s, a tap every frame within 16 s, and every blind rhythm within 18 s. A bot that keeps out
+  of the marks and the coals lived the whole 180 s in 96 runs (a trial script that is not in the repository made these
+  numbers). It plays `land` and `die`. Painted (`art/sets/meteors.py`): a violet to rose dusk over a cool plain, and
+  the walker as a dark silhouette with a cyan scarf, his run from motion capture (CMU subject 9, trial 1), its pose
+  set by where he is, so his feet do not slide. The fire runs in its picture mode over the dusk, with more cooling, so
+  a falling meteor is a glowing rock with a short tail of flame and sparks, and not a column. It dims to a coal. An
+  impact lights the ground, flashes it white for two frames, throws up bits of rock and shakes the ground band 2 px. A
+  hit throws up dark ash, flashes his scarf red, and a puff of smoke hides him: nobody is drawn burning. The effects
+  draw from their own random stream, so the meteors fall where they fall in the flat game. The flat shapes stay for a
   board without the art. The picture mode costs about 5 to 7 ms a frame more than the linear mode (bench.md, run90),
   so the PO judges it on the board. The PO's hand, eye and ear on it are still open.
 - The rain (P593, `games/rain.py`), the scene under Bucket. Since P773 it is not in the box's list: 160 boxes fall,
@@ -258,7 +260,7 @@ Runs now:
   `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
   guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Fifteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Six are painted: runner, flappy, stack (stack as RENT), rescue (P800), Meteors and Bucket (P773). The other five are flat. The board loads every painted set at power-on: 2.4 MB, about 3.5 s if the load keeps bench.md's 2.15 s for 1.5 MB (not measured yet).
+- Fifteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Six are painted: runner, flappy, stack (stack as RENT), rescue (P800), Meteors and Bucket (P773). The other seven are flat: Snake, Cave, Tunnel, Road, Starfire, CubeTiming and GravityPong. The board loads every painted set at power-on: 2.4 MB, about 3.5 s if the load keeps bench.md's 2.15 s for 1.5 MB (not measured yet).
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 

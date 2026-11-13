@@ -450,13 +450,16 @@ def pile(height, mix):
     return img
 
 
-TUB = (64, 13)  # px: games/bucket.py's BUCKET_W, and its walls' 12 px and a 1 px rim above them
+TUB = (64, 18)  # px: games/bucket.py's BUCKET_W, and taller than its walls' 12 px, so it reads as a bucket
 HANDLE = 10  # px the rope handle arcs above the rim
-BUCKET = (64, 13 + HANDLE)  # px: the tub and its handle
-TIPPED = (80, 54)  # px: the bucket tipped over at the round's end, round its foot's right corner
+BUCKET = (TUB[0], TUB[1] + HANDLE)  # px: the tub and its handle
+TIPPED = (84, 62)  # px: the bucket tipped over at the round's end, round its foot's right corner
 ROPE, ROPE_D = (214, 186, 128), (150, 116, 70)
 STAVE, BAND, BAND_L, RIVET = (184, 110, 54), (60, 58, 70), (156, 156, 170), (214, 212, 220)
-INSIDE = (66, 38, 24)
+INSIDE = (52, 30, 20)
+RIM, RIM_L = (226, 160, 92), (255, 214, 150)  # the rim, and where the sun lights it
+TAPER = 6  # px the tub narrows each side from its rim to its foot
+BANDS = (7, 13)  # the rows of the iron bands' lit edges
 STAVES = 9
 
 
@@ -478,29 +481,28 @@ def bucket_pixels():
 
 
 def tub_pixels():
-    """The tub alone, TUB px."""
+    """The tub alone, TUB px: from its rim, the full 64 px, it narrows by TAPER px each side to its foot. On top a
+    bright lit rim round the dark inside of the mouth, then the staves, and two iron bands."""
     w, h = TUB
     img = Image.new("RGBA", TUB)
     for y in range(h):
-        x0 = round(3 * max(0, y - 1) / (h - 1))  # the taper
+        x0 = round(TAPER * max(0, y - 4) / (h - 5))  # the mouth's rows are the rim's width, then the taper
         x1 = w - 1 - x0
         for x in range(x0, x1 + 1):
             if y == 0 or y == h - 1 or x in (x0, x1):
                 c = OUTLINE
-            elif y in (1, 2) and x0 + 3 <= x <= x1 - 3:  # the mouth: the dark inside, its far wall a little lit
-                c = INSIDE if y == 2 or x < x0 + 6 or x > x1 - 6 else (98, 60, 36)
-            elif y in (1, 2):
-                c = (236, 176, 108)  # the rim's ends, lit
-            elif y in (4, 9):
-                c = BAND_L if (x * STAVES // w) % 2 == 0 and (x * STAVES) % w < 8 else BAND
-                if (x - x0) % 10 == 4:
-                    c = RIVET
-            elif y in (5, 10):
+            elif y == 1 or y == 4 or (y in (2, 3) and (x < x0 + 3 or x > x1 - 3)):
+                c = RIM_L if y < 4 or x > w // 3 else RIM  # the rim round the mouth, lit from the sun on the right
+            elif y in (2, 3):
+                c = INSIDE if y == 3 or x < w // 2 else (96, 58, 34)  # the dark inside, its far wall a little lit
+            elif y in BANDS:
+                c = RIVET if (x - x0) % 10 == 4 else BAND_L
+            elif y - 1 in BANDS:
                 c = BAND
             else:
                 stave = (x - x0) * STAVES // (x1 - x0 + 1)
                 edge = (x - x0) * STAVES % (x1 - x0 + 1) < STAVES  # a joint between two staves
-                k = (1.0 if stave % 2 else 0.9) * (0.86 + 0.28 * x / w) * (1.08 if y == 3 else 1.0)
+                k = (1.0 if stave % 2 else 0.9) * (0.82 + 0.34 * x / w)
                 k *= 0.7 if edge else 1.0
                 if (x * 7 + y * 3) % 13 == 0:  # grain
                     k *= 0.88

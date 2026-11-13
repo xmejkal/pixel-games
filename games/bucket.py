@@ -105,15 +105,14 @@ FLOOR = 3  # px, the bucket's floor
 # --- MVP (P773, story 4) --- the painted look: art/sets/bucket.py's sizes and places, which the board has no art/ to
 # read (tests/test_bucket_art.py pins them), and the effects' numbers, set by eye on Mac frames of tools/render_scene.py
 HUES = 4  # the crates' woods: a crate's hue is (its column + its place in the pile) % HUES
-BUCKET_H, TIPPED_H = 23, 54  # px: the bucket's picture (the rim 1 px over the walls, the rope handle 10 px over
-# the rim), and its height tipped over
+BUCKET_H, TIPPED_H = 28, 62  # px: the bucket's picture (a tub 18 px tall, taller than the walls, and a rope handle
+# 10 px over its rim), and its height tipped over
 CHIMNEYS = ((31, 88), (69, 89), (99, 102))  # each chimney's top in the painted village, where its smoke rises
 GLINTS = ((250, 154), (262, 156), (254, 159), (268, 153), (244, 160))  # the river's shimmer under the sun
 GLINT_MS = 160  # each glint's frame lasts this long
 SMOKE_MS = 420  # a puff from each chimney this often
 COIN_MS, COIN_TO = 520, (10, 2)  # a caught crate's coin flies this long, to the score
 SPARKLES, SPARKLE_MS, SPARKLE = 8, 480, 11  # the sparkles round a catch, each for a part of SPARKLE_MS; their size
-GOLD = (c565(255, 226, 120), c565(255, 190, 70), c565(255, 250, 220))  # the bits of light thrown up at a catch
 DUST = (c565(206, 184, 148), c565(176, 156, 126))
 PUFF_SIZES = ((5, 4), (7, 5), (10, 7))  # a chimney's puff as it grows, drawn see-through
 PUFF_ALPHAS = (170, 130, 80)
@@ -195,15 +194,10 @@ class Bucket(Game):
             self.phase[i] = FREE
             self.physics_plugin.spawn(i, x, HEIGHT, 0, 0, HEIGHT)  # parked: it sleeps on the next step, off the screen
             self.emit("catch")
-            if self.art:  # sparkles, bits of light and a coin that flies to the score (paint_effects)
+            self.pop(x + SIZE // 2, RAIL_Y)  # the burst, as the flat look: the same random numbers drawn
+            if self.art:  # and sparkles and a coin that flies to the score (paint_effects)
                 self.coins.append([x, RAIL_Y - SIZE, self.last])
                 del self.coins[:-4]
-                dice = self.dice
-                for _ in range(12):
-                    self.fx.add(x + dice.below(SIZE), RAIL_Y - 6, dice.spread(70), -60 - dice.below(90),
-                                GOLD[dice.below(3)], 0.3 + dice.below(20) / 100, 260.0)
-            else:
-                self.pop(x + SIZE // 2, RAIL_Y)
             return
         col = x // SIZE
         rest_y = HEIGHT - SIZE * rules.miss(col)
@@ -230,6 +224,19 @@ class Bucket(Game):
                 for _ in range(10):
                     self.fx.add(x + dice.below(SIZE), y + SIZE - 2, dice.spread(50), -14 - dice.below(36),
                                 DUST[dice.below(2)], 0.4 + dice.below(25) / 100, 60.0)
+
+    def step(self, now_ms, pressed, held):
+        """Game.step, then the chimneys' smoke: a puff from each every SMOKE_MS, in every state, so it rises on
+        behind the title and the round's end."""
+        super().step(now_ms, pressed, held)
+        if not self.art:
+            return
+        if now_ms - self.puffed >= SMOKE_MS:
+            self.puffed = now_ms
+            dice = self.dice
+            for x, y in CHIMNEYS:
+                self.smoke.add(x + dice.spread(1), y, 3 + dice.below(5), -7 - dice.below(5), 0, Smoke.LIFE, -1.0)
+        self.smoke.update(self.dt)
 
     def paint_static(self, cv):
         pictures.draw(cv, "bucket_scene", 0, 0)  # the painted village; without it the black fill (covers is False)
@@ -276,16 +283,11 @@ class Bucket(Game):
     def paint_effects(self, cv):
         """The river's shimmer, the chimneys' smoke, and each catch's sparkles and coin. They run on the frame's
         clock (self.last), so they go on at the round's end."""
-        now, dice, draw = self.last, self.dice, pictures.draw
+        now, draw = self.last, pictures.draw
         for i, (x, y) in enumerate(GLINTS):
             k = now // GLINT_MS + 2 * i
             if k % 5:  # each glint goes out now and then: a twinkle
                 draw(cv, SHIMMER[k % 3], x, y)
-        if now - self.puffed >= SMOKE_MS:
-            self.puffed = now
-            for x, y in CHIMNEYS:
-                self.smoke.add(x + dice.spread(1), y, 3 + dice.below(5), -7 - dice.below(5), 0, Smoke.LIFE, -1.0)
-        self.smoke.update(self.dt)
         self.smoke.draw(cv)
         for coin in self.coins:
             x, y, at = coin

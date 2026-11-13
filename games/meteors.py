@@ -22,7 +22,7 @@ from burning import BODY, N, BurningBodies
 from burning import COAL_SHADE
 from cues import Cue
 from fire import MODES
-from gfx import BLACK, GREEN, HEIGHT, OVER, PLAY, RED, WHITE, WIDTH, Dice, Game, c565
+from gfx import BLACK, GREEN, HEIGHT, OVER, PLAY, RED, WHITE, WIDTH, YELLOW, Dice, Game, c565
 from motion import HIT
 
 # --- MVP (P773) --- the rules, in px, ms and ints. Mac trials through Game.step on the Python bodies (frames of 42 ms, 60 ms
@@ -197,7 +197,8 @@ SHADOW_W, SHADOW_H = 8, 3  # the landing shadow: the mark's full width, from the
 RING_W, RING_H, RING_MS = 12, 5, 300  # the white ring round the shadow, in the last RING_MS before the landing
 GLOW_W, GLOW_H, GLOW_MS, GLOW_ALPHA = 84, 24, 500, 230  # an impact's light on the ground, fading over GLOW_MS
 FLASH_H, FLASH_ALPHAS = 14, (170, 80)  # the ground band's white flash at an impact: one alpha a frame
-SHAKE = (2, 0, 1)  # px the picture drops in each frame after an impact
+SHAKE = (2, 0, 1)  # px the ground band jumps up in each frame after an impact
+GROUND_TOP = 196  # the ground band's top row: its own picture, so the shake redraws only it, wholly on the panel
 HIT_MS = 160  # the scarf flashes red this long after a hit, then the smoke hides him
 SMOKE_W, SMOKE_H, SMOKE_FRAMES, SMOKE_MS = 30, 34, 5, 120  # the dark puff at a hit, a frame each SMOKE_MS
 SMOKE_ALPHAS = (255, 220, 180, 130, 80)  # each frame thinner
@@ -209,7 +210,17 @@ POSES = {(kind, side): tuple("meteors_%s_%s%d" % (kind, side, i) for i in range(
 ROCKS = tuple("meteors_rock%d" % i for i in range(ROCK_FRAMES))
 EMBERS = tuple("meteors_coal%d" % i for i in range(COAL_FRAMES))
 PUFFS = tuple("meteors_smoke%d" % i for i in range(SMOKE_FRAMES))
+ASH = (c565(40, 34, 50), c565(84, 74, 96))  # the burst at a hit: dark ash, never fire colours
+# fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade for the painted look, set by eye on Mac frames:
+# more cooling and fade, no fast patches and a decay under 32, so a falling meteor's heat dies within about 40 px of
+# it, a tail behind a rock and not a column to the top of the screen. The flat look keeps the scene's (BurningBodies)
+TAIL_LOOK = (30, 200, 1, 0, 1, 0, 0, 120)
 
+
+def pose_for(x, right):
+    """The run's pose for a walker with his left edge at x, facing right or left: the pose follows the distance, so
+    his feet stay put, and facing left the mirrored cycle runs the other way."""
+    return (x if right else -x) * RUN_POSES // STRIDE_PX % RUN_POSES
 
 
 class Meteors(BurningBodies):
@@ -234,13 +245,15 @@ class Meteors(BurningBodies):
             self.dropped, self.left = array("i", [0] * N), array("h", [0] * N)  # played_ms at each drop; ms, at a drop
             self.impact = array("i", [-GLOW_MS] * N)  # played_ms at each meteor's landing, for its glow
             self.dice = Dice()
+            if pictures.load():
+                self.LOOK = TAIL_LOOK
             super().setup()
         else:
             self.start_bodies()
         self.art = pictures.load()  # the painted look and its effects; without it the flat shapes
         self.fx.MAX = 64  # the sparks of eight meteors and the bits of an impact
         self.flash, self.shake = len(FLASH_ALPHAS), len(SHAKE)  # the frames of each drawn since the last impact
-        self.dy = 0  # px the picture drops in this frame's shake
+        self.dy = 0  # px the ground moves down in this frame's shake: 0 or less
 
     def attach_effects(self):
         """As the scene's, and a hit is handled also with no field: it makes the sound and may kill."""
@@ -255,7 +268,7 @@ class Meteors(BurningBodies):
 
     def park(self, i):
         """Body i is no meteor: off the screen, asleep, its trail reset, not drawn and not hit."""
-        self.phase[i], self.land_x[i] = PARKED, -1
+        self.phase[i], self.land_x[i], self.impact[i] = PARKED, -1, -GLOW_MS  # no glow: a new round starts at 0 ms
         self.put(i, 0, HEIGHT, 1)
         self.physics_plugin.spawn(i, 0, HEIGHT, 0, 0, HEIGHT)
         self.slept[i], self.has_prev[i] = None, False
@@ -316,10 +329,9 @@ class Meteors(BurningBodies):
         """The walker dies, once, with a burst at it."""
         if self.state != PLAY:
             return
-        if not self.art:
-            self.die(self.rules.walker_x + WALKER_W // 2, HEIGHT - WALKER_H // 2)
-            return
-        self.die()  # no burst of fire colours, but a puff of smoke (paint_walker): nobody is drawn burning
+        # painted, the burst is dark ash, then a puff of smoke hides him (paint_walker): nobody is drawn burning. The
+        # same burst as the flat look's, so the round draws the same random numbers
+        self.die(self.rules.walker_x + WALKER_W // 2, HEIGHT - WALKER_H // 2, ASH if self.art else (RED, YELLOW))
 
     def burst(self, x):
         """An impact at x: bits of rock thrown up, and the flash and the shake start."""
@@ -358,20 +370,31 @@ class Meteors(BurningBodies):
                 self.fx.add(out[3 * i] + 2 + dice.below(5), out[3 * i + 1] + dice.below(4), dice.spread(25),
                             -dice.below(40), SPARKS[dice.below(3)], SPARK_S, 0.0)
 
+    def draw_layers(self, cv):
+        """The scene's layers, then, painted, each falling rock in its glow in front of its own flames: the rock is
+        the brightest thing of its tail."""
+        super().draw_layers(cv)
+        if not (self.art and getattr(cv, "pictures", False)):
+            return
+        out, now = self.physics_plugin.out, self.rules.played_ms
+        for i in range(N):
+            if self.phase[i] == FALL:
+                x, y = out[3 * i], out[3 * i + 1]
+                pictures.draw(cv, "meteors_halo", x + (BODY - HALO) // 2, y + (BODY - HALO) // 2, HALO_ALPHA)
+                pictures.draw(cv, ROCKS[(now // SPIN_MS + i) % ROCK_FRAMES], x - 1, y - 1)
+
     def draw_bodies(self, cv):
-        """Each meteor and coal; a parked body is not drawn. Painted: a falling rock in its glow, a coal that dims."""
+        """Each meteor and coal; a parked body is not drawn. Painted: a coal that dims (draw_layers draws a falling
+        rock in front of its flames)."""
         out, fill, phase = self.physics_plugin.out, cv.fill, self.phase
         art = self.art and getattr(cv, "pictures", False)
         now = self.rules.played_ms
         for i in range(N):
-            if phase[i] == PARKED:
+            if phase[i] == PARKED or art and phase[i] == FALL:
                 continue
             x, y = out[3 * i], out[3 * i + 1]
             if not art:
                 fill(x, y, BODY, BODY, COAL_SHADE)
-            elif phase[i] == FALL:
-                pictures.draw(cv, "meteors_halo", x + (BODY - HALO) // 2, y + (BODY - HALO) // 2, HALO_ALPHA)
-                pictures.draw(cv, ROCKS[(now // SPIN_MS + i) % ROCK_FRAMES], x - 1, y - 1)
             else:
                 k = (now - self.slept[i]) * COAL_FRAMES // COAL_MS
                 if (now // 80 + 3 * i) % 7 == 0:  # a flicker: a frame dimmer now and then
@@ -402,17 +425,17 @@ class Meteors(BurningBodies):
         fill(self.rules.walker_x, HEIGHT - WALKER_H, WALKER_W, WALKER_H, GREEN if self.state == PLAY else WHITE)
 
     def paint_impacts(self, cv):
-        """The frame's shake (the sky drawn again, lower), each recent impact's light on the ground, and the ground
+        """The frame's shake (the ground band drawn again, higher), each recent impact's light on the ground, and the ground
         band's white flash."""
         if self.shake < len(SHAKE):
-            self.dy = SHAKE[self.shake]
+            self.dy = -SHAKE[self.shake]
             self.shake += 1
-            if self.dy:
-                pictures.draw(cv, "meteors_sky", 0, self.dy)
+            if self.dy:  # the ground band, up: wholly on the panel, so one copy by rows
+                pictures.draw(cv, "meteors_ground", 0, GROUND_TOP + self.dy)
         now = self.rules.played_ms
         for i in range(N):
             age = now - self.impact[i]
-            if age < GLOW_MS:
+            if 0 <= age < GLOW_MS and self.land_x[i] >= 0:
                 x = self.land_x[i] + (BODY - GLOW_W) // 2
                 alpha = GLOW_ALPHA * (GLOW_MS - age) // GLOW_MS
                 pictures.draw(cv, "meteors_glow", x, HEIGHT - 4 - GLOW_H // 2 + self.dy, alpha)
@@ -433,7 +456,7 @@ class Meteors(BurningBodies):
                     pictures.draw(cv, "meteors_ring", x + (SHADOW_W - RING_W) // 2, HEIGHT - RING_H + dy)
         rules = self.rules
         x, right = rules.walker_x, rules.dir > 0
-        pose = (x if right else -x) * RUN_POSES // STRIDE_PX % RUN_POSES
+        pose = pose_for(x, right)
         if self.state != OVER:
             pictures.draw(cv, POSES["run", "r" if right else "l"][pose], x - FIG_DX, HEIGHT - FIG_H + dy)
             return

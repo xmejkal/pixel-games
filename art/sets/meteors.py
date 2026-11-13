@@ -20,6 +20,7 @@ DUSK = ((18, 14, 44), (52, 30, 90), (128, 58, 124), (222, 112, 128), (250, 172, 
 BANDS = (0.0, 0.3, 0.62, 0.86, 1.0)  # where each of DUSK's colours sits, from the top (0) to the horizon (1)
 HORIZON = 178
 GROUND = 206  # the plain's near edge: the ground band the walker runs on starts here
+GROUND_TOP = 196  # games/meteors.py's: the band of the sky the shake draws again, its own picture
 PLAIN = (82, 74, 112)  # the cool ground, lit a little by the dusk, so the dark walker and the shadows read on it
 
 
@@ -340,7 +341,8 @@ def smoke(frame):
 
 def paint_meteors():
     """Every meteors picture: the still sky, the fire's pictures, then the walker."""
-    pictures = {"meteors_sky": (meteors_sky(), False)}
+    sky = meteors_sky()
+    pictures = {"meteors_sky": (sky, False), "meteors_ground": (sky.crop((0, GROUND_TOP, W, H)), False)}
     for i in range(ROCK_FRAMES):
         pictures["meteors_rock%d" % i] = (rock(i), True)
     pictures["meteors_halo"] = (radial((HALO, HALO), ((0, 255, 236, 170), (0.4, 255, 160, 70), (1, 250, 110, 40)),

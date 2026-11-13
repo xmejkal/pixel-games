@@ -67,15 +67,14 @@ class WalkerTest(unittest.TestCase):
         for k, name, x, y, state, walker_x, direction in self.draws:
             with self.subTest(frame=k):
                 self.assertEqual(walker_x - mt.FIG_DX, x)
-                self.assertIn(y - (mt.HEIGHT - mt.FIG_H), mt.SHAKE)
+                self.assertIn(mt.HEIGHT - mt.FIG_H - y, mt.SHAKE)  # his soles on the last row, or up in a shake
 
     def test_his_pose_is_the_runs_for_his_place_and_he_faces_his_way(self):
         mt = self.game
         for k, name, x, y, state, walker_x, direction in self.draws:
             side = "r" if direction > 0 else "l"
-            pose = (walker_x if direction > 0 else -walker_x) * mt.RUN_POSES // mt.STRIDE_PX % mt.RUN_POSES
             with self.subTest(frame=k):
-                self.assertEqual("meteors_run_%s%d" % (side, pose), name)
+                self.assertEqual("meteors_run_%s%d" % (side, mt.pose_for(walker_x, direction > 0)), name)
 
 
 @unittest.skipUnless(shutil.which("clang"), "clang is missing: the C engines are not built, so the rows were not drawn")
