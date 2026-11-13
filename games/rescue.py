@@ -671,6 +671,11 @@ class Rescue(Game):
                 h = c.heat() // 8
                 cv.fill(c.x - 6 + dx, LANE - h, 12, h, ORANGE)
                 cv.fill(c.x - 3 + dx, LANE - h // 2, 6, h // 2, YELLOW)
+        for p in rules.people:  # "help!" over a trapped person, blinking, under the flames so it hides no fire's foot
+            if p.state == WAVING and p.wave_ms % 1000 < 600:
+                y = FEET - PEOPLE_SIZES[p.kind][1] - 11
+                cv.fill(p.x - 21 + dx, y, 42, 11, DARK)
+                cv.text("help!", p.x - 20 + dx, y + 2, YELLOW)
         self.layer.draw(cv)
         for c in rules.craters:  # over the flame's foot: it comes out of the crater
             if not pictures.draw(cv, "rescue_crater", c.x - 14 + dx, LANE - 1):
@@ -713,9 +718,6 @@ class Rescue(Game):
             cv.fill(p.x + 1 - step + dx, FEET - 6, 2, 6, c)
             if p.state == WAVING:
                 cv.fill(p.x - 4 + dx, FEET - tall - 8, 2, 8, c)
-        if p.state == WAVING and p.wave_ms % 1000 < 600:  # "help!" on a dark plate over them, blinking
-            cv.fill(p.x - 21 + dx, y - 12, 42, 11, DARK)
-            cv.text("help!", p.x - 20 + dx, y - 10, YELLOW)
 
     def draw_dogs(self, cv, dx):
         """The dog of a man with a dog: ahead of him as they run, standing by as he waves, at the fireman's heels
