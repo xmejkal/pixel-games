@@ -60,8 +60,10 @@ class PaintedFilesTest(unittest.TestCase):
         with open(os.path.join(self.tmp.name, "games", "art_index.py")) as f:
             exec(f.read(), index)
         art = index["ART"]
-        self.assertEqual(list(art)[-1], "runner_jump")
+        aliases = ["runner_jump"] + ["rescue_smoke%d" % i for i in range(5)]  # in the sets' order
+        self.assertEqual(aliases, list(art)[-len(aliases):])
         self.assertEqual(art["runner_jump"], art["runner_apex"])
+        self.assertEqual(art["rescue_smoke4"], art["meteors_smoke4"])  # another set's file, no copy
         self.assertIs(index["LAYER_SETS"]["runner"], index["LAYERS"])
 
     def test_preview_as_committed(self):
