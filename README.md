@@ -244,4 +244,4 @@ The work is planned on the board of the [spark](https://github.com/xmejkal/spark
 
 ## Licence
 
-MIT, see `LICENSE`. The files under `engine/driver/` keep their own terms.
+MIT, see `LICENSE`. The files under `engine/driver/` keep their own terms: see `engine/driver/LICENSE` and any file's own header.
