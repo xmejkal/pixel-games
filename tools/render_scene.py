@@ -93,7 +93,7 @@ SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the p
     "burningbodies": Subject(BurningBodies, "tap: next mode", 20, 100),
     "bucket": Subject(Bucket, Bucket.hint, 90, 222, every=6, hold=20, seed=5, shot=216),
     "meteors": Subject(Meteors, Meteors.hint, 90, 200, every=3, tap=17, seed=18, shot=148),
-    "rescue": Subject(Rescue, Rescue.hint, 2, 140, presses=((0, 1), (16, 1), (59, 29)), shot=100),
+    "rescue": Subject(Rescue, Rescue.hint, 60, 214, every=3, presses=((0, 1), (145, 32)), shot=112),
     "flappy": Subject(Flappy, Flappy.hint, 5, 70, every=3, tap=12, shot=60),
     "runner": Subject(Runner, Runner.hint, 10, 75, every=3, hold=40),
     "snake": Subject(Snake, Snake.hint, 5, 80, tap=20, shot=45),
