@@ -187,14 +187,21 @@ class Figure:
     """One pose of the fireman, facing right, painted at 8x on a brush.Sprite: far limbs, torso, near leg, head and
     helmet, near arm, then cut and given a 1 px rim outside the shape, warm ahead and cool behind. The reflective
     bands are kept as their own mask, so a part painted over one hides it, and come out as whole pixels. With hose,
-    the nozzle is in his hands and the hose, under everything, runs from them down to the street behind him."""
+    the nozzle is in his hands and the hose, under everything, runs from them down to the street behind him. Another
+    figure (art/sets/meteors.py's walker) sets its own scale, colours and rims and paints its own head."""
+
+    PX = PX  # px per body height
+    NEAR, FAR = COAT, COAT_FAR
+    RIMS = (WARM, COOL)  # the rim on the side the face looks to, and on the other
+    BANDS = True  # the reflective bands
+    HIPS = 0.0  # px the hips sit right of the picture's middle
 
     def __init__(self, size):
         self.w, self.h = size
 
     def at(self, joint):
         x, y, _ = joint
-        return (self.w / 2 + x * PX, self.h - 1 - y * PX)
+        return (self.w / 2 + self.HIPS + x * self.PX, self.h - 1 - y * self.PX)
 
     def paint(self, pose, hose=False):
         s = Sprite(self.w, self.h)
@@ -202,12 +209,12 @@ class Figure:
         p = {n: self.at(v) for n, v in pose.items()}
         near = "r" if pose["rhipjoint"][2] >= pose["lhipjoint"][2] else "l"
         far = "l" if near == "r" else "r"
-        self.arm(s, p, far, COAT_FAR)
-        self.leg(s, p, far, COAT_FAR)
+        self.arm(s, p, far, self.FAR)
+        self.leg(s, p, far, self.FAR)
         self.torso(s, p)
-        self.leg(s, p, near, COAT)
+        self.leg(s, p, near, self.NEAR)
         self.head(s, p)
-        self.arm(s, p, near, COAT)
+        self.arm(s, p, near, self.NEAR)
         if hose:
             self.nozzle(s, p, near)
         img = self.rim(self.banded(s.cut(outline=False)), pose["nose"][0] >= pose["head"][0])
@@ -237,13 +244,14 @@ class Figure:
         ball, toe = p[side + "foot"], p[side + "toes"]
         self.part(s, s.shape("line", hip, knee, width=2.8), colour)
         band = across(s, knee, ankle, 0.66)
-        self.part(s, s.shape("line", knee, ankle, width=2.3), colour, band if colour == COAT else None)
+        banded = colour == self.NEAR and self.BANDS
+        self.part(s, s.shape("line", knee, ankle, width=2.3), colour, band if banded else None)
         self.part(s, s.shape("line", ankle, ball, toe, width=2.2), (16, 14, 20))  # the boot
 
     def arm(self, s, p, side, colour):
         shoulder, elbow, wrist, hand = p[side + "clavicle"], p[side + "humerus"], p[side + "radius"], p[side + "wrist"]
         upper, fore = s.shape("line", shoulder, elbow, width=2.3), s.shape("line", elbow, wrist, hand, width=2.0)
-        if colour == COAT:  # the near arm over the body: a seam round it, where it lies on what is painted
+        if colour == self.NEAR:  # the near arm over the body: a seam round it, where it lies on what is painted
             wide = ImageChops.lighter(s.shape("line", shoulder, elbow, width=4.3),
                                       s.shape("line", elbow, wrist, hand, width=4.0))
             self.part(s, ImageChops.multiply(wide, s.alpha), SEAM)
@@ -254,7 +262,8 @@ class Figure:
         hips = along(p["lhipjoint"], p["rhipjoint"], 0.5)
         neck = p["lowerneck"]
         band = across(s, hips, neck, 0.16)
-        self.part(s, s.shape("line", hips, p["lowerback"], p["upperback"], p["thorax"], neck, width=4.2), COAT, band)
+        self.part(s, s.shape("line", hips, p["lowerback"], p["upperback"], p["thorax"], neck, width=4.2), self.NEAR,
+                  band if self.BANDS else None)
 
     def head(self, s, p):
         hx, hy = p["head"]
@@ -296,7 +305,7 @@ class Figure:
         """A 1 px rim outside the shape, warm on the side his face looks to (right, or else left) and cool on the
         other, so the turn hands the warm rim over from one side to the other. Nothing above or under, so the soles
         stay on the street."""
-        ahead, behind = (WARM, COOL) if right else (COOL, WARM)
+        ahead, behind = self.RIMS if right else self.RIMS[::-1]
         out = img.copy()
         a = img.getchannel("A").load()
         w, h = img.size
@@ -353,15 +362,20 @@ class FiremanPoses:
         return ["rescue_%s_%s%d" % (c.name, side, i) for c in mocap.CYCLES for side in "rl" for i in range(c.poses)]
 
     def committed(self):
-        index = {}
-        with open(os.path.join(REPO, "games", "art_index.py")) as f:
-            exec(f.read(), index)
-        out = {}
-        for name in self.names():
-            w, h, path = index["ART"][name]
-            with open(os.path.join(REPO, "games", path), "rb") as f:
-                out[name] = from_bin(f.read(), w, h)
-        return out
+        return read_committed(self.names())
+
+
+def read_committed(names):
+    """The pictures of names as committed in games/art, read back through games/art_index.py."""
+    index = {}
+    with open(os.path.join(REPO, "games", "art_index.py")) as f:
+        exec(f.read(), index)
+    out = {}
+    for name in names:
+        w, h, path = index["ART"][name]
+        with open(os.path.join(REPO, "games", path), "rb") as f:
+            out[name] = from_bin(f.read(), w, h)
+    return out
 
 
 def paint_rescue():
