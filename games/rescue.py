@@ -418,8 +418,11 @@ FIRE_STEP_MS = 80  # ms a heat step, as the Runner's: 40 sank the Runner to 16 f
 # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade: one flame out of the crater that tapers into
 # tongues, set by eye on Mac frames of tools/render_scene.py against eight looks (fast patches and more cooling split
 # it into blobs with a gap, less fade makes a white column). A decay of 31 loses a little heat a row, so the flame
-# tapers off about 45 px up: at 34 it climbed for seconds to the screen's top and its upper part broke off (P800)
-FIRE_LOOK = (31, 24, 1, 0, 1, 0, 0, 16)  # no fast patches (they split the flame), no field embers (they rose low)
+# tapers off about 45 px up: at 34 it climbed for seconds to the screen's top and its upper part broke off (P800).
+# A cooling of 6, not 24: the cooling map's cold patches rise with the flame and cut a piece off its top, hosed or not.
+# Of 127 looks scored on five rows (tests/test_rescue_frames.py's), 28 kept every flame one piece, all but one with
+# decay 31 and cooling 0 to 9 (none with 12, none with decay 29); this one changes only the cooling (9 split, P806)
+FIRE_LOOK = (31, 6, 1, 0, 1, 0, 0, 16)  # no fast patches (they split the flame), no field embers (they rose low)
 FIRE_SEED = 800
 DECAY_DROP = 3  # the decay falls this much as the fires die down, from 31 to 28: the flame shrinks from its top
 BURN_HALF_PX = 12  # px each side of the crater's middle that burn
