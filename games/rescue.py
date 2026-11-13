@@ -2,18 +2,18 @@
 Rescue (P800): a night street under a meteor shower. Carry the people who run about in panic to the fire station,
 under the green SAFE sign.
 
-How to play: the fireman runs along the street and never stops on his own. Tap BOOT and he turns round. Hold it and
-he stops and sprays the hose ahead of him: a fire within REACH_PX goes down and is out after about a second of water.
-People come out of the houses and run about in panic: a man, a woman, a child (small and fast), a grandma (slow, with
-a cane) and a man with his dog. Each wears a bright shirt, so they show on the dark street. A fire stops everyone. A
+How to play: the fireman runs along the street and never stops on his own. Tap BOOT and he turns round. Hold it and he
+stops and sprays the hose ahead of him: a fire within HOSE_REACH_PX goes down and is out after about a second of water.
+People come out of the houses and run about in panic: a man, a woman, a child (small and fast), a grandma (slow, with a
+cane) and a man with his dog. Each wears a bright shirt, so they show on the dark street. A fire stops everyone. A
 person turns back from it. A person with a fire on one side and a fire or the street's end close on the other is
-trapped: they stop, wave and shout for help, under a pale arrow and a blinking "help!". The fireman stops at a fire
-too, until the hose puts it out. Run into a person and he picks them up. He is slower then and cannot spray, and he
-runs through the flames with the person sheltered in his arms. At the station's door he sets them down: a point, two
-for a child, and "+1" rises over the door. A meteor's shadow grows on the street for FALL_MS before it lands, in a
-blinking target ring. Where it lands a crater opens and burns for FIRE_MS. A person it lands on is gone, in a puff of
-smoke (nobody is drawn burning). Three people lost end the round. Every SAVES_A_STEP people saved, the meteors come
-faster and more people are out at once.
+trapped: they stop, wave and shout for help, under a pale arrow and a blinking "help!". The fireman stops at a fire too,
+until the hose puts it out. Run into a person and he picks them up. He is slower then and cannot spray, and he runs
+through the flames with the person sheltered in his arms. At the station's door he sets them down: a point, two for a
+child, and "+1" rises over the door. A meteor's shadow grows on the street for FALL_MS before it lands, in a blinking
+target ring. Where it lands a crater opens and burns for FIRE_MS. A person it lands on is gone, in a puff of smoke
+(nobody is drawn burning). Three people lost end the round. Every SAVES_A_STEP people saved, the meteors come faster and
+more people are out at once.
 
 Every figure is motion capture (art/mocap.py, art/sets/rescue.py), painted facing right and facing left: the
 fireman's run, spray, turn and carry, each person's run (granny's is a walk) and wave. The dog is hand-keyed. A pose
@@ -41,7 +41,7 @@ RUN_POSES, SPRAY_POSES, TURN_POSES, CARRY_POSES = 12, 6, 4, 12  # art/mocap.py's
 SPRAY_POSE_MS = 83  # the spray cycle's loop is 0.5 s of capture, over its six poses
 TURN_MS = 160  # the turn's four poses, after a turn: he turns on the spot, and cannot spray
 LEFT_X, RIGHT_X = 74, 304  # px: his hips, from the station's door to the street's end, where he turns by himself
-REACH_PX = 40  # px ahead of his hips that the hose reaches
+HOSE_REACH_PX = 40  # px ahead of his hips that the hose reaches
 HEAT_MAX = 255
 DOUSE_MS = 1000  # ms of water that put out a full fire
 FIRE_MS = 6000  # a fire left alone burns this long
@@ -222,7 +222,7 @@ class Rules:
         self.saved = self.lost_count = self.points = 0
         self.meteor_ms, self.come_ms = FIRST_MS, COME_FIRST_MS  # ms to the next meteor, and to the next person
         self.landed_x = self.out_x = self.saved_kind = self.trapped_kind = self.came_x = -1
-        self.lost, self.ended = [], []
+        self.lost, self.ended = [], []  # ended: the Craters whose fire ended this frame (P803)
 
     def tier(self):
         return min(self.saved // SAVES_A_STEP, len(METEOR_MS) - 1)
@@ -260,13 +260,13 @@ class Rules:
         return events
 
     def burn(self, ms):
-        """The fires burn down, and the hose wets each one within REACH_PX ahead of him."""
+        """The fires burn down, and the hose wets each one within HOSE_REACH_PX ahead of him."""
         man, events = self.man, 0
         spraying = man.spraying()
         for c in self.craters:
             if c.burning():
                 c.left_ms -= ms
-                if spraying and 0 <= man.ahead(c.x) <= REACH_PX:
+                if spraying and 0 <= man.ahead(c.x) <= HOSE_REACH_PX:
                     c.wet_ms += ms
                 if not c.burning():
                     self.ended.append(c)
@@ -426,7 +426,8 @@ BURN_HALF_PX = 12  # px each side of the crater's middle that burn
 BURNS = 8  # hot spots burned a frame by a full fire
 BURN_HEAT, FOOT_HEAT = 223, 160  # a spot's heat in a full fire, and in a fire nearly out: still bright, never see-through
 REGROW = ((0, 4, 210), (4, 9, 170), (9, 14, 120))  # field rows above a fire's foot and their heat: a flame burned back
-HEAT_REACH = 14  # cells: a fire's heat reaches this far each side of its middle, past its foot's half-width (P803)
+# cells: a fire's heat reaches this far each side of its middle, past its foot's half-width (P803)
+HEAT_REACH_CELLS = 14
 WATER = (c565(170, 214, 255), c565(230, 244, 255))
 STEAM = c565(200, 200, 210)
 SMOKE = (c565(120, 116, 124), c565(150, 146, 152), c565(90, 86, 96))
@@ -535,7 +536,7 @@ class Rescue(Game):
                 self.water.add(x, y, man.facing * random.randrange(100, 140), -random.randrange(50, 90),
                                WATER[random.randrange(2)], 0.34, 320.0)
             for c in rules.craters:
-                if c.burning() and 0 <= man.ahead(c.x) <= REACH_PX and random.randrange(3) == 0:
+                if c.burning() and 0 <= man.ahead(c.x) <= HOSE_REACH_PX and random.randrange(3) == 0:
                     self.fx.add(c.x + random.randrange(-8, 9), LANE - 4, random.randrange(-12, 13),
                                 -random.randrange(20, 50), STEAM, 0.7, -30.0)
         for m in rules.meteors:  # each meteor's trail of embers
@@ -557,11 +558,12 @@ class Rescue(Game):
             self.die()
 
     def fires(self, events):
-        """The heat field: each burning crater burns its foot into it. A fire that ends empties its columns, HEAT_REACH
-        cells each side of its middle (its heat would rise on alone as a flame with no crater under it), and takes its
-        sparks with it (they would rise on as a bit of flame). A fire still burning whose heat reaches into those
-        columns is burned back in, a REGROW stump for a moment; a fire farther away keeps its flame (P803). Firmware
-        without HeatField.cool empties the whole field instead, so every fire is burned back in."""
+        """The heat field: each burning crater burns its foot into it. A fire that ends empties its columns,
+        HEAT_REACH_CELLS each side of its middle (its heat would rise on alone as a flame with no crater under it), and
+        takes its sparks with it (they would rise on as a bit of flame). A fire still burning whose heat reaches into
+        those columns, its middle within 2 x HEAT_REACH_CELLS of the ended fire's, is burned back in, a REGROW stump for
+        a moment; a fire farther away keeps its flame (P803). Firmware without HeatField.cool empties the whole field
+        instead, so every fire is burned back in."""
         rules = self.rules
         self.layer.update(self.ms, 0)
         field = self.layer.field
@@ -574,12 +576,15 @@ class Rescue(Game):
             self.decay = decay
             field.set_look(decay, *FIRE_LOOK[1:])
         if events & (OUT | BURNT):
-            cooled = [self.layer.cool(c.x // 2 - HEAT_REACH, c.x // 2 + HEAT_REACH) for c in rules.ended]
+            cooled = []  # the columns emptied, (first, last) per ended fire
+            for c in rules.ended:
+                mid = c.x // 2
+                cooled.append(self.layer.cool(mid - HEAT_REACH_CELLS, mid + HEAT_REACH_CELLS))
             self.fx.p = [q for q in self.fx.p if q[5] != SPARK or any(abs(q[0] - c.x) <= SPARK_PX for c in burning)]
             for c in burning:
                 x, y = c.x // 2, LANE // 2 - 2
-                if not any(x0 - HEAT_REACH <= x <= x1 + HEAT_REACH for x0, x1 in cooled):
-                    continue  # its heat does not reach the emptied columns
+                if not any(x0 - HEAT_REACH_CELLS <= x <= x1 + HEAT_REACH_CELLS for x0, x1 in cooled):
+                    continue  # its heat does not reach the emptied columns: 2 x HEAT_REACH_CELLS from the ended middle
                 for lo, hi, top in REGROW:
                     field.burn(x, y - lo, x, y - hi, 3, top * c.heat() // HEAT_MAX)
         for c in burning:  # hot spots at random along the crater, on its two rows: a wide, ragged base. As a fire

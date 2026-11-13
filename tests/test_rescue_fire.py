@@ -18,7 +18,7 @@ from test_fire import Engine  # noqa: E402
 
 import fire  # noqa: E402
 import rescue  # noqa: E402
-from rescue import HEAT_REACH, Crater  # noqa: E402
+from rescue import HEAT_REACH_CELLS, Crater  # noqa: E402
 
 NEVER = 10 ** 9  # ms: no meteor falls and nobody comes out
 FAR_PX, NEAR_PX = 80, 30  # 40 cells apart, out of each other's reach; 15 cells, in it
@@ -69,9 +69,10 @@ class FireEndsTest(unittest.TestCase):
         return before, bytes(game.layer.field.heat[:fire.W * fire.H]), on, game, fire.engine.burns
 
     def cells(self, heat, x_px):
-        """The cells of the columns HEAT_REACH each side of x px, row by row."""
+        """The cells of the columns HEAT_REACH_CELLS each side of x px, row by row."""
         x = x_px // 2
-        return [heat[y * fire.W + c] for y in range(fire.H) for c in range(x - HEAT_REACH, x + HEAT_REACH + 1)]
+        reach = range(x - HEAT_REACH_CELLS, x + HEAT_REACH_CELLS + 1)
+        return [heat[y * fire.W + c] for y in range(fire.H) for c in reach]
 
     def test_a_far_fire_keeps_every_cell_of_its_flame_and_is_not_burned_back(self):
         before, after, on, game, burns = self.end_beside(FAR_PX)
@@ -80,7 +81,8 @@ class FireEndsTest(unittest.TestCase):
         self.assertEqual(0, len(lowered))  # its own foot's burns only raise cells
         self.assertEqual([], regrows(burns, on.x))
         self.assertTrue(game.layer.can_cool)
-        self.assertEqual([(END_X // 2 - HEAT_REACH, 0, END_X // 2 + HEAT_REACH, fire.H - 1, 255)], fire.engine.cools)
+        mid = END_X // 2
+        self.assertEqual([(mid - HEAT_REACH_CELLS, 0, mid + HEAT_REACH_CELLS, fire.H - 1, 255)], fire.engine.cools)
         self.assertEqual([], fire.engine.scrolls)  # no clear
 
     def test_the_ended_fire_s_columns_are_empty(self):
@@ -91,7 +93,15 @@ class FireEndsTest(unittest.TestCase):
     def test_a_near_fire_is_burned_back_in(self):
         _, _, on, _, burns = self.end_beside(NEAR_PX)
         self.assertEqual(len(rescue.REGROW), len(regrows(burns, on.x)))
+        self.assertEqual(1, len(fire.engine.cools))  # the ended fire's columns, and no clear
         self.assertEqual([], fire.engine.scrolls)
+
+    def test_a_fire_is_burned_back_up_to_2_x_heat_reach_cells_away_and_not_one_cell_more(self):
+        for cells, burned in ((2 * HEAT_REACH_CELLS, True), (2 * HEAT_REACH_CELLS + 1, False)):
+            with self.subTest(cells=cells):
+                _, _, on, _, burns = self.end_beside(2 * cells)
+                self.assertEqual(1, len(fire.engine.cools))
+                self.assertEqual(len(rescue.REGROW) if burned else 0, len(regrows(burns, on.x)))
 
     def test_without_cool_the_field_is_emptied_and_even_a_far_fire_is_burned_back_in(self):
         _, after, on, game, burns = self.end_beside(FAR_PX, cool=False)

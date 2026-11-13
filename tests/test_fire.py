@@ -136,7 +136,7 @@ class Engine:
                                       (ctypes.c_uint8 * 256).from_buffer(alpha))
 
         class HeatField(OldHeatField):  # --- MVP (P803) ---
-            def cool(self, x0, y0, x1, y1, amount):  # the binding's, with its check
+            def cool(self, x0, y0, x1, y1, amount):  # the binding's, with its check: keep in step with binding.c
                 w, h = self.f.w, self.f.h
                 if not (-w <= x0 <= 2 * w and -w <= x1 <= 2 * w and -h <= y0 <= 2 * h and -h <= y1 <= 2 * h
                         and 0 <= amount <= 255):

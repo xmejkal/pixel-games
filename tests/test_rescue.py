@@ -129,7 +129,7 @@ class HoseTest(unittest.TestCase):
         return rules, heats
 
     def test_the_spray_within_40_px_lowers_the_fire_and_puts_it_out_in_about_a_second(self):
-        rules, heats = self.spray_at(START + rs.REACH_PX)
+        rules, heats = self.spray_at(START + rs.HOSE_REACH_PX)
         burning = [h for h, _ in heats if h]
         self.assertTrue(all(a > b for a, b in zip(burning, burning[1:])))  # down at each frame of water
         out = [i for i, (_, events) in enumerate(heats) if events & OUT]
@@ -138,7 +138,7 @@ class HoseTest(unittest.TestCase):
         self.assertEqual([], rules.ended)  # P803: it ended frames ago
 
     def test_the_spray_does_not_reach_past_40_px_nor_behind_him(self):
-        for x in (START + rs.REACH_PX + 1, START - 10):
+        for x in (START + rs.HOSE_REACH_PX + 1, START - 10):
             with self.subTest(crater_x=x):
                 rules, heats = self.spray_at(x)
                 self.assertEqual([rs.HEAT_MAX] * len(heats), [h for h, _ in heats])
@@ -500,7 +500,7 @@ class Carrier:
                 return False
             self.tapped = True
             return True
-        fire = rules.fire_ahead(man.x, man.facing, rs.REACH_PX)
+        fire = rules.fire_ahead(man.x, man.facing, rs.HOSE_REACH_PX)
         return fire is not None and man.carrying is None and (goal - fire) * man.facing > 0
 
 
