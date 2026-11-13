@@ -180,34 +180,44 @@ STRIPE = (226, 236, 150)  # the reflective band
 SEAM = (74, 68, 92)  # round the near arm where it crosses the body
 WARM, COOL = (236, 130, 64), (128, 156, 214)  # the rims: the fire side (ahead of him) and the other
 HOSE, BRASS = (184, 52, 40), (214, 190, 120)
-SIZES = {"run": (26, 30), "turn": (26, 30), "spray": (40, 30)}  # each cycle's picture, w x h; the hips at w / 2
+SIZES = {"run": (26, 30), "turn": (26, 30), "spray": (40, 30), "carry": (30, 30)}  # each cycle's picture, w x h; the hips at w / 2
 
 
 class Figure:
     """One pose of the fireman, facing right, painted at 8x on a brush.Sprite: far limbs, torso, near leg, head and
     helmet, near arm, then cut and given a 1 px rim outside the shape, warm ahead and cool behind. The reflective
     bands are kept as their own mask, so a part painted over one hides it, and come out as whole pixels. With hose,
-    the nozzle is in his hands and the hose, under everything, runs from them down to the street behind him."""
+    the nozzle is in his hands and the hose, under everything, runs from them down to the street behind him. With
+    carried (a Carried), a person lies over his shoulder and his near arm holds their legs."""
+
+    px, coat, coat_far, seam = PX, COAT, COAT_FAR, SEAM  # px a body height, the near side's colour, the far limbs'
+    reflective = True  # the bands on the coat
+    thigh_w, shin_w, foot_w, upper_w, fore_w, torso_w = 2.8, 2.3, 2.2, 2.3, 2.0, 4.2  # px, at the final size
+    boot = (16, 14, 20)
 
     def __init__(self, size):
         self.w, self.h = size
 
     def at(self, joint):
         x, y, _ = joint
-        return (self.w / 2 + x * PX, self.h - 1 - y * PX)
+        return (self.w / 2 + x * self.px, self.h - 1 - y * self.px)
 
-    def paint(self, pose, hose=False):
+    def paint(self, pose, hose=False, carried=None):
         s = Sprite(self.w, self.h)
         self.bands = Image.new("L", s.size, 0)
         p = {n: self.at(v) for n, v in pose.items()}
         near = "r" if pose["rhipjoint"][2] >= pose["lhipjoint"][2] else "l"
         far = "l" if near == "r" else "r"
-        self.arm(s, p, far, COAT_FAR)
-        self.leg(s, p, far, COAT_FAR)
+        if carried is not None:  # his arms move under the person: set before the far arm is painted
+            carried.hold(p, near)
+        self.arm(s, p, far, self.coat_far)
+        self.leg(s, p, far, self.coat_far)
         self.torso(s, p)
-        self.leg(s, p, near, COAT)
+        self.leg(s, p, near, self.coat)
         self.head(s, p)
-        self.arm(s, p, near, COAT)
+        self.arm(s, p, near, self.coat)
+        if carried is not None:  # over his forearms, so the person reads whole
+            carried.paint(self, s, p, near)
         if hose:
             self.nozzle(s, p, near)
         img = self.rim(self.banded(s.cut(outline=False)), pose["nose"][0] >= pose["head"][0])
@@ -235,18 +245,20 @@ class Figure:
     def leg(self, s, p, side, colour):
         hip, knee, ankle = p[side + "hipjoint"], p[side + "femur"], p[side + "tibia"]
         ball, toe = p[side + "foot"], p[side + "toes"]
-        self.part(s, s.shape("line", hip, knee, width=2.8), colour)
+        self.part(s, s.shape("line", hip, knee, width=self.thigh_w), colour)
         band = across(s, knee, ankle, 0.66)
-        self.part(s, s.shape("line", knee, ankle, width=2.3), colour, band if colour == COAT else None)
-        self.part(s, s.shape("line", ankle, ball, toe, width=2.2), (16, 14, 20))  # the boot
+        self.part(s, s.shape("line", knee, ankle, width=self.shin_w), colour,
+                  band if colour == self.coat and self.reflective else None)
+        self.part(s, s.shape("line", ankle, ball, toe, width=self.foot_w), self.boot)  # the boot
 
     def arm(self, s, p, side, colour):
         shoulder, elbow, wrist, hand = p[side + "clavicle"], p[side + "humerus"], p[side + "radius"], p[side + "wrist"]
-        upper, fore = s.shape("line", shoulder, elbow, width=2.3), s.shape("line", elbow, wrist, hand, width=2.0)
-        if colour == COAT:  # the near arm over the body: a seam round it, where it lies on what is painted
-            wide = ImageChops.lighter(s.shape("line", shoulder, elbow, width=4.3),
-                                      s.shape("line", elbow, wrist, hand, width=4.0))
-            self.part(s, ImageChops.multiply(wide, s.alpha), SEAM)
+        upper = s.shape("line", shoulder, elbow, width=self.upper_w)
+        fore = s.shape("line", elbow, wrist, hand, width=self.fore_w)
+        if colour == self.coat:  # the near arm over the body: a seam round it, where it lies on what is painted
+            wide = ImageChops.lighter(s.shape("line", shoulder, elbow, width=self.upper_w + 2),
+                                      s.shape("line", elbow, wrist, hand, width=self.fore_w + 2))
+            self.part(s, ImageChops.multiply(wide, s.alpha), self.seam)
         self.part(s, upper, colour)
         self.part(s, fore, colour)
 
@@ -254,15 +266,16 @@ class Figure:
         hips = along(p["lhipjoint"], p["rhipjoint"], 0.5)
         neck = p["lowerneck"]
         band = across(s, hips, neck, 0.16)
-        self.part(s, s.shape("line", hips, p["lowerback"], p["upperback"], p["thorax"], neck, width=4.2), COAT, band)
+        self.part(s, s.shape("line", hips, p["lowerback"], p["upperback"], p["thorax"], neck, width=self.torso_w),
+                  self.coat, band if self.reflective else None)
 
     def head(self, s, p):
         hx, hy = p["head"]
-        ahead = (p["nose"][0] - hx) / (0.1 * PX)  # 1 facing ahead, -1 facing back, 0 facing the viewer
+        ahead = (p["nose"][0] - hx) / (0.1 * self.px)  # 1 facing ahead, -1 facing back, 0 facing the viewer
         side = 1 - abs(ahead)
-        r = 0.068 * PX
+        r = 0.068 * self.px
         self.part(s, s.shape("ellipse", hx - r, hy - r * 1.1, hx + r, hy + r * 1.1), (40, 30, 30))
-        top = hy - HELMET_TOP * PX
+        top = hy - HELMET_TOP * self.px
         dome = s.shape("ellipse", hx - r * 1.25, top, hx + r * 1.25, hy + r * 1.1)
         dome = ImageChops.multiply(dome, s.shape("rect", 0, 0, self.w, hy + 0.3, 0))
         back = hx - ahead * r * 2.6 - side * r * 1.6  # the long brim behind, both sides when he faces the viewer
@@ -327,9 +340,209 @@ def dist(a, b):
     return ((b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2) ** 0.5 or 1.0
 
 
-class FiremanPoses:
-    """The fireman's pictures by name: painted from the CMU files when they are there, else read back from the
-    committed games/art files (and said so)."""
+# --- the people, the carry and the dog (PR 2) ---------------------------------------------------------------
+
+HEAD_TOP = 0.06  # body heights from the head joint to the top of a bare head
+SHIRT = (232, 226, 204)  # the pale shirt of a person he carries: it tells them from his coat
+
+
+def snapped(pose):
+    """The pose moved up or down so that its lowest foot joint is on the floor: the soles stay on one row."""
+    low = min(pose[n][1] for n in ("ltoes", "rtoes", "lfoot", "rfoot"))
+    return {n: (f, u - low, d) for n, (f, u, d) in pose.items()}
+
+
+UPPER = ("lowerback", "upperback", "thorax", "lowerneck", "upperneck", "head", "nose", "lclavicle", "rclavicle",
+         "lhumerus", "rhumerus", "lradius", "rradius", "lwrist", "rwrist", "lhand", "rhand", "lfingers", "rfingers",
+         "lthumb", "rthumb")
+
+
+def leant(pose, degrees):
+    """The body above the hips bent forward by degrees about the middle of the hips."""
+    (lf, lu, _), (rf, ru, _) = pose["lhipjoint"], pose["rhipjoint"]
+    hf, hu = (lf + rf) / 2, (lu + ru) / 2
+    c, k = cos(degrees * pi / 180), sin(degrees * pi / 180)
+    out = dict(pose)
+    for n in UPPER:
+        if n in pose:
+            f, u, d = pose[n]
+            out[n] = (hf + (f - hf) * c + (u - hu) * k, hu - (f - hf) * k + (u - hu) * c, d)
+    return out
+
+
+def lighter(colour):
+    """The far limbs' colour: about 25 % lighter than the near side's, as the fireman's coat."""
+    return tuple(min(255, int(c * 1.25 + 20)) for c in colour)
+
+
+class Look:
+    """How one kind of person is painted: the height in px from the soles to the top of the head, the near side's
+    colour, the limbs' and the torso's widths in px, the head's radius in body heights, the hair (short, long, bun,
+    cap), a lean forward in degrees, a cane, a skirt."""
+
+    def __init__(self, height, near, limb=2.2, torso=3.6, head=0.072, hair="short", lean=0, cane=False, skirt=False):
+        self.height, self.near, self.limb, self.torso, self.head = height, near, limb, torso, head
+        self.hair, self.lean, self.cane, self.skirt = hair, lean, cane, skirt
+
+
+LOOKS = {  # the people, each its own run (mocap.CROWD) and everyone the wave; dark, each with its own tint
+    "man": Look(25, (30, 34, 56), limb=2.3, torso=3.9),
+    "woman": Look(24, (62, 28, 50), limb=2.0, torso=3.2, hair="long", skirt=True),
+    "child": Look(16, (24, 52, 58), limb=2.0, torso=3.0, head=0.095),
+    "granny": Look(22, (54, 44, 44), limb=2.0, torso=3.4, hair="bun", lean=24, cane=True),
+    "dogman": Look(25, (40, 46, 26), limb=2.3, torso=3.9, hair="cap"),
+}
+PEOPLE = tuple(LOOKS)
+HAIR = {"bun": (178, 174, 186)}  # granny's grey bun: the one light thing on her
+CANE = (138, 96, 58)  # a wooden cane, lighter than her coat
+
+
+class Person(Figure):
+    """One pose of a person, facing right, in the fireman's style: the far limbs lighter, a 1 px rim warm ahead and
+    cool behind, no helmet and no bands. The soles are put on the floor, the body leant as the look says."""
+
+    reflective = False
+
+    def __init__(self, size, look):
+        super().__init__(size)
+        self.look = look
+        self.px = look.height / (1 + HEAD_TOP)
+        self.coat, self.coat_far = look.near, lighter(look.near)
+        self.seam = lighter(lighter(look.near))
+        self.thigh_w = look.limb + 0.4
+        self.shin_w = self.upper_w = look.limb
+        self.foot_w, self.fore_w, self.torso_w = look.limb - 0.2, look.limb - 0.2, look.torso
+        self.boot = tuple(c // 2 for c in look.near)
+
+    def paint(self, pose):
+        pose = snapped(leant(pose, self.look.lean) if self.look.lean else pose)
+        s = Sprite(self.w, self.h)
+        self.bands = Image.new("L", s.size, 0)
+        p = {n: self.at(v) for n, v in pose.items()}
+        near = "r" if pose["rhipjoint"][2] >= pose["lhipjoint"][2] else "l"
+        far = "l" if near == "r" else "r"
+        self.arm(s, p, far, self.coat_far)
+        self.leg(s, p, far, self.coat_far)
+        self.torso(s, p)
+        self.leg(s, p, near, self.coat)
+        if self.look.skirt:
+            self.skirt(s, p, near, far)
+        self.head(s, p)
+        self.arm(s, p, near, self.coat)
+        if self.look.cane:  # in the lower hand: the near one as she walks, the other one as she waves
+            hx, hy = max((p[near + "wrist"], p[far + "wrist"]), key=lambda q: q[1])
+            self.part(s, s.shape("line", (hx + 0.3, hy - 0.8), (hx + 0.18 * self.px, self.h - 0.8), width=1.3), CANE)
+        return self.rim(s.cut(outline=False), pose["nose"][0] >= pose["head"][0])
+
+    def skirt(self, s, p, near, far):
+        """A skirt from the waist to above the knees, its hem moving with the legs."""
+        waist = along(along(p["lhipjoint"], p["rhipjoint"], 0.5), p["lowerback"], 0.5)
+        hems = sorted((along(p[k + "hipjoint"], p[k + "femur"], 0.8) for k in (near, far)))
+        w = self.look.torso / 2
+        s_ = s.shape("poly", (waist[0] - w, waist[1]), (waist[0] + w, waist[1]), (hems[1][0] + 2.0, hems[1][1]),
+                     (hems[0][0] - 2.0, hems[0][1]))
+        self.part(s, s_, self.coat)
+
+    def head(self, s, p):
+        hx, hy = p["head"]
+        look, r = self.look, self.look.head * self.px
+        ahead = (p["nose"][0] - hx) / (0.1 * self.px)  # 1 facing ahead, -1 facing back, 0 facing the viewer
+        cy = hy + r * 0.1
+        self.part(s, s.shape("ellipse", hx - r, cy - r * 1.1, hx + r, cy + r * 1.1), self.coat)
+        back = -1 if ahead >= 0 else 1
+        if look.hair == "long":  # hair down to the shoulders, behind the face
+            self.part(s, s.shape("ellipse", hx + back * r * 1.3 - r * 0.8, cy - r * 0.9, hx + back * r * 1.3 + r * 0.8,
+                                 cy + r * 2.2), self.coat)
+        elif look.hair == "bun":
+            bx, by = hx + back * r * 0.75, cy - r * 0.95
+            self.part(s, s.shape("ellipse", bx - r * 0.65, by - r * 0.6, bx + r * 0.65, by + r * 0.6), HAIR["bun"])
+        elif look.hair == "cap":  # a flat cap with its peak ahead
+            top = cy - r * 1.15
+            self.part(s, s.shape("ellipse", hx - r * 1.1, top - r * 0.2, hx + r * 1.1, cy + r * 0.1), self.seam)
+            self.part(s, s.shape("poly", (hx, top + r * 0.5), (hx - back * r * 2.0, top + r * 0.8),
+                                 (hx - back * r * 2.0, top + r * 1.15), (hx, top + r * 1.0)), self.seam)
+
+
+class Carried:
+    """A person carried in the fireman's arms, seen from the side: lying across his forearms in front of his chest,
+    the head ahead and hanging a little, the knees over his far forearm and the lower legs hanging down, an arm
+    hanging from the shoulder. scale: 1 an adult, less a child. The shirt is pale, so the person shows against his
+    coat."""
+
+    BODY, HAIR = (66, 72, 108), (34, 26, 30)  # trousers a mid blue: lighter than his coat
+
+    def __init__(self, scale):
+        self.k = scale
+
+    def places(self, p):
+        """The carried body's points, from his chest."""
+        k, (cx, cy) = self.k, p["thorax"]
+        knee = (cx + 3.6, cy + 0.6)
+        hips = (knee[0] + 2.6 * k, knee[1] + 2.8 * k)
+        shoulders = (hips[0] + 4.6 * k, hips[1] - 2.2 * k)
+        head = (shoulders[0] + 2.0 * k, shoulders[1] + 1.4 * k)
+        foot = (knee[0] + 0.4 * k, knee[1] + 5.6 * k)
+        return knee, hips, shoulders, head, foot
+
+    def hold(self, p, near):
+        """His arms under the knees (the far one) and the back (the near one)."""
+        knee, hips, shoulders, _, _ = self.places(p)
+        far = "l" if near == "r" else "r"
+        for side, under in ((far, knee), (near, along(hips, shoulders, 0.55))):
+            shoulder = p[side + "clavicle"]
+            p[side + "humerus"] = (shoulder[0] + 0.6, shoulder[1] + 4.2)
+            p[side + "radius"] = (under[0] - 0.8, under[1] + 2.0)
+            p[side + "wrist"] = (under[0] + 0.6, under[1] + 1.6)
+
+    def paint(self, fig, s, p, near):
+        k = self.k
+        knee, hips, shoulders, head, foot = self.places(p)
+        body, light = self.BODY, lighter(self.BODY)
+        part = fig.part
+        part(s, s.shape("line", (knee[0] + 0.7, knee[1] - 0.4), (foot[0] + 0.9, foot[1] - 0.3), width=1.8 * k), light)
+        part(s, s.shape("line", shoulders, (shoulders[0] - 0.2, shoulders[1] + 3.0 * k),
+                        (shoulders[0] + 0.6, shoulders[1] + 5.4 * k), width=1.7 * k), light)  # an arm hanging down
+        part(s, s.shape("line", hips, knee, foot, width=2.2 * k), body)  # the near leg over his forearm
+        part(s, s.shape("line", hips, shoulders, width=3.6 * k), SHIRT)
+        r = 2.0 * k
+        part(s, s.shape("ellipse", head[0] - r, head[1] - r, head[0] + r, head[1] + r), self.HAIR)
+
+
+CARRIED = {"carry": Carried(1.0), "carrykid": Carried(0.66)}
+PEOPLE_SIZES = {"man": (24, 32), "woman": (24, 32), "child": (18, 22), "granny": (24, 28), "dogman": (24, 32)}
+DOG_SIZE, DOG_POSES = (18, 12), 8
+DOG = (36, 30, 26)
+
+
+def paint_dog(i):
+    """The dog, facing right, pose i of DOG_POSES of a run: hand-keyed (no capture of a dog here). A rotary gallop:
+    each leg swings on its own phase (the hind pair, then the front pair), a paw lifts as its leg swings forward,
+    the body rises and falls a little, the tail is up and wags."""
+    w, h = DOG_SIZE
+    s = Sprite(w, h)
+    t = i / DOG_POSES
+    bob = 0.4 * sin(2 * pi * t)
+    far, near = lighter(DOG), DOG
+    for k, (hip, off) in enumerate(((4.6, 0.0), (5.4, 0.12), (12.0, 0.5), (12.8, 0.62))):
+        a = sin(2 * pi * (t + off))  # -1 back, 1 forward
+        lift = max(0.0, cos(2 * pi * (t + off))) * 1.6  # the paw comes up as it swings forward
+        top, paw = (hip, 5.4 + bob), (hip + a * 2.4, h - 1.0 - lift)
+        knee = (hip + a * 1.0 + (0.9 if hip < 9 else -0.5), (top[1] + paw[1]) / 2)
+        s.part(s.shape("line", top, knee, paw, width=1.7), far if k % 2 == 0 else near, rim=0, grain=0)
+    s.part(s.shape("ellipse", 3.0, 3.0 + bob, 14.2, 7.0 + bob), near, rim=0, grain=0)  # the body
+    s.part(s.shape("ellipse", 12.6, 0.8 + bob, 16.4, 4.6 + bob), near, rim=0, grain=0)  # the head
+    s.part(s.shape("line", (15.4, 3.2 + bob), (17.3, 3.6 + bob), width=1.6), near, rim=0, grain=0)  # the snout
+    s.part(s.shape("poly", (13.0, 1.6 + bob), (13.4, -0.4 + bob), (14.6, 1.2 + bob)), near, rim=0, grain=0)  # an ear
+    wag = 0.7 * sin(4 * pi * t)
+    s.part(s.shape("line", (3.6, 4.2 + bob), (1.8, 2.6 + bob + wag), (1.0, 1.2 + bob + wag), width=1.3), near,
+           rim=0, grain=0)
+    return Figure.rim(None, s.cut(outline=False), True)
+
+
+class CapturedPictures:
+    """The pictures painted from motion capture by name: the fireman's cycles, his carry with an adult and with a
+    child, and each person's run and wave. Painted from the CMU files when they are there, else read back from the
+    committed games/art files (and said so). The left poses are the right ones mirrored."""
 
     def __init__(self, folder=mocap.CMU_DIR):
         self.folder, self.capture = folder, mocap.Capture(folder)
@@ -337,20 +550,44 @@ class FiremanPoses:
     def pictures(self):
         missing = self.capture.missing()
         if missing:
-            print("rescue: no %s in %s: the fireman is read back from games/art, not painted again" % (
-                ", ".join(missing), self.folder))
+            print("rescue: no %s in %s: the motion-captured pictures are read back from games/art, not painted again"
+                  % (", ".join(missing), self.folder))
             return self.committed()
         out = {}
         for cycle in mocap.CYCLES:
-            figure = Figure(SIZES[cycle.name])
-            right = [figure.paint(pose, cycle.name == "spray") for pose in self.capture.poses(cycle)]
-            out.update({"rescue_%s_r%d" % (cycle.name, i): img for i, img in enumerate(right)})
-            out.update({"rescue_%s_l%d" % (cycle.name, i): ImageOps.mirror(img) for i, img in enumerate(right)})
+            figure, poses = Figure(SIZES[cycle.name]), self.capture.poses(cycle)
+            if cycle.name == "carry":
+                for name, carried in CARRIED.items():
+                    self.add(out, name, [figure.paint(snapped(pose), carried=carried) for pose in poses])
+            else:
+                self.add(out, cycle.name, [figure.paint(pose, cycle.name == "spray") for pose in poses])
+        crowd = {c.name: c for c in mocap.CROWD}
+        wave = self.capture.poses(crowd["wave"])
+        for who in PEOPLE:
+            person = Person(PEOPLE_SIZES[who], LOOKS[who])
+            self.add(out, who + "_run", [person.paint(pose) for pose in self.capture.poses(crowd[who])])
+            self.add(out, who + "_wave", [person.paint(pose) for pose in wave])
         return out
 
     @staticmethod
-    def names():
-        return ["rescue_%s_%s%d" % (c.name, side, i) for c in mocap.CYCLES for side in "rl" for i in range(c.poses)]
+    def add(out, cycle, right):
+        out.update({"rescue_%s_r%d" % (cycle, i): img for i, img in enumerate(right)})
+        out.update({"rescue_%s_l%d" % (cycle, i): ImageOps.mirror(img) for i, img in enumerate(right)})
+
+    @staticmethod
+    def cycles():
+        """Each cycle's picture stem and its pose count, in the order they are painted."""
+        crowd = {c.name: c.poses for c in mocap.CROWD}
+        out = []
+        for c in mocap.CYCLES:
+            out += [(name, c.poses) for name in CARRIED] if c.name == "carry" else [(c.name, c.poses)]
+        for who in PEOPLE:
+            out += [(who + "_run", crowd[who]), (who + "_wave", crowd["wave"])]
+        return out
+
+    @classmethod
+    def names(cls):
+        return ["rescue_%s_%s%d" % (c, side, i) for c, n in cls.cycles() for side in "rl" for i in range(n)]
 
     def committed(self):
         index = {}
@@ -365,9 +602,13 @@ class FiremanPoses:
 
 
 def paint_rescue():
-    """Every rescue picture: the still street and the crater first (on the seed's stream), then the fireman."""
+    """Every rescue picture: the still street and the crater first (on the seed's stream), then the motion-captured
+    figures, then the dog."""
     pictures = {"rescue_night": (paint_night(), False), "rescue_crater": (paint_crater(), True)}
-    pictures.update({name: (img, True) for name, img in FiremanPoses().pictures().items()})
+    pictures.update({name: (img, True) for name, img in CapturedPictures().pictures().items()})
+    dog = [paint_dog(i) for i in range(DOG_POSES)]
+    pictures.update({"rescue_dog_r%d" % i: (img, True) for i, img in enumerate(dog)})
+    pictures.update({"rescue_dog_l%d" % i: (ImageOps.mirror(img), True) for i, img in enumerate(dog)})
     return Painting(pictures)
 
 
