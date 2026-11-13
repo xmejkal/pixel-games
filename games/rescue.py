@@ -434,6 +434,7 @@ FLASH = (((18, c565(255, 200, 110)), (11, WHITE)), ((13, c565(255, 150, 60)), (6
 FALL_DX, FALL_TOP = 70, 18  # a meteor comes in from FALL_DX px right of where it lands, from row FALL_TOP
 HELP_MS = 2400  # ms between two shouts of one trapped person
 CAME_MS = 600  # ms a house's door shows lit after a person came out of it
+THANKS_MS = 1200  # ms the points of a person saved rise over the station's door
 
 
 def glow(base, warm):
@@ -498,6 +499,7 @@ class Rescue(Game):
         self.shake_k = len(SHAKE)  # frames into the shake; len(SHAKE) when still
         self.flash_k, self.flash_x = len(FLASH) + 1, 0  # frames into the impact's flash (none past len(FLASH)), x
         self.came = []  # [x, ms left] of each house door lit by a person coming out
+        self.thanks = []  # [points, ms shown] of each person just saved, rising over the door
         self.helped = {}  # id of a trapped person: ms to their next shout
         self.hosing, self.started = False, False
         self.emit("hose", 0)
@@ -596,6 +598,7 @@ class Rescue(Game):
         if events & SAVED:
             self.score = rules.points
             self.emit("cheer")
+            self.thanks.append([POINTS[rules.saved_kind], 0])
             for _ in range(3 if rules.saved_kind == CHILD else 2):
                 self.fx.burst(LEFT_X - 36 + random.randrange(30), 140 + random.randrange(30),
                               SPARKLE[random.randrange(3)], 7, 60.0, 0.7, 40.0)
@@ -604,6 +607,9 @@ class Rescue(Game):
         for door in self.came:
             door[1] -= self.ms
         self.came = [d for d in self.came if d[1] > 0]
+        for t in self.thanks:
+            t[1] += self.ms
+        self.thanks = [t for t in self.thanks if t[1] < THANKS_MS]
         helped = {}
         for p in rules.people:  # a trapped person shouts now and then, and the siren goes once for them
             if p.state == WAVING:
@@ -686,6 +692,8 @@ class Rescue(Game):
         if 0 < self.flash_k <= len(FLASH):  # the frame after the impact, then two more, smaller and warmer
             for r, c in FLASH[self.flash_k - 1]:
                 cv.disc(self.flash_x + dx, LANE - 4, r, c)
+        for points, ms in self.thanks:  # "+1", or "+2" for a child, rising over the door
+            cv.big("+%d" % points, 24, 66 - 24 * ms // THANKS_MS, YELLOW, 2)
         self.draw_lost(cv)
 
     def draw_person(self, cv, p, dx):
