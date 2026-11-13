@@ -32,7 +32,8 @@ FAR_ON = (PLANT_K, ((200, 6000), (120, 6000)))  # the same round, where the seco
 # included), the crater's top row, whether it was hosed, the flame pixels above the first run of more than GAP_PX rows
 # with no flame up from the crater (a "help!" plate over the flame counts as flame), and its flame pixels (P803). A
 # bright pixel is bright orange to yellow and differs from the still street; a flame pixel is a bright pixel not of a
-# spark's colour (sparks fly free of the flame).
+# spark's colour (sparks fly free of the flame) and not in a blob of them that lies all inside the boxes of the game's
+# particles: a spark under the flame's blend changes colour (P806).
 SCRIPT = r"""
 import itertools, sys
 sys.path.insert(0, "tools")
@@ -51,6 +52,9 @@ row.game = lambda: made.append(make()) or made[-1]
 spark = None
 for k, img in enumerate(itertools.islice(rs.frames(row), row.last)):
     rules = made[0].rules
+    boxes = set()  # each particle's 3 x 3 px and 1 px round it (its position is a float): sparks, steam, embers (P806)
+    for q in made[0].fx.p + made[0].puffs.p:
+        boxes.update((int(q[0]) + i, int(q[1]) + j) for i in range(-1, 4) for j in range(-1, 4))
     if plant and k == plant[0]:  # P803: the planted craters, in order, and nothing else comes
         rules.meteor_ms = rules.come_ms = 10 ** 9
         for x, left_ms in plant[1]:
@@ -58,7 +62,7 @@ for k, img in enumerate(itertools.islice(rs.frames(row), row.last)):
             rules.craters[-1].left_ms = left_ms
     craters = rules.craters
     for crater in craters:
-        low, n, rows = -1, 0, {}
+        low, n, rows, flame = -1, 0, {}, set()
         near = any(c.burning() and abs(c.x - crater.x) <= %d for c in craters if c is not crater)
         for y in range(20, rescue.LANE):
             for x in range(max(0, crater.x - 10), min(320, crater.x + 11)):
@@ -66,7 +70,20 @@ for k, img in enumerate(itertools.islice(rs.frames(row), row.last)):
                 if p[0] > 180 and p[0] - p[2] > 60 and sum(abs(a - b) for a, b in zip(p, q)) > 120:
                     low, n = y, n + 1
                     if p != (255, 190, 82):  # SPARK as the canvas draws it
-                        rows[y] = rows.get(y, 0) + 1
+                        flame.add((x, y))
+        left = set(flame)
+        while left:  # a blob of bright pixels all inside particles' boxes is a particle under the flame's blend
+            todo, blob = [left.pop()], []
+            while todo:
+                a, b = todo.pop()
+                blob.append((a, b))
+                for m in [(a + i, b + j) for i in (-1, 0, 1) for j in (-1, 0, 1) if (a + i, b + j) in left]:
+                    left.discard(m)
+                    todo.append(m)
+            if boxes.issuperset(blob):
+                flame.difference_update(blob)
+        for x, y in flame:
+            rows[y] = rows.get(y, 0) + 1
         for p in made[0].rules.people:
             if p.state == rescue.WAVING and p.wave_ms %% 1000 < 600 and abs(p.x - crater.x) <= 31:
                 rows.update((y, rows.get(y, 0)) for y in range(rescue.PLATE_Y, rescue.PLATE_Y + 11))
