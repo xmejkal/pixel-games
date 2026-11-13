@@ -135,6 +135,7 @@ class HoseTest(unittest.TestCase):
         out = [i for i, (_, events) in enumerate(heats) if events & OUT]
         self.assertEqual([rs.DOUSE_MS // 40 - 1], out)  # the 25th frame of 40 ms: 1 s of water
         self.assertFalse(rules.craters[0].burning())
+        self.assertEqual([], rules.ended)  # P803: it ended frames ago
 
     def test_the_spray_does_not_reach_past_40_px_nor_behind_him(self):
         for x in (START + rs.REACH_PX + 1, START - 10):
@@ -149,6 +150,9 @@ class HoseTest(unittest.TestCase):
         self.assertEqual(BURNT, events[-1] & BURNT)
         self.assertFalse(any(e & BURNT for e in events[:-1]))
         self.assertFalse(rules.craters[0].burning())
+        self.assertEqual(rules.craters, rules.ended)  # --- MVP (P803) --- the crater whose fire ended, that frame only
+        rules.step(40, False)
+        self.assertEqual([], rules.ended)
 
 
 class RunTest(unittest.TestCase):

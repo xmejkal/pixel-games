@@ -72,14 +72,15 @@ class Recorder:
 
 class Engine:
     """The engine module's HeatField, largest_free_internal, NEAREST and LINEAR (engine/binding.c), on fx_fire.c
-    through ctypes. looks keeps each set_look's numbers, filters each set_filter's."""
+    through ctypes. looks keeps each set_look's numbers, filters each set_filter's, cools each cool's. cool=False makes
+    HeatField the firmware's before P803, which has no cool (P803)."""
 
     NEAREST, LINEAR = 0, 1  # --- MVP (P608) ---
 
-    def __init__(self, lib):
+    def __init__(self, lib, cool=True):
         engine = self
 
-        class HeatField:
+        class OldHeatField:  # the firmware built from an engine before P803
             where = "internal"
 
             def __init__(self, w, h, seed):
@@ -134,7 +135,17 @@ class Engine:
                     lib.fx_fire_blend(ctypes.byref(self.f), out, (ctypes.c_uint16 * 256).from_buffer(palette),
                                       (ctypes.c_uint8 * 256).from_buffer(alpha))
 
-        self.HeatField, self.targets, self.looks, self.burns, self.filters = HeatField, [], [], [], []
+        class HeatField(OldHeatField):  # --- MVP (P803) ---
+            def cool(self, x0, y0, x1, y1, amount):  # the binding's, with its check
+                w, h = self.f.w, self.f.h
+                if not (-w <= x0 <= 2 * w and -w <= x1 <= 2 * w and -h <= y0 <= 2 * h and -h <= y1 <= 2 * h
+                        and 0 <= amount <= 255):
+                    raise ValueError("x within -w to 2w, y within -h to 2h, amount 0 to 255")
+                engine.cools.append((x0, y0, x1, y1, amount))
+                lib.fx_fire_cool(ctypes.byref(self.f), x0, y0, x1, y1, amount)
+
+        self.HeatField = HeatField if cool else OldHeatField
+        self.targets, self.looks, self.burns, self.filters, self.cools = [], [], [], [], []
         self.scrolls, self.alphas, self.palettes = [], [], []  # P602, P639
         self.stats_calls = 0  # P753
 
@@ -209,6 +220,8 @@ class NoEngineTest(unittest.TestCase):
         self.assertEqual((-1, -2), (layer.update(40, 95), layer.update(40, 95)))  # 3,800 px·ms a frame, 2,000 a cell
         layer.clear()
         layer.draw(Recorder(Tft()))  # nothing to draw, and no error
+        self.assertFalse(layer.can_cool)  # --- MVP (P803) ---
+        self.assertEqual((0, fire.W - 1), layer.cool(10, 20))
 
 @unittest.skipUnless(shutil.which("clang"), "clang is missing: engine/core/fx_fire.c is not built")
 class FireTest(unittest.TestCase):
@@ -444,6 +457,34 @@ class FireTest(unittest.TestCase):
                 heat = bytes(layer.field.heat[:fire.W * fire.H])
                 self.assertEqual(255, heat[60 * fire.W + end])
                 self.assertEqual(255, sum(heat))  # no other cell holds heat
+
+    # --- MVP (P803) ---
+    def test_a_layer_cools_whole_columns_and_says_which(self):
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        self.assertTrue(layer.can_cool)
+        for x in range(fire.W):
+            layer.field.burn(x, 0, x, fire.H - 1, 0, 200)
+        self.assertEqual((0, 12), layer.cool(-5, 12))  # clipped to the field
+        self.assertEqual((150, fire.W - 1), layer.cool(150, fire.W + 9))
+        heat = layer.field.heat
+        empty = [x for x in range(fire.W) if not any(heat[y * fire.W + x] for y in range(fire.H))]
+        full = [x for x in range(fire.W) if all(heat[y * fire.W + x] == 200 for y in range(fire.H))]
+        self.assertEqual(list(range(13)) + list(range(150, fire.W)), empty)
+        self.assertEqual(list(range(13, 150)), full)
+        self.assertEqual([], fire.engine.scrolls)
+
+    def test_without_cool_a_layer_s_cool_clears_the_whole_field(self):
+        fire.engine = Engine(self.lib, cool=False)
+        layer = fire.FireLayer(LAYER_LOOK, 1)
+        self.assertFalse(hasattr(layer.field, "cool") or layer.can_cool)
+        layer.field.burn(100, 60, 100, 60, 3, 255)
+        steps = []
+        layer.field.step = lambda n, wind: steps.append(n)
+        layer.update(30, 0)
+        self.assertEqual((0, fire.W - 1), layer.cool(0, 3))
+        self.assertEqual(bytes(fire.W * fire.H), bytes(layer.field.heat[:fire.W * fire.H]))
+        layer.update(30, 0)
+        self.assertEqual([], steps)  # as clear: no part of a step carried over
 
     def test_clear_carries_no_part_of_a_step_into_the_next_round(self):
         layer = fire.FireLayer(LAYER_LOOK, 1)

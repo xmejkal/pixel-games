@@ -213,7 +213,7 @@ class Rules:
     """The rules, with no display: the fireman, the people, the meteors, the craters, the people saved and lost and
     the points. rand(a, b) is random.randrange's (the game's random, or a test's own seeded one). Ints only. step()
     answers the bits of what happened; the frame's details are in landed_x, out_x, lost (the (x, kind) of each person
-    lost this frame), saved_kind, trapped_kind and came_x."""
+    lost this frame), ended (each crater whose fire ended this frame, P803), saved_kind, trapped_kind and came_x."""
 
     def __init__(self, rand=random.randrange, x=(LEFT_X + RIGHT_X) // 2):
         self.rand = rand
@@ -222,7 +222,7 @@ class Rules:
         self.saved = self.lost_count = self.points = 0
         self.meteor_ms, self.come_ms = FIRST_MS, COME_FIRST_MS  # ms to the next meteor, and to the next person
         self.landed_x = self.out_x = self.saved_kind = self.trapped_kind = self.came_x = -1
-        self.lost = []
+        self.lost, self.ended = [], []
 
     def tier(self):
         return min(self.saved // SAVES_A_STEP, len(METEOR_MS) - 1)
@@ -244,6 +244,8 @@ class Rules:
         man, events = self.man, 0
         if self.lost:
             self.lost = []
+        if self.ended:
+            self.ended = []
         if man.press(ms, held):
             events |= TURNED
         fire = None if man.carrying is not None else self.fire_ahead(man.x, man.facing, BLOCK_PX + SPEED_PX_S)
@@ -267,6 +269,7 @@ class Rules:
                 if spraying and 0 <= man.ahead(c.x) <= REACH_PX:
                     c.wet_ms += ms
                 if not c.burning():
+                    self.ended.append(c)
                     if c.wet_ms >= DOUSE_MS:
                         events |= OUT
                         self.out_x = c.x
@@ -423,6 +426,7 @@ BURN_HALF_PX = 12  # px each side of the crater's middle that burn
 BURNS = 8  # hot spots burned a frame by a full fire
 BURN_HEAT, FOOT_HEAT = 223, 160  # a spot's heat in a full fire, and in a fire nearly out: still bright, never see-through
 REGROW = ((0, 4, 210), (4, 9, 170), (9, 14, 120))  # field rows above a fire's foot and their heat: a flame burned back
+HEAT_REACH = 14  # cells: a fire's heat reaches this far each side of its middle, past its foot's half-width (P803)
 WATER = (c565(170, 214, 255), c565(230, 244, 255))
 STEAM = c565(200, 200, 210)
 SMOKE = (c565(120, 116, 124), c565(150, 146, 152), c565(90, 86, 96))
@@ -553,9 +557,11 @@ class Rescue(Game):
             self.die()
 
     def fires(self, events):
-        """The heat field: each burning crater burns its foot into it. A fire that ends empties the field (its heat
-        would rise on alone as a flame with no crater under it) and takes its sparks with it (they would rise on as a
-        bit of flame), and the fires still burning are burned back in."""
+        """The heat field: each burning crater burns its foot into it. A fire that ends empties its columns, HEAT_REACH
+        cells each side of its middle (its heat would rise on alone as a flame with no crater under it), and takes its
+        sparks with it (they would rise on as a bit of flame). A fire still burning whose heat reaches into those
+        columns is burned back in, a REGROW stump for a moment; a fire farther away keeps its flame (P803). Firmware
+        without HeatField.cool empties the whole field instead, so every fire is burned back in."""
         rules = self.rules
         self.layer.update(self.ms, 0)
         field = self.layer.field
@@ -568,10 +574,12 @@ class Rescue(Game):
             self.decay = decay
             field.set_look(decay, *FIRE_LOOK[1:])
         if events & (OUT | BURNT):
-            self.layer.clear()
+            cooled = [self.layer.cool(c.x // 2 - HEAT_REACH, c.x // 2 + HEAT_REACH) for c in rules.ended]
             self.fx.p = [q for q in self.fx.p if q[5] != SPARK or any(abs(q[0] - c.x) <= SPARK_PX for c in burning)]
             for c in burning:
                 x, y = c.x // 2, LANE // 2 - 2
+                if not any(x0 - HEAT_REACH <= x <= x1 + HEAT_REACH for x0, x1 in cooled):
+                    continue  # its heat does not reach the emptied columns
                 for lo, hi, top in REGROW:
                     field.burn(x, y - lo, x, y - hi, 3, top * c.heat() // HEAT_MAX)
         for c in burning:  # hot spots at random along the crater, on its two rows: a wide, ragged base. As a fire
