@@ -274,6 +274,22 @@ class Particles:
             cv.fill(q[0], q[1], 3 if q[4] > 0.25 else 2, 3 if q[4] > 0.25 else 2, q[5])
 
 
+class Dice:
+    """A random stream of the effects' own (the ZX81's generator), so an effect never moves the game's random draws
+    (P773: Meteors' and Bucket's painted effects)."""
+
+    def __init__(self, seed=773):
+        self.v = seed
+
+    def below(self, n):
+        self.v = (self.v * 75 + 74) % 65537
+        return self.v % n
+
+    def spread(self, n):
+        """-n to n."""
+        return self.below(2 * n + 1) - n
+
+
 BEST = {}  # best score of each game since the board started
 TITLE, PLAY, OVER = 0, 1, 2
 

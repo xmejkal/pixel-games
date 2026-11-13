@@ -22,7 +22,7 @@ from burning import BODY, N, BurningBodies
 from burning import COAL_SHADE
 from cues import Cue
 from fire import MODES
-from gfx import BLACK, GREEN, HEIGHT, OVER, PLAY, RED, WHITE, WIDTH, Game, c565
+from gfx import BLACK, GREEN, HEIGHT, OVER, PLAY, RED, WHITE, WIDTH, Dice, Game, c565
 from motion import HIT
 
 # --- MVP (P773) --- the rules, in px, ms and ints. Mac trials through Game.step on the Python bodies (frames of 42 ms, 60 ms
@@ -210,20 +210,6 @@ ROCKS = tuple("meteors_rock%d" % i for i in range(ROCK_FRAMES))
 EMBERS = tuple("meteors_coal%d" % i for i in range(COAL_FRAMES))
 PUFFS = tuple("meteors_smoke%d" % i for i in range(SMOKE_FRAMES))
 
-
-class Dice:
-    """A random stream of the effects' own (the ZX81's generator), so a spark never moves the game's drops."""
-
-    def __init__(self, seed=773):
-        self.v = seed
-
-    def below(self, n):
-        self.v = (self.v * 75 + 74) % 65537
-        return self.v % n
-
-    def spread(self, n):
-        """-n to n."""
-        return self.below(2 * n + 1) - n
 
 
 class Meteors(BurningBodies):

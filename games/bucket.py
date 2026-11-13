@@ -15,9 +15,10 @@ import math
 import random
 from array import array
 
+import pictures
 import plugins
 from cues import Cue
-from gfx import GREY, HEIGHT, PALETTE, PLAY, WIDTH, YELLOW, Game
+from gfx import GREY, HEIGHT, OVER, PALETTE, PLAY, WIDTH, YELLOW, Dice, Game, Particles, c565
 from plugins import PhysicsPlugin
 
 # --- MVP (P773) --- the rules, in px, ms and ints. Mac trials through Game.step on the Python bodies (frames of 42 ms,
@@ -101,6 +102,38 @@ FREE, FALL, LAND = 0, 1, 2  # a box's phase: its body is free, the box falls to 
 WALL_H = 12  # px: the walls' height above the rail
 FLOOR = 3  # px, the bucket's floor
 
+# --- MVP (P773, story 4) --- the painted look: art/sets/bucket.py's sizes and places, which the board has no art/ to
+# read (tests/test_bucket_art.py pins them), and the effects' numbers, set by eye on Mac frames of tools/render_scene.py
+HUES = 4  # the crates' woods: a crate's hue is (its column + its place in the pile) % HUES
+BUCKET_H, TIPPED_W, TIPPED_H = 13, 80, 44  # the bucket's picture (its rim 1 px over the walls), and tipped over
+CHIMNEYS = ((31, 88), (69, 89), (99, 102))  # each chimney's top in the painted village, where its smoke rises
+GLINTS = ((250, 154), (262, 156), (254, 159), (268, 153), (244, 160))  # the river's shimmer under the sun
+GLINT_MS = 160  # each glint's frame lasts this long
+SMOKE_MS = 420  # a puff from each chimney this often
+COIN_MS, COIN_TO = 520, (10, 2)  # a caught crate's coin flies this long, to the score
+SPARKLES, SPARKLE_MS, SPARKLE = 6, 420, 9  # the sparkles round a catch, each for a part of SPARKLE_MS; their size
+GOLD = (c565(255, 226, 120), c565(255, 190, 70), c565(255, 250, 220))  # the bits of light thrown up at a catch
+DUST = (c565(206, 184, 148), c565(176, 156, 126))
+PUFF_SIZES = ((5, 4), (7, 5), (10, 7))  # a chimney's puff as it grows, drawn see-through
+PUFF_ALPHAS = (170, 130, 80)
+PILES = tuple(tuple("bucket_pile%d_%d" % (h, m) for m in range(HUES)) for h in range(PILE_ROWS + 1))
+CRATES = tuple("bucket_crate%d" % m for m in range(HUES))
+SHIMMER = tuple("bucket_shimmer%d" % i for i in range(3))
+PUFFS = tuple("bucket_puff%d" % i for i in range(len(PUFF_SIZES)))
+
+
+class Smoke(Particles):
+    """The chimneys' smoke: puffs that rise slowly, drift with the breeze, grow and thin out as they go."""
+
+    MAX = 18
+    LIFE = 2.4  # seconds
+
+    def draw(self, cv):
+        for q in self.p:
+            k = min(2, int((self.LIFE - q[4]) * 3 / self.LIFE))
+            w, h = PUFF_SIZES[k]
+            pictures.draw(cv, PUFFS[k], int(q[0]) - w // 2, int(q[1]) - h // 2, PUFF_ALPHAS[k])
+
 
 class Bucket(Game):
     name = "bucket"
@@ -118,6 +151,10 @@ class Bucket(Game):
         self.rules, self.on_rest = Rules(), self.rest
         self.shown = bytearray(COLS)  # the pile as drawn: a missed box joins it when it rests
         self.phase, self.last_y = bytearray(N), array("h", [-SIZE] * N)
+        self.covers = self.art = pictures.load()  # the painted village covers the screen: no fill under it
+        self.dice, self.smoke = Dice(774), Smoke()
+        self.coins = []  # [x, y, the ms it was caught] of each coin on its way to the score
+        self.puffed = 0  # the ms of the last chimney puff
 
     def play(self, pressed, held):
         rules, plugin, phase = self.rules, self.physics_plugin, self.phase
@@ -157,7 +194,15 @@ class Bucket(Game):
             self.phase[i] = FREE
             self.physics_plugin.spawn(i, x, HEIGHT, 0, 0, HEIGHT)  # parked: it sleeps on the next step, off the screen
             self.emit("catch")
-            self.pop(x + SIZE // 2, RAIL_Y)
+            if self.art:  # sparkles, bits of light and a coin that flies to the score (paint_effects)
+                self.coins.append([x, RAIL_Y - SIZE, self.last])
+                del self.coins[:-4]
+                dice = self.dice
+                for _ in range(8):
+                    self.fx.add(x + dice.below(SIZE), RAIL_Y - 6, dice.spread(70), -60 - dice.below(90),
+                                GOLD[dice.below(3)], 0.3 + dice.below(20) / 100, 260.0)
+            else:
+                self.pop(x + SIZE // 2, RAIL_Y)
             return
         col = x // SIZE
         rest_y = HEIGHT - SIZE * rules.miss(col)
@@ -176,10 +221,22 @@ class Bucket(Game):
             x, y = self.physics_plugin.place(i)
             self.at_rail(i, x, y)
         elif phase[i] == LAND:
-            self.shown[self.physics_plugin.place(i)[0] // SIZE] += 1
+            x, y = self.physics_plugin.place(i)
+            self.shown[x // SIZE] += 1
             phase[i] = FREE
+            if self.art:  # a puff of dust where it lands
+                dice = self.dice
+                for _ in range(6):
+                    self.fx.add(x + dice.below(SIZE), y + SIZE - 2, dice.spread(40), -10 - dice.below(30),
+                                DUST[dice.below(2)], 0.3 + dice.below(20) / 100, 60.0)
+
+    def paint_static(self, cv):
+        pictures.draw(cv, "bucket_scene", 0, 0)  # the painted village; without it the black fill (covers is False)
 
     def paint(self, cv):
+        if self.art and getattr(cv, "pictures", False):
+            self.paint_art(cv)
+            return
         fill, shown = cv.fill, self.shown
         for col in range(COLS):
             if shown[col]:
@@ -194,3 +251,51 @@ class Bucket(Game):
         fill(x, RAIL_Y - WALL_H, WALL_PX, WALL_H, YELLOW)
         fill(x + BUCKET_W - WALL_PX, RAIL_Y - WALL_H, WALL_PX, WALL_H, YELLOW)
         fill(x, RAIL_Y - FLOOR, BUCKET_W, FLOOR, YELLOW)
+
+    def paint_art(self, cv):
+        """The painted pile, one picture a column, the falling crates, the bucket (tipped over at the round's end),
+        and the effects."""
+        shown, draw = self.shown, pictures.draw
+        for col in range(COLS):
+            if shown[col]:
+                draw(cv, PILES[shown[col]][col % HUES], SIZE * col, HEIGHT - SIZE * shown[col])
+        plugin = self.physics_plugin
+        for i in range(N):
+            if self.phase[i] and not (self.phase[i] == FALL and self.last_y[i] == -SIZE):  # a new box: stale read
+                x, y = plugin.place(i)
+                col = x // SIZE
+                draw(cv, CRATES[(col + shown[col]) % HUES], x, y)  # the wood it keeps on the pile
+        x = self.rules.bucket_x
+        if self.state == OVER:
+            draw(cv, "bucket_tipped", x, RAIL_Y - TIPPED_H)
+        else:
+            draw(cv, "bucket_bucket", x, RAIL_Y - BUCKET_H)
+        self.paint_effects(cv)
+
+    def paint_effects(self, cv):
+        """The river's shimmer, the chimneys' smoke, and each catch's sparkles and coin. They run on the frame's
+        clock (self.last), so they go on at the round's end."""
+        now, dice, draw = self.last, self.dice, pictures.draw
+        for i, (x, y) in enumerate(GLINTS):
+            k = now // GLINT_MS + 2 * i
+            if k % 5:  # each glint goes out now and then: a twinkle
+                draw(cv, SHIMMER[k % 3], x, y)
+        if now - self.puffed >= SMOKE_MS:
+            self.puffed = now
+            for x, y in CHIMNEYS:
+                self.smoke.add(x + dice.spread(1), y, 3 + dice.below(5), -7 - dice.below(5), 0, Smoke.LIFE, -1.0)
+        self.smoke.update(self.dt)
+        self.smoke.draw(cv)
+        for coin in self.coins:
+            x, y, at = coin
+            t = now - at
+            if t < SPARKLE_MS:
+                for k in range(SPARKLES):  # the sparkles: each in turn, round the catch
+                    if k * SPARKLE_MS // SPARKLES <= t < (k + 2) * SPARKLE_MS // SPARKLES:
+                        draw(cv, "bucket_sparkle", x + (k * 23) % 34 - 16, y - 4 - (k * 17) % 18)
+            if t < COIN_MS:  # the coin: up and over to the score, faster as it goes
+                f = t * t * 1000 // (COIN_MS * COIN_MS)
+                draw(cv, "bucket_coin", x + (COIN_TO[0] - x) * f // 1000, y + (COIN_TO[1] - y) * f // 1000
+                     - 30 * (f * (1000 - f)) // 250000)
+        if self.coins and now - self.coins[0][2] >= COIN_MS:
+            self.coins.pop(0)
