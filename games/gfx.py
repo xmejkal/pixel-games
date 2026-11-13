@@ -290,6 +290,15 @@ class Dice:
         return self.below(2 * n + 1) - n
 
 
+def hint_lines(hint):
+    """The hint as the title shows it: one line, or two when it is wider than the screen, broken after the last comma
+    that leaves a first line that fits (P800)."""
+    if 8 * len(hint) <= WIDTH - 8:
+        return (hint,)
+    cut = hint.rfind(", ", 0, (WIDTH - 8) // 8)
+    return (hint[:cut + 1], hint[cut + 2:]) if cut > 0 else (hint,)
+
+
 BEST = {}  # best score of each game since the board started
 TITLE, PLAY, OVER = 0, 1, 2
 
@@ -438,6 +447,8 @@ class Game:
         cv.fill(0, cy - 44, WIDTH, 2, self.accent)
         cv.fill(0, cy + 38, WIDTH, 2, self.accent)
         cv.big(self.name, cx - 12 * len(self.name), cy - 36, PALETTE[(a // 90) % len(PALETTE)], 3)
-        if (a // 300) % 2 == 0:
-            cv.text(self.hint, cx - 4 * len(self.hint), cy + 2, WHITE)
+        if (a // 300) % 2 == 0:  # a hint wider than the screen goes on two lines, broken after a comma (P800)
+            lines = hint_lines(self.hint)
+            for k, line in enumerate(lines):
+                cv.text(line, cx - 4 * len(line), cy + 2 + 10 * k - 5 * (len(lines) - 1), WHITE)
         cv.text("best %d" % BEST.get(self.name, 0), cx - 28, cy + 22, YELLOW)

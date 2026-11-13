@@ -1,0 +1,1 @@
+"Please help somebody!" by Nocturnal_Vanguard, OpenGameArt, 2023-04-11, CC0: https://opengameart.org/content/please-help-somebody (file please_help_somebody.ogg, sha256 74ba78d15310293abb9b0f0aea14212d85ffee67d60070863a46bc381728917a). help16k.wav is its first 2.1 s converted to 16 kHz mono with ffmpeg 9.0.2.

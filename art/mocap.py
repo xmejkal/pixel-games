@@ -15,6 +15,14 @@ The cycles, as CYCLES lists them:
            height in a staggered stance, frames 760 to 1240, the loop with the closest ends. The hands hold the nozzle.
     turn   the run's poses turned about the up axis, from facing forward to facing back, a step of 180 / 4 degrees
            a pose: a turn made from the run, as no straight-running trial here turns.
+    carry  subject 2, trial 3 ("run/jog"), 120 fps: one stride of a jog, the legs and the body; the arms that hold the
+           person on his shoulder are posed in art/sets/rescue.py. The suitcase trials of subject 70 stand still.
+The people's cycles, as CROWD lists them (pictures rescue_<who>_run and rescue_<who>_wave):
+    man     subject 16, trial 35 ("run/jog")         woman   subject 35, trial 17 ("run/jog")
+    child   subject 9, trial 2 ("run")               granny  subject 35, trial 1 ("walk"), leant and with a cane
+    dogman  subject 35, trial 22 ("run/jog")
+    wave    subject 13, trial 27 ("direct traffic, wave, point"), frames 1850 to 2030: the right arm up over the head,
+            waving, seen turned VIEW degrees toward the viewer, so the wave across the body shows; every person's.
 Subject 77 is at 60 fps, the others at 120 (the CMU site).
 
 Run from the repository root: python3 art/mocap.py [--cmu DIR] prints each cycle's source, its loop and its stride.
@@ -187,12 +195,12 @@ def blend(a, b, t):
 
 
 class Cycle:
-    """One cycle: a trial, the frames it may loop in, the loop's length in frames (least, most), its poses, and the
-    degrees the body turns over the cycle (the turn)."""
+    """One cycle: a trial, the frames it may loop in, the loop's length in frames (least, most), its poses, the
+    degrees the body turns over the cycle (the turn), and the degrees it is turned toward the viewer throughout."""
 
-    def __init__(self, name, trial, fps, frames, period, poses, turn=0):
+    def __init__(self, name, trial, fps, frames, period, poses, turn=0, view=0):
         self.name, self.trial, self.fps, self.frames = name, trial, fps, frames
-        self.period, self.poses, self.turn = period, poses, turn
+        self.period, self.poses, self.turn, self.view = period, poses, turn, view
 
     def source(self):
         subject, trial = self.trial.split("_")
@@ -203,6 +211,16 @@ CYCLES = (
     Cycle("run", "09_01", 120, (0, 148), (70, 110), 12),
     Cycle("spray", "13_27", 120, (760, 1240), (60, 150), 6),
     Cycle("turn", "09_01", 120, (0, 148), (70, 110), 4, turn=180),
+    Cycle("carry", "02_03", 120, (0, 175), (60, 120), 12),
+)
+VIEW = -60  # degrees the wave is turned toward the viewer
+CROWD = (
+    Cycle("man", "16_35", 120, (0, 162), (60, 120), 12),
+    Cycle("woman", "35_17", 120, (0, 167), (60, 110), 12),
+    Cycle("child", "09_02", 120, (0, 130), (60, 110), 12),
+    Cycle("granny", "35_01", 120, (0, 358), (100, 160), 12),
+    Cycle("dogman", "35_22", 120, (0, 160), (60, 110), 12),
+    Cycle("wave", "13_27", 120, (1850, 2030), (120, 170), 12, view=VIEW),
 )
 
 
@@ -216,7 +234,8 @@ class Capture:
 
     def missing(self):
         """The files the cycles need that are not in the folder."""
-        names = sorted({c.trial[:2] + ".asf" for c in CYCLES} | {c.trial + ".amc" for c in CYCLES})
+        cycles = CYCLES + CROWD
+        names = sorted({c.trial[:2] + ".asf" for c in cycles} | {c.trial + ".amc" for c in cycles})
         return [n for n in names if not os.path.exists(os.path.join(self.folder, n))]
 
     def span(self, cycle):
@@ -260,6 +279,8 @@ class Capture:
             if cycle.turn:
                 degrees = cycle.turn * (i + 0.5) / cycle.poses
                 a, b = turned(a, degrees), turned(b, degrees)
+            if cycle.view:
+                a, b = turned(a, cycle.view), turned(b, cycle.view)
             a, b = with_nose(a, height), with_nose(b, height)
             out.append(blend(side(a, way, floor, height), side(b, way, floor, height), t - k))
         return out
@@ -279,7 +300,7 @@ def main():
     capture = Capture(args.cmu)
     if capture.missing():
         parser.error("not in %s: %s" % (args.cmu, ", ".join(capture.missing())))
-    for cycle in CYCLES:
+    for cycle in CYCLES + CROWD:
         start, period = capture.loop(cycle)
         start += cycle.frames[0]
         print("%-6s %s, frames %d to %d (%.2f s), %d poses, stride %.3f body heights" % (
