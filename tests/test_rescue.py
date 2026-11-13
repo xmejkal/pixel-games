@@ -296,14 +296,16 @@ class CarryTest(unittest.TestCase):
         self.assertTrue(rules.step(40, False) & rs.PICKED)
 
     def test_carrying_slows_him_and_blocks_the_spray_and_he_runs_through_a_fire(self):
-        rules = fire_at(street((rs.MAN, START, 1)), START + 60)
+        fire_x = START + 30  # within his 1 s of jogging: a fire that stopped him would hold him at fire_x - BLOCK_PX
+        rules = fire_at(street((rs.MAN, START, 1)), fire_x)
         rules.step(40, False)
         man = rules.man
         self.assertIsNotNone(man.carrying)
         x = man.x
         for _ in range(25):  # 1 s
             rules.step(40, False)
-        self.assertEqual(x + rs.CARRY_PX_S, man.x)  # slower than his run, and past the fire
+        self.assertEqual(x + rs.CARRY_PX_S, man.x)  # slower than his run
+        self.assertGreater(man.x, fire_x)  # and past the fire
         for _ in range(10):  # 400 ms held: no spray, no flash; he runs on
             rules.step(40, True)
             self.assertFalse(man.spraying())
@@ -458,11 +460,12 @@ class RampTest(unittest.TestCase):
 
 
 # Bots over whole rounds, as Bucket's header records its trials: seeds SEEDS, frames of each pace in PACES (0: random
-# 20 to 90 ms a frame). The results on the Mac when the numbers were set (saved/lost/round length per seed):
-#   carrier at 40 ms: 16/3/83 s 12/3/58 s 13/3/77 s 11/3/72 s 15/3/78 s 8/3/60 s 14/3/70 s 11/3/73 s
-#   idle at 40 ms: 4/3/56 s 6/3/85 s 3/3/48 s 1/3/43 s 6/3/84 s 2/3/26 s 5/3/86 s 2/3/38 s (the fireman runs by himself,
-#   so he picks up whoever he meets); over every pace the idle round ends by 131 s, the carrier at the hardest tier by
-#   59 s, and one who only sprays never picks anyone up.
+# 20 to 90 ms a frame). The results on the Mac, rerun on 2026-11-13 (saved/lost/round length per seed; one meteor can
+# take two people, so a round can end on 4 or 5 lost):
+#   carrier at 40 ms: 10/3/68 s 7/3/69 s 9/3/54 s 15/3/92 s 10/3/58 s 11/3/72 s 18/4/107 s 8/3/70 s
+#   idle at 40 ms: 3/3/64 s 3/4/70 s 5/5/104 s 6/3/100 s 9/3/139 s 5/3/99 s 6/3/108 s 4/3/58 s (the fireman runs by
+#   himself, so he picks up whoever he meets); over every pace the idle round ends by 139.4 s, the carrier at the
+#   hardest tier by 75.2 s, and one who only sprays never picks anyone up.
 SEEDS, PACES = range(8), (20, 40, 60, 90, 0)
 
 
@@ -588,6 +591,12 @@ class GameTest(unittest.TestCase):
         self.assertEqual(("tap turns, hold sprays,", "carry people to the station"), lines)
         self.assertTrue(all(8 * len(line) <= gfx.WIDTH for line in lines))
         self.assertEqual(("tap to play",), gfx.hint_lines("tap to play"))
+
+    def test_a_wide_hint_without_a_comma_stays_one_line(self):
+        import gfx  # noqa: E402
+        wide = "hold the button down to pour the water over the fire"  # wider than the screen, nowhere to break
+        self.assertGreater(8 * len(wide), gfx.WIDTH)
+        self.assertEqual((wide,), gfx.hint_lines(wide))
 
 
 
