@@ -27,7 +27,6 @@ from balls import BallPit
 from bank import Bank
 from box_bank import BOX_BANK_INDEX
 from bucket import Bucket
-from rescue import Rescue
 from burning import BurningBodies
 from cues import SoundCues
 from fire import Fire  # noqa: F401  the probes and tools/crackle.sh start it as app.Fire
@@ -35,6 +34,7 @@ from lcd import open_tft
 from marshmallow import Marshmallow
 from overlay import Overlay, VolumePane
 from render import StOut
+from rescue import Rescue
 from signals import Signals
 from space3d import CubeTiming, Starfire
 from speaker import Speaker

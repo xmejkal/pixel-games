@@ -48,10 +48,10 @@ import world_lib  # noqa: E402
 from arcade import Flappy, Runner, Snake  # noqa: E402
 from arcade2 import Cave, GravityPong, Stack  # noqa: E402
 from bucket import Bucket  # noqa: E402
-from rescue import Rescue  # noqa: E402
 from burning import BurningBodies  # noqa: E402
 from marshmallow import Marshmallow  # noqa: E402
 from PIL import Image  # noqa: E402
+from rescue import Rescue  # noqa: E402
 from space3d import CubeTiming, Starfire  # noqa: E402
 from world3d import Road, Tunnel  # noqa: E402
 

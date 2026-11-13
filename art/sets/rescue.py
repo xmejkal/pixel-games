@@ -162,9 +162,10 @@ def paint_crater():
     s.part(s.shape("ellipse", 0.5, 1.5, 27.5, 7.8), (110, 40, 26), rim=0.2, grain=0.1)
     s.part(s.shape("ellipse", 2.5, 2.6, 25.5, 6.6), (20, 14, 18), rim=0.1, grain=0.05)
     img = s.cut(outline=False)
-    for x in range(4, 24):  # the red rim where the far edge glows
-        if img.getpixel((x, 2))[3]:
-            img.putpixel((x, 2), (232, 70, 40, 255))
+    for x in range(28):  # the rim glows where the fire burns: bright orange along the far edge, red at its ends
+        for y in (1, 2):
+            if img.getpixel((x, y))[3]:
+                img.putpixel((x, y), (255, 150, 70, 255) if 5 <= x < 23 else (236, 72, 40, 255))
     return img
 
 

@@ -42,7 +42,8 @@ def opaque_rows(img):
 
 def mask_difference(a, b):
     """The pixels where one picture is there and the other is not."""
-    return sum((p != 0) != (q != 0) for p, q in zip(a.getchannel("A").get_flattened_data(), b.getchannel("A").get_flattened_data()))
+    alpha_a, alpha_b = a.getchannel("A").get_flattened_data(), b.getchannel("A").get_flattened_data()
+    return sum((p != 0) != (q != 0) for p, q in zip(alpha_a, alpha_b))
 
 
 class CommittedPosesTest(unittest.TestCase):
@@ -95,6 +96,38 @@ class CommittedPosesTest(unittest.TestCase):
                 poses = self.poses[c, "r"]
                 steps = [mask_difference(a, b) for a, b in zip(poses, poses[1:])]
                 self.assertLessEqual(mask_difference(poses[-1], poses[0]), max(steps))
+
+
+class GameAndArtAgreeTest(unittest.TestCase):
+    """games/rescue.py keeps its own copies of the art's numbers, as the board has no art/: they must agree."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(REPO, "tests", "stubs"))
+        sys.path.insert(0, os.path.join(REPO, "games"))
+        import rescue as game  # noqa: E402  games/rescue.py
+        from sets import rescue as art_set  # noqa: E402  art/sets/rescue.py
+        cls.game, cls.art_set = game, art_set
+
+    def test_the_street_rows_the_sizes_and_the_pose_counts(self):
+        game, art_set = self.game, self.art_set
+        self.assertEqual((art_set.FEET, art_set.LANE), (game.FEET, game.LANE))
+        self.assertEqual({c: w for c, (w, _) in art_set.SIZES.items()}, game.SIZES)
+        self.assertEqual({h for _, h in art_set.SIZES.values()}, {game.PICTURE_H})
+        self.assertEqual((CYCLES["run"], CYCLES["spray"], CYCLES["turn"]),
+                         (game.RUN_POSES, game.SPRAY_POSES, game.TURN_POSES))
+
+    def test_the_nozzle_is_where_the_spray_pictures_hold_it(self):
+        brass = self.art_set.BRASS
+        for i in range(CYCLES["spray"]):
+            img = picture("rescue_spray_r%d" % i)
+            w, h = img.size
+            tips = [(x, y) for y in range(h) for x in range(w)
+                    if img.getpixel((x, y))[3] and sum(abs(a - b) for a, b in zip(img.getpixel((x, y)), brass)) < 40]
+            x, y = max(tips)
+            with self.subTest(pose=i):
+                self.assertLessEqual(abs(x - w // 2 - self.game.NOZZLE_DX), 1)
+                self.assertLessEqual(abs(y - (h - 1) - self.game.NOZZLE_DY), 1)
 
 
 class TinySkeletonTest(unittest.TestCase):

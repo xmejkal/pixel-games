@@ -21,11 +21,11 @@ from gfx import DARK, ORANGE, WHITE, WIDTH, YELLOW, Game, Particles, c565
 # --- MVP (P800) --- the rules, in px, ms and ints
 TAP_MS = 180  # a press released before this is a tap, and turns him; held this long, he sprays
 FLASH_MS = 120  # the nozzle flashes from here until the spray starts
-SPEED_PX_S = 56  # his run: the motion capture's 3.6 m/s at 26 px a body (art/mocap.py prints the stride)
+SPEED_PX_S = 56  # his run: the motion capture's 3.6 m/s at 24.07 px a body height (art/mocap.py prints the stride)
 STRIDE_PX = 41  # px he runs in one run cycle: the capture's stride, 1.698 body heights, at 24.07 px a body height
 RUN_POSES, SPRAY_POSES, TURN_POSES = 12, 6, 4  # art/mocap.py's CYCLES
 SPRAY_POSE_MS = 83  # the spray cycle's loop is 0.5 s of capture, over its six poses
-TURN_MS = 160  # the turn's four poses, after a turn
+TURN_MS = 160  # the turn's four poses, after a turn: he turns on the spot, and cannot spray
 LEFT_X, RIGHT_X = 74, 304  # px: his hips, from the station's door to the street's end, where he turns by himself
 REACH_PX = 40  # px ahead of his hips that the hose reaches
 HEAT_MAX = 255
@@ -42,11 +42,15 @@ class Fireman:
 
     def __init__(self, x):
         self.x, self.facing, self.rest = x, 1, 0  # rest: px times ms short of the next whole px
-        self.down_ms = -1  # ms the button has been held, -1 when it is up
+        self.down_ms = -1  # ms the button has been held, the first frame's ms included; -1 when it is up
         self.ran, self.turned_ms, self.spray_ms = 0, TURN_MS, 0
 
     def spraying(self):
-        return self.down_ms >= TAP_MS
+        """Held TAP_MS or longer, and not in a turn."""
+        return self.down_ms >= TAP_MS and not self.turning()
+
+    def turning(self):
+        return self.turned_ms < TURN_MS
 
     def flashing(self):
         return FLASH_MS <= self.down_ms < TAP_MS
@@ -56,7 +60,7 @@ class Fireman:
         Answers whether he turned."""
         self.turned_ms += ms
         if held:
-            self.down_ms = 0 if self.down_ms < 0 else self.down_ms + ms
+            self.down_ms = ms if self.down_ms < 0 else self.down_ms + ms  # it went down during this frame
             return False
         tap = 0 <= self.down_ms < TAP_MS
         self.down_ms = -1
@@ -65,12 +69,18 @@ class Fireman:
         return tap
 
     def turn(self):
+        """He turns on the spot. The turn's poses are the run's at phases 0, 3, 6 and 9 of 12, so the run goes on
+        after it from phase 0: ran moves on to the next whole stride."""
         self.facing, self.turned_ms = -self.facing, 0
+        self.ran += -self.ran % STRIDE_PX
 
     def run(self, ms):
-        """ms of running the way he faces; at an end of the street he turns by himself. Spraying, he stands."""
+        """ms of running the way he faces; at an end of the street he turns by himself. Spraying or turning, he
+        stands."""
         if self.spraying():
             self.spray_ms += ms
+            return
+        if self.turning():
             return
         self.rest += self.facing * SPEED_PX_S * ms
         px = self.rest // 1000
@@ -139,17 +149,31 @@ class Rules:
 FEET = 214  # px: the row his soles stand on (art/sets/rescue.py's FEET)
 LANE = 180  # px: the street lane's top; the fire burns above it (art/sets/rescue.py's LANE)
 SIZES = {"run": 26, "turn": 26, "spray": 40}  # each cycle's picture width; the hips at its middle (art/sets/rescue.py)
-FIG_H = 30  # the pictures' height
-NOZZLE_DX, NOZZLE_DY = 13, -24  # px from his hips and soles to the nozzle's tip, facing right (the spray's pictures)
+PICTURE_H = 30  # the pictures' height (art/sets/rescue.py's SIZES)
+# px from his hips and soles to the nozzle's tip, facing right: the spray poses hold it 11 to 13 px ahead and 24 up
+# (tests/test_rescue_art.py pins it)
+NOZZLE_DX, NOZZLE_DY = 12, -24
 FIRE_STEP_MS = 80  # ms a heat step, as the Runner's: 40 sank the Runner to 16 fps (bench.md P651)
-# fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade: a tall flame that breaks into tongues, set
-# by eye on Mac frames of tools/render_scene.py against looks with more cooling (short) and less (a white column)
-FIRE_LOOK = (34, 90, 1, 0, 1, 100, 0, 10)  # no field embers: they start at the screen's bottom, in the lane
+# fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade: one flame out of the crater that tapers into
+# tongues, set by eye on Mac frames of tools/render_scene.py against eight looks (fast patches and more cooling split
+# it into blobs with a gap, less fade makes a white column)
+FIRE_LOOK = (34, 30, 1, 0, 1, 0, 0, 16)  # no fast patches (they split the flame), no field embers (they rose low)
 FIRE_SEED = 800
-BURN_HALF_PX = 10  # px each side of the crater's middle that burn
-BURNS = 4  # hot spots burned a frame
+BURN_HALF_PX = 12  # px each side of the crater's middle that burn
+BURNS = 8  # hot spots burned a frame
 WATER = (c565(170, 214, 255), c565(230, 244, 255))
 STEAM = c565(200, 200, 210)
+GLOW_LEVELS = 8  # the fire's light on the kerb and the street, from none to the full fire
+
+
+def glow(base, warm):
+    """GLOW_LEVELS colours from base (unlit) toward warm (lit by a full fire)."""
+    n = GLOW_LEVELS - 1
+    return tuple(c565(*[b + (w - b) * k // n for b, w in zip(base, warm)]) for k in range(GLOW_LEVELS))
+
+
+KERB_GLOW = glow((84, 76, 86), (240, 116, 48))  # art/sets/rescue.py's kerb, lit
+STREET_GLOW = glow((38, 34, 42), (210, 96, 40))  # the tarmac, a wet shine
 SPARK = c565(255, 190, 80)
 
 
@@ -197,9 +221,10 @@ class Rescue(Game):
         field = self.layer.field
         heat = crater.heat()
         if field is not None and heat:
-            for _ in range(BURNS):  # a few hot spots at random along the crater: a ragged base, tongues above it
+            for _ in range(BURNS):  # hot spots at random along the crater, on its two rows: a wide, ragged base
                 x = (crater.x + random.randrange(-BURN_HALF_PX, BURN_HALF_PX + 1)) // 2
-                field.burn(x, LANE // 2 - 2, x, LANE // 2 - 3, 1, (heat - random.randrange(heat // 2 + 1)) * 7 // 8)
+                y = LANE // 2 - 2 - random.randrange(2)
+                field.burn(x, y, x, y, 1, (heat - random.randrange(heat // 3 + 1)) * 7 // 8)
         if heat and random.randrange(HEAT_MAX) < heat // 4:  # sparks fly up from the fire, fewer as it dies down
             self.fx.add(crater.x + random.randrange(-8, 9), LANE - 6, random.randrange(-20, 21),
                         -random.randrange(40, 90), SPARK, 0.8, 20.0)
@@ -234,20 +259,31 @@ class Rescue(Game):
         cv.fill(16, 132, 42, LANE - 132, c565(255, 226, 160))  # its lit door
         cv.fill(0, LANE, WIDTH, 60, c565(38, 34, 42))
 
+    def light(self, cv, x, heat):
+        """The fire's light round the crater: the kerb lit warm, and two lines of shine on the tarmac below, each
+        as bright as the fire is hot. Opaque fills: the canvas has no blend."""
+        k = heat * (GLOW_LEVELS - 1) // HEAT_MAX
+        if k:
+            for half, level in ((40, k // 3), (30, k * 2 // 3), (20, k)):  # brighter toward the crater
+                cv.fill(x - half, LANE, 2 * half, 3, KERB_GLOW[level])
+            for y, half in ((LANE + 4, 22), (LANE + 6, 16), (LANE + 9, 10)):  # the shine fades down the street
+                cv.fill(x - half, y, 2 * half, 1, STREET_GLOW[k * half // 22])
+
     def paint(self, cv):
         rules = self.rules
         man, crater = rules.man, rules.crater
-        if not pictures.draw(cv, "rescue_crater", crater.x - 14, LANE - 1):
-            cv.fill(crater.x - 13, LANE, 26, 6, DARK)
-            cv.fill(crater.x - 11, LANE, 22, 1, c565(232, 70, 40))
+        self.light(cv, crater.x, crater.heat())
         if crater.burning() and self.layer.field is None:  # the flat fire, without the heat field
             h = crater.heat() // 8
             cv.fill(crater.x - 6, LANE - h, 12, h, ORANGE)
             cv.fill(crater.x - 3, LANE - h // 2, 6, h // 2, YELLOW)
         self.layer.draw(cv)
+        if not pictures.draw(cv, "rescue_crater", crater.x - 14, LANE - 1):  # over the flame's foot: it comes out
+            cv.fill(crater.x - 13, LANE, 26, 6, DARK)
+            cv.fill(crater.x - 11, LANE, 22, 1, c565(232, 70, 40))
         name, cycle = self.man_picture()
         w = SIZES[cycle]
-        if not pictures.draw(cv, name, man.x - w // 2, FEET - FIG_H + 1):
+        if not pictures.draw(cv, name, man.x - w // 2, FEET - PICTURE_H + 1):
             cv.fill(man.x - 2, FEET - 20, 5, 12, DARK)
             cv.fill(man.x - 3, FEET - 24, 7, 4, YELLOW)
             step = man.run_pose() // 3 % 2 * 3 - 1

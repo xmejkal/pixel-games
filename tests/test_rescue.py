@@ -31,7 +31,7 @@ def hold(rules, ms, frames):
 
 
 class PressTest(unittest.TestCase):
-    def test_a_tap_turns_him_on_the_release_and_he_runs_on(self):
+    def test_a_tap_turns_him_on_the_release_on_the_spot_then_he_runs_the_other_way(self):
         rules = rules_with_crater_at(300)
         self.assertEqual(0, rules.step(40, True))  # pressed: no turn yet, and he still runs
         self.assertEqual(1, rules.man.facing)
@@ -39,18 +39,35 @@ class PressTest(unittest.TestCase):
         x = rules.man.x
         self.assertEqual(TURNED, rules.step(40, False))  # released: the turn, at once
         self.assertEqual(-1, rules.man.facing)
-        self.assertLess(rules.man.x, x)  # the same frame he runs the new way
+        for _ in range(rs.TURN_MS // 40 - 1):  # the turn's poses: he turns on the spot
+            self.assertTrue(rules.man.turning())
+            rules.step(40, False)
+            self.assertEqual(x, rules.man.x)
+        rules.step(40, False)
+        self.assertFalse(rules.man.turning())
+        self.assertLess(rules.man.x, x)  # then he runs the new way
 
-    def test_a_press_just_under_180_ms_is_still_a_tap(self):
+    def test_the_tap_ends_at_180_ms_of_real_time_at_any_frame_pace(self):
+        for ms in (20, 40, 90):
+            last_tap = (rs.TAP_MS - 1) // ms  # the most frames held that are still under 180 ms
+            for frames, turns in ((last_tap, True), (last_tap + 1, False)):
+                with self.subTest(frame_ms=ms, held_ms=frames * ms):
+                    rules = rules_with_crater_at(300)
+                    hold(rules, ms, frames)
+                    self.assertEqual(not turns, rules.man.spraying())
+                    self.assertEqual(TURNED if turns else 0, rules.step(ms, False))
+
+    def test_a_200_ms_press_at_40_ms_frames_sprays_and_does_not_turn(self):
         rules = rules_with_crater_at(300)
-        hold(rules, 20, 9)  # held 0 to 160 ms
-        self.assertFalse(rules.man.spraying())
-        self.assertEqual(TURNED, rules.step(20, False))
+        hold(rules, 40, 5)
+        self.assertTrue(rules.man.spraying())
+        self.assertEqual(0, rules.step(40, False))
+        self.assertEqual(1, rules.man.facing)
 
     def test_a_hold_sprays_from_180_ms_and_stops_him_until_the_release(self):
         rules = rules_with_crater_at(300)
         man = rules.man
-        for _ in range(9):  # held 0, 20, ... 160 ms: he runs
+        for _ in range(8):  # held 20, 40, ... 160 ms: he runs
             rules.step(20, True)
             self.assertFalse(man.spraying())
         self.assertGreater(man.x, START)
@@ -68,12 +85,24 @@ class PressTest(unittest.TestCase):
     def test_the_nozzle_flashes_from_120_ms_until_the_spray(self):
         rules = rules_with_crater_at(300)
         man, seen = rules.man, []
-        for _ in range(12):  # held 0 to 220 ms
+        for _ in range(12):  # held 20 to 240 ms
             rules.step(20, True)
             seen.append((man.down_ms, man.flashing(), man.spraying()))
         for down_ms, flashing, spraying in seen:
             self.assertEqual(120 <= down_ms < 180, flashing, down_ms)
             self.assertEqual(down_ms >= 180, spraying, down_ms)
+
+    def test_no_spray_while_he_turns(self):
+        rules = rules_with_crater_at(300)
+        rules.step(40, True)
+        rules.step(40, False)  # a tap: the turn starts
+        rules.man.down_ms = rs.TAP_MS  # as if held long enough already
+        rules.step(40, True)
+        self.assertTrue(rules.man.turning())
+        self.assertFalse(rules.man.spraying())
+        while rules.man.turning():
+            rules.step(40, True)
+        self.assertTrue(rules.man.spraying())  # the hold sprays once the turn is over
 
 
 class HoseTest(unittest.TestCase):
@@ -140,12 +169,33 @@ class RunTest(unittest.TestCase):
         self.assertEqual(list(range(rs.RUN_POSES)), sorted(set(seen)))
         self.assertEqual(0, man.run_pose())
 
+    def test_after_a_turn_the_run_goes_on_from_the_phase_the_turn_ends_in(self):
+        rules = rules_with_crater_at(300)
+        for _ in range(7):
+            rules.step(40, False)
+        self.assertNotEqual(0, rules.man.run_pose())  # mid-stride when he turns
+        rules.step(40, True)
+        rules.step(40, False)
+        while rules.man.turning():
+            rules.step(40, False)
+        # the turn's last pose is the run's phase 9 of 12, so the run goes on at phase 0 and on from there
+        self.assertEqual(0, rules.man.run_pose())
+        rules.step(40, False)
+        self.assertIn(rules.man.run_pose(), (0, 1))
+
     def test_he_turns_by_himself_at_each_end_of_the_street(self):
         rules = rules_with_crater_at(300)
-        for _ in range(200):
-            rules.step(60, False)
-            self.assertTrue(rs.LEFT_X <= rules.man.x <= rs.RIGHT_X)
-        self.assertGreater(rules.man.ran, rs.RIGHT_X - rs.LEFT_X)  # he reached an end and came back
+        man = rules.man
+        for wall, facing in ((rs.RIGHT_X, 1), (rs.LEFT_X, -1)):
+            with self.subTest(wall=wall):
+                self.assertEqual(facing, man.facing)
+                while man.x != wall:
+                    rules.step(40, False)
+                self.assertEqual(-facing, man.facing)  # he faces the other way at the wall
+                while man.turning():
+                    rules.step(40, False)
+                rules.step(40, False)
+                self.assertEqual(-facing, (man.x - wall) // abs(man.x - wall))  # and runs back off it
 
 
 class PlaceTest(unittest.TestCase):
