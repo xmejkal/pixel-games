@@ -369,11 +369,11 @@ def paint_meadow(s):
            soft=0.6, cover=False)
     for colour, n in (((250, 244, 238), 30), ((200, 170, 230), 20), ((250, 212, 90), 24)):
         flowers = s.mask()
-        for _ in range(n):  # in clumps, mostly at the sides
-            cx = rnd.choice((rnd.uniform(0, 80), rnd.uniform(240, W), rnd.uniform(0, W)))
+        for _ in range(n // 2):  # in clumps at the sides
+            cx = rnd.choice((rnd.uniform(0, 80), rnd.uniform(240, W)))
             cy = rnd.uniform(y1 + 6, RAIL_Y - 2)
-            for _ in range(3):
-                s.ellipse(flowers, cx + rnd.uniform(-3, 3), cy + rnd.uniform(-1.5, 1.5), 0.75, 0.65)
+            for _ in range(5):
+                s.ellipse(flowers, cx + rnd.uniform(-2.5, 2.5), cy + rnd.uniform(-1.2, 1.2), 0.75, 0.65)
         lay(s.rgb, blur(flowers, 0.4), colour, 0.95)
     earth = s.mask()  # trampled earth where the crates land
     s.polygon(earth, [(0, H - 6), (W, H - 7), (W, H + 2), (0, H + 2)])
@@ -389,6 +389,15 @@ def paint_meadow(s):
     lit = s.mask()
     s.polygon(lit, [(0, RAIL_Y), (W, RAIL_Y), (W, RAIL_Y + 0.8), (0, RAIL_Y + 0.8)])
     lay(s.rgb, lit, (226, 184, 130), 0.9)
+    under = s.mask()  # the rail's soft shadow on the grass under it
+    s.polygon(under, [(0, RAIL_Y + 3), (W, RAIL_Y + 3), (W, RAIL_Y + 7), (0, RAIL_Y + 7)])
+    glaze(s.rgb, blur(under, 6), (110, 120, 120), 0.4)
+    tufts = []  # darker tufts along the foot of the screen
+    for _ in range(90):
+        x, y = rnd.uniform(0, W), rnd.uniform(H - 12, H)
+        for dx in (-1.4, 0, 1.3):
+            tufts.append(([(x, y), (x + dx, y - rnd.uniform(2, 4.5))], 2))
+    s.pencil(tufts, strength=0.4, colour=(60, 84, 50))
     s.pencil([(jitter([(0, RAIL_Y + 3.2), (W, RAIL_Y + 3.2)], 0.15), 2)], strength=0.6, colour=INK)
 
 
