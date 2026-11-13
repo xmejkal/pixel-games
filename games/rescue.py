@@ -142,13 +142,15 @@ SIZES = {"run": 26, "turn": 26, "spray": 40}  # each cycle's picture width; the 
 FIG_H = 30  # the pictures' height
 NOZZLE_DX, NOZZLE_DY = 13, -24  # px from his hips and soles to the nozzle's tip, facing right (the spray's pictures)
 FIRE_STEP_MS = 80  # ms a heat step, as the Runner's: 40 sank the Runner to 16 fps (bench.md P651)
-# fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade: a tall flame that breaks into tongues
-FIRE_LOOK = (34, 90, 1, 0, 1, 100, 60, 10)
+# fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade: a tall flame that breaks into tongues, set
+# by eye on Mac frames of tools/render_scene.py against looks with more cooling (short) and less (a white column)
+FIRE_LOOK = (34, 90, 1, 0, 1, 100, 0, 10)  # no field embers: they start at the screen's bottom, in the lane
 FIRE_SEED = 800
 BURN_HALF_PX = 10  # px each side of the crater's middle that burn
 BURNS = 4  # hot spots burned a frame
 WATER = (c565(170, 214, 255), c565(230, 244, 255))
 STEAM = c565(200, 200, 210)
+SPARK = c565(255, 190, 80)
 
 
 POSES = {(cycle, side): tuple("rescue_%s_%s%d" % (cycle, side, i) for i in range(n))
@@ -198,6 +200,9 @@ class Rescue(Game):
             for _ in range(BURNS):  # a few hot spots at random along the crater: a ragged base, tongues above it
                 x = (crater.x + random.randrange(-BURN_HALF_PX, BURN_HALF_PX + 1)) // 2
                 field.burn(x, LANE // 2 - 2, x, LANE // 2 - 3, 1, (heat - random.randrange(heat // 2 + 1)) * 7 // 8)
+        if heat and random.randrange(HEAT_MAX) < heat // 4:  # sparks fly up from the fire, fewer as it dies down
+            self.fx.add(crater.x + random.randrange(-8, 9), LANE - 6, random.randrange(-20, 21),
+                        -random.randrange(40, 90), SPARK, 0.8, 20.0)
         if man.spraying():
             x, y = man.x + NOZZLE_DX * man.facing, FEET + NOZZLE_DY
             for _ in range(5):
