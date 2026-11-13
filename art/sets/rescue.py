@@ -209,7 +209,7 @@ class Figure:
         self.arm(s, p, near, COAT)
         if hose:
             self.nozzle(s, p, near)
-        img = self.rim(self.banded(s.cut(outline=False)))
+        img = self.rim(self.banded(s.cut(outline=False)), pose["nose"][0] >= pose["head"][0])
         if hose:
             img = self.under(img, self.hose(p, near))
         return img
@@ -291,9 +291,11 @@ class Figure:
         out.alpha_composite(img)
         return out
 
-    def rim(self, img):
-        """A 1 px rim outside the shape: warm where the shape is to its left (ahead of him), cool where it is to its
-        right (behind him). Nothing above or under, so the soles stay on the street."""
+    def rim(self, img, right):
+        """A 1 px rim outside the shape, warm on the side his face looks to (right, or else left) and cool on the
+        other, so the turn hands the warm rim over from one side to the other. Nothing above or under, so the soles
+        stay on the street."""
+        ahead, behind = (WARM, COOL) if right else (COOL, WARM)
         out = img.copy()
         a = img.getchannel("A").load()
         w, h = img.size
@@ -302,9 +304,9 @@ class Figure:
                 if a[x, y]:
                     continue
                 if x > 0 and a[x - 1, y]:
-                    out.putpixel((x, y), WARM + (255,))
+                    out.putpixel((x, y), ahead + (255,))
                 elif x < w - 1 and a[x + 1, y]:
-                    out.putpixel((x, y), COOL + (255,))
+                    out.putpixel((x, y), behind + (255,))
         return out
 
 
