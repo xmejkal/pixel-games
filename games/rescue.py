@@ -414,10 +414,11 @@ NOZZLE_DX, NOZZLE_DY = 12, -24
 FIRE_STEP_MS = 80  # ms a heat step, as the Runner's: 40 sank the Runner to 16 fps (bench.md P651)
 # fx_fire_set_look's decay, cool, sway, spots, spread, fast, embers, fade: one flame out of the crater that tapers into
 # tongues, set by eye on Mac frames of tools/render_scene.py against eight looks (fast patches and more cooling split
-# it into blobs with a gap, less fade makes a white column)
-FIRE_LOOK = (34, 30, 1, 0, 1, 0, 0, 16)  # no fast patches (they split the flame), no field embers (they rose low)
+# it into blobs with a gap, less fade makes a white column). A decay of 31 loses a little heat a row, so the flame
+# tapers off about 45 px up: at 34 it climbed for seconds to the screen's top and its upper part broke off (P800)
+FIRE_LOOK = (31, 24, 1, 0, 1, 0, 0, 16)  # no fast patches (they split the flame), no field embers (they rose low)
 FIRE_SEED = 800
-DECAY_DROP = 3  # the decay falls this much as the fires die down: from 34, which keeps the flames climbing, to 31
+DECAY_DROP = 3  # the decay falls this much as the fires die down, from 31 to 28: the flame shrinks from its top
 BURN_HALF_PX = 12  # px each side of the crater's middle that burn
 BURNS = 8  # hot spots burned a frame by a full fire
 BURN_HEAT, FOOT_HEAT = 223, 160  # a spot's heat in a full fire, and in a fire nearly out: still bright, never see-through
@@ -454,6 +455,7 @@ def glow(base, warm):
 KERB_GLOW = glow((84, 76, 86), (240, 116, 48))  # art/sets/rescue.py's kerb, lit
 STREET_GLOW = glow((38, 34, 42), (210, 96, 40))  # the tarmac, a wet shine
 SPARK = c565(255, 190, 80)
+SPARK_PX = 40  # px: a spark this far from a fire's middle is that fire's (they fly 8 px out and drift 20 px/s, 0.8 s)
 FLAT = (c565(70, 80, 130), c565(170, 70, 120), c565(60, 150, 160), c565(150, 140, 130), c565(110, 130, 60))  # no art
 
 POSES = {(cycle, side): tuple("rescue_%s_%s%d" % (cycle, side, i) for i in range(n))
@@ -552,7 +554,8 @@ class Rescue(Game):
 
     def fires(self, events):
         """The heat field: each burning crater burns its foot into it. A fire that ends empties the field (its heat
-        would rise on alone as a flame with no crater under it), and the fires still burning are burned back in."""
+        would rise on alone as a flame with no crater under it) and takes its sparks with it (they would rise on as a
+        bit of flame), and the fires still burning are burned back in."""
         rules = self.rules
         self.layer.update(self.ms, 0)
         field = self.layer.field
@@ -566,6 +569,7 @@ class Rescue(Game):
             field.set_look(decay, *FIRE_LOOK[1:])
         if events & (OUT | BURNT):
             self.layer.clear()
+            self.fx.p = [q for q in self.fx.p if q[5] != SPARK or any(abs(q[0] - c.x) <= SPARK_PX for c in burning)]
             for c in burning:
                 x, y = c.x // 2, LANE // 2 - 2
                 for lo, hi, top in REGROW:
