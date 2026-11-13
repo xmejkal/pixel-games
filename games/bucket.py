@@ -151,7 +151,7 @@ class Bucket(Game):
         self.rules, self.on_rest = Rules(), self.rest
         self.shown = bytearray(COLS)  # the pile as drawn: a missed box joins it when it rests
         self.phase, self.last_y = bytearray(N), array("h", [-SIZE] * N)
-        self.covers = self.art = pictures.load()  # the painted village covers the screen: no fill under it
+        self.covers = self.art = pictures.load("bucket")  # the painted village covers the screen: no fill under it
         self.dice, self.smoke = Dice(774), Smoke()
         self.coins = []  # [x, y, the ms it was caught] of each coin on its way to the score
         self.puffed = 0  # the ms of the last chimney puff

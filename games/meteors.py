@@ -229,6 +229,7 @@ class Meteors(BurningBodies):
     SEED, GRAVITY, FRICTION, FLARE_MIN = None, GRAVITY_PX, 0.0, FLARE_MIN_PX  # friction 0: a meteor bounces straight up
     TITLE_MS = Game.TITLE_MS
     MODES = MODES[1:2]  # the picture mode alone: the flames over the painted dusk
+    ART = ("meteors", None)  # its own art set, all of it
     cues = {"land": Cue("land"), "die": Cue("die")}
     fire_plugin = None  # made once in setup
     hud, draw_hud = Game.hud, Game.draw_hud  # the score bar, not the fire's label
@@ -245,12 +246,12 @@ class Meteors(BurningBodies):
             self.dropped, self.left = array("i", [0] * N), array("h", [0] * N)  # played_ms at each drop; ms, at a drop
             self.impact = array("i", [-GLOW_MS] * N)  # played_ms at each meteor's landing, for its glow
             self.dice = Dice()
-            if pictures.load():
+            if pictures.load(*self.ART):
                 self.LOOK = TAIL_LOOK
             super().setup()
         else:
             self.start_bodies()
-        self.art = pictures.load()  # the painted look and its effects; without it the flat shapes
+        self.art = pictures.load(*self.ART)  # the painted look and its effects; without it the flat shapes
         self.fx.MAX = 64  # the sparks of eight meteors and the bits of an impact
         self.flash, self.shake = len(FLASH_ALPHAS), len(SHAKE)  # the frames of each drawn since the last impact
         self.dy = 0  # px the ground moves down in this frame's shake: 0 or less

@@ -186,6 +186,7 @@ class Fire(Game):
     TITLE_MS = 0  # straight into the fire, so the first BOOT tap moves to the next mode
     LOOK = (DECAY, COOL, SWAY, SPOTS, SPREAD, FAST, EMBERS, FADE)  # a scene on the same field sets its own (P596)
     MODES = MODES
+    ART = ("runner", ("sky",))  # the art set it loads (pictures.load), and of it only the sky under the picture mode
 
     def __init__(self):
         self.mode = 0
@@ -193,7 +194,7 @@ class Fire(Game):
         super().__init__()
 
     def setup(self):
-        pictures.load()
+        pictures.load(*self.ART)
         if engine is not None:
             print(self.name, "internal largest", engine.largest_free_internal())
         self.fire_plugin = FirePlugin(self.LOOK, SEED)

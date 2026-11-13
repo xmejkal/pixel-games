@@ -20,6 +20,7 @@ import buttons
 import encoder
 import gdi
 import gfx
+import pictures
 import pins
 from arcade import Flappy, Runner, Snake
 from arcade2 import Cave, GravityPong, Stack
@@ -84,6 +85,7 @@ class App:
         """Move to the next game and say its name."""
         self.index = (self.index + 1) % len(self.games)
         self.game = None
+        pictures.free()  # the last game's art set goes: the next game loads its own (P773)
         if self.cues:
             self.cues.stop()  # --- MVP (P768) --- before the next game's setup, so the last game's sound does not play over it
         gc.collect()
