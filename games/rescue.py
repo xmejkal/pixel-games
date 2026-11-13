@@ -713,11 +713,9 @@ class Rescue(Game):
             cv.fill(p.x + 1 - step + dx, FEET - 6, 2, 6, c)
             if p.state == WAVING:
                 cv.fill(p.x - 4 + dx, FEET - tall - 8, 2, 8, c)
-        if p.state == WAVING and p.wave_ms % 1000 < 600:  # a white "!", and "help!" for those who shout, blinking
-            cv.fill(p.x + dx, y - 9, 2, 5, WHITE)
-            cv.fill(p.x + dx, y - 3, 2, 2, WHITE)
-            if p.kind != MAN and p.kind != DOGMAN:
-                cv.text("help!", p.x - 20 + dx, y - 19, YELLOW)
+        if p.state == WAVING and p.wave_ms % 1000 < 600:  # "help!" on a dark plate over them, blinking
+            cv.fill(p.x - 21 + dx, y - 12, 42, 11, DARK)
+            cv.text("help!", p.x - 20 + dx, y - 10, YELLOW)
 
     def draw_dogs(self, cv, dx):
         """The dog of a man with a dog: ahead of him as they run, standing by as he waves, at the fireman's heels

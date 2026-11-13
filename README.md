@@ -10,7 +10,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | --- | --- |
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
 | `art/` | the painted art: one set per game, the brush and the export |
-| `art/mocap.py` | turns CMU motion capture into the side-view poses that Rescue's fireman is painted from. It reads the CMU files from `~/.cache/pixel-games/cmu` and writes nothing. The terms are below the table |
+| `art/mocap.py` | turns CMU motion capture into the side-view poses that Rescue's fireman and the people he saves are painted from. It reads the CMU files from `~/.cache/pixel-games/cmu` and writes nothing. The terms are below the table |
 | `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
 | `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang). The engine's own tests run with the same command in `engine/` |
 | `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py SUBJECT out.png FRAMES...` draws a game, a scene or the overlay on the Mac, the board's way, to a PNG sheet, and with `--gif OUT.gif --every K` to a GIF. `--list` names the subjects, and `--all docs/screenshots` writes every picture below from the tool's own table. It needs clang, Pillow and the MicroPython clone under `~/esp` for the letters. `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
@@ -21,7 +21,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565). Also the wiring guides: `wiring.html` (every wire, with pictures) and `p758-encoder-steps.html` (the encoder, one wire per step) |
 | `docs/screenshots/` | a PNG and a GIF of each game, scene and the overlay, made by `tools/render_scene.py --all docs/screenshots` |
 
-The fireman's run is subject 9, trial 1, and his spray is subject 13, trial 27, of the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu). CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission", and its home page says "you may not resell this data directly, even in converted form", so the data is not in this repository, only the painted pictures.
+Rescue's figures come from the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu), subject:trial: the fireman's run 9:1 (his turn is that run turned), his spray 13:27 and his carry 2:3 (a jog; his arms round the person are posed by hand); the people's runs, the man's 16:35, the woman's 35:17, the child's 9:2, the grandma's walk 35:1 and the run of the man with the dog 35:22; and everyone's wave 13:27 (frames 1850 to 2030). The dog is drawn by hand. CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission", and its home page says "you may not resell this data directly, even in converted form", so the data is not in this repository, only the painted pictures. Without the CMU files, `art/paint.py` reads those pictures back from `games/art`. Rescue's shout is cut from "Please help somebody!" by Nocturnal_Vanguard (OpenGameArt, CC0), kept as `games/help16k.wav` with its `SOURCE.txt`. The art is now 2,419,064 bytes, so after copying it the board needs a hard reset: a soft reset keeps the smaller picture pool (bench.md, P562).
 
 ## What it looks like
 
@@ -43,6 +43,10 @@ The ball pit: a pour of 10 balls every 0.4 s piles up in layers of colour, and t
 
 Bucket: the bucket goes right while the button is held and left when it is not, and a caught box is a point.
 
+![Rescue](docs/screenshots/rescue.gif)
+
+Rescue: meteors fall on a street at night, and people run out of their houses in panic. The fireman runs by himself: tap the button and he turns, hold it and he stops and sprays his hose. A fire stops him and everyone else, and a person caught between two fires waves and shouts for help. Run into a person and he carries them, slower and with no hose; at the station's door they are safe, for a point (two for a child). A meteor's shadow grows on the street before it lands, and a person under it is gone in a puff of smoke. Three lost end the round, and each three saved bring the meteors faster and more people out. Nobody is drawn burning.
+
 Every subject, with the button pattern that made its picture (`tools/render_scene.py --list` prints them). The picture links to the GIF.
 
 | subject | button | what the picture shows | picture |
@@ -53,7 +57,7 @@ Every subject, with the button pattern that made its picture (`tools/render_scen
 | the ball pit | tap pours, hold shakes | 120 balls in twelve pours, each pour in its own colour. | <a href="docs/screenshots/ballpit.gif"><img src="docs/screenshots/ballpit.png" width="160"></a> |
 | the bodies on fire | tap: next mode | Eight falling bodies burn trails into the field and flare where they land. | <a href="docs/screenshots/burningbodies.gif"><img src="docs/screenshots/burningbodies.png" width="160"></a> |
 | Bucket | hold: right | The bucket on its rail at the first catch, with the point's burst at its edge and two missed boxes piled below the rail. | <a href="docs/screenshots/bucket.gif"><img src="docs/screenshots/bucket.png" width="160"></a> |
-| Rescue | tap turns, hold sprays | The fireman stands and sprays the burning crater. The water lands at the foot of the one flame that rises from it. Nobody in the game is drawn burning. | <a href="docs/screenshots/rescue.gif"><img src="docs/screenshots/rescue.png" width="160"></a> |
+| Rescue | tap turns, hold sprays, carry people to the station | A round: a meteor lands with a flash, and the man with his dog, caught between its fire and the street's end, waves for help. The fireman puts the fire out with the hose, picks the man up and carries him to the station's door, where +1 rises; the dog runs at his heels. | <a href="docs/screenshots/rescue.gif"><img src="docs/screenshots/rescue.png" width="160"></a> |
 | Flappy | tap to flap | The painted morning scrolls by and the bird flaps between the pipes. | <a href="docs/screenshots/flappy.gif"><img src="docs/screenshots/flappy.png" width="160"></a> |
 | Runner | tap jump, hold higher | The painted runner jumps over a cactus in front of the mountains. | <a href="docs/screenshots/runner.gif"><img src="docs/screenshots/runner.png" width="160"></a> |
 | Snake | tap turns right | The snake moves on its grid and turns right at each tap. The red square is the food. | <a href="docs/screenshots/snake.gif"><img src="docs/screenshots/snake.png" width="160"></a> |
@@ -236,7 +240,7 @@ Runs now:
   `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
   guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Fifteen games. Two are effect scenes: the ball pit and bodies on fire. Marshmallow is a game on the fire's field and Bucket a game on the rain's physics (P773). Four are painted: runner, flappy, stack (stack as RENT) and rescue (P800, a fireman from motion capture on the fire's field). The other seven are flat.
+- Fifteen games. Two are effect scenes: the ball pit and bodies on fire. Marshmallow is a game on the fire's field and Bucket a game on the rain's physics (P773). Four are painted: runner, flappy, stack (stack as RENT) and rescue (P800, a fireman and the people he saves from motion capture, under meteors, on the fire's field). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 

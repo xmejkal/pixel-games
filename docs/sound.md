@@ -36,6 +36,12 @@ least `FLAME_STEP` (16). A marshmallow whose time ran out plays `burn` too. The 
 
 `Bucket` (P773) uses the bank as it is too: `catch` plays `pickup` and `miss` plays `land`. It has no loop.
 
+`Rescue` (P800) brings its own sounds to the bank. `hose` is its one loop, a hiss that plays while the fireman sprays,
+so with the music two voices stay free for the rest: `siren` (two tones, at the round's start and when a person is
+trapped), `whoosh` and `boom` (a meteor), `cheer` (a person saved), `pickup`, and the shouts `help` and `help_child`,
+each under 0.8 s. The shouts are cut from a CC0 recording, `games/help16k.wav`; the child's is the same word played
+faster by `tools/sound_bank.py`. The game emits `hose` with 0 at each restart and before `die()`.
+
 ## The music
 
 `App.switch` calls `cues.music()`. It starts the bank's sound `music` once, as a protected loop in the group
