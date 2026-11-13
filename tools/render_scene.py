@@ -7,7 +7,7 @@ repository root:
                                      [--font PATH | --no-text] [--gif OUT.gif --every K] SUBJECT out.png FRAMES...
     python3 -B tools/render_scene.py --list
     python3 -B tools/render_scene.py --all DIR
-SUBJECT is one of SUBJECTS: fire, rain, the fourteen games by their lower-case class names, and overlay (the ball pit
+SUBJECT is one of SUBJECTS: fire, rain, the fifteen games by their lower-case class names, and overlay (the ball pit
 with the volume pane over it, the one subject that blends). The sheet holds the frame after each count of FRAMES, side
 by side; the GIF holds the frames from the first count to the last, every K-th, at K * 40 ms a frame. The button:
 --tap N presses on one frame in every N, --hold N holds N frames and releases N (0 holds every frame); the first frame
@@ -48,6 +48,7 @@ import world_lib  # noqa: E402
 from arcade import Flappy, Runner, Snake  # noqa: E402
 from arcade2 import Cave, GravityPong, Stack  # noqa: E402
 from bucket import Bucket  # noqa: E402
+from rescue import Rescue  # noqa: E402
 from burning import BurningBodies  # noqa: E402
 from marshmallow import Marshmallow  # noqa: E402
 from PIL import Image  # noqa: E402
@@ -66,15 +67,19 @@ PALETTE_FRAMES = 8  # the images a GIF's palette is taken from
 class Subject:
     """One row of SUBJECTS: the game class, the hint the README shows, and what makes its pictures. The GIF runs from
     frame first to frame last, every every-th frame; the PNG is frame shot (last when not given). tap or hold is the
-    button's pattern (see buttons); seed seeds random before the game is made; show is the frame the volume pane shows
-    on, None for no overlay."""
+    button's pattern (see buttons), or presses its own: (first frame, frames held) each; seed seeds random before the
+    game is made; show is the frame the volume pane shows on, None for no overlay."""
 
-    def __init__(self, game, hint, first, last, every=2, tap=None, hold=None, seed=1, shot=None, show=None):
+    def __init__(self, game, hint, first, last, every=2, tap=None, hold=None, seed=1, shot=None, show=None,
+                 presses=None):
         self.game, self.hint, self.first, self.last, self.every = game, hint, first, last, every
         self.tap, self.hold, self.seed, self.shot, self.show = tap, hold, seed, shot or last, show
+        self.presses = presses
 
     def __str__(self):
         press = "tap %d" % self.tap if self.tap else "hold %d" % self.hold if self.hold is not None else "first frame"
+        if self.presses:
+            press = "presses " + " ".join("%d+%d" % p for p in self.presses)
         return "frames %d to %d every %d, shot %d, %s, seed %d" % (self.first, self.last, self.every, self.shot, press,
                                                                     self.seed)
 
@@ -86,6 +91,7 @@ SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the p
     "ballpit": Subject(balls.BallPit, "tap pours, hold shakes", 5, 130, every=3, tap=10),
     "burningbodies": Subject(BurningBodies, "tap: next mode", 20, 100),
     "bucket": Subject(Bucket, Bucket.hint, 5, 150, every=3, hold=15, shot=146),
+    "rescue": Subject(Rescue, Rescue.hint, 2, 110, presses=((0, 1), (20, 1), (52, 36)), shot=68),
     "flappy": Subject(Flappy, Flappy.hint, 5, 70, every=3, tap=12, shot=60),
     "runner": Subject(Runner, Runner.hint, 10, 75, every=3, hold=40),
     "snake": Subject(Snake, Snake.hint, 5, 80, tap=20, shot=45),
@@ -137,12 +143,15 @@ class FrameClock:
         time.ticks_diff, time.ticks_add = lambda a, b: a - b, lambda a, b: a + b
 
 
-def buttons(frame, tap=None, hold=None, title=False):
+def buttons(frame, tap=None, hold=None, title=False, presses=None):
     """The button on frame k: (pressed, held). tap N: a press (pressed and held) on one frame in every N, N the
-    period. hold N: held N frames, then released N, and so on, N the half period; 0 holds every frame. Without either,
-    frame 0 presses, so the picture starts in play. title keeps frame 0 unpressed, so the title shows."""
+    period. hold N: held N frames, then released N, and so on, N the half period; 0 holds every frame. presses: each
+    (first frame, frames held). Without any, frame 0 presses, so the picture starts in play. title keeps frame 0
+    unpressed, so the title shows."""
     if title and frame == 0:
         return False, False
+    if presses:
+        return any(frame == a for a, _ in presses), any(a <= frame < a + n for a, n in presses)
     if tap:
         on = frame % tap == 0
         return on, on
@@ -166,7 +175,7 @@ def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, ho
     clock.install()
     engines()
     random.seed(row.seed if seed is None else seed)
-    tap, hold = (row.tap, row.hold) if tap is None and hold is None else (tap, hold)
+    tap, hold, presses = (row.tap, row.hold, row.presses) if tap is None and hold is None else (tap, hold, None)
     ov = pane = None
     if row.show is not None:  # --- MVP (P762) --- the volume pane over the game, as App.overlay draws it
         ov = overlay.Overlay()
@@ -182,7 +191,7 @@ def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, ho
     for k in itertools.count():
         now = FRAME_MS * (k + 1)
         clock.frame(now)
-        pressed, held = buttons(k, tap, hold, title)
+        pressed, held = buttons(k, tap, hold, title, presses)
         with quiet:
             game.step(now, pressed, held)
             if pane:
