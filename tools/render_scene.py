@@ -50,6 +50,7 @@ from arcade2 import Cave, GravityPong, Stack  # noqa: E402
 from bucket import Bucket  # noqa: E402
 from burning import BurningBodies  # noqa: E402
 from marshmallow import Marshmallow  # noqa: E402
+from meteors import Meteors  # noqa: E402
 from PIL import Image  # noqa: E402
 from rescue import Rescue  # noqa: E402
 from space3d import CubeTiming, Starfire  # noqa: E402
@@ -90,7 +91,8 @@ SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the p
     "marshmallow": Subject(Marshmallow, Marshmallow.hint, 5, 200, every=4, hold=40, shot=195),
     "ballpit": Subject(balls.BallPit, "tap pours, hold shakes", 5, 130, every=3, tap=10),
     "burningbodies": Subject(BurningBodies, "tap: next mode", 20, 100),
-    "bucket": Subject(Bucket, Bucket.hint, 5, 150, every=3, hold=15, shot=146),
+    "bucket": Subject(Bucket, Bucket.hint, 90, 215, every=6, hold=20, seed=5, shot=212),
+    "meteors": Subject(Meteors, Meteors.hint, 90, 200, every=3, tap=17, seed=18, shot=148),
     "rescue": Subject(Rescue, Rescue.hint, 2, 110, presses=((0, 1), (20, 1), (52, 36)), shot=68),
     "flappy": Subject(Flappy, Flappy.hint, 5, 70, every=3, tap=12, shot=60),
     "runner": Subject(Runner, Runner.hint, 10, 75, every=3, hold=40),
