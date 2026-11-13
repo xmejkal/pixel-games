@@ -1,19 +1,22 @@
 """
-Rescue (P800): a night street under a meteor shower. Carry the people who run about in panic to the fire station.
+Rescue (P800): a night street under a meteor shower. Carry the people who run about in panic to the fire station,
+under the green SAFE sign.
 
 How to play: the fireman runs along the street and never stops on his own. Tap BOOT and he turns round. Hold it and
 he stops and sprays the hose ahead of him: a fire within REACH_PX goes down and is out after about a second of water.
 People come out of the houses and run about in panic: a man, a woman, a child (small and fast), a grandma (slow, with
-a cane) and a man with his dog. A fire stops everyone: a person turns back from it, and between two fires stops,
-waves and shouts for help (so between a fire and the street's end). The fireman stops at a fire too, until the hose puts it out. Run into a person and he picks
-them up; he is slower then and cannot spray, and he runs through the flames with the person sheltered in his arms. At
-the station's door he sets them down: a point, two for a child. A
-meteor's shadow grows on the street for FALL_MS before it lands; where it lands a crater opens and burns for FIRE_MS,
-and a person it lands on is gone, in a puff of smoke (nobody is drawn burning). Three people lost end the round. Every
-SAVES_A_STEP people saved, the meteors come faster and more people are out at once.
+a cane) and a man with his dog. Each wears a bright shirt, so they show on the dark street. A fire stops everyone. A
+person turns back from it. A person with a fire on one side and a fire or the street's end close on the other is
+trapped: they stop, wave and shout for help, under a pale arrow and a blinking "help!". The fireman stops at a fire
+too, until the hose puts it out. Run into a person and he picks them up. He is slower then and cannot spray, and he
+runs through the flames with the person sheltered in his arms. At the station's door he sets them down: a point, two
+for a child, and "+1" rises over the door. A meteor's shadow grows on the street for FALL_MS before it lands, in a
+blinking target ring. Where it lands a crater opens and burns for FIRE_MS. A person it lands on is gone, in a puff of
+smoke (nobody is drawn burning). Three people lost end the round. Every SAVES_A_STEP people saved, the meteors come
+faster and more people are out at once.
 
 Every figure is motion capture (art/mocap.py, art/sets/rescue.py), painted facing right and facing left: the
-fireman's run, spray, turn and carry, each person's run (granny's is a walk) and wave; the dog is hand-keyed. A pose
+fireman's run, spray, turn and carry, each person's run (granny's is a walk) and wave. The dog is hand-keyed. A pose
 follows the distance its figure ran, so the feet do not slide. The fire is the heat field (fire.FireLayer), burned at
 each burning crater above the street lane and stepped every FIRE_STEP_MS, as the Runner's.
 --- MVP (P800) ---
@@ -25,6 +28,7 @@ import pictures
 from cues import LEVELS, Cue
 from fire import ALPHA, PALETTE, FireLayer
 from gfx import DARK, GREY, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, Particles, c565
+from meteors import SMOKE_ALPHAS, SMOKE_H, SMOKE_MS, SMOKE_W
 
 # --- MVP (P800) --- the rules, in px, ms and ints
 TAP_MS = 180  # a press released before this is a tap, and turns him; held this long, he sprays
@@ -426,6 +430,10 @@ SPARKLE = (c565(255, 240, 160), WHITE, YELLOW)
 CORE, HALO = WHITE, c565(255, 214, 120)
 TRAIL = (c565(255, 150, 50), c565(240, 80, 30), c565(255, 210, 120))
 SHADOW, TARGET = c565(14, 10, 16), c565(150, 40, 30)
+RING = (WHITE, c565(255, 90, 60))  # the landing's target ring round the shadow, blinking white and red
+RING_BLINK_MS = 100
+MARK = c565(255, 244, 214)  # the pale arrow over a trapped person
+PLATE_Y = LANE - 16  # the "help!" plate's top: its 11 rows end above the fire's foot (the bottom 5 rows over LANE)
 DOOR_LIT = c565(255, 214, 140)
 GLOW_LEVELS = 8  # the fire's light on the kerb and the street, from none to the full fire
 SHAKE = (2, -2, 1, -1)  # px the moving things shift, one a frame, after a meteor lands
@@ -455,6 +463,7 @@ PEOPLE_POSES = {(kind, cycle, side): tuple("rescue_%s_%s_%s%d" % (KINDS[kind], c
                 for kind in range(len(KINDS)) for cycle, n in (("run", PERSON_POSES), ("wave", WAVE_POSES))
                 for side in "rl"}
 DOG_NAMES = {side: tuple("rescue_dog_%s%d" % (side, i) for i in range(DOG_POSES)) for side in "rl"}
+SMOKES = tuple("rescue_smoke%d" % i for i in range(len(SMOKE_ALPHAS)))  # Meteors' see-through smoke, by alias
 
 
 class Spray(Particles):
@@ -496,6 +505,7 @@ class Rescue(Game):
         self.rules = Rules()
         self.water, self.puffs = Spray(), Puffs()
         self.covers = pictures.load()  # the painted street covers the screen, so no fill goes under it
+        self.smokes = []  # [x, ms since] of each puff of smoke where a person was lost
         self.shake_k = len(SHAKE)  # frames into the shake; len(SHAKE) when still
         self.flash_k, self.flash_x = len(FLASH) + 1, 0  # frames into the impact's flash (none past len(FLASH)), x
         self.came = []  # [x, ms left] of each house door lit by a person coming out
@@ -587,9 +597,13 @@ class Rescue(Game):
                 self.puffs.add(x + random.randrange(-6, 7), LANE - 4, random.randrange(-20, 21),
                                -random.randrange(20, 50), SMOKE[random.randrange(3)], 1.0, -10.0)
         for x, _ in rules.lost:  # a puff of grey smoke where they stood: they are gone
-            for _ in range(16):
+            self.smokes.append([x, 0])
+            for _ in range(0 if self.covers else 16):  # the specks only without the painted smoke
                 self.puffs.add(x + random.randrange(-5, 6), FEET - random.randrange(4, 22), random.randrange(-30, 31),
                                -random.randrange(10, 40), SMOKE[random.randrange(3)], 1.2, -15.0)
+        for smoke in self.smokes:
+            smoke[1] += self.ms
+        self.smokes = [m for m in self.smokes if m[1] < SMOKE_MS * len(SMOKES)]
         if events & OUT:
             self.fx.burst(rules.out_x, LANE - 6, STEAM, 14, 50.0, 0.9, -60.0)
         if events & PICKED:
@@ -671,25 +685,23 @@ class Rescue(Game):
                 h = c.heat() // 8
                 cv.fill(c.x - 6 + dx, LANE - h, 12, h, ORANGE)
                 cv.fill(c.x - 3 + dx, LANE - h // 2, 6, h // 2, YELLOW)
-        for p in rules.people:  # "help!" over a trapped person, blinking, under the flames so it hides no fire's foot
-            if p.state == WAVING and p.wave_ms % 1000 < 600:
-                y = FEET - PEOPLE_SIZES[p.kind][1] - 11
-                cv.fill(p.x - 21 + dx, y, 42, 11, DARK)
-                cv.text("help!", p.x - 20 + dx, y + 2, YELLOW)
         self.layer.draw(cv)
         for c in rules.craters:  # over the flame's foot: it comes out of the crater
             if not pictures.draw(cv, "rescue_crater", c.x - 14 + dx, LANE - 1):
                 cv.fill(c.x - 13 + dx, LANE, 26, 6, DARK)
                 cv.fill(c.x - 11 + dx, LANE, 22, 1, c565(232, 70, 40) if c.burning() else GREY)
-        for m in rules.meteors:  # the landing shadow grows on the street as the meteor comes
+        for m in rules.meteors:  # the landing shadow grows on the street as the meteor comes, in a bright ring
             half = 2 + 12 * (FALL_MS - m.left_ms) // FALL_MS
             cv.fill(m.x - half + dx, LANE + 2, 2 * half, 3, SHADOW)
             cv.fill(m.x - half // 2 + dx, LANE + 1, half, 1, TARGET)
+            self.draw_ring(cv, m.x + dx, half + 3, RING[m.left_ms // RING_BLINK_MS % 2])
         for p in rules.people:
             if p.state != CARRIED:
                 self.draw_person(cv, p, dx)
         self.draw_dogs(cv, dx)
         self.draw_man(cv, dx)
+        self.draw_help(cv, dx)
+        self.draw_smokes(cv, dx)
         self.water.draw(cv)
         for m in rules.meteors:
             self.draw_meteor(cv, m)
@@ -718,6 +730,40 @@ class Rescue(Game):
             cv.fill(p.x + 1 - step + dx, FEET - 6, 2, 6, c)
             if p.state == WAVING:
                 cv.fill(p.x - 4 + dx, FEET - tall - 8, 2, 8, c)
+
+    @staticmethod
+    def draw_ring(cv, x, half, c):
+        """A flat 1 px ring on the street round x, half px each side: the meteor's target."""
+        inner = half * 3 // 4
+        cv.fill(x - inner, LANE, 2 * inner + 1, 1, c)
+        cv.fill(x - inner, LANE + 6, 2 * inner + 1, 1, c)
+        for y, h in ((LANE + 1, 1), (LANE + 5, 1)):
+            cv.fill(x - half + 1, y, 2, h, c)
+            cv.fill(x + half - 2, y, 2, h, c)
+        cv.fill(x - half, LANE + 2, 1, 3, c)
+        cv.fill(x + half, LANE + 2, 1, 3, c)
+
+    def draw_help(self, cv, dx):
+        """Over each trapped person a pale arrow, bobbing, and "help!" on a plate, blinking. Drawn over the flames, so a
+        fire beside them hides no letter; the plate ends above the fire's foot (PLATE_Y), so it hides no flame's
+        foot either. The person stays under the arrow, never in the flames."""
+        for p in self.rules.people:
+            if p.state != WAVING:
+                continue
+            x, y = p.x + dx, PLATE_Y + 12 + p.wave_ms // 250 % 2
+            cv.fill(x - 3, y, 7, 1, MARK)
+            cv.fill(x - 2, y + 1, 5, 1, MARK)
+            cv.fill(x - 1, y + 2, 3, 1, MARK)
+            cv.fill(x, y + 3, 1, 1, MARK)
+            if p.wave_ms % 1000 < 600:
+                cv.fill(x - 21, PLATE_Y, 42, 11, DARK)
+                cv.text("help!", x - 20, PLATE_Y + 2, YELLOW)
+
+    def draw_smokes(self, cv, dx):
+        """Meteors' see-through smoke where a person was lost, a frame each SMOKE_MS, each thinner."""
+        for x, since in self.smokes:
+            k = since // SMOKE_MS
+            pictures.draw(cv, SMOKES[k], x - SMOKE_W // 2 + dx, FEET - SMOKE_H + 3, SMOKE_ALPHAS[k])
 
     def draw_dogs(self, cv, dx):
         """The dog of a man with a dog: ahead of him as they run, standing by as he waves, at the fireman's heels

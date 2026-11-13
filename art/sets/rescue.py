@@ -89,8 +89,8 @@ def paint_houses(s):
 
 
 def paint_station(s):
-    """The fire station at the left: dark brick, a red beacon, FIRE over the big door, and the door lit warm: the
-    brightest still thing on the street."""
+    """The fire station at the left: dark brick, a red beacon, SAFE in green over the big door (the place to bring
+    the people), and the door lit warm: the brightest still thing on the street."""
     x0, y0, x1, y1 = DOOR
     wall = s.mask()
     s.polygon(wall, [(0, LANE), (0, 96), (40, 84), (80, 96), (80, LANE)])
@@ -106,8 +106,8 @@ def paint_station(s):
     lay(s.rgb, sign, (26, 20, 26))
     letters = s.mask()
     unit = 1.5
-    write(letters, "FIRE", ((x0 + x1) / 2 - text_width("FIRE", unit) / 2) * s.S, 111 * s.S, unit * s.S, 1.2 * s.S)
-    lay(s.rgb, letters, (250, 226, 180))
+    write(letters, "SAFE", ((x0 + x1) / 2 - text_width("SAFE", unit) / 2) * s.S, 111 * s.S, unit * s.S, 1.2 * s.S)
+    lay(s.rgb, letters, (140, 255, 150))
     glow = s.mask()
     s.polygon(glow, [(x0 - 10, y0 - 10), (x1 + 10, y0 - 10), (x1 + 34, H), (x0 - 20, H)])
     lay(s.rgb, blur(glow, 22), (255, 170, 80), 0.4)  # the door's light, out over the street
@@ -263,8 +263,12 @@ class Figure:
             wide = ImageChops.lighter(s.shape("line", shoulder, elbow, width=self.UPPER_W + 2),
                                       s.shape("line", elbow, wrist, hand, width=self.FORE_W + 2))
             self.part(s, ImageChops.multiply(wide, s.alpha), self.SEAM)
-        self.part(s, upper, colour)
-        self.part(s, fore, colour)
+        self.part(s, upper, self.sleeve(colour))
+        self.part(s, fore, self.sleeve(colour))
+
+    def sleeve(self, colour):
+        """The colour an arm is painted in: the coat's, here."""
+        return colour
 
     def torso(self, s, p):
         hips = along(p["lhipjoint"], p["rhipjoint"], 0.5)
@@ -381,20 +385,22 @@ def lighter(colour):
 
 class Look:
     """How one kind of person is painted: the height in px from the soles to the top of the head, the near side's
-    colour, the limbs' and the torso's widths in px, the head's radius in body heights, the hair (short, long, bun,
-    cap), a lean forward in degrees, a cane, a skirt."""
+    colour, the shirt's (bright, so a person to save shows on the dark street at 1x), the limbs' and the torso's
+    widths in px, the head's radius in body heights, the hair (short, long, bun, cap), a lean forward in degrees, a
+    cane, a skirt."""
 
-    def __init__(self, height, near, limb=2.2, torso=3.6, head=0.072, hair="short", lean=0, cane=False, skirt=False):
-        self.height, self.near, self.limb, self.torso, self.head = height, near, limb, torso, head
+    def __init__(self, height, near, shirt, limb=2.2, torso=3.6, head=0.072, hair="short", lean=0, cane=False,
+                 skirt=False):
+        self.height, self.near, self.shirt, self.limb, self.torso, self.head = height, near, shirt, limb, torso, head
         self.hair, self.lean, self.cane, self.skirt = hair, lean, cane, skirt
 
 
-LOOKS = {  # the people, each its own run (mocap.CROWD) and everyone the wave; dark, each with its own tint
-    "man": Look(25, (30, 34, 56), limb=2.3, torso=3.9),
-    "woman": Look(24, (62, 28, 50), limb=2.0, torso=3.2, hair="long", skirt=True),
-    "child": Look(16, (24, 52, 58), limb=2.0, torso=3.0, head=0.095),
-    "granny": Look(22, (54, 44, 44), limb=2.0, torso=3.4, hair="bun", lean=24, cane=True),
-    "dogman": Look(25, (40, 46, 26), limb=2.3, torso=3.9, hair="cap"),
+LOOKS = {  # the people, each its own run (mocap.CROWD) and everyone the wave; dark, each with its own tint and shirt
+    "man": Look(25, (30, 34, 56), (90, 150, 255), limb=2.3, torso=3.9),
+    "woman": Look(24, (62, 28, 50), (255, 96, 160), limb=2.0, torso=3.2, hair="long", skirt=True),
+    "child": Look(16, (24, 52, 58), (70, 226, 210), limb=2.0, torso=3.0, head=0.095),
+    "granny": Look(22, (54, 44, 44), (206, 156, 255), limb=2.0, torso=3.4, hair="bun", lean=24, cane=True),
+    "dogman": Look(25, (40, 46, 26), (150, 220, 80), limb=2.3, torso=3.9, hair="cap"),
 }
 PEOPLE = tuple(LOOKS)
 HAIR = {"bun": (178, 174, 186)}  # granny's grey bun: the one light thing on her
@@ -403,9 +409,19 @@ CANE = (138, 96, 58)  # a wooden cane, lighter than her coat
 
 class Person(Figure):
     """One pose of a person, facing right, in the fireman's style: the far limbs lighter, a 1 px rim warm ahead and
-    cool behind, no helmet and no bands. The soles are put on the floor, the body leant as the look says."""
+    cool behind, no helmet and no bands. The soles are put on the floor, the body leant as the look says. The torso
+    is the look's bright shirt, so the people to save show on the dark street at 1x."""
 
     BANDS = False
+
+    def torso(self, s, p):
+        hips = along(p["lhipjoint"], p["rhipjoint"], 0.5)
+        self.part(s, s.shape("line", hips, p["lowerback"], p["upperback"], p["thorax"], p["lowerneck"],
+                             width=self.TORSO_W), self.look.shirt)
+
+    def sleeve(self, colour):
+        """The shirt's long sleeves: the near arm in the shirt's colour, the far one in a darker shade of it."""
+        return self.look.shirt if colour == self.NEAR else tuple(c * 3 // 5 for c in self.look.shirt)
 
     def __init__(self, size, look):
         super().__init__(size)
@@ -621,4 +637,6 @@ def paint_rescue():
     return Painting(pictures)
 
 
-ART_SET = ArtSet("rescue", 800, paint_rescue)
+SMOKE_FRAMES = 5  # Meteors' see-through smoke, the puff where a person is lost: its files, no copy
+ART_SET = ArtSet("rescue", 800, paint_rescue,
+                 aliases={"rescue_smoke%d" % i: "meteors_smoke%d" % i for i in range(SMOKE_FRAMES)})
