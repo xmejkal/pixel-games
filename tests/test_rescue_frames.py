@@ -1,10 +1,11 @@
 """Rescue's fires in the frames of render_scene's rescue row and of a round left alone, where a fire burns out by
-itself (P800): in every frame each burning crater's flame comes out of that crater, a hosed fire's flame is one piece
-from the crater up, and once a fire is out no flame floats on over its crater. Two planted rounds (P803) end one fire
-beside another that burns on: a near one keeps one flame from its crater up and nothing floats over the dead crater,
-and a far one's flame in the frame the other ends is the same as in the round where the other burns on. Each row runs
-in its own process, as tools/render_scene.py sets module state (the clock, the engines). Needs clang. Run from the
-repository root: python3 -m unittest discover tests. --- MVP (P800) ---"""
+itself (P800), and of the rescue row with another seed: in every frame each burning crater's flame comes out of that
+crater and is one piece from the crater up, hosed or not (P806), and once a fire is out no flame floats on over its
+crater. Two planted rounds (P803) end one fire beside another that burns on: each fire keeps one flame from its crater
+up, nothing floats over the dead crater near one that burns on, and a far one's flame in the frame the other ends is
+the same as in the round where the other burns on. Each row runs in its own process, as tools/render_scene.py sets
+module state (the clock, the engines). Needs clang. Run from the repository root: python3 -m unittest discover tests.
+--- MVP (P800) ---"""
 
 import os
 import shutil
@@ -15,10 +16,11 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TOUCH_PX = 4  # the flame's lowest bright pixel lies this close to the crater's top, at most
 SPARKS_PX = 12  # bright pixels a frame after the fire is out may hold: sparks still in the air, not a flame
-GAP_PX = 4  # rows with no flame a hosed fire's flame may hold and still be one piece
+GAP_PX = 4  # rows with no flame a fire's flame may hold and still be one piece
 APART_PX = 40  # px: a dead crater this far from every burning one is checked for a flame floating on
 ALONE = ((0, 1),)  # a press to start, then nothing: the first fire burns out by itself (frame 208)
 ALONE_LAST = 230
+SEED = 2  # --- MVP (P806) --- the rescue row once more, another seed: other craters, another flame
 # --- MVP (P803) --- two craters planted at frame PLANT_K with no meteor and nobody coming: the second fire ends after
 # END_MS (frame END_K), the first burns on. NEAR is 15 cells apart, so its heat reaches the dead crater's columns; FAR
 # is 40 cells apart, out of its reach
@@ -44,13 +46,13 @@ import rescue
 with open("games/art/rescue_night.bin", "rb") as f:
     street = from_bin(f.read(), 320, 240).convert("RGB")
 row = rs.SUBJECTS["rescue"]
-presses, last, plant = eval(sys.argv[1]), int(sys.argv[2]), eval(sys.argv[3])
+presses, last, plant, seed = eval(sys.argv[1]), int(sys.argv[2]), eval(sys.argv[3]), eval(sys.argv[4])
 if presses:
     row.presses, row.last = presses, last
 made, make = [], row.game
 row.game = lambda: made.append(make()) or made[-1]
 spark = None
-for k, img in enumerate(itertools.islice(rs.frames(row), row.last)):
+for k, img in enumerate(itertools.islice(rs.frames(row, seed=seed), row.last)):
     rules = made[0].rules
     boxes = set()  # each particle's 3 x 3 px and 1 px round it (its position is a float): sparks, steam, embers (P806)
     for q in made[0].fx.p + made[0].puffs.p:
@@ -97,9 +99,9 @@ for k, img in enumerate(itertools.islice(rs.frames(row), row.last)):
 """ % (APART_PX, GAP_PX)
 
 
-def run_row(presses=None, last=0, plant=None):
-    run = subprocess.run([sys.executable, "-B", "-c", SCRIPT, repr(presses), str(last), repr(plant)], cwd=ROOT,
-                         capture_output=True, text=True)
+def run_row(presses=None, last=0, plant=None, seed=None):
+    run = subprocess.run([sys.executable, "-B", "-c", SCRIPT, repr(presses), str(last), repr(plant), repr(seed)],
+                         cwd=ROOT, capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     return [tuple(int(v) for v in line.split()[1:]) for line in run.stdout.split("\n") if line.startswith("crater ")]
 
@@ -108,8 +110,8 @@ def run_row(presses=None, last=0, plant=None):
 class FireTouchesItsCraterTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.shown, cls.alone = run_row(), run_row(ALONE, ALONE_LAST)
-        cls.rows = cls.shown + cls.alone
+        cls.shown, cls.alone, cls.seeded = run_row(), run_row(ALONE, ALONE_LAST), run_row(seed=SEED)
+        cls.rows = cls.shown + cls.alone + cls.seeded
 
     def test_the_row_puts_a_fire_out_and_one_left_alone_burns_out(self):
         for rows, wet in ((self.shown, 1), (self.alone, 0)):
@@ -125,10 +127,9 @@ class FireTouchesItsCraterTest(unittest.TestCase):
             with self.subTest(frame=k, crater=x):
                 self.assertGreaterEqual(low, top - TOUCH_PX)
 
-    def test_a_hosed_fire_s_flame_is_one_piece_from_its_crater_up(self):
-        hosed = [r for r in self.rows if r[2] and r[7]]
-        self.assertTrue(hosed)
-        for k, x, *_, apart, _ in hosed:
+    def test_each_fire_s_flame_is_one_piece_from_its_crater_up(self):
+        """Hosed or not: a cold patch of the cooling map cut an unhosed flame too (P806)."""
+        for k, x, *_, apart, _ in [r for r in self.rows if r[2]]:
             with self.subTest(frame=k, crater=x):
                 self.assertLessEqual(apart, SPARKS_PX)
 
@@ -161,12 +162,13 @@ class FireEndsBesideAnotherTest(unittest.TestCase):
             with self.subTest(frame=k):
                 self.assertLessEqual(flame, SPARKS_PX)
 
-    def test_the_near_fire_keeps_one_flame_from_its_crater_up(self):
-        on_x = NEAR[1][0][0]
-        for k, x, burning, *_, apart, _ in self.near:
-            if x == on_x and k >= END_K:
-                with self.subTest(frame=k):
-                    self.assertLessEqual(apart, SPARKS_PX)
+    def test_each_fire_keeps_one_flame_from_its_crater_up(self):
+        """Both planted fires and the round's own, before and after the one ends (P806)."""
+        for name, rows in (("near", self.near), ("far", self.far)):
+            for k, x, burning, *_, apart, _ in rows:
+                if burning:
+                    with self.subTest(row=name, frame=k, crater=x):
+                        self.assertLessEqual(apart, SPARKS_PX)
 
     def test_the_far_fire_s_flame_is_untouched_in_the_frame_the_other_ends(self):
         """Its crater comes first, so its random draws in that frame are the same in both rounds."""
