@@ -21,7 +21,22 @@ The repository is also a log of how the games got smooth: every step was measure
 | `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565). Also the wiring guides: `wiring.html` (every wire, with pictures) and `p758-encoder-steps.html` (the encoder, one wire per step) |
 | `docs/screenshots/` | a PNG and a GIF of each game, scene and the overlay, made by `tools/render_scene.py --all docs/screenshots` |
 
-Rescue's figures and Meteors' walker come from the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu), subject:trial: the fireman's run 9:1 (his turn is that run turned), his spray 13:27 and his carry 2:3 (a jog; his arms round the person are posed by hand); the people's runs, the man's 16:35, the woman's 35:17, the child's 9:2, the grandma's walk 35:1 and the run of the man with the dog 35:22; and everyone's wave 13:27 (frames 1850 to 2030). Meteors' walker runs the fireman's run, 9:1. The dog is drawn by hand. CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission", and its home page says "you may not resell this data directly, even in converted form", so the data is not in this repository, only the painted pictures. Without the CMU files, `art/paint.py` reads those pictures back from `games/art`. Rescue's shout is cut from "Please help somebody!" by Nocturnal_Vanguard (OpenGameArt, CC0), kept as `games/help16k.wav` with its `SOURCE.txt`. The art is now 2,892,784 bytes, so after copying it the board needs a hard reset: a soft reset keeps the smaller picture pool (bench.md, P562).
+Rescue's figures and Meteors' walker come from the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu). Each figure and its trial (subject:trial):
+
+- the fireman's run: 9:1. His turn is that run, turned.
+- the fireman's spray: 13:27.
+- the fireman's carry: 2:3, a jog. His arms round the person are posed by hand.
+- the man's run: 16:35.
+- the woman's run: 35:17.
+- the child's run: 9:2.
+- the grandma's walk: 35:1.
+- the run of the man with the dog: 35:22.
+- everyone's wave: 13:27, frames 1850 to 2030.
+- Meteors' walker: the fireman's run, 9:1.
+
+The dog is drawn by hand. CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission". Its home page says "you may not resell this data directly, even in converted form". So the data is not in this repository, only the painted pictures. Without the CMU files, `art/paint.py` reads those pictures back from `games/art`.
+
+Rescue's shout is cut from "Please help somebody!" by Nocturnal_Vanguard (OpenGameArt, CC0), kept as `games/help16k.wav` with its `SOURCE.txt`. The art is now 2,892,784 bytes, so after copying it the board needs a hard reset: a soft reset keeps the smaller picture pool (bench.md, P562).
 
 ## What it looks like
 
@@ -45,7 +60,7 @@ Bucket: a Czech village at the golden hour, painted in watercolour. The wooden b
 
 ![Rescue](docs/screenshots/rescue.gif)
 
-Rescue: meteors fall on a street at night, and people run out of their houses in panic. The fireman runs by himself: tap the button and he turns, hold it and he stops and sprays his hose. A fire stops him and everyone else, and a person caught between two fires waves and shouts for help. Run into a person and he carries them, slower and with no hose; at the station's door they are safe, for a point (two for a child). A meteor's shadow grows on the street before it lands, and a person under it is gone in a puff of smoke. Three lost end the round, and each three saved bring the meteors faster and more people out. Nobody is drawn burning.
+Rescue: carry the people to the station. Meteors fall on a street at night, and people run out of their houses in panic. The fireman runs by himself: tap the button and he turns, hold it and he stops and sprays his hose. A fire stops him and everyone else, and a person caught between two fires waves and shouts for help, under a pale arrow. Run into a person and he carries them, slower and with no hose; at the station's door, under the green SAFE sign, they are safe, for a point (two for a child). A meteor's shadow grows on the street in a blinking target ring before it lands, and a person under it is gone in a puff of smoke. Three lost end the round, and each three saved bring the meteors faster and more people out. Nobody is drawn burning.
 
 Every subject, with the button pattern that made its picture (`tools/render_scene.py --list` prints them). The picture links to the GIF.
 
