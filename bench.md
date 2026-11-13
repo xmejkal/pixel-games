@@ -1,5 +1,7 @@
 # Bench log (P511 #706)
 
+The logs that were kept are in `logs/`, under their run's number (for example `logs/run185-p764-hand-alpha128.log`). Most runs have no kept log, and a run can have several.
+
 ## Builds (no board)
 
 - 2026-11-02 07:16: stock MicroPython v1.29.0, ESP32_GENERIC_S3 SPIRAM_OCT, ESP-IDF v5.5.2. firmware.bin 1,786,704 bytes, app partition 310,448 bytes free.

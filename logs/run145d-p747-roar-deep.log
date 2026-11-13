@@ -1,0 +1,44 @@
+cp ~/Development/pixel-p747/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+Up to date: crackle_c.mpy
+cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.Wxb5WasmoK/crackle.py :crackle.py
+cp ~/Development/pixel-p747/games/fire.py :fire.py
+Up to date: fire.py
+cp ~/Development/pixel-p747/games/sound.py :sound.py
+Up to date: sound.py
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6295104
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+align 0
+first pop 125
+loop 10 s from the script's start to the first pop
+fire linear fps 24 step 6.47 draw 6.49
+fps fire 24
+time fire step 7.2 paint 9.9 send 4.0 gc 2.3 fps 24 worst 61 slowest 49 = step 6 paint 39 send 3 gc 0
+phases fire static 0 paint 7 fx 0 hud 31 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 147392 glyphs 19
+sound fire sent 315 of 313 between_max 42 lag_max 26 late 0 short -256 pushes 0
+crackle fire render_max 399 pop_median 12 pop_max 26 pops 16 dropped 0
+fire linear fps 24 step 6.47 draw 6.47
+fps fire 24
+time fire step 7.2 paint 9.6 send 4.4 gc 2.3 fps 24 worst 59 slowest 50 = step 7 paint 40 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 32 over 0 title 0
+avg fire static 0.1 paint 6.8 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 147504 glyphs 19
+sound fire sent 314 of 314 between_max 44 lag_max 28 late 0 short -176 pushes 0
+crackle fire render_max 308 pop_median 11 pop_max 22 pops 13 dropped 0
+fire linear fps 24 step 6.57 draw 6.50
+fps fire 24
+time fire step 7.2 paint 10.0 send 4.3 gc 2.3 fps 24 worst 60 slowest 48 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 147040 glyphs 19
+sound fire sent 313 of 313 between_max 46 lag_max 30 late 0 short -144 pushes 0
+crackle fire render_max 408 pop_median 7 pop_max 23 pops 16 dropped 0
+written 320256 short 304
+done

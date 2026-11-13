@@ -1,0 +1,147 @@
+# run147d (P753), 2026-11-10 Europe/Prague: the PO's ear on the noise bed, Fire, FireSound, CallbackRefill 2048, firmware with stats (393 to 498 us)
+# 1. the bed as planned (BED_BASE 6800, FLUTTER 100): the PO: "sounds like a lot of wind in the background"
+cp ~/Development/pixel-p753/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.fGZktut08I/crackle.py :crackle.py
+cp ~/Development/pixel-p753/games/fire.py :fire.py
+cp ~/Development/pixel-p753/games/sound.py :sound.py
+Up to date: sound.py
+cp ~/Development/pixel-p753/games/fire_bank.py :fire_bank.py
+Up to date: fire_bank.py
+fire_bank.raw is on the board
+bank load 219 ms, 246960 bytes, psram
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6026304
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+align 0
+first pop 71
+loop 14 s from the script's start to the first pop
+fire linear fps 24 step 6.48 draw 6.49
+fps fire 24
+time fire step 8.3 paint 10.2 send 4.2 gc 2.4 fps 24 worst 59 slowest 55 = step 8 paint 43 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 35 over 0 title 0
+avg fire static 0.1 paint 7.0 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 154192 glyphs 19
+sound fire sent 316 of 315 between_max 47 lag_max 31 late 0 short -144 pushes 0
+crackle fire render_max 694 pop_median 12 pop_max 13 pops 16 dropped 0
+follow fire follow_field 123 follow_bodies 0 level 5540 coef 4252
+fire linear fps 24 step 6.58 draw 6.50
+fps fire 24
+time fire step 8.1 paint 10.2 send 4.1 gc 2.4 fps 24 worst 61 slowest 51 = step 8 paint 39 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 31 over 0 title 0
+avg fire static 0.1 paint 7.0 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 153616 glyphs 19
+sound fire sent 313 of 312 between_max 44 lag_max 28 late 0 short -288 pushes 0
+crackle fire render_max 678 pop_median 12 pop_max 27 pops 13 dropped 0
+follow fire follow_field 122 follow_bodies 0 level 4957 coef 4252
+fire linear fps 24 step 6.58 draw 6.50
+fps fire 24
+time fire step 8.1 paint 10.2 send 4.1 gc 2.4 fps 24 worst 63 slowest 51 = step 7 paint 40 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 31 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 153680 glyphs 19
+sound fire sent 312 of 313 between_max 44 lag_max 28 late 0 short -16 pushes 0
+crackle fire render_max 668 pop_median 7 pop_max 25 pops 17 dropped 0
+follow fire follow_field 122 follow_bodies 0 level 4459 coef 4818
+fire linear fps 24 step 6.63 draw 6.49
+fps fire 24
+time fire step 8.1 paint 10.1 send 4.1 gc 2.4 fps 24 worst 59 slowest 52 = step 7 paint 41 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 33 over 0 title 0
+avg fire static 0.1 paint 7.0 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 153632 glyphs 19
+sound fire sent 313 of 313 between_max 44 lag_max 28 late 0 short 16 pushes 0
+crackle fire render_max 625 pop_median 12 pop_max 27 pops 17 dropped 0
+follow fire follow_field 122 follow_bodies 0 level 4303 coef 4818
+fire linear fps 24 step 6.57 draw 6.50
+fps fire 24
+time fire step 8.0 paint 10.4 send 4.2 gc 2.4 fps 24 worst 58 slowest 54 = step 7 paint 43 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 35 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 153648 glyphs 19
+sound fire sent 314 of 313 between_max 43 lag_max 27 late 0 short -192 pushes 0
+crackle fire render_max 663 pop_median 7 pop_max 26 pops 11 dropped 0
+follow fire follow_field 122 follow_bodies 0 level 3593 coef 5820
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 20
+written 480768 short -48
+done
+# 2. a trial bed, quiet and flapping with the flame height (BED_BASE 1600, FLUTTER 700, not committed): the PO: "Still wind"
+cp ~/Development/pixel-p753/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+Up to date: crackle_c.mpy
+cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.7W1Oepth25/crackle.py :crackle.py
+cp ~/Development/pixel-p753/games/fire.py :fire.py
+Up to date: fire.py
+cp ~/Development/pixel-p753/games/sound.py :sound.py
+Up to date: sound.py
+cp ~/Development/pixel-p753/games/fire_bank.py :fire_bank.py
+Up to date: fire_bank.py
+fire_bank.raw is on the board
+bank load 222 ms, 246960 bytes, psram
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6026272
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+align 0
+first pop 68
+loop 12 s from the script's start to the first pop
+fps fire 24
+time fire step 8.2 paint 9.8 send 4.2 gc 2.4 fps 24 worst 55 slowest 53 = step 8 paint 42 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 34 over 0 title 0
+avg fire static 0.1 paint 6.9 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap fire alloc 153600 glyphs 18
+sound fire sent 314 of 313 between_max 46 lag_max 30 late 0 short -192 pushes 0
+crackle fire render_max 709 pop_median 12 pop_max 27 pops 16 dropped 0
+follow fire follow_field 122 follow_bodies 0 level 1212 coef 5490
+fire linear fps 24 step 6.48 draw 6.48
+fps fire 24
+time fire step 8.0 paint 10.3 send 4.3 gc 2.4 fps 24 worst 58 slowest 51 = step 7 paint 40 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 33 over 0 title 0
+avg fire static 0.1 paint 7.3 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 153472 glyphs 19
+sound fire sent 313 of 312 between_max 39 lag_max 23 late 0 short -272 pushes 0
+crackle fire render_max 648 pop_median 7 pop_max 24 pops 18 dropped 0
+follow fire follow_field 119 follow_bodies 0 level 1223 coef 4475
+fire linear fps 24 step 6.57 draw 6.51
+fps fire 24
+time fire step 7.9 paint 10.1 send 4.2 gc 2.4 fps 24 worst 56 slowest 49 = step 7 paint 37 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 29 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 153808 glyphs 19
+sound fire sent 313 of 313 between_max 39 lag_max 23 late 0 short -80 pushes 0
+crackle fire render_max 664 pop_median 12 pop_max 26 pops 18 dropped 0
+follow fire follow_field 123 follow_bodies 0 level 1913 coef 4364
+fire linear fps 24 step 6.52 draw 6.50
+fps fire 24
+time fire step 8.0 paint 9.9 send 4.5 gc 2.4 fps 24 worst 55 slowest 52 = step 7 paint 40 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 33 over 0 title 0
+avg fire static 0.1 paint 7.0 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 153792 glyphs 19
+sound fire sent 313 of 313 between_max 46 lag_max 30 late 0 short -64 pushes 0
+crackle fire render_max 637 pop_median 12 pop_max 26 pops 19 dropped 0
+follow fire follow_field 120 follow_bodies 0 level 2149 coef 4708
+fire linear fps 24 step 6.58 draw 6.50
+fps fire 24
+time fire step 8.0 paint 10.1 send 4.3 gc 2.4 fps 24 worst 55 slowest 52 = step 7 paint 41 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 33 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 153840 glyphs 19
+sound fire sent 315 of 314 between_max 46 lag_max 30 late 0 short -208 pushes 0
+crackle fire render_max 696 pop_median 7 pop_max 25 pops 29 dropped 0
+follow fire follow_field 122 follow_bodies 0 level 1186 coef 5275
+fire linear fps 24 step 6.53 draw 6.49
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 20
+written 481024 short 0
+done

@@ -11,6 +11,7 @@ try:
 except ImportError:  # no art made yet
     art_index = None
 
+ROOT = "/"  # where the art folder is: the board's root; a Mac tool points it at games/
 PICS = {}  # name: (w, h, memoryview into the pool)
 SETS = {}  # game name: its layers, each [name, top, w, h, speed, keyed, memoryview], back to front
 ready = False
@@ -43,7 +44,7 @@ def load():
         for path, n in sizes.items():
             files[path] = buf = block[at:at + n]
             at += n
-            with open("/" + path, "rb") as f:
+            with open(ROOT + path, "rb") as f:
                 f.readinto(buf)
     except OSError:  # a file missing on the board: no art at all, rather than half of it
         return False

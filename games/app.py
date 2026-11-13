@@ -34,6 +34,7 @@ from marshmallow import Marshmallow
 from meteors import Meteors
 from overlay import Overlay, VolumePane
 from render import StOut
+from rescue import Rescue
 from signals import Signals
 from space3d import CubeTiming, Starfire
 from speaker import Speaker
@@ -54,7 +55,7 @@ FRAME_MODE = "auto"
 # "s3lcd" is russhughes' C driver (smooth on the bench); "st7789" is our driver with dirty boxes. s3lcd falls back to
 # st7789 when the image has no such module.
 BACKEND = "s3lcd"
-GAMES = (Marshmallow, BallPit, Meteors, Bucket, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
+GAMES = (Marshmallow, BallPit, Meteors, Bucket, Rescue, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
 
 
 class App:

@@ -1,0 +1,209 @@
+cp ~/Development/pixel-p753/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+Up to date: crackle_c.mpy
+cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.ih7fE44Dkf/crackle.py :crackle.py
+Up to date: crackle.py
+cp ~/Development/pixel-p753/games/fire.py :fire.py
+Up to date: fire.py
+cp ~/Development/pixel-p753/games/sound.py :sound.py
+Up to date: sound.py
+cp ~/Development/pixel-p753/games/burning.py :burning.py
+Up to date: burning.py
+cp ~/Development/pixel-p753/games/plugins.py :plugins.py
+Up to date: plugins.py
+cp ~/Development/pixel-p753/games/fire_bank.py :fire_bank.py
+Up to date: fire_bank.py
+fire_bank.raw is on the board
+bank load 228 ms, 246960 bytes, psram
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6025680
+frame tft
+ready
+burning internal largest 31744
+burning field internal
+game burning
+align 0
+burning linear fps 24 step 8.07 draw 13.72
+fps burning 24
+time burning step 9.1 paint 17.3 send 3.8 gc 2.5 fps 24 worst 65 slowest 64 = step 8 paint 51 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 36 over 0 title 0
+avg burning static 0.1 paint 14.2 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap burning alloc 160288 glyphs 23
+sound burning sent 316 of 315 between_max 44 lag_max 28 late 0 short -112 pushes 0
+crackle burning render_max 421 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.24 draw 13.97
+fps burning 23
+time burning step 9.3 paint 17.8 send 3.7 gc 2.5 fps 23 worst 71 slowest 67 = step 8 paint 55 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 39 over 0 title 0
+avg burning static 0.1 paint 14.5 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap burning alloc 162480 glyphs 24
+sound burning sent 313 of 312 between_max 37 lag_max 21 late 0 short -208 pushes 0
+crackle burning render_max 350 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.32 draw 14.09
+fps burning 23
+time burning step 9.4 paint 17.9 send 3.5 gc 2.5 fps 23 worst 72 slowest 70 = step 9 paint 57 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 41 over 0 title 0
+avg burning static 0.1 paint 14.6 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap burning alloc 162272 glyphs 24
+sound burning sent 313 of 313 between_max 40 lag_max 24 late 0 short -176 pushes 0
+crackle burning render_max 413 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.27 draw 13.86
+fps burning 23
+time burning step 9.3 paint 17.8 send 3.6 gc 2.5 fps 23 worst 68 slowest 66 = step 8 paint 54 send 3 gc 0
+phases burning static 0 paint 16 fx 0 hud 39 over 0 title 0
+avg burning static 0.1 paint 14.3 fx 0.1 hud 3.2 over 0.0 title 0.0
+heap burning alloc 162320 glyphs 24
+sound burning sent 312 of 312 between_max 39 lag_max 23 late 0 short -64 pushes 0
+crackle burning render_max 443 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.31 draw 13.83
+fps burning 23
+time burning step 9.3 paint 17.8 send 3.8 gc 2.5 fps 23 worst 67 slowest 66 = step 9 paint 53 send 3 gc 0
+phases burning static 0 paint 16 fx 0 hud 39 over 0 title 0
+avg burning static 0.1 paint 14.3 fx 0.1 hud 3.2 over 0.0 title 0.0
+heap burning alloc 162256 glyphs 24
+sound burning sent 315 of 314 between_max 43 lag_max 27 late 0 short -224 pushes 0
+crackle burning render_max 394 pop_median 0 pop_max 0 pops 0 dropped 0
+burning internal largest 31744
+burning field internal
+game burning
+switch 1 26
+sound burning sent 314 of 314 between_max 34 lag_max 18 late 0 short -224 pushes 0
+crackle burning render_max 423 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 24 step 8.23 draw 13.82
+fps burning 24
+time burning step 9.3 paint 17.7 send 3.8 gc 2.5 fps 24 worst 73 slowest 71 = step 10 paint 58 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 42 over 0 title 0
+avg burning static 0.2 paint 28.0 fx 0.2 hud 6.1 over 0.0 title 0.0
+heap burning alloc 159792 glyphs 24
+sound burning sent 312 of 313 between_max 43 lag_max 27 late 0 short 160 pushes 0
+crackle burning render_max 411 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.32 draw 13.99
+fps burning 23
+time burning step 9.4 paint 18.1 send 3.6 gc 2.5 fps 23 worst 75 slowest 73 = step 9 paint 60 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 41 over 0 title 0
+avg burning static 0.1 paint 14.5 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap burning alloc 162448 glyphs 24
+sound burning sent 314 of 313 between_max 43 lag_max 27 late 0 short -32 pushes 0
+crackle burning render_max 445 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.30 draw 14.02
+fps burning 23
+time burning step 9.4 paint 17.4 send 3.7 gc 2.5 fps 23 worst 73 slowest 71 = step 9 paint 58 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 42 over 0 title 0
+avg burning static 0.1 paint 14.5 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap burning alloc 159824 glyphs 24
+sound burning sent 314 of 313 between_max 40 lag_max 24 late 0 short -192 pushes 0
+crackle burning render_max 387 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.24 draw 13.84
+fps burning 23
+time burning step 9.3 paint 17.4 send 3.7 gc 2.6 fps 23 worst 71 slowest 69 = step 9 paint 57 send 3 gc 0
+phases burning static 0 paint 16 fx 0 hud 41 over 0 title 0
+avg burning static 0.1 paint 14.4 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap burning alloc 158848 glyphs 24
+sound burning sent 315 of 314 between_max 34 lag_max 18 late 0 short -272 pushes 0
+crackle burning render_max 385 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.32 draw 13.95
+fps burning 23
+time burning step 9.4 paint 18.1 send 3.9 gc 2.5 fps 23 worst 82 slowest 71 = step 9 paint 59 send 3 gc 0
+phases burning static 0 paint 16 fx 0 hud 43 over 0 title 0
+avg burning static 0.1 paint 14.4 fx 0.1 hud 3.4 over 0.0 title 0.0
+heap burning alloc 161600 glyphs 24
+sound burning sent 312 of 313 between_max 37 lag_max 21 late 0 short -32 pushes 0
+crackle burning render_max 414 pop_median 0 pop_max 0 pops 0 dropped 0
+burning internal largest 31744
+burning field internal
+game burning
+switch 2 27
+sound burning sent 313 of 312 between_max 41 lag_max 25 late 0 short -48 pushes 0
+crackle burning render_max 376 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 24 step 8.21 draw 13.74
+fps burning 24
+time burning step 9.3 paint 17.3 send 3.8 gc 2.5 fps 24 worst 71 slowest 69 = step 9 paint 56 send 3 gc 0
+phases burning static 0 paint 18 fx 0 hud 42 over 0 title 0
+avg burning static 0.2 paint 27.7 fx 0.2 hud 5.3 over 0.0 title 0.0
+heap burning alloc 160640 glyphs 24
+sound burning sent 313 of 313 between_max 42 lag_max 26 late 0 short 160 pushes 0
+crackle burning render_max 378 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.43 draw 14.02
+fps burning 23
+time burning step 9.5 paint 18.1 send 3.6 gc 2.5 fps 23 worst 74 slowest 72 = step 10 paint 58 send 3 gc 0
+phases burning static 0 paint 18 fx 0 hud 42 over 0 title 0
+avg burning static 0.1 paint 14.5 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap burning alloc 162480 glyphs 24
+sound burning sent 314 of 313 between_max 36 lag_max 20 late 0 short 128 pushes 0
+crackle burning render_max 397 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.43 draw 14.08
+fps burning 23
+time burning step 9.6 paint 17.8 send 3.8 gc 2.5 fps 23 worst 74 slowest 72 = step 10 paint 58 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 42 over 0 title 0
+avg burning static 0.1 paint 14.5 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap burning alloc 162272 glyphs 24
+sound burning sent 314 of 312 between_max 39 lag_max 23 late 0 short -176 pushes 0
+crackle burning render_max 381 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 24 step 8.37 draw 13.75
+fps burning 24
+time burning step 9.5 paint 17.0 send 3.6 gc 2.5 fps 24 worst 71 slowest 69 = step 9 paint 56 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 40 over 0 title 0
+avg burning static 0.1 paint 14.2 fx 0.1 hud 2.5 over 0.0 title 0.0
+heap burning alloc 159792 glyphs 24
+sound burning sent 314 of 314 between_max 34 lag_max 18 late 0 short -128 pushes 0
+crackle burning render_max 408 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.38 draw 13.84
+fps burning 23
+time burning step 9.5 paint 17.6 send 3.8 gc 2.5 fps 23 worst 74 slowest 72 = step 9 paint 59 send 3 gc 0
+phases burning static 0 paint 16 fx 0 hud 42 over 0 title 0
+avg burning static 0.1 paint 14.3 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap burning alloc 158816 glyphs 24
+sound burning sent 313 of 313 between_max 36 lag_max 20 late 0 short 112 pushes 0
+crackle burning render_max 414 pop_median 0 pop_max 0 pops 0 dropped 0
+burning internal largest 31744
+burning field internal
+game burning
+switch 3 25
+sound burning sent 315 of 314 between_max 35 lag_max 19 late 0 short 32 pushes 0
+crackle burning render_max 443 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 24 step 8.24 draw 13.85
+fps burning 24
+time burning step 9.3 paint 17.8 send 3.9 gc 2.5 fps 24 worst 74 slowest 72 = step 9 paint 59 send 3 gc 0
+phases burning static 0 paint 18 fx 0 hud 43 over 0 title 0
+avg burning static 0.2 paint 27.8 fx 0.2 hud 6.4 over 0.0 title 0.0
+heap burning alloc 159824 glyphs 24
+sound burning sent 314 of 314 between_max 41 lag_max 25 late 0 short 48 pushes 0
+crackle burning render_max 394 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.30 draw 13.99
+fps burning 23
+time burning step 9.4 paint 18.2 send 3.7 gc 2.5 fps 23 worst 74 slowest 72 = step 9 paint 60 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 43 over 0 title 0
+avg burning static 0.1 paint 14.5 fx 0.1 hud 3.4 over 0.0 title 0.0
+heap burning alloc 162480 glyphs 24
+sound burning sent 314 of 313 between_max 42 lag_max 26 late 0 short -48 pushes 0
+crackle burning render_max 390 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.31 draw 14.12
+fps burning 23
+time burning step 9.4 paint 17.8 send 3.6 gc 2.5 fps 23 worst 73 slowest 71 = step 8 paint 59 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 42 over 0 title 0
+avg burning static 0.1 paint 14.6 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap burning alloc 158784 glyphs 24
+sound burning sent 313 of 313 between_max 41 lag_max 25 late 0 short -16 pushes 0
+crackle burning render_max 388 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.32 draw 13.93
+fps burning 23
+time burning step 9.4 paint 18.0 send 3.6 gc 2.5 fps 23 worst 80 slowest 78 = step 15 paint 59 send 3 gc 0
+phases burning static 0 paint 17 fx 0 hud 42 over 0 title 0
+avg burning static 0.1 paint 14.4 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap burning alloc 162304 glyphs 24
+sound burning sent 312 of 312 between_max 39 lag_max 23 late 0 short 128 pushes 0
+crackle burning render_max 391 pop_median 0 pop_max 0 pops 0 dropped 0
+burning linear fps 23 step 8.39 draw 13.96
+fps burning 23
+time burning step 9.5 paint 18.3 send 3.6 gc 2.5 fps 23 worst 74 slowest 72 = step 9 paint 60 send 3 gc 0
+phases burning static 0 paint 16 fx 0 hud 42 over 0 title 0
+avg burning static 0.1 paint 14.4 fx 0.1 hud 3.6 over 0.0 title 0.0
+heap burning alloc 162336 glyphs 24
+sound burning sent 314 of 313 between_max 34 lag_max 18 late 0 short -144 pushes 0
+crackle burning render_max 365 pop_median 0 pop_max 0 pops 0 dropped 0
+burning internal largest 31744
+burning field internal
+game burning
+switch 4 25
+written 1920768 short 64
+done

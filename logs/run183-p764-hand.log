@@ -1,0 +1,305 @@
+GEN build-xtensawin/crackle_c.config.h
+CC crackle_mod.c
+CC ../../core/fx_crackle.c
+CC ../../core/fx_grains.c
+CC ../../core/fx_noise.c
+LINK build-xtensawin/crackle_mod.o
+arch:         EM_XTENSA
+text size:    3587
+rodata size:  424
+bss size:     0
+GOT entries:  36
+GEN crackle_c.mpy
+crackle_c.mpy sha256 90d7503d74fe745cc13efb85c31626f4e771f6ae4658501be10cb3344d150b29, engine 1c15d73
+cp ~/Development/pixel-p764-a/engine/natmod/crackle/crackle_c.mpy :crackle_c.mpy
+Up to date: crackle_c.mpy
+cp /var/folders/80/k12fv9vd20s4_ggdmswg0vpc0000gn/T/tmp.wmKv3fTDPj/crackle.py :crackle.py
+Up to date: crackle.py
+cp ~/Development/pixel-p764-a/games/fire.py :fire.py
+Up to date: fire.py
+cp ~/Development/pixel-p764-a/games/sound.py :sound.py
+Up to date: sound.py
+cp ~/Development/pixel-p764-a/games/volume.py :volume.py
+Up to date: volume.py
+cp ~/Development/pixel-p764-a/games/volume_viper.py :volume_viper.py
+Up to date: volume_viper.py
+cp ~/Development/pixel-p764-a/games/encoder.py :encoder.py
+Up to date: encoder.py
+cp ~/Development/pixel-p764-a/games/pins.py :pins.py
+Up to date: pins.py
+cp ~/Development/pixel-p764-a/games/app.py :app.py
+Up to date: app.py
+cp ~/Development/pixel-p764-a/games/overlay.py :overlay.py
+Up to date: overlay.py
+cp ~/Development/pixel-p764-a/games/lcd.py :lcd.py
+Up to date: lcd.py
+cp ~/Development/pixel-p764-a/games/render.py :render.py
+Up to date: render.py
+cp ~/Development/pixel-p764-a/games/gfx.py :gfx.py
+Up to date: gfx.py
+cp ~/Development/pixel-p764-a/games/fire_bank.py :fire_bank.py
+Up to date: fire_bank.py
+fire_bank.raw is on the board
+scale match 1
+bank load 244 ms, 246960 bytes, psram
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6011712
+frame tft
+ready
+fire internal largest 31744
+fire field internal
+game fire
+align 0
+first pop 90
+loop 15 s from the script's start to the first pop
+fire linear fps 24 step 6.47 draw 6.49
+fps fire 24
+time fire step 7.5 paint 10.2 send 4.1 gc 2.6 fps 24 worst 63 slowest 53 = step 7 paint 42 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 35 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 2.6 over 0.0 title 0.0
+heap fire alloc 168848 glyphs 19
+sound fire sent 315 of 314 between_max 47 lag_max 31 late 0 short -160 pushes 0
+crackle fire render_max 663 pop_median 12 pop_max 25 pops 16 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 302 edges 0 windows_max 1
+level 7 edges -3
+level 6 edges -7
+level 7 edges -3
+level 8 edges 0
+level 9 edges 4
+level 10 edges 8
+level 11 edges 12
+fire linear fps 23 step 6.69 draw 6.52
+fps fire 23
+time fire step 7.7 paint 13.2 send 4.1 gc 3.1 fps 23 worst 66 slowest 61 = step 8 paint 49 send 3 gc 0
+phases fire static 1 paint 8 fx 0 hud 36 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 184768 glyphs 23
+sound fire sent 315 of 315 between_max 40 lag_max 24 late 0 short -128 pushes 0
+crackle fire render_max 683 pop_median 7 pop_max 15 pops 13 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 11 gain 5827 apply_max 287 edges 13 windows_max 1
+level 10 edges 10
+level 9 edges 6
+level 8 edges 2
+level 7 edges -3
+level 6 edges -7
+level 5 edges -11
+level 4 edges -14
+level 5 edges -12
+level 6 edges -8
+level 7 edges -4
+level 8 edges 0
+level 9 edges 4
+level 10 edges 8
+fire linear fps 23 step 6.70 draw 6.55
+fps fire 23
+time fire step 7.7 paint 14.5 send 4.1 gc 3.1 fps 23 worst 91 slowest 54 = step 7 paint 44 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 33 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 3.4 over 0.0 title 0.0
+heap fire alloc 186352 glyphs 23
+sound fire sent 313 of 313 between_max 37 lag_max 21 late 0 short 64 pushes 0
+crackle fire render_max 688 pop_median 10 pop_max 25 pops 14 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 10 gain 4125 apply_max 308 edges 10 windows_max 1
+level 9 edges 6
+level 8 edges 2
+level 7 edges -2
+level 6 edges -6
+level 5 edges -10
+level 6 edges -9
+level 7 edges -4
+level 8 edges 0
+level 9 edges 5
+level 10 edges 8
+level 11 edges 12
+level 12 edges 16
+fire linear fps 23 step 6.71 draw 6.52
+fps fire 23
+time fire step 7.9 paint 14.1 send 4.0 gc 3.1 fps 23 worst 60 slowest 57 = step 7 paint 46 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 34 over 0 title 0
+avg fire static 0.1 paint 7.0 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 185296 glyphs 23
+sound fire sent 313 of 312 between_max 34 lag_max 18 late 0 short 48 pushes 0
+crackle fire render_max 705 pop_median 10 pop_max 30 pops 27 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 12 gain 8231 apply_max 337 edges 17 windows_max 1
+level 13 edges 22
+level 14 edges 24
+level 15 edges 29
+level 16 edges 33
+level 15 edges 41
+level 14 edges 37
+level 13 edges 33
+level 12 edges 30
+level 11 edges 26
+fire linear fps 23 step 6.70 draw 6.52
+fps fire 23
+time fire step 7.8 paint 13.2 send 4.4 gc 3.2 fps 23 worst 74 slowest 54 = step 7 paint 43 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 33 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 3.3 over 0.0 title 0.0
+heap fire alloc 184800 glyphs 23
+sound fire sent 315 of 314 between_max 43 lag_max 27 late 0 short -128 pushes 0
+crackle fire render_max 686 pop_median 8 pop_max 27 pops 24 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 11 gain 5827 apply_max 253 edges 25 windows_max 1
+fire internal largest 31744
+fire field internal
+game fire
+switch 1 23
+sound fire sent 314 of 314 between_max 45 lag_max 29 late 0 short -128 pushes 0
+crackle fire render_max 694 pop_median 11 pop_max 22 pops 26 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 11 gain 5827 apply_max 321 edges 25 windows_max 1
+fire linear fps 24 step 6.52 draw 6.49
+fps fire 24
+time fire step 7.6 paint 10.8 send 4.4 gc 3.1 fps 24 worst 59 slowest 57 = step 8 paint 45 send 3 gc 0
+phases fire static 1 paint 8 fx 0 hud 38 over 0 title 0
+avg fire static 0.1 paint 13.9 fx 0.3 hud 6.3 over 0.0 title 0.0
+heap fire alloc 185808 glyphs 23
+sound fire sent 314 of 314 between_max 49 lag_max 33 late 2 short -16 pushes 0
+crackle fire render_max 613 pop_median 11 pop_max 22 pops 16 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 11 gain 5827 apply_max 312 edges 25 windows_max 1
+level 12 edges 29
+level 13 edges 33
+level 14 edges 36
+level 15 edges 41
+level 16 edges 45
+fire linear fps 24 step 6.68 draw 6.52
+fps fire 24
+time fire step 7.8 paint 12.2 send 4.2 gc 3.1 fps 24 worst 59 slowest 57 = step 8 paint 45 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 37 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 3.2 over 0.0 title 0.0
+heap fire alloc 185248 glyphs 23
+sound fire sent 313 of 312 between_max 42 lag_max 26 late 2 short -80 pushes 0
+crackle fire render_max 705 pop_median 10 pop_max 26 pops 13 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 16 gain 32768 apply_max 344 edges 49 windows_max 1
+level 15 edges 46
+level 14 edges 41
+level 13 edges 37
+level 12 edges 33
+level 11 edges 30
+level 10 edges 25
+level 9 edges 22
+level 8 edges 18
+fire linear fps 24 step 6.64 draw 6.52
+fps fire 24
+time fire step 7.8 paint 13.2 send 4.5 gc 3.1 fps 24 worst 65 slowest 56 = step 7 paint 45 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 37 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 185280 glyphs 23
+sound fire sent 313 of 312 between_max 36 lag_max 20 late 2 short -96 pushes 0
+crackle fire render_max 605 pop_median 10 pop_max 28 pops 17 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 351 edges 17 windows_max 1
+level 9 edges 21
+level 10 edges 24
+level 11 edges 28
+fire linear fps 24 step 6.63 draw 6.51
+fps fire 24
+time fire step 7.7 paint 11.5 send 4.2 gc 3.1 fps 24 worst 78 slowest 57 = step 7 paint 46 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 38 over 0 title 0
+avg fire static 0.1 paint 7.4 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 185424 glyphs 23
+sound fire sent 314 of 313 between_max 46 lag_max 30 late 2 short -160 pushes 0
+crackle fire render_max 691 pop_median 11 pop_max 27 pops 21 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 11 gain 5827 apply_max 385 edges 29 windows_max 1
+level 10 edges 25
+level 9 edges 21
+level 8 edges 18
+level 7 edges 14
+level 6 edges 9
+level 5 edges 5
+level 4 edges 2
+level 3 edges -3
+level 2 edges -8
+level 1 edges -12
+level 0 edges -16
+level 1 edges -16
+level 0 edges -23
+level 1 edges -26
+level 2 edges -23
+level 3 edges -18
+level 4 edges -16
+level 5 edges -11
+level 6 edges -8
+level 7 edges -4
+level 8 edges 0
+fire linear fps 23 step 6.70 draw 6.53
+fps fire 23
+time fire step 7.8 paint 13.8 send 3.8 gc 3.2 fps 23 worst 81 slowest 59 = step 8 paint 47 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 34 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.7 over 0.0 title 0.0
+heap fire alloc 184800 glyphs 23
+sound fire sent 314 of 314 between_max 42 lag_max 26 late 2 short -160 pushes 0
+crackle fire render_max 704 pop_median 11 pop_max 24 pops 17 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 339 edges 2 windows_max 1
+fire internal largest 31744
+fire field internal
+game fire
+switch 2 24
+sound fire sent 313 of 313 between_max 47 lag_max 31 late 2 short -16 pushes 0
+crackle fire render_max 688 pop_median 11 pop_max 27 pops 24 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 308 edges 2 windows_max 1
+fire linear fps 24 step 6.52 draw 6.48
+fps fire 24
+time fire step 7.5 paint 10.7 send 4.3 gc 3.1 fps 24 worst 60 slowest 58 = step 7 paint 47 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 38 over 0 title 0
+avg fire static 0.1 paint 14.1 fx 0.3 hud 5.8 over 0.0 title 0.0
+heap fire alloc 185760 glyphs 23
+sound fire sent 315 of 314 between_max 38 lag_max 22 late 2 short -112 pushes 0
+crackle fire render_max 661 pop_median 7 pop_max 12 pops 13 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 322 edges 2 windows_max 1
+fire linear fps 24 step 6.58 draw 6.49
+fps fire 24
+time fire step 7.7 paint 10.5 send 4.2 gc 3.1 fps 24 worst 59 slowest 56 = step 7 paint 46 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 38 over 0 title 0
+avg fire static 0.1 paint 7.3 fx 0.1 hud 2.8 over 0.0 title 0.0
+heap fire alloc 185552 glyphs 23
+sound fire sent 314 of 313 between_max 44 lag_max 28 late 2 short -144 pushes 0
+crackle fire render_max 621 pop_median 11 pop_max 28 pops 26 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 303 edges 2 windows_max 1
+fire linear fps 24 step 6.63 draw 6.48
+fps fire 24
+time fire step 7.7 paint 10.4 send 4.1 gc 3.1 fps 24 worst 60 slowest 55 = step 7 paint 45 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 37 over 0 title 0
+avg fire static 0.1 paint 7.1 fx 0.1 hud 2.9 over 0.0 title 0.0
+heap fire alloc 185552 glyphs 23
+sound fire sent 315 of 314 between_max 45 lag_max 29 late 2 short -144 pushes 0
+crackle fire render_max 606 pop_median 11 pop_max 27 pops 21 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 306 edges 2 windows_max 1
+fire linear fps 24 step 6.63 draw 6.49
+fps fire 24
+time fire step 7.7 paint 10.5 send 4.3 gc 3.1 fps 24 worst 60 slowest 56 = step 7 paint 45 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 38 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 3.0 over 0.0 title 0.0
+heap fire alloc 185280 glyphs 23
+sound fire sent 313 of 313 between_max 48 lag_max 32 late 3 short 0 pushes 0
+crackle fire render_max 693 pop_median 11 pop_max 27 pops 22 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 309 edges 2 windows_max 1
+fire linear fps 24 step 6.68 draw 6.49
+fps fire 24
+time fire step 7.8 paint 10.8 send 4.4 gc 3.1 fps 24 worst 60 slowest 57 = step 7 paint 47 send 3 gc 0
+phases fire static 0 paint 8 fx 0 hud 38 over 0 title 0
+avg fire static 0.1 paint 7.2 fx 0.1 hud 3.1 over 0.0 title 0.0
+heap fire alloc 185232 glyphs 23
+sound fire sent 313 of 312 between_max 35 lag_max 19 late 3 short -112 pushes 0
+crackle fire render_max 627 pop_median 8 pop_max 27 pops 25 dropped 0
+follow fire follow_field 0 follow_bodies 0 level 0 coef 0 whoosh 0
+volume level 8 gain 2068 apply_max 326 edges 2 windows_max 1
+fire internal largest 31744
+fire field internal
+game fire
+switch 3 24
+written 1440768 short 96
+done

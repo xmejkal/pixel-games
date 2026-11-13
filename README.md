@@ -10,13 +10,61 @@ The repository is also a log of how the games got smooth: every step was measure
 | --- | --- |
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
 | `art/` | the painted art: one set per game, the brush and the export |
+| `art/mocap.py` | turns CMU motion capture into the side-view poses that Rescue's fireman is painted from. It reads the CMU files from `~/.cache/pixel-games/cmu` and writes nothing. The terms are below the table |
 | `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
 | `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang). The engine's own tests run with the same command in `engine/` |
-| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py burning out.png [frames ...]` draws a heat-field scene on the Mac to a PNG (needs clang and Pillow). `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
+| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py SUBJECT out.png FRAMES...` draws a game, a scene or the overlay on the Mac, the board's way, to a PNG sheet, and with `--gif OUT.gif --every K` to a GIF. `--list` names the subjects, and `--all docs/screenshots` writes every picture below from the tool's own table. It needs clang, Pillow and the MicroPython clone under `~/esp` for the letters. `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
+| `logs/` | the kept logs of some runs in `bench.md`, named by run number |
 | `p537-finding.md` | the options for smooth motion, ranked, with a plan in slices |
 | `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565). Also the wiring guides: `wiring.html` (every wire, with pictures) and `p758-encoder-steps.html` (the encoder, one wire per step) |
+| `docs/screenshots/` | a PNG and a GIF of each game, scene and the overlay, made by `tools/render_scene.py --all docs/screenshots` |
+
+The fireman's run is subject 9, trial 1, and his spray is subject 13, trial 27, of the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu). CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission", and its home page says "you may not resell this data directly, even in converted form", so the data is not in this repository, only the painted pictures.
+
+## What it looks like
+
+The frames come from a Mac program that runs the games' own Python and C with a stand-in for the display (`tests/drawing_tft.py`), not from photos of the board. Each GIF keeps one frame in every one to four and shows it for as long as those frames took, so it runs at the board's pace.
+
+![Marshmallow](docs/screenshots/marshmallow.gif)
+
+Marshmallow: a hold lowers the marshmallow into the campfire and a release lifts it. The three lives sit in the score bar, and the yellow bar above the fire runs down.
+
+![The fire](docs/screenshots/fire.gif)
+
+The fire: the heat field burns over the whole screen, and its label says the mode (linear) and the frame rate.
+
+![The ball pit](docs/screenshots/ballpit.gif)
+
+The ball pit: a pour of 10 balls every 0.4 s piles up in layers of colour, and the label counts the balls and the hits a second.
+
+![Bucket](docs/screenshots/bucket.gif)
+
+Bucket: the bucket goes right while the button is held and left when it is not, and a caught box is a point.
+
+Every subject, with the button pattern that made its picture (`tools/render_scene.py --list` prints them). The picture links to the GIF.
+
+| subject | button | what the picture shows | picture |
+| --- | --- | --- | --- |
+| the fire | tap: next mode | Tongues of flame over a white-hot base, in the linear mode, with the label's mode and frame rate. | <a href="docs/screenshots/fire.gif"><img src="docs/screenshots/fire.png" width="160"></a> |
+| the rain | tap: again | 160 boxes fall as the C engine's bodies, bounce and rest near the bottom, each on its own line, then fall again from the top. | <a href="docs/screenshots/rain.gif"><img src="docs/screenshots/rain.png" width="160"></a> |
+| Marshmallow | hold to roast | The marshmallow deep in the campfire after the first point. | <a href="docs/screenshots/marshmallow.gif"><img src="docs/screenshots/marshmallow.png" width="160"></a> |
+| the ball pit | tap pours, hold shakes | 120 balls in twelve pours, each pour in its own colour. | <a href="docs/screenshots/ballpit.gif"><img src="docs/screenshots/ballpit.png" width="160"></a> |
+| the bodies on fire | tap: next mode | Eight falling bodies burn trails into the field and flare where they land. | <a href="docs/screenshots/burningbodies.gif"><img src="docs/screenshots/burningbodies.png" width="160"></a> |
+| Bucket | hold: right | The bucket on its rail at the first catch, with the point's burst at its edge and two missed boxes piled below the rail. | <a href="docs/screenshots/bucket.gif"><img src="docs/screenshots/bucket.png" width="160"></a> |
+| Rescue | tap turns, hold sprays | The fireman stands and sprays the burning crater. The water lands at the foot of the one flame that rises from it. Nobody in the game is drawn burning. | <a href="docs/screenshots/rescue.gif"><img src="docs/screenshots/rescue.png" width="160"></a> |
+| Flappy | tap to flap | The painted morning scrolls by and the bird flaps between the pipes. | <a href="docs/screenshots/flappy.gif"><img src="docs/screenshots/flappy.png" width="160"></a> |
+| Runner | tap jump, hold higher | The painted runner jumps over a cactus in front of the mountains. | <a href="docs/screenshots/runner.gif"><img src="docs/screenshots/runner.png" width="160"></a> |
+| Snake | tap turns right | The snake moves on its grid and turns right at each tap. The red square is the food. | <a href="docs/screenshots/snake.gif"><img src="docs/screenshots/snake.png" width="160"></a> |
+| Stack | tap to drop | The crane drops a floor at each tap. Two floors stand, and the sign shows the price. | <a href="docs/screenshots/stack.gif"><img src="docs/screenshots/stack.png" width="160"></a> |
+| Cave | hold to climb | The helicopter climbs while the button is held and sinks when it is not, between the cave's walls. | <a href="docs/screenshots/cave.gif"><img src="docs/screenshots/cave.png" width="160"></a> |
+| Tunnel | tap turns the ship | The ship rides the tunnel's walls and a tap turns it. | <a href="docs/screenshots/tunnel.gif"><img src="docs/screenshots/tunnel.png" width="160"></a> |
+| Road | tap lane, hold boost | The car on a road that bends, the mountains and the sun behind it. | <a href="docs/screenshots/road.gif"><img src="docs/screenshots/road.png" width="160"></a> |
+| Starfire | tap fires | The laser from the ship's nose, the reticle on a target and a point. | <a href="docs/screenshots/starfire.gif"><img src="docs/screenshots/starfire.png" width="160"></a> |
+| CubeTiming | tap: mark faces you | A wire cube turns over the timing bar. A tap marks the face that faces you, and a lost life flashes red. | <a href="docs/screenshots/cubetiming.gif"><img src="docs/screenshots/cubetiming.png" width="160"></a> |
+| GravityPong | tap flips paddle | The ball falls under gravity onto the paddle, which flips its way at each tap. | <a href="docs/screenshots/gravitypong.gif"><img src="docs/screenshots/gravitypong.png" width="160"></a> |
+| the overlay | turn the knob | The volume pane over the ball pit, see-through at alpha 128, so the balls show through its dark part. | <a href="docs/screenshots/overlay.gif"><img src="docs/screenshots/overlay.png" width="160"></a> |
 
 ## Build and run
 
@@ -198,7 +246,7 @@ Runs now:
   `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
   guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Fourteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Three are painted: runner, flappy and stack (stack as RENT). The other seven are flat.
+- Fifteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Four are painted: runner, flappy, stack (stack as RENT) and rescue (P800). The other seven are flat.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 
@@ -210,4 +258,4 @@ The work is planned on the board of the [spark](https://github.com/xmejkal/spark
 
 ## Licence
 
-MIT, see `LICENSE`. The files under `engine/driver/` keep their own terms.
+MIT, see `LICENSE`. The files under `engine/driver/` keep their own terms: see `engine/driver/LICENSE` and any file's own header.
