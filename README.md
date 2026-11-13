@@ -10,7 +10,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | --- | --- |
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
 | `art/` | the painted art: one set per game, the brush and the export |
-| `art/mocap.py` | turns CMU motion capture into the side-view poses that Rescue's fireman is painted from. It reads the CMU files from `~/.cache/pixel-games/cmu` and writes nothing. The terms are below the table |
+| `art/mocap.py` | turns CMU motion capture into the side-view poses that Rescue's fireman and Meteors' walker are painted from. It reads the CMU files from `~/.cache/pixel-games/cmu` and writes nothing. The terms are below the table |
 | `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
 | `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang). The engine's own tests run with the same command in `engine/` |
 | `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py SUBJECT out.png FRAMES...` draws a game, a scene or the overlay on the Mac, the board's way, to a PNG sheet, and with `--gif OUT.gif --every K` to a GIF. `--list` names the subjects, and `--all docs/screenshots` writes every picture below from the tool's own table. It needs clang, Pillow and the MicroPython clone under `~/esp` for the letters. `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
@@ -21,7 +21,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565). Also the wiring guides: `wiring.html` (every wire, with pictures) and `p758-encoder-steps.html` (the encoder, one wire per step) |
 | `docs/screenshots/` | a PNG and a GIF of each game, scene and the overlay, made by `tools/render_scene.py --all docs/screenshots` |
 
-The fireman's run is subject 9, trial 1, and his spray is subject 13, trial 27, of the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu). CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission", and its home page says "you may not resell this data directly, even in converted form", so the data is not in this repository, only the painted pictures.
+The fireman's run and the Meteors walker's run are subject 9, trial 1, and the fireman's spray is subject 13, trial 27, of the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu). CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission", and its home page says "you may not resell this data directly, even in converted form", so the data is not in this repository, only the painted pictures.
 
 ## What it looks like
 
@@ -41,7 +41,7 @@ The ball pit: a pour of 10 balls every 0.4 s piles up in layers of colour, and t
 
 ![Bucket](docs/screenshots/bucket.gif)
 
-Bucket: the bucket goes right while the button is held and left when it is not, and a caught box is a point.
+Bucket: a Czech village at the golden hour, painted in watercolour. The wooden bucket goes right while the button is held and left when it is not. A caught crate is a point: sparkles rise from the bucket and a coin flies up to the score.
 
 Every subject, with the button pattern that made its picture (`tools/render_scene.py --list` prints them). The picture links to the GIF.
 
@@ -52,7 +52,8 @@ Every subject, with the button pattern that made its picture (`tools/render_scen
 | Marshmallow | hold to roast | The marshmallow deep in the campfire after the first point. | <a href="docs/screenshots/marshmallow.gif"><img src="docs/screenshots/marshmallow.png" width="160"></a> |
 | the ball pit | tap pours, hold shakes | 120 balls in twelve pours, each pour in its own colour. | <a href="docs/screenshots/ballpit.gif"><img src="docs/screenshots/ballpit.png" width="160"></a> |
 | the bodies on fire | tap: next mode | Eight falling bodies burn trails into the field and flare where they land. | <a href="docs/screenshots/burningbodies.gif"><img src="docs/screenshots/burningbodies.png" width="160"></a> |
-| Bucket | hold: right | The bucket on its rail at the first catch, with the point's burst at its edge and two missed boxes piled below the rail. | <a href="docs/screenshots/bucket.gif"><img src="docs/screenshots/bucket.png" width="160"></a> |
+| Bucket | hold: right | The village at the golden hour, the river with the sun's glint and smoke from the chimneys. The coin of the third catch flies up to the score, with sparkles round the bucket, and two missed crates lie at the ends of the pile. | <a href="docs/screenshots/bucket.gif"><img src="docs/screenshots/bucket.png" width="160"></a> |
+| Meteors | tap: turn | The walker runs over a plain at dusk. A meteor lands behind him: the ground flashes white and the impact's light spreads on the plain. A coal burns at the left. | <a href="docs/screenshots/meteors.gif"><img src="docs/screenshots/meteors.png" width="160"></a> |
 | Rescue | tap turns, hold sprays | The fireman stands and sprays the burning crater. The water lands at the foot of the one flame that rises from it. Nobody in the game is drawn burning. | <a href="docs/screenshots/rescue.gif"><img src="docs/screenshots/rescue.png" width="160"></a> |
 | Flappy | tap to flap | The painted morning scrolls by and the bird flaps between the pipes. | <a href="docs/screenshots/flappy.gif"><img src="docs/screenshots/flappy.png" width="160"></a> |
 | Runner | tap jump, hold higher | The painted runner jumps over a cactus in front of the mountains. | <a href="docs/screenshots/runner.gif"><img src="docs/screenshots/runner.png" width="160"></a> |
@@ -130,18 +131,29 @@ Runs now:
   and 50 fixed rhythms of hold and release (42 and 60 ms only) lost in 61 s at the latest. A bot that steers to the lowest box lasted the
   whole 600 s of the trial every time, and one that gets columns 0 and 31 in turn at full speed misses none (a trial
   script that is not in the repository made these numbers; the bucket is 64 px wide and goes 360 px a second). The bodies do not touch each other, so the pile is a
-  count per column, and a missed box bounces on its column's top. It plays `catch`, `miss` and `die`. The PO's hand,
-  eye and ear on it are still open.
+  count per column, and a missed box bounces on its column's top. It plays `catch`, `miss` and `die`. Painted
+  (`art/sets/bucket.py`): a Czech village at the golden hour in watercolour, with the boxes as wooden crates, the pile
+  as stacked crates, and a wooden bucket with iron bands and a rope handle. A catch gives sparkles and a coin that
+  flies to the score, a missed crate lands with a puff of dust, and the bucket tips over at the round's end. Smoke
+  rises from the chimneys and the river shimmers. The PO's hand, eye and ear on it are still open.
 - Meteors (P773, `games/meteors.py`), the game on the bodies on fire: a walker walks the ground and never stops. A
-  BOOT tap turns it round, and it turns at each screen edge. Burning meteors fall, each onto a red mark on the
-  ground, bounce straight up and lie as a coal for 4 s. One touch of a meteor or a coal ends the round, and the score
-  is the seconds lived. A new meteor drops each 2.5 s, 50 ms sooner for each second lived, down to 1 s. Of each three
+  BOOT tap turns it round, and it turns at each screen edge. Burning meteors fall, each onto a mark on the ground,
+  bounce straight up and lie as a coal for 4 s. The mark is a dark shadow at the meteor's full width, from the drop
+  on, with a thin white ring round it in the last 300 ms before the landing. One touch of a meteor or a coal on the
+  walker's box (12 x 32 px) ends the round, and the score is the seconds lived. The painted walker's hand or foot can
+  reach out of the box, and a meteor that touches only a hand or a foot there does not kill. A new meteor drops each 2.5 s, 50 ms sooner for each second lived, down to 1 s. Of each three
   drops, about one lands anywhere, one on the walker and one where it is going. A fair aim (`Rules.fair`) never drops
   a meteor that leaves the walker no free stretch of 48 px that it can reach in time. On the Mac (frames of 42 ms,
   60 ms and random 20 to 90 ms, 16 seeds), an idle walker dies within 7 s, a tap every frame within 16 s, and every
   blind rhythm within 18 s. A bot that keeps out of the marks and the coals lived the whole 180 s in 96 runs (a trial
-  script that is not in the repository made these numbers). It plays `land` and `die`. The PO's hand, eye and ear
-  on it are still open.
+  script that is not in the repository made these numbers). It plays `land` and `die`. Painted
+  (`art/sets/meteors.py`): a violet to rose dusk over a cool plain, and the walker as a dark silhouette with a cyan
+  scarf, his run from motion capture (CMU subject 9, trial 1), its pose set by where he is, so his feet do not slide.
+  The fire runs in its picture mode over the dusk. A meteor is a glowing rock with a spark trail, and it dims to a
+  coal. An impact lights the ground, flashes it white for two frames, throws up bits of rock and shakes the picture
+  2 px. A hit flashes his scarf red, and a puff of smoke hides him: nobody is drawn burning. The flat shapes stay for a
+  board without the art. The picture mode costs about 5 to 7 ms a frame more than the linear mode (bench.md, run90),
+  so the PO judges it on the board. The PO's hand, eye and ear on it are still open.
 - The rain (P593, `games/rain.py`), the scene under Bucket. Since P773 it is not in the box's list: 160 boxes fall,
   stepped by the C engine, and a BOOT tap starts the rain again. On the board, C ran at 24 to 25 fps with a 0.22 ms step, and the Python twin at 8 to 9 fps with a
   28 ms step (bench.md P590). Since P768 the box runs only the C stepper. The Python twin steps the rain where no
@@ -246,7 +258,7 @@ Runs now:
   `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
   guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Fifteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Four are painted: runner, flappy, stack (stack as RENT) and rescue (P800). The other seven are flat.
+- Fifteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Six are painted: runner, flappy, stack (stack as RENT), rescue (P800), Meteors and Bucket (P773). The other five are flat. The board loads every painted set at power-on: 2.4 MB, about 3.5 s if the load keeps bench.md's 2.15 s for 1.5 MB (not measured yet).
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 
