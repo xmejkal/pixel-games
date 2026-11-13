@@ -13,95 +13,136 @@ from PIL import Image, ImageChops, ImageOps
 
 import mocap
 from artset import ArtSet, Painting
-from brush import H, W, Sprite, Strip, autocontrast, blur, glaze, lay, rnd, scale
+from brush import H, W, Sprite, Strip, autocontrast, blur, glaze, lay, ridge, rnd, scale
 from sets.rescue import Figure, along, read_committed
 
-DUSK = ((30, 20, 58), (92, 50, 108), (214, 112, 132))  # the sky from the top, to the middle, to the rose horizon
-HORIZON = 176
+DUSK = ((18, 14, 44), (52, 30, 90), (128, 58, 124), (222, 112, 128), (250, 172, 140))  # top to horizon, in bands
+BANDS = (0.0, 0.3, 0.62, 0.86, 1.0)  # where each of DUSK's colours sits, from the top (0) to the horizon (1)
+HORIZON = 178
 GROUND = 206  # the plain's near edge: the ground band the walker runs on starts here
-PLAIN = (58, 56, 88)  # the cool ground
+PLAIN = (82, 74, 112)  # the cool ground, lit a little by the dusk, so the dark walker and the shadows read on it
 
 
 def dusk_at(y):
     t = max(0.0, min(1.0, y / HORIZON))
-    a, b, t = (DUSK[0], DUSK[1], t / 0.55) if t < 0.55 else (DUSK[1], DUSK[2], (t - 0.55) / 0.45)
-    return tuple(int(p + (q - p) * t) for p, q in zip(a, b))
+    for (t0, a), (t1, b) in zip(zip(BANDS, DUSK), zip(BANDS[1:], DUSK[1:])):
+        if t <= t1:
+            k = (t - t0) / (t1 - t0)
+            return tuple(int(p + (q - p) * k) for p, q in zip(a, b))
+    return DUSK[-1]
 
 
 # --- the still picture, painted in layers -------------------------------------------------------------------------
 
 def paint_heavens(s):
-    """Stars in the high violet, a thin moon, soft blooms, and the smoke of earlier meteors drawn across the sky."""
-    stars = s.mask()
-    for _ in range(46):
-        s.ellipse(stars, rnd.uniform(0, W), rnd.uniform(18, 90), 0.35, 0.35)
-    lay(s.rgb, blur(stars, 1), (236, 226, 250), 0.85)
-    moon, bite = s.mask(), s.mask()
+    """Stars in the high indigo (a few with a glint), a thin moon with its halo, soft blooms, and the smoke of earlier
+    meteors drawn across the sky."""
+    stars, bright = s.mask(), s.mask()
+    for _ in range(60):
+        x, y = rnd.uniform(0, W), rnd.uniform(18, 100)
+        s.ellipse(stars, x, y, 0.32, 0.32)
+    for x, y in ((40, 30), (150, 24), (212, 52), (296, 34), (104, 70)):
+        s.ellipse(bright, x, y, 0.5, 0.5)
+        s.polygon(bright, [(x - 2, y), (x, y - 0.2), (x + 2, y), (x, y + 0.2)])
+        s.polygon(bright, [(x, y - 2), (x + 0.2, y), (x, y + 2), (x - 0.2, y)])
+    lay(s.rgb, blur(stars, 1), (236, 226, 250), 0.8)
+    lay(s.rgb, blur(bright, 0.8), (255, 246, 236))
+    halo, moon, bite = s.mask(), s.mask(), s.mask()
+    s.ellipse(halo, 64, 44, 20, 20)
+    lay(s.rgb, blur(halo, 40), (200, 170, 230), 0.25)
     s.ellipse(moon, 64, 44, 7, 7)
     s.ellipse(bite, 67, 41, 7, 7)
-    lay(s.rgb, blur(ImageChops.subtract(moon, bite), 1.5), (250, 230, 236), 0.9)
+    lay(s.rgb, blur(ImageChops.subtract(moon, bite), 1.5), (252, 236, 236), 0.95)
     blooms = autocontrast(blur(s.noise(160), 24))
-    glaze(s.rgb, scale(blooms, 1.4, -150), (150, 110, 170), 0.35)
+    glaze(s.rgb, scale(blooms, 1.4, -150), (130, 100, 170), 0.3)
     for x0, y0, x1, y1, w in ((340, 20, 150, 150, 3.0), (250, 26, 40, 140, 2.2), (120, 18, -20, 104, 1.6)):
         trail = s.mask()  # a smoke trail, wider and paler toward the ground
         s.polygon(trail, [(x0, y0), (x0 + 1, y0 + 1), (x1 + w * 4, y1), (x1 - w * 4, y1)])
-        glaze(s.rgb, blur(trail, 10), (120, 90, 120), 0.5)
+        glaze(s.rgb, blur(trail, 10), (120, 90, 130), 0.45)
     haze = s.mask()
-    s.polygon(haze, [(0, HORIZON - 40), (W, HORIZON - 50), (W, HORIZON + 4), (0, HORIZON + 4)])
-    lay(s.rgb, blur(haze, 40), (240, 150, 140), 0.35)  # the glow low over the horizon
+    s.polygon(haze, [(0, HORIZON - 30), (W, HORIZON - 40), (W, HORIZON + 4), (0, HORIZON + 4)])
+    lay(s.rgb, blur(haze, 40), (255, 190, 150), 0.35)  # the glow low over the horizon
+
+
+def paint_clouds(s):
+    """Thin bands of cloud across the dusk: dark violet bodies with their bellies lit rose and gold from below, where
+    the sun has set."""
+    for cx, cy, cw, ch in ((60, 96, 70, 5.0), (250, 84, 90, 5.6), (180, 124, 120, 4.4), (20, 142, 60, 3.8),
+                           (300, 150, 70, 3.4), (120, 158, 90, 2.8)):
+        body = s.mask()
+        n = 9
+        for k in range(n):  # puffs that thin out toward both ends, a little ragged
+            t = (k + 0.5) / n - 0.5
+            r = ch * (1 - 3 * t * t) * rnd.uniform(0.6, 1.2)
+            s.ellipse(body, cx + t * cw + rnd.uniform(-3, 3), cy + rnd.uniform(-1, 1) - r * 0.3,
+                      cw / n * rnd.uniform(0.9, 1.7), max(1.0, r * 1.5))
+        for _ in range(3):  # wisps trailing off the ends
+            x = cx + rnd.choice((-1, 1)) * cw * rnd.uniform(0.45, 0.65)
+            s.ellipse(body, x, cy + rnd.uniform(-1, 1.5), cw * rnd.uniform(0.08, 0.16), 0.6)
+        warm = 1 - (cy - 80) / 100  # higher clouds darker, lower ones warmer
+        m = s.wash(body, (int(70 + 60 * (1 - warm)), 44, int(96 + 10 * warm)), alpha=0.85, rim=0.3, rim_px=3,
+                   grain=0.3, cell=10, rough=(1.5, 0.5, 6), dark=0.85, soft=1.2)
+        belly = ImageChops.subtract(m, ImageChops.offset(m, 0, -int(1.4 * s.S)))  # the underside, lit from below
+        lay(s.rgb, blur(belly, 2), (255, 160, 130), 0.8)
+        lit = ImageChops.subtract(m, ImageChops.offset(m, 0, -int(0.6 * s.S)))
+        lay(s.rgb, ImageChops.multiply(lit, autocontrast(blur(s.noise(30), 6))), (255, 226, 170), 0.9)
 
 
 def paint_ridges(s):
-    """Two far ridges in cool violet, paler with distance, and a near rise of the plain with a few bare trees."""
-    for base, amp, k, colour in ((HORIZON, 22, 3, (122, 78, 128)), (HORIZON + 14, 16, 5, (78, 56, 102))):
-        pts = [(x, base - amp * (0.5 + 0.5 * sin(2 * pi * k * x / W + k) * cos(2 * pi * 2 * x / W)))
-               for x in range(0, W + 1, 2)]
+    """Three ridges, paler and bluer with distance and a band of mist at each foot, and a near rise of the plain with
+    a few bare trees."""
+    for base, heights, rough, colour, mist in (
+            (HORIZON + 2, [26, 34, 18, 40, 30, 22, 36, 28], 10, (150, 96, 140), (236, 150, 140)),
+            (HORIZON + 12, [16, 22, 12, 26, 14, 20], 8, (102, 70, 118), (200, 120, 140)),
+            (HORIZON + 24, [10, 6, 14, 8, 12], 5, (66, 52, 92), (150, 96, 130))):
+        pts = ridge(W, base, heights, rough)
         m = s.mask()
         s.polygon(m, pts + [(W, H + 2), (0, H + 2)])
-        s.wash(m, colour, alpha=0.97, rim=0.5, rim_px=4, grain=0.25, cell=14, rough=(1, 0.3, 6), dark=0.85, soft=0.8)
+        m = s.wash(m, colour, alpha=0.97, rim=0.5, rim_px=4, grain=0.25, cell=14, rough=(1, 0.3, 6), dark=0.85,
+                   soft=0.8)
+        foot = s.mask()
+        s.polygon(foot, [(0, base - 6), (W, base - 6), (W, base + 6), (0, base + 6)])
+        lay(s.rgb, ImageChops.multiply(blur(foot, 14), m), mist, 0.3)
     lines = []
     for x, h in ((26, 20), (276, 26), (300, 14)):  # bare trees on the rise, in pencil
-        y = HORIZON + 12
+        y = HORIZON + 26
         lines.append(([(x, y), (x + 1, y - h)], 3))
         for k in range(3):
             ty = y - h * (0.5 + 0.18 * k)
             side = 1 if k % 2 else -1
             lines.append(([(x + 0.6, ty), (x + side * h * 0.3, ty - h * 0.2)], 2))
-    s.pencil(lines, strength=0.8, colour=(40, 30, 56))
+    s.pencil(lines, strength=0.8, colour=(34, 26, 50))
 
 
 def paint_plain(s):
-    """The plain the walker runs on: cool slate, lighter where the sky lights it, stones with lit tops, grass tufts."""
+    """The plain the walker runs on: cool slate lit by the dusk at its far edge, stones with lit tops, grass tufts."""
     near = s.mask()
     s.polygon(near, [(0, GROUND), (W, GROUND - 3), (W, H + 2), (0, H + 2)])
     s.wash(near, PLAIN, alpha=1.0, rim=0.3, rim_px=3, grain=0.35, cell=8, rough=(0.8, 0.3, 4), dark=0.8, soft=0.5)
     sheen = s.mask()
-    s.polygon(sheen, [(0, GROUND), (W, GROUND - 3), (W, GROUND + 8), (0, GROUND + 10)])
-    glaze(s.rgb, blur(sheen, 10), (200, 150, 170), 0.2)
-    shade = s.mask()
-    shade.paste(Image.linear_gradient("L").resize((s.size[0], 22 * s.S)), (0, (H - 22) * s.S))
-    glaze(s.rgb, shade, (80, 76, 120), 0.4)  # darker toward the viewer
+    s.polygon(sheen, [(0, GROUND), (W, GROUND - 3), (W, GROUND + 6), (0, GROUND + 8)])
+    lay(s.rgb, blur(sheen, 8), (176, 128, 150), 0.35)
     stones, tops = s.mask(), s.mask()
     for _ in range(26):
         x, y, r = rnd.uniform(0, W), rnd.uniform(GROUND + 4, H - 2), rnd.uniform(1.0, 3.2)
         s.ellipse(stones, x, y, r * 1.4, r * 0.7)
         s.ellipse(tops, x + r * 0.3, y - r * 0.4, r * 0.8, r * 0.25)
-    lay(s.rgb, stones, (36, 34, 58), 0.9)
-    lay(s.rgb, ImageChops.multiply(tops, stones), (150, 132, 170), 0.8)
+    lay(s.rgb, stones, (48, 42, 70), 0.9)
+    lay(s.rgb, ImageChops.multiply(tops, stones), (176, 150, 186), 0.8)
     tufts = []
     for _ in range(60):
         x, y = rnd.uniform(0, W), rnd.uniform(GROUND + 1, H)
         for dx in (-1.2, 0, 1.1):
             tufts.append(([(x, y), (x + dx * 1.4, y - rnd.uniform(1.5, 3.4))], 2))
-    s.pencil(tufts, strength=0.55, colour=(30, 30, 50))
+    s.pencil(tufts, strength=0.5, colour=(40, 36, 60))
 
 
 def meteors_sky():
-    """The still picture, 320 x 240: the heavens, the ridges and the plain, at 4x, then shrunk."""
+    """The still picture, 320 x 240: the heavens, the clouds, the ridges and the plain, at 4x, then shrunk."""
     s = Strip(W, 0, H, False, dusk_at)
-    for painter in (paint_heavens, paint_ridges, paint_plain):
+    for painter in (paint_heavens, paint_clouds, paint_ridges, paint_plain):
         painter(s)
-    s.paper(0.05)
+    s.paper(0.06)
     return s.rgb.resize((W, H), Image.LANCZOS).convert("RGBA")
 
 
@@ -177,10 +218,12 @@ ROCK_FRAMES = 4
 HALO = 24  # px: the glow round a falling rock, drawn see-through
 COAL = (10, 7)  # px: the coal's picture, w x h, its base on the screen's last row
 COAL_FRAMES = 4
-GLOW = (56, 16)  # px: the impact's light on the ground
+GLOW = (84, 24)  # px: the impact's light on the ground, its middle a few px above the last row
 SHADOW = (8, 3)  # px: the landing shadow, the mark's full width
 RING = (12, 5)  # px: the white ring round the shadow in its last moments
 FLASH = (W, 14)  # px: the ground band that flashes white at an impact
+SMOKE = (30, 34)  # px: the dark puff where the walker is hit, its base on the last row
+SMOKE_FRAMES = 5
 BAYER = (0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5)  # a 4 x 4 ordered dither, for soft edges in a hard mask
 
 
@@ -271,10 +314,28 @@ def ring():
 
 
 def flash():
-    """The ground band in white, thinning out upward: drawn see-through for the two frames of an impact."""
-    w, h = FLASH
-    img = Image.new("RGBA", FLASH, (255, 250, 240, 255))
-    return dithered(img, lambda x, y: (y + 1) / h)
+    """The ground band in a warm white, its top rows every other pixel: drawn see-through for the two frames of an
+    impact."""
+    img = Image.new("RGBA", FLASH, (255, 240, 214, 255))
+    return dithered(img, lambda x, y: 0.5 if y < 4 else 1)
+
+
+def smoke(frame):
+    """A dark puff of smoke that hides the walker where a meteor hits him, rising and growing over its frames, its
+    puffs lit violet on top. The game draws it see-through, thinner each frame."""
+    w, h = SMOKE
+    k = frame / (SMOKE_FRAMES - 1)
+    s = Sprite(w, h)
+    state = rnd.getstate()
+    rnd.seed(7)  # the same puffs in every frame, so they grow and do not jump
+    puffs = [(rnd.uniform(-1, 1), rnd.uniform(0, 1), rnd.uniform(0.6, 1.0)) for _ in range(12)]
+    rnd.setstate(state)
+    for dx, up, size in puffs:
+        r = (5.5 + 3 * k) * size
+        cx, cy = w / 2 + dx * (5 + 4 * k), h - 5 - up * 20 - 5 * k
+        s.part(s.shape("ellipse", cx - r, cy - r, cx + r, cy + r * 0.9), (40, 34, 52),
+               light=(cx + r * 0.3, cy - r * 0.5, r * 0.7, (96, 80, 118)), rim=0.3, grain=0.2)
+    return s.cut(outline=False)
 
 
 def paint_meteors():
@@ -291,6 +352,8 @@ def paint_meteors():
     pictures["meteors_shadow"] = (shadow(), True)
     pictures["meteors_ring"] = (ring(), True)
     pictures["meteors_flash"] = (flash(), True)
+    for i in range(SMOKE_FRAMES):
+        pictures["meteors_smoke%d" % i] = (smoke(i), True)
     pictures.update({name: (img, True) for name, img in WalkerPoses().pictures().items()})
     return Painting(pictures)
 

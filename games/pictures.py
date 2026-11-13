@@ -56,12 +56,13 @@ def load():
     return True
 
 
-def draw(cv, name, x, y):
-    """The picture at game (x, y), its clear colour skipped. False when it cannot be drawn this way."""
+def draw(cv, name, x, y, alpha=255):
+    """The picture at game (x, y), its clear colour skipped; under alpha 255 blended over the frame (a glow). False
+    when it cannot be drawn this way."""
     pic = PICS.get(name)
     if pic is None or not getattr(cv, "pictures", False):
         return False
-    cv.picture(pic[2], int(x), int(y), pic[0], pic[1], art_index.KEY_C565)
+    cv.picture(pic[2], int(x), int(y), pic[0], pic[1], art_index.KEY_C565, alpha)
     return True
 
 
