@@ -159,8 +159,10 @@ FIRE_STEP_MS = 80  # ms a heat step, as the Runner's: 40 sank the Runner to 16 f
 # it into blobs with a gap, less fade makes a white column)
 FIRE_LOOK = (34, 30, 1, 0, 1, 0, 0, 16)  # no fast patches (they split the flame), no field embers (they rose low)
 FIRE_SEED = 800
+DECAY_DROP = 3  # the decay falls this much as a fire goes out: from 34, which keeps the flame climbing, to 31
 BURN_HALF_PX = 12  # px each side of the crater's middle that burn
-BURNS = 8  # hot spots burned a frame
+BURNS = 8  # hot spots burned a frame by a full fire
+BURN_HEAT, FOOT_HEAT = 223, 160  # a spot's heat in a full fire, and in a fire nearly out: still bright, never see-through
 WATER = (c565(170, 214, 255), c565(230, 244, 255))
 STEAM = c565(200, 200, 210)
 GLOW_LEVELS = 8  # the fire's light on the kerb and the street, from none to the full fire
@@ -203,6 +205,7 @@ class Rescue(Game):
 
     def setup(self):
         self.layer.clear()
+        self.decay = FIRE_LOOK[0]  # the look's decay now, set again only when it steps (DECAY_DROP times a fire)
         self.rules = Rules(self.place)
         self.water = Spray()
         self.covers = pictures.load()  # the painted street covers the screen, so no fill goes under it
@@ -220,11 +223,19 @@ class Rescue(Game):
         self.layer.update(self.ms, 0)
         field = self.layer.field
         heat = crater.heat()
+        if field is not None:  # the flame climbs less high as the fire dies down: its decay falls toward 31
+            decay = FIRE_LOOK[0] - DECAY_DROP + DECAY_DROP * heat // HEAT_MAX
+            if decay != self.decay:
+                self.decay = decay
+                field.set_look(decay, *FIRE_LOOK[1:])
         if field is not None and heat:
-            for _ in range(BURNS):  # hot spots at random along the crater, on its two rows: a wide, ragged base
-                x = (crater.x + random.randrange(-BURN_HALF_PX, BURN_HALF_PX + 1)) // 2
+            # hot spots at random along the crater, on its two rows: a wide, ragged base. As the fire dies down it
+            # narrows and has fewer spots, but its foot stays hot, so the flame never lifts off the crater
+            half = 3 + (BURN_HALF_PX - 3) * heat // HEAT_MAX
+            for _ in range(1 + (BURNS - 1) * heat // HEAT_MAX):
+                x = (crater.x + random.randrange(-half, half + 1)) // 2
                 y = LANE // 2 - 2 - random.randrange(2)
-                field.burn(x, y, x, y, 1, (heat - random.randrange(heat // 3 + 1)) * 7 // 8)
+                field.burn(x, y, x, y, 1, FOOT_HEAT + (BURN_HEAT - FOOT_HEAT) * heat // HEAT_MAX - random.randrange(30))
         if heat and random.randrange(HEAT_MAX) < heat // 4:  # sparks fly up from the fire, fewer as it dies down
             self.fx.add(crater.x + random.randrange(-8, 9), LANE - 6, random.randrange(-20, 21),
                         -random.randrange(40, 90), SPARK, 0.8, 20.0)
@@ -238,6 +249,8 @@ class Rescue(Game):
                             -random.randrange(20, 50), STEAM, 0.7, -30.0)
         if events & OUT:
             self.fx.burst(crater.x, LANE - 6, STEAM, 14, 50.0, 0.9, -60.0)
+        if events & (OUT | BURNT):  # the field's heat would rise on alone as a flame with no crater under it
+            self.layer.clear()
         self.water.update(self.dt)
 
     def man_picture(self):
