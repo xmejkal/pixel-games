@@ -127,10 +127,11 @@ class TftCanvas(Canvas):
             self.fill(x, y, 1, h, c)
             self.fill(x + w - 1, y, 1, h, c)
 
-    def picture(self, buf, x, y, w, h, key):
+    def picture(self, buf, x, y, w, h, key, alpha=255):
         """A picture made for ORIENTATION 0 (pictures.py), game (x, y) as its top left; pixels of the key colour are
-        skipped (-1: none). The driver clips it and copies it by rows when it is wholly on the panel."""
-        self.tft.blit_buffer(buf, y, PANEL_H - x - w, h, w, 255, key)
+        skipped (-1: none). The driver clips it and copies it by rows when it is wholly on the panel at alpha 255;
+        under 255 it blends each pixel with the frame (P762)."""
+        self.tft.blit_buffer(buf, y, PANEL_H - x - w, h, w, alpha, key)
 
     def line(self, x0, y0, x1, y1, c):
         x0, y0, x1, y1 = [clamp(int(v), -2000, 2000) for v in (x0, y0, x1, y1)]

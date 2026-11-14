@@ -1,0 +1,88 @@
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 5883632
+frame tft
+ready
+meteors internal largest 31744
+meteors field internal
+game meteors
+sound meteors sent 317 of 315 between_max 41 late 0 render_max 802 plays 2 presses 0 render_mean 508
+fps meteors 24
+time meteors step 6.6 paint 17.4 send 3.9 gc 2.8 fps 24 worst 92 slowest 89 = step 24 paint 61 send 3 gc 13
+phases meteors static 4 paint 14 fx 3 hud 14 over 29 title 24
+avg meteors static 1.5 paint 9.2 fx 0.1 hud 1.1 over 0.4 title 4.8
+heap meteors alloc 174160 glyphs 20
+meteors linear fps 24 step 6.30 draw 12.22
+sound meteors sent 313 of 313 between_max 41 late 0 render_max 916 plays 1 presses 0 render_mean 537
+fps meteors 24
+time meteors step 7.9 paint 17.3 send 3.5 gc 2.7 fps 24 worst 75 slowest 39 = step 0 paint 35 send 3 gc 0
+phases meteors static 0 paint 14 fx 3 hud 13 over 20 title 0
+avg meteors static 0.1 paint 13.3 fx 0.3 hud 1.3 over 2.1 title 0.0
+heap meteors alloc 172944 glyphs 21
+meteors linear fps 24 step 7.44 draw 12.43
+sound meteors sent 313 of 313 between_max 41 late 0 render_max 953 plays 1 presses 0 render_mean 545
+fps meteors 24
+time meteors step 8.0 paint 18.0 send 3.6 gc 2.8 fps 24 worst 88 slowest 86 = step 25 paint 57 send 3 gc 13
+phases meteors static 1 paint 15 fx 4 hud 19 over 19 title 0
+avg meteors static 0.1 paint 13.3 fx 0.4 hud 1.5 over 2.6 title 0.0
+heap meteors alloc 172560 glyphs 22
+meteors linear fps 24 step 6.76 draw 12.45
+sound meteors sent 315 of 314 between_max 42 late 0 render_max 913 plays 2 presses 0 render_mean 541
+fps meteors 24
+time meteors step 7.9 paint 18.1 send 3.6 gc 2.8 fps 24 worst 71 slowest 69 = step 25 paint 40 send 3 gc 13
+phases meteors static 1 paint 15 fx 4 hud 16 over 20 title 0
+avg meteors static 0.1 paint 13.4 fx 0.4 hud 1.4 over 2.6 title 0.0
+heap meteors alloc 173152 glyphs 22
+meteors linear fps 24 step 6.44 draw 12.42
+sound meteors sent 315 of 315 between_max 34 late 0 render_max 1069 plays 2 presses 0 render_mean 547
+fps meteors 24
+time meteors step 8.1 paint 18.1 send 3.6 gc 2.8 fps 24 worst 72 slowest 70 = step 26 paint 40 send 3 gc 13
+phases meteors static 1 paint 15 fx 4 hud 18 over 21 title 0
+avg meteors static 0.1 paint 13.4 fx 0.4 hud 1.5 over 2.5 title 0.0
+heap meteors alloc 172432 glyphs 22
+meteors linear fps 24 step 6.44 draw 12.47
+sound meteors sent 315 of 314 between_max 42 late 0 render_max 904 plays 2 presses 0 render_mean 518
+fps meteors 24
+time meteors step 9.3 paint 15.6 send 3.4 gc 2.8 fps 24 worst 73 slowest 70 = step 26 paint 41 send 3 gc 13
+phases meteors static 1 paint 15 fx 3 hud 19 over 21 title 0
+avg meteors static 0.1 paint 13.4 fx 0.1 hud 1.5 over 0.3 title 0.0
+heap meteors alloc 178752 glyphs 22
+meteors linear fps 24 step 6.49 draw 12.52
+sound meteors sent 315 of 315 between_max 40 late 0 render_max 967 plays 1 presses 0 render_mean 568
+fps meteors 23
+time meteors step 7.1 paint 19.7 send 3.5 gc 2.8 fps 23 worst 79 slowest 77 = step 26 paint 48 send 3 gc 13
+phases meteors static 1 paint 14 fx 6 hud 20 over 27 title 0
+avg meteors static 0.1 paint 13.3 fx 0.7 hud 1.4 over 4.0 title 0.0
+heap meteors alloc 176208 glyphs 22
+meteors linear fps 24 step 6.42 draw 12.34
+sound meteors sent 313 of 313 between_max 41 late 0 render_max 804 plays 1 presses 0 render_mean 520
+fps meteors 24
+time meteors step 8.9 paint 15.8 send 3.4 gc 2.7 fps 24 worst 59 slowest 45 = step 10 paint 31 send 3 gc 0
+phases meteors static 0 paint 15 fx 0 hud 20 over 17 title 0
+avg meteors static 0.1 paint 13.3 fx 0.1 hud 1.6 over 0.5 title 0.0
+heap meteors alloc 174784 glyphs 22
+meteors linear fps 24 step 6.73 draw 12.43
+sound meteors sent 316 of 315 between_max 41 late 0 render_max 1027 plays 1 presses 0 render_mean 537
+fps meteors 24
+time meteors step 7.9 paint 17.9 send 3.6 gc 2.8 fps 24 worst 76 slowest 74 = step 32 paint 38 send 3 gc 13
+phases meteors static 1 paint 15 fx 3 hud 17 over 20 title 0
+avg meteors static 0.1 paint 13.3 fx 0.4 hud 1.4 over 2.5 title 0.0
+heap meteors alloc 172960 glyphs 22
+meteors linear fps 24 step 7.54 draw 12.36
+sound meteors sent 313 of 313 between_max 34 late 0 render_max 1084 plays 2 presses 0 render_mean 544
+fps meteors 24
+time meteors step 8.0 paint 18.1 send 3.6 gc 2.8 fps 24 worst 77 slowest 75 = step 25 paint 47 send 3 gc 13
+phases meteors static 1 paint 15 fx 3 hud 20 over 27 title 0
+avg meteors static 0.1 paint 13.5 fx 0.4 hud 1.4 over 2.6 title 0.0
+heap meteors alloc 172512 glyphs 22
+meteors linear fps 24 step 6.45 draw 12.43
+sound meteors sent 313 of 313 between_max 41 late 0 render_max 910 plays 2 presses 0 render_mean 545
+fps meteors 24
+time meteors step 8.0 paint 17.8 send 3.5 gc 2.8 fps 24 worst 85 slowest 68 = step 25 paint 40 send 3 gc 13
+phases meteors static 1 paint 14 fx 2 hud 15 over 27 title 0
+avg meteors static 0.1 paint 13.3 fx 0.4 hud 1.4 over 2.4 title 0.0
+heap meteors alloc 172512 glyphs 22
+meteors linear fps 24 step 6.42 draw 12.31
+late 0 written 961024
+score 5 held_frames 0
+done

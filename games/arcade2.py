@@ -41,7 +41,7 @@ class Stack(Game):
     CONCRETE = tuple(c565(v, v, v + 8) for v in (172, 160, 180, 150, 168, 186, 156, 166))  # the Mac's flat floors
 
     def setup(self):
-        self.covers = pictures.load()  # the painted noon covers the screen, so no fill goes under it
+        self.covers = pictures.load("stack")  # the painted noon covers the screen, so no fill goes under it
         self.floors = [(90, 140)]  # (x, width) of each placed floor, x without the sway
         self.x, self.w, self.dir, self.speed = 0.0, 140, 1, 120.0
         self.sway, self.sway_v = 0.0, 0.0  # the tower top's offset and speed

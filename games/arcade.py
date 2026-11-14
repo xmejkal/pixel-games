@@ -64,7 +64,7 @@ class Flappy(Game):
     BIRDS = tuple(tuple("flappy_bird%d%d" % (tilt, wing) for wing in range(2)) for tilt in range(3))
 
     def setup(self):
-        self.covers = pictures.load()  # the painted morning covers the screen, so no fill goes under it
+        self.covers = pictures.load("flappy")  # the painted morning covers the screen, so no fill goes under it
         self.flapped = -1.0  # when the last tap came (self.t), for the bird's wing
         self.y, self.vy, self.dist = 110.0, 0.0, 0.0
         self.pipes = [[W + 20 + i * self.SPACE, self.gap_y(), False] for i in range(3)]
@@ -179,7 +179,7 @@ class Runner(Game):
         self.beat = 0  # the run cycle's frame at the last footstep check (P768)
         self.emit("fire", 0)  # a new round: the last round's fire is silent (P768)
         self.jumped, self.landed = -1.0, -1.0  # when the last jump and the last landing began (self.t), for the pose
-        self.covers = pictures.load()  # painted art on the board: its sky covers the screen, so no fill goes under it
+        self.covers = pictures.load("runner")  # painted art on the board: its sky covers the screen, so no fill under it
 
     def grow_fire(self, speed, force=False):
         """The flame at base speed px/s: none below FIRE_START_SPEED, then DECAY and the burns' heat climb evenly to

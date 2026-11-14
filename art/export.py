@@ -1,6 +1,7 @@
 """Write the painted art for the board: the RGB565 files, games/art_index.py, and the preview sheets to look at."""
 
 import os
+import textwrap
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -163,7 +164,8 @@ def layer_rows(layers, indent):
 
 def write_index(sets, paintings, path):
     """games/art_index.py: ART (each set's pictures in its own order, then every set's aliases), LAYERS (the layers
-    of the one set with index_layers, the runner's), LAYER_SETS (every set with layers). Returns the names in ART."""
+    of the one set with index_layers, the runner's), LAYER_SETS (every set with layers), PICTURE_SETS (each set's
+    names, its aliases among them). Returns the names in ART."""
     index = {}
     for painting in paintings.values():
         for name, (img, _) in painting.pictures.items():
@@ -197,6 +199,15 @@ def write_index(sets, paintings, path):
         layers = paintings[art_set.name].layers
         if layers and art_set is not owner:
             lines += ['    "%s": [' % art_set.name] + layer_rows(layers, "        ") + ["    ],"]
+    lines += ["}", "",
+              "# Each set's pictures, its aliases among them: what pictures.load(name) reads when the box starts its game.",
+              "PICTURE_SETS = {"]
+    for art_set in sets:
+        names = list(paintings[art_set.name].pictures) + list(art_set.aliases)
+        lines += ['    "%s": (' % art_set.name]
+        lines += textwrap.wrap(" ".join('"%s",' % n for n in names), 112, initial_indent=" " * 8,
+                               subsequent_indent=" " * 8, break_on_hyphens=False)
+        lines += ["    ),"]
     lines += ["}", ""]
     with open(path, "w") as f:
         f.write("\n".join(lines))

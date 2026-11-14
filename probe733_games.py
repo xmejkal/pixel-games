@@ -90,7 +90,7 @@ import uctypes
 from micropython import const
 from machine import I2S, Pin
 
-GAME = "Fire"  # Fire, BallPit, Road or BurningBodies: a name in app
+GAME = "Fire"  # Fire, BallPit, Road or BurningBodies: a name in app, or in burning (BurningBodies left the box in P773)
 TONE = 1  # 0: the control run, no I2S
 MIC = 0  # 1: the microphone counts the gaps (step 3), or measures the delays (HITS)
 HITS = 0  # "auto": a hit every 2 s from 4 s on, "press": a hit at each BOOT press, 0: the tone (P746)
@@ -628,7 +628,7 @@ def main():
 
     app.App.frame = hooked
     try:
-        app.run(games=(getattr(app, GAME),), knob=probe.volume and probe.volume.knob)
+        app.run(games=(getattr(app, GAME, None) or getattr(__import__("burning"), GAME),), knob=probe.volume and probe.volume.knob)
     except Done:
         pass
     finally:

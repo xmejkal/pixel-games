@@ -22,7 +22,8 @@ fire scene lists it alone, the burning scene after its PhysicsPlugin. The scene 
 
 FireLayer (P602) puts the same field into another game as one more layer of its picture: heat burned at a body, moved
 with the world and blended over the game's frame. It was tried as a fire trail behind flappy's bird, and the PO kept
-it for other games (2026-11-04). The Runner uses it (P651).
+it for other games (2026-11-04). The Runner uses it (P651), and Rescue (P800), which cools one fire's columns when
+the board's firmware has HeatField.cool (P803).
 --- MVP (P595) ---
 """
 
@@ -186,6 +187,7 @@ class Fire(Game):
     TITLE_MS = 0  # straight into the fire, so the first BOOT tap moves to the next mode
     LOOK = (DECAY, COOL, SWAY, SPOTS, SPREAD, FAST, EMBERS, FADE)  # a scene on the same field sets its own (P596)
     MODES = MODES
+    ART = ("runner", ("sky",))  # the art set it loads (pictures.load), and of it only the sky under the picture mode
 
     def __init__(self):
         self.mode = 0
@@ -193,7 +195,7 @@ class Fire(Game):
         super().__init__()
 
     def setup(self):
-        pictures.load()
+        pictures.load(*self.ART)
         if engine is not None:
             print(self.name, "internal largest", engine.largest_free_internal())
         self.fire_plugin = FirePlugin(self.LOOK, SEED)
@@ -278,12 +280,13 @@ class Fire(Game):
         cv.text(self.label, 4, 2, WHITE)
 
 
-# --- Later, not MVP: kept for other games, the PO 2026-11-04 (P602) ---
+# --- MVP (P651, P800): the Runner's and Rescue's fire layer, first kept for other games (P602) ---
 class FireLayer:
     """The fire field as one more layer of a game's picture, at the world's speed, as a parallax layer is (Godot's
     CanvasLayer): only burns put heat in, the base is off. update moves the heat with the world and steps it, draw
     blends it over the frame. Without the engine, field is None and draw does nothing. Made once: update and draw use
-    int math only, so they make nothing a frame."""
+    int math only, so they make nothing a frame. can_cool (P803): the field has cool, which firmware built from an
+    engine before P803 lacks."""
 
     def __init__(self, look, seed, step_ms=STEP_MS, alpha=ALPHA, palette=BLEND_PALETTE):
         self.field, self.clock, self.acc = None, StepClock(step_ms, STEP_CAP), 0  # acc: px/s times ms; step_ms: the heat's step
@@ -292,6 +295,7 @@ class FireLayer:
             self.field.set_look(*look)
             self.field.set_base(False)
             self.field.set_filter(LINEAR)
+        self.can_cool = hasattr(self.field, "cool")  # --- MVP (P803) --- False without a field
         self.alpha, self.palette = alpha, palette  # the blend's alpha and colour by heat
 
     def update(self, ms, speed):
@@ -315,6 +319,16 @@ class FireLayer:
         self.acc = self.clock.ms = 0
         if self.field is not None:
             self.field.scroll(-W)
+
+    # --- MVP (P803) ---
+    def cool(self, x0, x1):
+        """The columns x0 to x1, in cells and both included, emptied over the field's whole height, when the field can
+        cool. Else the whole field is emptied, as clear does. The columns it emptied, as (first, last)."""
+        if self.can_cool:
+            self.field.cool(x0, 0, x1, H - 1, 255)
+            return max(x0, 0), min(x1, W - 1)
+        self.clear()
+        return 0, W - 1
 
     def draw(self, cv):
         """The heat blended over what the frame holds, at its alpha. Only a canvas with an s3lcd tft has a frame."""

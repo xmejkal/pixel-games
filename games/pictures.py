@@ -1,9 +1,11 @@
 """
-The painted pictures (P562): loaded once from the board's /art folder into PSRAM, drawn by one blit_buffer call each.
+The painted pictures (P562): read from the board's /art folder into PSRAM, drawn by one blit_buffer call each.
 
-art/paint.py makes them on the Mac, already in the panel's layout and byte order, and writes art_index.py. A game asks
-draw() for a picture and draw_layer() for a window of a scrolling strip; both answer False when there is no art (on the
-Mac, with the st7789 backend, or at ORIENTATION 180), and the game then draws its old shapes.
+art/paint.py makes them on the Mac, already in the panel's layout and byte order, and writes art_index.py. Each game
+loads only its own art set (art_index.PICTURE_SETS) when the box switches to it, so the box starts its first game
+without reading every set first: 2.9 MB took 15 to 20 s on the board (P773). A game asks draw() for a picture and
+draw_layer() for a window of a scrolling strip; both answer False when there is no art (on the Mac, with the st7789
+backend, or at ORIENTATION 180), and the game then draws its old shapes.
 """
 
 try:
@@ -12,56 +14,92 @@ except ImportError:  # no art made yet
     art_index = None
 
 ROOT = "/"  # where the art folder is: the board's root; a Mac tool points it at games/
-PICS = {}  # name: (w, h, memoryview into the pool)
+PICS = {}  # name: (w, h, memoryview into the block) of the loaded set
 SETS = {}  # game name: its layers, each [name, top, w, h, speed, keyed, memoryview], back to front
 ready = False
+loaded = None  # (set, only) that PICS holds, or None
 
 
-def load():
-    """Read every picture once, into one block the collector does not scan (s3lcd.pool, P562): 733 KB in the heap
-    made each collection cost about 90 ms. Answers whether art is there."""
-    global ready
-    if ready or art_index is None:
+def files_of(sets, only=None):
+    """{path: bytes} of the pictures of these sets (only those named in only, when given) and of their layers."""
+    sizes = {}  # each file once: a layer's file is also a picture, and an alias shares its file
+    for name in [n for game in sets for n in art_index.PICTURE_SETS[game]]:
+        if only is None or name in only:
+            w, h, path = art_index.ART[name]
+            sizes[path] = w * h * 2
+    if only is None:
+        for row in [row for game in sets for row in layer_sets().get(game, ())]:
+            sizes[row[6]] = row[2] * row[3] * 2
+    return sizes
+
+
+def layer_sets():
+    return getattr(art_index, "LAYER_SETS", None) or {"runner": getattr(art_index, "LAYERS", ())}
+
+
+def free():
+    """Drop the loaded set: its pictures go, and the block they were read into is the next set's (P773)."""
+    global ready, loaded
+    PICS.clear()
+    SETS.clear()
+    ready, loaded = False, None
+
+
+def block(n):
+    """n bytes to read pictures into: on the board, the start of s3lcd's pool in PSRAM, one block the collector does
+    not scan (P562: 733 KB in the heap made each collection cost about 90 ms). It is made once, as big as the largest
+    set, and every set is read into it in turn. On the Mac (or an older image) a bytearray."""
+    try:
+        import s3lcd
+        largest = max(sum(files_of((game,)).values()) for game in art_index.PICTURE_SETS)
+        return memoryview(s3lcd.pool(max(n, largest)))
+    except (ImportError, AttributeError, ValueError):  # no pool (the Mac, an older image, or a pool kept smaller)
+        return memoryview(bytearray(n))
+
+
+def load(game=None, only=None):
+    """Read one game's art set once (game: its name in art_index.PICTURE_SETS; only: just these of its pictures), and
+    free the set loaded before. game None reads every set, for the tools on the Mac. Answers whether art is there."""
+    global ready, loaded
+    if art_index is None:
+        return False
+    if loaded == (game, only):
         return ready
-    pics = list(art_index.ART.items())
-    sets = getattr(art_index, "LAYER_SETS", None) or {"runner": getattr(art_index, "LAYERS", ())}
-    layers = [row for rows in sets.values() for row in rows]
-    sizes = {}  # path: bytes, each file once: a layer's file is also a picture
-    for _, (w, h, path) in pics:
-        sizes[path] = w * h * 2
-    for row in layers:
-        sizes[row[6]] = row[2] * row[3] * 2
+    free()
+    sets = tuple(art_index.PICTURE_SETS) if game is None else (game,) if game in art_index.PICTURE_SETS else ()
+    sizes = files_of(sets, only)
     total = sum(sizes.values())
     if not total:
         return False
-    try:
-        import s3lcd
-        block = memoryview(s3lcd.pool(total))
-    except (ImportError, AttributeError, ValueError):  # no pool (the Mac, an older image, or a pool kept smaller)
-        block = memoryview(bytearray(total))
-    files, at = {}, 0  # path: its slice of the block
+    buf, files, at = block(total), {}, 0  # path: its slice of the block
     try:
         for path, n in sizes.items():
-            files[path] = buf = block[at:at + n]
+            files[path] = view = buf[at:at + n]
             at += n
             with open(ROOT + path, "rb") as f:
-                f.readinto(buf)
+                f.readinto(view)
     except OSError:  # a file missing on the board: no art at all, rather than half of it
         return False
-    for name, (w, h, path) in pics:
-        PICS[name] = (w, h, files[path])
-    for game, rows in sets.items():
-        SETS[game] = [[name, top, w, h, speed, keyed, files[path]] for name, top, w, h, speed, keyed, path in rows]
-    ready = True
+    for name in [n for g in sets for n in art_index.PICTURE_SETS[g]]:
+        w, h, path = art_index.ART[name]
+        if path in files:
+            PICS[name] = (w, h, files[path])
+    if only is None:
+        for g in sets:
+            if g in layer_sets():
+                SETS[g] = [[name, top, w, h, speed, keyed, files[path]] for name, top, w, h, speed, keyed, path
+                           in layer_sets()[g]]
+    ready, loaded = True, (game, only)
     return True
 
 
-def draw(cv, name, x, y):
-    """The picture at game (x, y), its clear colour skipped. False when it cannot be drawn this way."""
+def draw(cv, name, x, y, alpha=255):
+    """The picture at game (x, y), its clear colour skipped; under alpha 255 blended over the frame (a glow). False
+    when it cannot be drawn this way."""
     pic = PICS.get(name)
     if pic is None or not getattr(cv, "pictures", False):
         return False
-    cv.picture(pic[2], int(x), int(y), pic[0], pic[1], art_index.KEY_C565)
+    cv.picture(pic[2], int(x), int(y), pic[0], pic[1], art_index.KEY_C565, alpha)
     return True
 
 
