@@ -1,4 +1,4 @@
-"""Meteors', Bucket's and BUBBLE's painted sprites in the frames the README's GIFs are made from (P773, story 4; P573):
+"""Meteors', Bucket's, BUBBLE's and FEED's painted sprites in the frames the README's GIFs are made from (P773, story 4; P573):
 over each render_scene row, every pictures.draw call is logged with the game's numbers as they are in that frame. The
 walker's sprite is drawn where Rules.walker_x is, in the run's pose for that place and facing his way, the bucket's
 where Rules.bucket_x is, and BUBBLE's bubble centred where the game's bubble is, at the size of its radius. Each row
@@ -143,6 +143,76 @@ class BubbleTest(unittest.TestCase):
                 self.assertIn(name, [n for names in g.NETS.values() for n in names])
                 self.assertEqual((int(px), g.PY - 2), (x, y))  # its end ropes on the hit row PY
         self.assertEqual(g.PY - 2, g.NET_Y)
+
+
+
+@unittest.skipUnless(shutil.which("clang"), "clang is missing: the C engines are not built, so the rows were not drawn")
+class FeedTest(unittest.TestCase):
+    """FEED (P573) over the snake row: the head in every frame of play on its slide from its last cell into its new
+    one, at the new one once the slide is done and never past it; the dot in every frame of play where the food is;
+    over, the bite, then the flip head to tail by its clock, then the card."""
+
+    FIELDS = ("game.body[0][0]", "game.body[0][1]", "game.body[1][0]", "game.body[1][1]", "game.acc", "game.food[0]",
+              "game.food[1]", "game.over_ms()", "len(game.body)")
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(ROOT, "tests", "stubs"))
+        sys.path.insert(0, os.path.join(ROOT, "games"))
+        import arcade
+        import gfx
+        cls.game, cls.module, cls.PLAY, cls.OVER = arcade.Snake, arcade, gfx.PLAY, gfx.OVER
+        cls.draws = drawn("snake", ("snake_head_", "snake_dot_", "snake_seen_", "snake_tile_", "snake_over"),
+                          cls.FIELDS)
+
+    def play(self, prefix):
+        return [d for d in self.draws if d[4] == self.PLAY and d[1].startswith(prefix)]
+
+    def test_the_head_is_drawn_once_every_frame_of_play_on_its_slide_never_past_its_cell(self):
+        g = self.game
+        heads = self.play("snake_head_")
+        frames = [d[0] for d in heads]
+        self.assertEqual(list(range(frames[-1] + 1)), frames)  # every frame of play, once, from the first (0)
+        self.assertGreater(len(frames), 600)
+        slid = 0
+        for k, name, x, y, state, hx, hy, lx, ly, acc, fx, fy, ms, n in heads:
+            new = (g.LEFT + int(hx) * g.CELL - 2, g.TOP + int(hy) * g.CELL - 2)
+            last = (g.LEFT + int(lx) * g.CELL - 2, g.TOP + int(ly) * g.CELL - 2)
+            with self.subTest(frame=k):
+                if acc >= self.module.Slide.SLIDE_MS or abs(new[0] - last[0]) > g.CELL or abs(new[1] - last[1]) > g.CELL:
+                    self.assertEqual(new, (x, y))  # the slide is done, or a wrap: at the cell
+                else:
+                    self.assertTrue(min(last[0], new[0]) <= x <= max(last[0], new[0]))
+                    self.assertTrue(min(last[1], new[1]) <= y <= max(last[1], new[1]))
+                    self.assertTrue(x == new[0] or y == new[1])  # on the line between the two cells
+                    slid += (x, y) != new
+        self.assertGreater(slid, 100)  # it slides in many frames, not only at the steps
+
+    def test_the_dot_is_drawn_once_every_frame_of_play_where_the_food_is(self):
+        g = self.game
+        dots = self.play("snake_dot_")
+        self.assertEqual(list(range(dots[-1][0] + 1)), [d[0] for d in dots])
+        for k, name, x, y, state, hx, hy, lx, ly, acc, fx, fy, ms, n in dots:
+            with self.subTest(frame=k):
+                self.assertEqual((g.LEFT + int(fx) * g.CELL, g.TOP + int(fy) * g.CELL), (x, y))
+
+    def test_over_the_head_bites_then_every_tile_turns_to_seen_head_to_tail_then_the_card(self):
+        g, flip = self.game, self.module.Flip
+        over = {}
+        for d in self.draws:
+            if d[4] == self.OVER:
+                over.setdefault(d[0], []).append(d)
+        self.assertGreater(len(over), 20)
+        for f, ds in sorted(over.items()):
+            names, ms, n = [d[1] for d in ds], int(ds[0][12]), int(ds[0][13])
+            seen = [k for k in names if k.startswith("snake_seen_")]
+            with self.subTest(frame=f, ms=ms):
+                self.assertEqual(sum(flip.pose(i, n, ms) >= 0 for i in range(n)), len(seen))
+                self.assertEqual(ms < flip.HOLD_MS, any(k.endswith("_chew") for k in names))  # the bite, then no head
+                self.assertEqual(ms >= g.CARD_MS, "snake_over" in names)
+                if ms >= flip.END_MS:
+                    self.assertEqual(["snake_seen_2"] * n, seen)
+        self.assertTrue(any("snake_over" in [d[1] for d in ds] for ds in over.values()))
 
 
 if __name__ == "__main__":

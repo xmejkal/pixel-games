@@ -16,8 +16,9 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_us = lambda: int(time.perf_counter() * 1e6)
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
+import arcade  # noqa: E402
 import gfx  # noqa: E402
-from arcade import Snake  # noqa: E402
+from arcade import Flip, Meals, Slide, Snake, StatusBar  # noqa: E402
 
 FRAME_MS = 40  # app.py's FRAME_MS
 SEED, FRAMES, EVERY = 2, 1000, 2  # the trace's seed, its length, and the bot's look: one frame in EVERY
@@ -175,6 +176,175 @@ class RulesTest(unittest.TestCase):
         game.play(False, False)
         self.assertEqual(4, len(game.body))  # no meal: the tail goes as the head comes
 
+
+
+class Drawn:
+    """arcade.pictures.draw logged: each picture's (name, x, y, alpha), and a canvas that takes pictures."""
+
+    pictures = True
+
+    def __init__(self, test):
+        self.calls, saved = [], arcade.pictures.draw
+        arcade.pictures.draw = lambda cv, name, x, y, alpha=255: self.calls.append((name, x, y, alpha)) or True
+        test.addCleanup(setattr, arcade.pictures, "draw", saved)
+
+    def fill(self, *args):
+        pass
+
+    def named(self, prefix):
+        return [c for c in self.calls if c[0].startswith(prefix)]
+
+
+def painted(game, drawn):
+    drawn.calls.clear()
+    game.paint(drawn)
+    return drawn
+
+
+def fed():
+    """A game in play on the frame clock that has just eaten: (game, now). The dot was one cell ahead."""
+    random.seed(4)
+    game, now = Snake(), FRAME_MS
+    game.step(now, True, True)
+    game.covers = True
+    game.food = (13, 9)
+    while game.score == 0:
+        now += FRAME_MS
+        game.step(now, False, False)
+    return game, now
+
+
+class FeelTest(unittest.TestCase):
+    """The look's feel (P573): the head's slide and poses, the tail's slide, the bulge, the ripple, the dot's pulse
+    and ping, the flip and the card, and the status bar's battery."""
+
+    def test_the_slide_eases_out_in_60_ms_and_never_passes_the_cell(self):
+        eased = [Slide.eased(ms) for ms in range(0, 200, 10)]
+        self.assertEqual(0, eased[0])
+        self.assertEqual([256] * 14, eased[6:])  # all the way from SLIDE_MS on
+        self.assertEqual(sorted(eased), eased)
+        self.assertGreater(eased[1] - eased[0], eased[5] - eased[4])  # fast at first, slow into the cell
+        self.assertEqual(60, Slide.SLIDE_MS)
+        self.assertEqual(100 + 12 * 128 // 256, Slide.at(100, 112, 128, 12))
+        self.assertEqual(4, Slide.at(304, 4, 128, 12))  # across a wrap: at the new cell
+
+    def test_the_head_slides_from_its_last_cell_into_its_new_one_each_step(self):
+        game, now = fed()
+        drawn = Drawn(self)
+        xs = []
+        for _ in range(8):
+            now += FRAME_MS
+            game.step(now, False, False)
+            name, x, y, alpha = painted(game, drawn).named("snake_head_")[0]
+            last, new = game.x_of(game.body[1]) - 2, game.x_of(game.body[0]) - 2
+            self.assertTrue(last <= x <= new, (last, x, new))
+            self.assertEqual(new if game.acc >= Slide.SLIDE_MS else x, x)
+            xs.append(x)
+        self.assertGreater(len(set(xs)), 4)  # it moves on frames between the steps, not only at them
+
+    def test_the_head_gulps_then_chews_then_glows_near_a_dot_else_is_open(self):
+        game, now = fed()
+        self.assertEqual(Snake.GULP, game.head_pose())
+        steps = game.steps
+        while game.steps == steps:
+            now += FRAME_MS
+            game.step(now, False, False)
+        self.assertEqual(Snake.CHEW, game.head_pose())
+        while game.steps == steps + 1:
+            now += FRAME_MS
+            game.step(now, False, False)
+        hx, hy = game.body[0]
+        game.food = ((hx + 2) % Snake.COLS, hy)
+        self.assertEqual(Snake.GLOW, game.head_pose())
+        game.food = ((hx + 3) % Snake.COLS, hy)
+        self.assertEqual(Snake.OPEN, game.head_pose())
+
+    def test_the_tail_tile_slides_into_the_tail_while_the_head_slides_then_goes(self):
+        game = playing()
+        game.covers, game.last = True, 0
+        game.play(False, False)  # a step: the tail at (10, 9) goes
+        self.assertEqual((10, 9), game.gone)
+        drawn = Drawn(self)
+        tail = game.x_of(game.body[-1])
+        for acc, on in ((0.0, True), (30.0, True), (60.0, False)):
+            game.acc = acc
+            first = painted(game, drawn).named("snake_tile_")[0]
+            with self.subTest(acc=acc):
+                if on:
+                    self.assertTrue(game.x_of((10, 9)) <= first[1] <= tail)
+                    self.assertEqual(len(game.body) - 1 + 1, len(drawn.named("snake_tile_")))
+                else:
+                    self.assertEqual(len(game.body) - 1, len(drawn.named("snake_tile_")))
+
+    def test_a_bulge_goes_down_the_feed_one_tile_a_step_and_the_glass_ripples_four_rings(self):
+        game, now = fed()
+        drawn = Drawn(self)
+        meal, rings = game.steps, []
+        for _ in range(40):  # 10 steps: past the tail of the 4-tile feed
+            now += FRAME_MS
+            game.step(now, False, False)
+            painted(game, drawn)
+            bulges = drawn.named("snake_bulge_")
+            i = game.steps - meal
+            if len(game.body) > i > 1 or (i == 1 and game.acc >= Slide.SLIDE_MS):
+                self.assertEqual([(arcade.BULGES[i % 2], game.x_of(game.body[i]) - 2, game.y_of(game.body[i]) - 2,
+                                   255)], bulges)
+            else:
+                self.assertEqual([], bulges)
+            rings += [c[0] for c in drawn.named("snake_ripple_")]
+        self.assertEqual(list(arcade.RIPPLES), sorted(set(rings)))
+        self.assertLessEqual(len(rings), 4 * -(-Meals.RIPPLE_MS // FRAME_MS))  # four rings, RIPPLE_MS each, then none
+
+    def test_the_dot_pulses_and_pings(self):
+        game = playing()
+        game.covers = True
+        drawn = Drawn(self)
+        dots, pings = [], []
+        for t in range(0, 2400, FRAME_MS):
+            game.last = t
+            painted(game, drawn)
+            (name, x, y, _), = drawn.named("snake_dot_")
+            self.assertEqual((game.x_of(game.food), game.y_of(game.food)), (x, y))
+            dots.append(name[-1])
+            pings.append(drawn.named("snake_ping_"))
+        self.assertEqual("0000111122221111", "".join(dots[:16]))  # 160 ms a pose, out and back
+        rang = [t * FRAME_MS for t, p in enumerate(pings) if p]
+        self.assertEqual([0, 40, 80, 120, 160, 200, 1200, 1240, 1280, 1320, 1360, 1400], rang)  # 3 rings of 80 ms
+
+    def test_the_flip_holds_the_bite_then_turns_head_to_tail_to_seen_inside_the_over_window(self):
+        self.assertLessEqual(Flip.END_MS - Flip.HOLD_MS, 600)
+        self.assertLess(Flip.END_MS, Snake.CARD_MS)
+        self.assertLess(Snake.CARD_MS, Snake.OVER_MS)
+        for n in (3, 10, 40, 300):
+            starts = [next(ms for ms in range(5000) if Flip.pose(i, n, ms) == 0) for i in range(n)]
+            seen = [next(ms for ms in range(5000) if Flip.pose(i, n, ms) == 2) for i in range(n)]
+            with self.subTest(n=n):
+                self.assertEqual(Flip.HOLD_MS, starts[0])  # the head first, after the bite
+                self.assertEqual(sorted(starts), starts)  # head to tail
+                self.assertEqual(min(30, 520 // (n - 1)), starts[1] - starts[0])  # 30 ms a tile, less when long
+                self.assertLessEqual(max(seen), Flip.END_MS)
+
+    def test_over_the_head_bites_then_flips_and_the_card_comes_after(self):
+        game = playing()
+        game.covers = True
+        game.play(False, False)
+        game.state, game.since = gfx.OVER, 1000
+        drawn = Drawn(self)
+        for ms, head, seen in ((0, "snake_head_r_chew", 0), (Flip.HOLD_MS, "snake_seen_0", 1),
+                               (Flip.END_MS, "snake_seen_2", 3)):
+            game.last = 1000 + ms
+            painted(game, drawn)
+            with self.subTest(ms=ms):
+                self.assertIn(head, [c[0] for c in drawn.calls])
+                self.assertEqual(seen, len(drawn.named("snake_seen_")))
+                self.assertEqual([], drawn.named("snake_dot_"))
+            drawn.calls.clear()
+            game.age = ms
+            game.draw_over(drawn)
+            self.assertEqual(ms >= Snake.CARD_MS, "snake_over" in [c[0] for c in drawn.calls])
+
+    def test_the_battery_drains_as_the_feed_grows(self):
+        self.assertEqual([18, 18, 17, 9, 1, 1], [StatusBar.charge(s) for s in (0, 1, 2, 18, 34, 90)])
 
 
 class Heard:
