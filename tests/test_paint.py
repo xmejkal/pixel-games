@@ -21,7 +21,7 @@ from export import from_bin, pack_bytes, q565, to_bin  # noqa: E402
 from letters import GLYPHS, write  # noqa: E402
 from looks import NightInk, Watercolour  # noqa: E402
 from paint import main  # noqa: E402
-from sets import ART_SETS, gravpong as gravpong_set, runner as runner_set, stack as stack_set  # noqa: E402
+from sets import ART_SETS, gravpong as gravpong_set, runner as runner_set, snake as snake_set, stack as stack_set  # noqa: E402
 from sets.runner import RED, run_cycle, runner  # noqa: E402
 
 PREVIEW_PILLOW = "12.3.0"  # preview.png was written with it; fonts and zlib change PNG bytes, not the board files
@@ -87,6 +87,13 @@ class OneSetAloneTest(unittest.TestCase):
             with self.subTest(name=name):
                 self.assertEqual(to_bin(img, keyed), pack_bytes(name))
 
+
+    def test_snake_alone_as_committed(self):
+        rnd.random()
+        painting = snake_set.ART_SET.paint()
+        for name, (img, keyed) in painting.pictures.items():
+            with self.subTest(name=name):
+                self.assertEqual(to_bin(img, keyed), pack_bytes(name))
 
     def test_gravpong_alone_as_committed(self):
         rnd.random()
@@ -273,6 +280,126 @@ class BubbleTest(unittest.TestCase):
             with self.subTest(name=name):
                 shown = {p[:3] for p in q565(self.painting.pictures[name][0]).get_flattened_data() if p[3]}
                 self.assertIn(board_colour(ACCENT), shown)
+
+
+
+def shown(img):
+    """The colours of a picture's drawn pixels as the board shows them."""
+    return {p[:3] for p in q565(img).get_flattened_data() if p[3]}
+
+
+class FeedTest(unittest.TestCase):
+    """Snake as FEED (P573): its pictures as the game asks for them, the sizes and places the game copies, the glass's
+    reflection kept faint, six tiles in six hues and the red dot the only red. The files themselves are the expected
+    output, judged on the preview."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(REPO, "tests", "stubs"))
+        sys.path.insert(0, os.path.join(REPO, "games"))
+        import time
+        if not hasattr(time, "ticks_diff"):
+            time.ticks_diff = lambda a, b: a - b
+            time.ticks_us = lambda: int(time.perf_counter() * 1e6)
+            time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
+        import arcade
+        cls.game, cls.module = arcade.Snake, arcade
+        cls.painting = snake_set.ART_SET.paint()
+        index = {}
+        exec(read("games", "art_index.py"), index)
+        cls.art, cls.sets = index["ART"], index["PICTURE_SETS"]
+
+    def asked(self):
+        """Every picture name the game holds or writes out."""
+        m = self.module
+        names = [n for poses in m.HEADS for n in poses]
+        names += list(m.TILES + m.TURNS + m.GLOWS + m.BITES + m.SEEN + m.DOTS + m.BULGES + m.RIPPLES + m.PINGS
+                      + m.THUMBS + m.FEED_DIGITS)
+        return names + re.findall(r'"(snake_[a-z_]+)"', read("games", "arcade.py"))
+
+    def test_every_name_the_game_asks_for_is_in_its_set(self):
+        for name in self.asked():
+            with self.subTest(name=name):
+                self.assertIn(name, self.sets["snake"])
+
+    def test_the_set_is_no_larger_than_the_pool(self):
+        size = sum(self.art[n][0] * self.art[n][1] * 2 for n in self.sets["snake"])
+        self.assertLess(size, 739200)  # runner's set makes the pool; a smaller one needs no reset (P573)
+
+    def test_the_game_copies_the_sets_sizes_and_places(self):
+        g, m, a = self.game, self.module, snake_set
+        self.assertEqual((a.CELL, a.COLS, a.ROWS, a.LEFT, a.TOP), (g.CELL, g.COLS, g.ROWS, g.LEFT, g.TOP))
+        self.assertEqual((a.KINDS, a.DIRS, a.POSES), (m.FEED_KINDS, m.FEED_DIRS, m.FEED_POSES))
+        self.assertEqual(sorted(m.FEED_ORDER), sorted(list(range(6)) * 2))  # each kind twice in the shuffle
+        self.assertEqual((a.HEAD, a.HALO, a.BULGE, a.RIPPLE, a.PING, a.THUMB[0], a.GLOW, a.BITE),
+                         (g.HEAD, g.HALO, g.BULGE, m.Meals.RIPPLE, g.PING, g.THUMB_W, g.GLOW_PX, g.BITE))
+        self.assertEqual((a.HALO_ALPHA, a.GLOW_ALPHA, a.DIGIT_W), (g.HALO_ALPHA, g.GLOW_ALPHA, g.DIGIT_W))
+        self.assertEqual((a.RIPPLES, a.PINGS, a.DOT_POSES, a.BITES), (len(m.RIPPLES), len(m.PINGS), len(m.DOTS),
+                                                                      len(m.BITES)))
+        self.assertEqual((g.CARD_X + a.CARD_PLATE[0] + a.PLATE_W - 3, g.CARD_Y + a.CARD_PLATE[1] + 3),
+                         (g.CARD_RIGHT, g.CARD_TOP))
+        self.assertEqual((a.TITLE_PLATE[0] + a.PLATE_W - 3, a.TITLE_PLATE[1] + 3),
+                         (g.TITLE_BEST_RIGHT, g.TITLE_BEST_TOP))
+        self.assertEqual(board_colour(a.BONE), board_colour(self.colour(g.BONE)))
+
+    @staticmethod
+    def colour(c):
+        """A c565 value back to (r, g, b), its bytes swapped back."""
+        v = ((c & 0xFF) << 8) | (c >> 8)
+        return ((v >> 11) * 255 // 31, (v >> 5 & 63) * 255 // 63, (v & 31) * 255 // 31)
+
+    def test_sizes_and_key(self):
+        a = snake_set
+        sizes = {name: img.size + (keyed,) for name, (img, keyed) in self.painting.pictures.items()}
+        for name in ("snake_morning", "snake_title"):
+            self.assertEqual((320, 240, False), sizes[name])
+        self.assertEqual((200, 100, False), sizes["snake_over"])
+        for name in self.module.TILES + self.module.TURNS + self.module.SEEN + self.module.DOTS:
+            self.assertEqual((a.CELL, a.CELL, True), sizes[name])
+        for name in [n for poses in self.module.HEADS for n in poses]:
+            self.assertEqual((a.HEAD, a.HEAD, True), sizes[name])
+
+    def test_the_glass_holds_the_street_faint(self):
+        x0, y0, x1, y1 = snake_set.FIELD
+        glass = self.painting.pictures["snake_morning"][0].convert("RGB").crop((x0, y0, x1, y1))
+        mean = sum(snake_set.luma(p) for p in glass.get_flattened_data()) / (glass.width * glass.height)
+        self.assertTrue(0.15 <= mean <= 0.25, mean)
+
+    def test_six_tiles_in_six_hues_and_the_accent_the_only_red(self):
+        import colorsys
+        hues = set()
+        for kind in snake_set.KINDS:
+            r, g, b = snake_set.HUES[kind]
+            hues.add(round(colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)[0] * 12))
+        self.assertEqual(6, len(hues))
+        accent = board_colour(ACCENT)
+        hue = colorsys.rgb_to_hsv(*(c / 255 for c in ACCENT))[0]
+        for name, (img, keyed) in self.painting.pictures.items():
+            reds = {c for c in shown(img) if snake_set.is_red(c)}
+            with self.subTest(name=name):
+                if keyed:  # a sprite's red is the accent itself
+                    self.assertLessEqual(reds, {accent})
+                for c in reds:  # a painted picture's red is the accent's glow: its hue
+                    h = colorsys.rgb_to_hsv(*(v / 255 for v in c))[0]
+                    self.assertLess(min(abs(h - hue), 1 - abs(h - hue)), 12 / 360, c)  # blended into the ink
+        for name in self.module.TILES + self.module.TURNS + self.module.GLOWS + self.module.SEEN + self.module.THUMBS:
+            with self.subTest(name=name):
+                self.assertNotIn(accent, shown(self.painting.pictures[name][0]))
+        for name in self.module.DOTS + self.module.PINGS + self.module.BITES + ("snake_over", "snake_title",
+                                                                                "snake_head_r_gulp", "snake_bulge_0"):
+            with self.subTest(name=name):
+                self.assertIn(accent, shown(self.painting.pictures[name][0]))
+
+    def test_the_head_faces_each_way_left_mirrored_so_the_eye_stays_up(self):
+        pics = self.painting.pictures
+        for pose in snake_set.POSES:
+            right, left = pics["snake_head_r_%s" % pose][0], pics["snake_head_l_%s" % pose][0]
+            down, up = pics["snake_head_d_%s" % pose][0], pics["snake_head_u_%s" % pose][0]
+            with self.subTest(pose=pose):
+                self.assertEqual(to_bin(PIL.ImageOps.mirror(right), True), to_bin(left, True))
+                self.assertEqual(to_bin(right.transpose(Image.Transpose.ROTATE_270), True), to_bin(down, True))
+                self.assertEqual(to_bin(right.transpose(Image.Transpose.ROTATE_90), True), to_bin(up, True))
+        self.assertEqual(4, len({to_bin(pics["snake_head_r_%s" % p][0], True) for p in snake_set.POSES}))
 
 
 if __name__ == "__main__":
