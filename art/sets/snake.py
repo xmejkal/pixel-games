@@ -192,7 +192,8 @@ def inside(x, y):
 def glass(street):
     """The glass: the street mirrored in it at REFLECTION's luminance over the dark, a faint light from within, the
     cold streak of the sky across it from the lower left, and a dot at each cell's corner, the screen's grid."""
-    mirrored = ImageEnhance.Color(ImageOps.mirror(street).convert("RGB")).enhance(1.6)
+    mirrored = ImageEnhance.Color(ImageOps.mirror(street).convert("RGB")).enhance(1.7)
+    mirrored = mirrored.point(lambda v: int(255 * (v / 255) ** 1.8))  # the glass keeps the lights, drops the greys
     lum = sum(luma(p) for p in mirrored.getdata()) / (W * H)
     k = (REFLECTION - luma(GLASS)) / lum
     base = Image.new("RGB", (W, H), GLASS)
@@ -211,8 +212,18 @@ def glass(street):
                                               blur(sharp, 1.5).point(lambda v: v * 5 // 10)))
     flare = Image.new("L", (W, H), 0)  # the low sun on the glass itself: a warm bloom from the upper left
     ImageDraw.Draw(flare).ellipse((-60, -40, 110, 120), fill=255)
-    out = ImageChops.add(out, Image.composite(Image.new("RGB", (W, H), (120, 76, 30)), Image.new("RGB", (W, H)),
-                                              blur(flare, 40).point(lambda v: v * 7 // 10)))
+    out = ImageChops.add(out, Image.composite(Image.new("RGB", (W, H), (150, 92, 34)), Image.new("RGB", (W, H)),
+                                              blur(flare, 36).point(lambda v: v * 8 // 10)))
+    core = Image.new("L", (W, H), 0)
+    ImageDraw.Draw(core).ellipse((4, 18, 40, 54), fill=255)
+    out = ImageChops.add(out, Image.composite(Image.new("RGB", (W, H), (190, 150, 90)), Image.new("RGB", (W, H)),
+                                              blur(core, 8)))
+    for (fx, fy, r, colour) in ((96, 92, 16, (60, 40, 14)), (150, 132, 9, (14, 50, 54)), (196, 170, 22, (30, 16, 40)),
+                                (228, 192, 6, (60, 60, 40))):  # the sun's ghosts in the lens, down the glass
+        ghost = Image.new("L", (W, H), 0)
+        ImageDraw.Draw(ghost).regular_polygon((fx, fy, r), 6, rotation=15, fill=255)
+        out = ImageChops.add(out, Image.composite(Image.new("RGB", (W, H), colour), Image.new("RGB", (W, H)),
+                                                  blur(ghost, 1.2)))
     edge = Image.new("L", (W, H), 255)  # the glass darker toward its edges, so the middle reads lit from within
     ImageDraw.Draw(edge).rounded_rectangle((20, 34, 300, 224), 30, fill=0)
     glaze(out, blur(edge, 24), (90, 90, 120), 0.6)
@@ -570,16 +581,16 @@ def paint_over():
     lay(s.rgb, dot_m, BONE)
     text = "YOU REMEMBER "
     full = text + "0."
-    x0 = w / 2 - text_width(full, 2.2) / 2
+    x0 = w / 2 - text_width(full, 1.9) / 2
     mm = s.mask()
-    write(mm, text, x0 * s.S, 44 * s.S, 2.2 * s.S, 1.6 * s.S)
+    write(mm, text, x0 * s.S, 44 * s.S, 1.9 * s.S, 1.5 * s.S)
     lay(s.rgb, mm, BONE)
     zero = s.mask()
-    write(zero, "0", (x0 + len(text) * 6 * 2.2) * s.S, 44 * s.S, 2.2 * s.S, 1.9 * s.S)
+    write(zero, "0", (x0 + len(text) * 6 * 1.9) * s.S, 44 * s.S, 1.9 * s.S, 1.8 * s.S)
     lay(s.rgb, blur(zero, 3 * s.S), ACCENT, 0.5)
     lay(s.rgb, zero, ACCENT)
     stop = s.mask()
-    write(stop, ".", (x0 + (len(text) + 1) * 6 * 2.2) * s.S, 44 * s.S, 2.2 * s.S, 1.6 * s.S)
+    write(stop, ".", (x0 + (len(text) + 1) * 6 * 1.9) * s.S, 44 * s.S, 1.9 * s.S, 1.5 * s.S)
     lay(s.rgb, stop, BONE)
     rule = s.mask()
     s.polygon(rule, [(30, 70), (w - 30, 70), (w - 30, 71.5), (30, 71.5)])

@@ -86,7 +86,7 @@ def checker(w, h, c=8):
 
 def preview(sets, paintings, path):
     """preview.png: each set's rows in the table's order, then the tails (the runner's sprite grid), cropped."""
-    sheet = Sheet(1320, 3000)
+    sheet = Sheet(1320, 8000)  # tall enough for every set; cropped to its rows below
     y = 8
     for art_set in sets:
         if art_set.sheet_fn:
