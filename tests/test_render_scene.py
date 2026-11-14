@@ -231,13 +231,13 @@ class LineTest(unittest.TestCase):
 
 class PicturesRootTest(unittest.TestCase):
     def setUp(self):
-        self.saved = pictures.ROOT, pictures.ready, dict(pictures.PICS), dict(pictures.SETS)
-        pictures.ready = False
+        self.saved = pictures.ROOT, pictures.ready, pictures.loaded, dict(pictures.PICS), dict(pictures.SETS)
+        pictures.ready, pictures.loaded = False, None
         pictures.PICS.clear()
         pictures.SETS.clear()
 
     def tearDown(self):
-        pictures.ROOT, pictures.ready, pics, sets = self.saved
+        pictures.ROOT, pictures.ready, pictures.loaded, pics, sets = self.saved
         pictures.PICS.clear()
         pictures.PICS.update(pics)
         pictures.SETS.clear()
@@ -248,6 +248,8 @@ class PicturesRootTest(unittest.TestCase):
         self.assertFalse(pictures.load())
         self.assertFalse(pictures.ready)
         pictures.ROOT = os.path.join(ROOT, "games", "")
+        self.assertFalse(pictures.load())  # a refused load is kept until free()
+        pictures.free()
         self.assertTrue(pictures.load())
         self.assertIn("flappy_sky", pictures.PICS)
         self.assertIn("flappy", pictures.SETS)

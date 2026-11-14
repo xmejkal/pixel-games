@@ -45,7 +45,8 @@ def block(n):
         import s3lcd
         largest = max(total for path, total, build_id in art_index.PACKS.values())
         return memoryview(s3lcd.pool(max(n, largest)))
-    except (ImportError, AttributeError, ValueError):  # no pool (the Mac, an older image, or a pool kept smaller)
+    except (ImportError, AttributeError, ValueError):  # no pool: no s3lcd on the Mac (ImportError), an older image
+        # without s3lcd.pool (AttributeError), or a pool a soft reset kept smaller (ValueError): a bytearray instead
         return memoryview(bytearray(n))
 
 
@@ -63,8 +64,9 @@ def spans(game, only=None):
 
 
 def read_chunks(f, view):
-    """Fill view from f, CHUNK_SIZE bytes a call into a slice of the block (no buffer of its own), so the sound's
-    callback runs between two calls. Returns the bytes read: fewer than len(view) at the file's end."""
+    """Fill view from f, CHUNK_SIZE bytes a call into a slice of the block (no copy: each chunk is a small memoryview
+    of the block), so the sound's callback runs between two calls. Returns the bytes read: fewer than len(view) at
+    the file's end."""
     got = 0
     while got < len(view):
         n = f.readinto(view[got:got + CHUNK_SIZE])
@@ -111,40 +113,62 @@ def since(start):
     return time.ticks_diff(time.ticks_ms(), start) if hasattr(time, "ticks_diff") else 0
 
 
+def refuse(message):
+    """No art, said aloud: the set half read goes."""
+    PICS.clear()
+    SETS.clear()
+    print(message)
+    return False
+
+
+def place(game, parts, buf, only):
+    """The game's pictures (only those in only, when given) and its layers, as views of the parts read into buf."""
+    for name in art_index.PICTURE_SETS[game]:
+        w, h, _, offset = art_index.ART[name]
+        if only is None or name in only:
+            PICS[name] = (w, h, view(buf, parts, offset, w * h * 2))
+    if only is None and game in art_index.LAYER_SETS:
+        SETS[game] = [[name, top, w, h, speed, keyed, view(buf, parts, offset, w * h * 2)]
+                      for name, top, w, h, speed, keyed, _, offset in art_index.LAYER_SETS[game]]
+
+
 def load(game=None, only=None):
     """Read one game's art set once (game: its name in art_index.PICTURE_SETS; only: just these of its pictures), and
-    free the set loaded before. game None reads every pack, for the tools on the Mac. A pack whose size or header is
-    not this build's is refused aloud: no art, rather than another build's. Answers whether art is there."""
+    free the set loaded before. game None reads every pack, for the tools on the Mac. A missing pack, or one whose size
+    or header is not this build's, is refused aloud, naming the game: no art, rather than another build's. A refused
+    load is kept like a loaded one, so asked again it answers False with no read and no message; free() forgets it.
+    Answers whether art is there."""
     global ready, loaded, load_ms
     if art_index is None:
         return False
     if loaded == (game, only):
         return ready
     free()
+    loaded = (game, only)
     start = time.ticks_ms() if hasattr(time, "ticks_ms") else 0  # the Mac's CPython has no ticks
-    sets = tuple(art_index.PICTURE_SETS) if game is None else (game,) if game in art_index.PICTURE_SETS else ()
+    if not hasattr(art_index, "PACKS") or any(len(row) != 4 for row in art_index.ART.values()):
+        return refuse("art: games/art_index.py is from before the packs: copy games/*.py and games/packs, "
+                      "then hard reset")
+    if game is None:
+        sets = tuple(art_index.PICTURE_SETS)
+    elif game in art_index.PICTURE_SETS:
+        sets = (game,)
+    else:
+        sets = ()
     reads = [(g, spans(g, only)) for g in sets]
     if not any(n for _, parts in reads for _, n in parts):
         return False
-    buf, at, read = block(sum(HEADER + sum(n for _, n in parts) for _, parts in reads)), 0, {}
+    buf, at = block(sum(HEADER + sum(n for _, n in parts) for _, parts in reads)), 0
     for g, parts in reads:
         try:
-            read[g] = read_pack(g, parts, buf, at)
+            got = read_pack(g, parts, buf, at)
         except OSError:  # no pack there
-            read[g] = None
-        if read[g] is None:
-            print("stale art: copy games/packs", art_index.PACKS[g][0])
-            return False
+            return refuse("art: %s has no pack: copy games/packs to the board" % g)
+        if got is None:
+            return refuse("art: %s pack is not this build: copy games/*.py and games/packs, then hard reset" % g)
+        place(g, got, buf, only)
         at += HEADER + sum(n for _, n in parts)
-    for g in sets:
-        for name in art_index.PICTURE_SETS[g]:
-            w, h, _, offset = art_index.ART[name]
-            if only is None or name in only:
-                PICS[name] = (w, h, view(buf, read[g], offset, w * h * 2))
-        if only is None and g in art_index.LAYER_SETS:
-            SETS[g] = [[name, top, w, h, speed, keyed, view(buf, read[g], offset, w * h * 2)]
-                       for name, top, w, h, speed, keyed, _, offset in art_index.LAYER_SETS[g]]
-    ready, loaded, load_ms = True, (game, only), since(start)
+    ready, load_ms = True, since(start)
     return True
 
 

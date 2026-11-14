@@ -20,7 +20,7 @@ from export import from_bin, pack_bytes, q565, to_bin  # noqa: E402
 from letters import GLYPHS, write  # noqa: E402
 from looks import NightInk, Watercolour  # noqa: E402
 from paint import main  # noqa: E402
-from sets import runner as runner_set, stack as stack_set  # noqa: E402
+from sets import ART_SETS, runner as runner_set, stack as stack_set  # noqa: E402
 from sets.runner import RED, run_cycle, runner  # noqa: E402
 
 PREVIEW_PILLOW = "12.3.0"  # preview.png was written with it; fonts and zlib change PNG bytes, not the board files
@@ -46,8 +46,8 @@ class PaintedFilesTest(unittest.TestCase):
 
     def test_every_pack_as_committed(self):
         made, kept = os.path.join(self.tmp.name, "games", "packs"), os.path.join(REPO, "games", "packs")
-        self.assertEqual(sorted(os.listdir(made)), sorted(n for n in os.listdir(kept) if n.endswith(".pak")))
-        self.assertEqual(6, len(os.listdir(made)))  # one pack per set
+        self.assertEqual(sorted(os.listdir(made)), sorted(os.listdir(kept)))  # games/packs holds the packs only
+        self.assertEqual(sorted("%s.pak" % art_set.name for art_set in ART_SETS), sorted(os.listdir(kept)))
         for name in os.listdir(made):
             with self.subTest(name=name):
                 self.assertTrue(same_bytes(os.path.join(made, name), os.path.join(kept, name)))

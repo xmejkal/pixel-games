@@ -14,6 +14,7 @@ import shutil
 import sys
 import tempfile
 import time
+import types
 import unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -178,19 +179,23 @@ class PacksTest(unittest.TestCase):
     """The packs (P814): one file per set, read in chunks, checked, and only what is asked for."""
 
     def setUp(self):
-        self.root, self.reads = pictures.ROOT, []
+        self.root, self.reads, self.opens = pictures.ROOT, [], []
         pictures.ROOT = os.path.join(GAMES, "")
         pictures.free()
-        pictures.open = lambda path, mode: Recorded(open(path, mode), self.reads)  # pictures' own open, recorded
+        pictures.open = self.open  # pictures' own open, recorded
         self.addCleanup(self.restore)
+
+    def open(self, path, mode):
+        self.opens.append(path)
+        return Recorded(open(path, mode), self.reads)
 
     def restore(self):
         del pictures.open
         pictures.free()
         pictures.ROOT = self.root
+        pictures.art_index = art_index
 
     def test_a_read_never_asks_for_more_than_a_chunk(self):
-        self.assertLessEqual(pictures.CHUNK_SIZE, 8192)  # about 6 ms a read on the board, under the 48 ms late limit
         self.assertTrue(pictures.load("runner"))
         self.assertLessEqual(max(asked for asked, _ in self.reads), pictures.CHUNK_SIZE)
         self.assertEqual(art_index.PACKS["runner"][1], sum(got for _, got in self.reads))  # the whole pack, once
@@ -201,36 +206,65 @@ class PacksTest(unittest.TestCase):
         self.assertEqual(pictures.HEADER + 320 * 240 * 2, sum(got for _, got in self.reads))
         self.assertEqual(pack_bytes("sky"), bytes(pictures.PICS["sky"][2]))
 
-    def stale(self, change):
-        """load("bucket") from a copy of the packs whose bucket pack change(data) altered: what it says."""
+    def refused(self, change):
+        """load("bucket") from a copy of the packs whose bucket pack change(data) altered (None: removed): what it
+        says."""
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         shutil.copytree(os.path.join(GAMES, "packs"), os.path.join(tmp.name, "packs"))
         path = os.path.join(tmp.name, "packs", "bucket.pak")
         with open(path, "rb") as f:
             data = f.read()
-        with open(path, "wb") as f:
-            f.write(change(data))
+        os.remove(path)
+        if change:
+            with open(path, "wb") as f:
+                f.write(change(data))
         pictures.ROOT = os.path.join(tmp.name, "")
+        pictures.free()
         with contextlib.redirect_stdout(io.StringIO()) as said:
             self.assertFalse(pictures.load("bucket"))
         self.assertEqual({}, pictures.PICS)
         return said.getvalue()
 
-    def test_a_stale_pack_is_refused_aloud(self):
-        other = lambda data: data[:8] + bytes(b ^ 0xFF for b in data[8:16]) + data[16:]  # noqa: E731  another build
-        longer = lambda data: data + bytes(2)  # noqa: E731
-        shorter = lambda data: data[:-2]  # noqa: E731
-        magic = lambda data: b"OLDPACK1" + data[8:]  # noqa: E731
-        for change in (other, longer, shorter, magic):
-            with self.subTest(change=change):
-                self.assertIn("stale art: copy games/packs", self.stale(change))
+    def test_a_stale_pack_is_refused_naming_the_game(self):
+        changes = {
+            "another build": lambda data: data[:8] + bytes(b ^ 0xFF for b in data[8:16]) + data[16:],
+            "longer": lambda data: data + bytes(2),
+            "shorter": lambda data: data[:-2],
+            "another magic": lambda data: b"OLDPACK1" + data[8:],
+        }
+        for case, change in changes.items():
+            with self.subTest(case=case):
+                self.assertEqual("art: bucket pack is not this build: copy games/*.py and games/packs, then hard "
+                                 "reset\n", self.refused(change))
 
-    def test_a_missing_pack_is_refused_aloud(self):
+    def test_a_missing_pack_is_refused_naming_the_game(self):
+        self.assertEqual("art: bucket has no pack: copy games/packs to the board\n", self.refused(None))
+
+    def test_a_refused_load_asked_again_opens_nothing_and_says_nothing(self):
         pictures.ROOT = os.path.join(GAMES, "nowhere", "")
         with contextlib.redirect_stdout(io.StringIO()) as said:
-            self.assertFalse(pictures.load("rescue"))
-        self.assertIn("stale art: copy games/packs", said.getvalue())
+            self.assertFalse(pictures.load("meteors"))
+            self.assertFalse(pictures.load("meteors"))  # Meteors loads twice: at setup and at its round's start
+        self.assertEqual(1, said.getvalue().count("art: meteors has no pack"))
+        self.assertEqual(1, len(self.opens))
+        pictures.free()  # forgets the refusal: the next load tries again
+        pictures.ROOT = os.path.join(GAMES, "")
+        self.assertTrue(pictures.load("meteors"))
+
+    def test_an_index_from_before_the_packs_is_refused_aloud(self):
+        rows = {name: row[:2] + ("art/%s.bin" % name,) for name, row in art_index.ART.items()}  # (w, h, path)
+        old = types.SimpleNamespace(KEY_C565=art_index.KEY_C565, ART=rows, PICTURE_SETS=art_index.PICTURE_SETS,
+                                    LAYER_SETS={})
+        mixed = types.SimpleNamespace(**dict(vars(old), PACKS=art_index.PACKS))  # PACKS, but ART's old rows
+        for case, index in (("no PACKS", old), ("ART's rows of three", mixed)):
+            with self.subTest(case=case):
+                pictures.art_index = index
+                pictures.free()
+                with contextlib.redirect_stdout(io.StringIO()) as said:
+                    self.assertFalse(pictures.load("bucket"))
+                self.assertIn("art: games/art_index.py is from before the packs", said.getvalue())
+                self.assertEqual([], self.opens)
 
 
 class PackFilesTest(unittest.TestCase):

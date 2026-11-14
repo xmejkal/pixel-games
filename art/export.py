@@ -156,6 +156,11 @@ def board_bytes(name, img, keyed):
     return data
 
 
+def build_id(content):
+    """The first 8 bytes of the content's sha256: a pack's header says which build it is."""
+    return hashlib.sha256(content).digest()[:HEADER - len(MAGIC)]
+
+
 class Packs:
     """Each set's pack (P814): one file the board reads in one open, its 16-byte header (MAGIC and the first 8 bytes
     of the sha256 of the rest), then the set's pictures in PICTURE_SETS order. A picture's bytes are in its set's pack
@@ -185,22 +190,17 @@ class Packs:
             self.files[art_set.name] = MAGIC + build_id(content) + bytes(content)
         self.art = dict(pictures, **aliases)
 
-    def row(self, art_set):
+    def row(self, set_name):
         """PACKS' row of a set: (path on the board, the file's size, the build id in hex)."""
-        data = self.files[art_set]
-        return "packs/%s.pak" % art_set, len(data), data[len(MAGIC):HEADER].hex()
-
-
-def build_id(content):
-    """The first 8 bytes of the content's sha256: a pack's header says which build it is."""
-    return hashlib.sha256(content).digest()[:HEADER - len(MAGIC)]
+        data = self.files[set_name]
+        return "packs/%s.pak" % set_name, len(data), data[len(MAGIC):HEADER].hex()
 
 
 def write_packs(packs, out_dir):
     """games/packs/<set>.pak for every set. Returns the bytes written."""
     total = 0
-    for art_set, data in packs.files.items():
-        with open(os.path.join(out_dir, art_set + ".pak"), "wb") as f:
+    for set_name, data in packs.files.items():
+        with open(os.path.join(out_dir, set_name + ".pak"), "wb") as f:
             f.write(data)
         total += len(data)
     return total
@@ -252,6 +252,7 @@ def write_index(sets, paintings, packs, path):
              "# panel: h x w, so a strip's game x runs along its rows, and a 320 px window of a strip is one",
              "# contiguous slice.",
              "ART = {"]
+    # each row's tail (set, offset) says where the picture's bytes are: in its own set's pack, so a switch opens one
     lines += ['    "%s": (%d, %d, "%s", %d),' % ((n,) + row) for n, row in packs.art.items()]
     owners = [art_set for art_set in sets if art_set.index_layers]
     assert len(owners) == 1, "exactly one set's layers are LAYERS"
