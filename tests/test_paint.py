@@ -20,7 +20,7 @@ from export import from_bin, q565, to_bin  # noqa: E402
 from letters import GLYPHS, write  # noqa: E402
 from looks import NightInk, Watercolour  # noqa: E402
 from paint import main  # noqa: E402
-from sets import runner as runner_set, stack as stack_set  # noqa: E402
+from sets import gravpong as gravpong_set, runner as runner_set, stack as stack_set  # noqa: E402
 from sets.runner import RED, run_cycle, runner  # noqa: E402
 
 PREVIEW_PILLOW = "12.3.0"  # preview.png was written with it; fonts and zlib change PNG bytes, not the board files
@@ -80,6 +80,14 @@ class OneSetAloneTest(unittest.TestCase):
     def test_stack_alone_as_committed(self):
         rnd.random()
         painting = stack_set.ART_SET.paint()
+        for name, (img, keyed) in painting.pictures.items():
+            with self.subTest(name=name), open(os.path.join(REPO, "games", "art", name + ".bin"), "rb") as f:
+                self.assertEqual(to_bin(img, keyed), f.read())
+
+
+    def test_gravpong_alone_as_committed(self):
+        rnd.random()
+        painting = gravpong_set.ART_SET.paint()
         for name, (img, keyed) in painting.pictures.items():
             with self.subTest(name=name), open(os.path.join(REPO, "games", "art", name + ".bin"), "rb") as f:
                 self.assertEqual(to_bin(img, keyed), f.read())
