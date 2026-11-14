@@ -198,7 +198,7 @@ class BubbleTest(unittest.TestCase):
             time.ticks_us = lambda: int(time.perf_counter() * 1e6)
             time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
         import arcade2
-        cls.game = arcade2.GravityPong
+        cls.game, cls.module = arcade2.GravityPong, arcade2
         cls.painting = gravpong_set.ART_SET.paint()
         index = {}
         exec(read("games", "art_index.py"), index)
@@ -206,9 +206,10 @@ class BubbleTest(unittest.TestCase):
 
     def asked(self):
         """Every picture name the game holds or writes out."""
-        g = self.game
-        names = [n for k in g.BUBBLES + g.FILMS + g.HALOS for n in k] + list(g.NETS + g.POPS + g.NOTE_NAMES + g.DIGITS)
-        names += [n for side in g.WORKERS for poses in side.values() for n in poses] + [n for k in g.STANDS for n in k]
+        g, arcade2 = self.game, self.module
+        names = [n for k in g.BUBBLES + g.FILMS + g.HALOS + tuple(g.NETS.values()) for n in k]
+        names += list(g.POPS + arcade2.Notes.NAMES + g.DIGITS)
+        names += [n for side in g.WORKERS for poses in side.values() for n in poses] + list(g.STANDS)
         return names + re.findall(r'"(gravpong_[a-z_]+)"', read("games", "arcade2.py"))
 
     def test_every_name_the_game_asks_for_is_in_its_set(self):
@@ -225,9 +226,10 @@ class BubbleTest(unittest.TestCase):
         self.assertEqual(a.SIZES, g.SIZES)
         self.assertEqual(tuple(a.BOX[d] for d in a.SIZES), g.BOX)
         self.assertEqual((a.RINGS, a.GLOW_ALPHAS, a.FILM_ALPHA), (g.RINGS, g.GLOW_ALPHAS, g.FILM_ALPHA))
-        self.assertEqual((a.FLOOR, a.NET_Y, a.NET_Y + a.NET_TOP, a.NET[0]), (g.FLOOR, g.NET_Y, g.PY, g.PW))
+        self.assertEqual((a.FLOOR, a.NET_Y, a.NET_Y + a.NET_TOP), (g.FLOOR, g.NET_Y, g.PY))
         self.assertEqual(a.WORKER + (a.hand_dx(),), (g.WORKER_W, g.WORKER_H, g.HAND_DX))
         self.assertEqual((a.POP, a.POP_FRAMES, a.SPOT, a.COIN), (g.POP, g.POP_FRAMES, (g.SPOT_W, g.SPOT_H), g.COIN))
+        self.assertEqual((a.POOL, a.NET_WIDTHS, a.NET_WIDTHS[0]), ((g.POOL_W, g.POOL_H), self.module.NET_WIDTHS, g.PW))
         self.assertEqual((a.BOARD[:2], a.PLATE[2] - 3, a.PLATE[1] + 2), (g.BOARD, g.PLATE_RIGHT, g.PLATE_TOP))
         self.assertEqual(a.TITLE_PLATE[0] + a.PLATE_W - 3, g.TITLE_BEST_RIGHT)
         self.assertEqual(a.TITLE_PLATE[1] + 3, g.TITLE_BEST_TOP)
@@ -242,7 +244,9 @@ class BubbleTest(unittest.TestCase):
         for d, b in zip(self.game.SIZES, self.game.BOX):
             for name in self.game.BUBBLES[self.game.SIZES.index(d)]:
                 self.assertEqual((b, b, True), shown[name])
-        self.assertEqual((70, 12, True), shown["gravpong_net_0"])
+        for w, names in self.game.NETS.items():
+            for name in names:
+                self.assertEqual((w, 14, True), shown[name])
 
     def test_the_bubble_is_as_wide_as_its_size_in_the_round_pose(self):
         for d in self.game.SIZES:

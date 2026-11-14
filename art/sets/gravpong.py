@@ -29,14 +29,15 @@ DESK_TOP = 206  # the desks' tops
 FLOOR = 236  # the floor's first row: the workers' soles stand on the row above it
 NET_Y = 216  # games/arcade2.py's PY less NET_TOP: the net picture's top row
 NET_TOP = 2  # the net's end ropes are on the picture's rows NET_TOP and NET_TOP + 1, the game's hit row PY
-NET = (70, 12)  # games/arcade2.py's PW, and the deepest sag
+NET = (70, 14)  # games/arcade2.py's widest net, and the deepest sag
+NET_WIDTHS = (70, 62, 54, 46)  # the net as the workers tire: games/arcade2.py's widths
 SIZES = (12, 16, 20, 24, 28)  # the bubble's diameters, one per radius 6, 8, 10, 12, 14
 POSES = ("round", "squash", "stretch", "wobblea", "wobbleb")
 BOX = {d: (-(-d * 126 // 100) + 3) // 2 * 2 for d in SIZES}  # each size's square picture, even, so the
 # bubble's middle is on a pixel corner: room for the squash and the stretch
 POP, POP_FRAMES = 40, 5
 NOTE, NOTE_POSES = (8, 5), 3
-WORKER = (22, 28)  # px; the hips at the picture's middle, the soles on its last row
+WORKER = (26, 34)  # px; the hips at the picture's middle, the soles on its last row
 DIGIT_W, DIGIT_H = 8, 12
 CARD = (200, 100)
 CARD_PLATES = ((40, 64), (120, 64))  # the over card's plates for the score and the best
@@ -393,10 +394,11 @@ def halo(d, ring):
 
 # --- the workers ---------------------------------------------------------------------------------------------------
 
-OVERALLS, OVERALLS_FAR = (176, 176, 186), (112, 112, 130)  # pale overalls: the near side, and the far limbs in shade
-FACE, CAP, BOOTS = (168, 124, 108), (58, 58, 84), (20, 18, 28)
-HAND_UP, HAND_AHEAD = 0.72, 0.31  # the hands, in body heights over the soles and ahead of the hips: the net's end
-WORKER_LOOK = Look(24, OVERALLS, OVERALLS, limb=2.3, torso=4.2, hair="cap")
+OVERALLS, OVERALLS_FAR = (218, 212, 198), (150, 144, 150)  # bone overalls: the near side, and the far limbs in shade
+FACE, CAP, BOOTS = (190, 140, 112), (52, 52, 80), (20, 18, 28)
+SODIUM_RIM, SODIUM_DIM = (255, 176, 92), (196, 112, 64)  # the street's glow on the crew's edges
+HAND_UP, HAND_AHEAD = 0.62, 0.31  # the hands, in body heights over the soles and ahead of the hips: the net's end
+WORKER_LOOK = Look(30, OVERALLS, OVERALLS, limb=2.8, torso=5.0, hair="cap")
 STRIDE = 4  # the run's poses
 LEGS = (  # each pose of the run: the near leg's knee, ankle and toes, the far leg's, and the hips' rise; facing right
     ((0.12, 0.29), (0.21, 0.05), (0.28, 0.02), (-0.05, 0.27), (-0.17, 0.11), (-0.12, 0.04), -0.02),
@@ -405,7 +407,7 @@ LEGS = (  # each pose of the run: the near leg's knee, ankle and toes, the far l
     ((0.14, 0.34), (0.03, 0.17), (0.09, 0.14), (0.07, 0.28), (0.0, 0.05), (0.07, 0.01), 0.01),
 )
 STAND_LEGS = ((0.06, 0.28), (0.04, 0.04), (0.11, 0.0), (0.0, 0.28), (-0.04, 0.04), (0.03, 0.0), 0.0)
-WORKER_POSES = ("stand", "tired") + tuple("%s%d" % (kind, k) for kind in ("run", "back", "trun", "tback")
+WORKER_POSES = ("tired",) + tuple("%s%d" % (kind, k) for kind in ("run", "back", "trun", "tback")
                                           for k in range(STRIDE))
 
 
@@ -441,8 +443,10 @@ def worker_pose(legs, tired, lean):
 
 
 class Worker(Person):
-    """A night worker, facing right, in the fireman's style: pale overalls, the far limbs in shade, a dark cap, the
-    face in shadow, a 1 px rim warm ahead and cool behind. The hands hold the net's end."""
+    """A night worker, facing right, in the fireman's style: bone overalls, the far limbs in shade, a dark cap, and a
+    1 px rim of the sodium glow on both sides, brighter ahead. The hands hold the net's end."""
+
+    RIMS = (SODIUM_RIM, SODIUM_DIM)
 
     def __init__(self):
         super().__init__(WORKER, WORKER_LOOK)
@@ -464,31 +468,31 @@ class Worker(Person):
 
 
 def worker(name):
-    """One of WORKER_POSES, facing right: stand and tired stand still; run<k> runs forward, back<k> backs away (the
+    """One of WORKER_POSES, facing right: tired stands still, spent; run<k> runs forward, back<k> backs away (the
     run's poses in turn: the game plays them backward), each leant its way; trun and tback the same, spent."""
     kind, k = name.rstrip("0123456789"), int(name[-1]) if name[-1].isdigit() else 0
     tired = 1.0 if kind in ("tired", "trun", "tback") else 0.0
-    legs = STAND_LEGS if kind in ("stand", "tired") else LEGS[k]
+    legs = STAND_LEGS if kind == "tired" else LEGS[k]
     lean = {"run": 9, "trun": 14, "back": -7, "tback": -3}.get(kind, 0)
     return Worker().paint(worker_pose(legs, tired, lean))
 
 
 # --- the net, the pop, the notes, the digits ------------------------------------------------------------------------
 
-NET_DEPTHS = (-1.0, 1.5, 3.5, 6.0)  # px the net's middle hangs below its ends: up (the recoil), flat, sag, deep
-ROPE, MESH, MESH_ROPE = (236, 226, 202), (150, 140, 128), (186, 174, 152)
+NET_DEPTHS = (-1.5, 2.0, 5.0, 8.5)  # px the net's middle hangs below its ends: up (the recoil), flat, sag, deep
+ROPE, MESH, MESH_ROPE = (255, 246, 222), (214, 196, 164), (255, 186, 110)  # the bottom rope lit by the sodium glow
 
 
-def net(depth):
-    """The net between the workers' hands, 70 x 12 keyed: its ends on rows NET_TOP and NET_TOP + 1, the top rope in
-    a curve depth px down at the middle, a band of diamond mesh under it, deepest in the middle, and the bottom
-    rope. Drawn pixel by pixel, so each strand stays one whole pixel."""
-    w, h = NET
+def net(w, depth):
+    """The net between the workers' hands, w x 14 keyed: its ends on rows NET_TOP and NET_TOP + 1, the top rope in a
+    curve depth px down at the middle, a band of diamond mesh under it, deepest in the middle, and the bottom rope,
+    lit from below. Drawn pixel by pixel, so each strand stays one whole pixel."""
+    h = NET[1]
     img = Image.new("RGBA", (w, h), (0, 0, 0, 0))
     for x in range(w):
         k = 1 - ((x + 0.5 - w / 2) / (w / 2)) ** 2  # 0 at the ends, 1 in the middle
         top = round(NET_TOP + 0.4 + depth * k)
-        bottom = min(h - 1, top + round(1 + 3.4 * k ** 0.6))
+        bottom = min(h - 1, top + round(1 + 3.6 * k ** 0.6))
         for y in range(max(0, top), bottom + 1):
             if y == top or y == top + 1 and x in (0, 1, w - 2, w - 1):
                 c = ROPE
@@ -506,6 +510,20 @@ def net(depth):
 
 
 SPOT = (48, 10)
+POOL = (150, 16)  # the light pool under the crew
+
+
+def pool():
+    """The warm light pool on the floor under the crew, 150 x 16 keyed: drawn see-through, so the workers and the
+    net stand in light at 1x."""
+    w, h = POOL
+    img = Image.new("RGBA", POOL, (0, 0, 0, 0))
+    for j in range(h):
+        for i in range(w):
+            r = hypot((i + 0.5 - w / 2) / (w / 2), (j + 0.5 - h / 2) / (h / 2))
+            if r < 1:
+                img.putpixel((i, j), mix((255, 204, 140), (170, 92, 58), r) + (255,))
+    return img
 
 
 def spot():
@@ -674,7 +692,7 @@ def paint_title(midnight, pics):
     plate(s, *TITLE_PLATE)
     s.paper(0.06)
     img = s.rgb.resize((W, H), Image.LANCZOS).convert("RGBA")
-    over(img, pics["gravpong_net_1"], 125, NET_Y)
+    over(img, pics[net_name(70, 1)], 125, NET_Y)
     over(img, pics["gravpong_worker_l_tired"], 125 - WORKER[0] // 2 - hand_dx(), FLOOR - WORKER[1])
     over(img, pics["gravpong_worker_r_tired"], 195 + hand_dx() - WORKER[0] // 2, FLOOR - WORKER[1])
     return img
@@ -705,6 +723,10 @@ def paint_over():
 def hand_dx():
     """px from a worker's hips (the picture's middle) to the hands, which hold the net's end."""
     return round(HAND_AHEAD * WORKER_LOOK.height / (1 + 0.06))
+
+
+def net_name(w, k):
+    return "gravpong_net_%d_%d" % (w, k)
 
 
 def over(out, img, x, y):
@@ -752,7 +774,7 @@ def gravpong_scene(pics, d=24, pose="stretch", film_name="stretch"):
     out = pics["gravpong_midnight"].copy()
     number(out, pics, 4826, PLATE[2] - 3, PLATE[1] + 2)
     show_workers(out, pics, 150, "run1", "back3")
-    over(out, pics["gravpong_net_1"], 150, NET_Y)
+    over(out, pics[net_name(70, 1)], 150, NET_Y)
     show_bubble(out, pics, 196, 120, d, pose, film_name)
     return out.convert("RGB")
 
@@ -763,7 +785,7 @@ def gravpong_end(pics):
     out = pics["gravpong_midnight"].copy()
     out.paste(pics["gravpong_crash"], BOARD[:2])
     show_workers(out, pics, 120, "tired", "tired")
-    over(out, pics["gravpong_net_0"], 120, NET_Y)
+    over(out, pics[net_name(70, 0)], 120, NET_Y)
     over(out, pics["gravpong_pop_2"], 230 - POP // 2, FLOOR - 12 - POP // 2)
     for k, (x, y) in enumerate(((40, 60), (90, 140), (150, 100), (200, 170), (250, 80), (280, 150), (70, 200),
                                 (180, 214), (300, 226), (130, 228))):
@@ -796,17 +818,18 @@ def gravpong_sheet(painting, sheet, y):
     for k in range(POP_FRAMES):
         over(strip, pics["gravpong_pop_%d" % k], k * (POP + 8), 0)
     at = sheet.put("gravpong_pop_0..4 40x40, at 3x", strip.resize((strip.width * 3, POP * 3), Image.NEAREST), 10, y)
-    nets = Image.new("RGB", (NET[0], len(NET_DEPTHS) * 14), (60, 50, 70))
+    nets = Image.new("RGB", (NET[0], len(NET_DEPTHS) * 16), (60, 50, 70))
     for k in range(len(NET_DEPTHS)):
-        over(nets, pics["gravpong_net_%d" % k], 0, k * 14)
-    sheet.put("gravpong_net_0..3 70x12, at 4x", nets.resize((NET[0] * 4, nets.height * 4), Image.NEAREST),
+        over(nets, pics[net_name(70, k)], 0, k * 16)
+    sheet.put("gravpong_net_70_0..3 70x14 (also 62, 54, 46 wide), at 4x",
+              nets.resize((NET[0] * 4, nets.height * 4), Image.NEAREST),
               strip.width * 3 + 30, y)
     y = max(at, y + 18 + nets.height * 4) + 12
     poses = Image.new("RGB", (len(WORKER_POSES) * (WORKER[0] + 2), WORKER[1]), (60, 50, 70))
     for k, name in enumerate(WORKER_POSES):
         over(poses, pics["gravpong_worker_l_" + name], k * (WORKER[0] + 2), 0)
-    y = sheet.put("gravpong_worker_l_<pose>: stand, tired, run0..3, back0..3, trun0..3, tback0..3 (r: mirrored), at 3x",
-                  poses.resize((poses.width * 3, WORKER[1] * 3), Image.NEAREST), 10, y) + 12
+    y = sheet.put("gravpong_worker_l_<pose>: tired, run0..3, back0..3, trun0..3, tback0..3 (r: mirrored), at 2x",
+                  poses.resize((poses.width * 2, WORKER[1] * 2), Image.NEAREST), 10, y) + 12
     small = Image.new("RGB", (NOTE_POSES * 10 + 10 * (DIGIT_W + 2), DIGIT_H), (34, 28, 48))
     for k in range(NOTE_POSES):
         over(small, pics["gravpong_note_%d" % k], k * 10, 3)
@@ -839,8 +862,10 @@ def paint_gravpong():
         right = worker(name)
         pics["gravpong_worker_l_%s" % name] = (right, True)  # the left worker faces right, toward the net
         pics["gravpong_worker_r_%s" % name] = (ImageOps.mirror(right), True)
-    for k, depth in enumerate(NET_DEPTHS):
-        pics["gravpong_net_%d" % k] = (net(depth), True)
+    for w in NET_WIDTHS:
+        for k, depth in enumerate(NET_DEPTHS):
+            pics[net_name(w, k)] = (net(w, depth), True)
+    pics["gravpong_pool"] = (pool(), True)
     for k in range(POP_FRAMES):
         pics["gravpong_pop_%d" % k] = (pop(k), True)
     for k in range(NOTE_POSES):

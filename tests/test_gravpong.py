@@ -17,7 +17,8 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import gfx  # noqa: E402
-from arcade2 import GravityPong  # noqa: E402
+import arcade2  # noqa: E402
+from arcade2 import BubbleLook, GravityPong, Net, Notes  # noqa: E402
 
 FRAME_MS = 40  # app.py's FRAME_MS
 SEED, FRAMES, EVERY = 2, 1000, 3  # the trace's seed, its length, and the bot's look: one frame in EVERY
@@ -215,6 +216,138 @@ class SwellTest(unittest.TestCase):
         game.by = gfx.HEIGHT + 14.5
         game.play(False, False)
         self.assertEqual(gfx.OVER, game.state)
+
+
+def lost():
+    """A game on the frame clock whose bubble is lost on its second frame: (game, the ms of the loss)."""
+    game, now = GravityPong(), FRAME_MS
+    game.step(now, True, True)  # the tap starts play
+    game.px, game.bx, game.by, game.vy = 0.0, 300.0, gfx.HEIGHT + 30.0, 10.0
+    now += FRAME_MS
+    game.step(now, False, False)
+    return game, now
+
+
+class FeelTest(unittest.TestCase):
+    """The look's feel (P573's review): the bubble's poses in order, the workers' tiredness, the net's sag, the notes
+    and the crashed board."""
+
+    def test_the_bubble_squashes_at_least_3_frames_then_stretches_while_fast_then_wobbles_then_is_round(self):
+        look = BubbleLook
+        self.assertGreaterEqual(look.SQUASH_MS, 3 * FRAME_MS)
+        self.assertEqual(look.SQUASH, look.pose(0, -600))
+        self.assertEqual(look.SQUASH, look.pose(look.SQUASH_MS - 1, -600))
+        self.assertEqual(look.STRETCH, look.pose(look.SQUASH_MS, -600))
+        self.assertIn(look.pose(look.SQUASH_MS, -100), (look.WOBBLE_A, look.WOBBLE_B))
+        self.assertEqual(look.ROUND, look.pose(look.WOBBLE_MS, -100))
+        self.assertEqual([0, 0, 1, 1, 2, 2, 3, 3, 4, 4], [look.size_index(r) for r in range(6, 16)])
+
+    def test_the_workers_tire_for_a_moment_after_each_catch_and_for_good_from_the_tired_score(self):
+        game = playing()
+        game.last, game.caught_at = 10000, 0
+        game.score = GravityPong.TIRED_SCORE - 1
+        self.assertFalse(game.tired())
+        game.caught_at = game.last - GravityPong.TIRED_MS + 1
+        self.assertTrue(game.tired())
+        game.caught_at, game.score = 0, GravityPong.TIRED_SCORE
+        self.assertTrue(game.tired())
+
+    def test_a_catch_sags_the_net_deep_and_it_springs_back_flat(self):
+        net = Net()
+        net.kick(500)
+        sags, poses = [], set()
+        for _ in range(60):
+            net.update(FRAME_MS / 1000)
+            sags.append(net.sag)
+            poses.add(net.pose())
+        self.assertGreater(max(sags), 6.0)  # deep: more than 4 px, so it moves visibly
+        self.assertEqual({0, 1, 2, 3}, poses)  # deep, sag, flat and the recoil's bulge
+        self.assertEqual(1, net.pose())  # at rest: flat
+        self.assertLess(abs(net.sag), 0.5)
+
+    def test_the_notes_burst_after_the_hit_pause_and_every_one_comes_to_rest(self):
+        game, now = lost()
+        self.assertEqual(gfx.OVER, game.state)
+        while game.over_ms() + FRAME_MS < GravityPong.HIT_MS:
+            now += FRAME_MS
+            game.step(now, False, False)
+            self.assertEqual([], game.notes.q)
+        now += FRAME_MS
+        game.step(now, False, False)
+        self.assertEqual(Notes.COUNT, len(game.notes.q))
+        for _ in range(150):  # 6 s
+            now += FRAME_MS
+            game.step(now, False, False)
+        self.assertEqual(Notes.COUNT, len(game.notes.q))
+        for x, y, vx, vy, k, place in game.notes.q:
+            self.assertTrue(place >= 0 or y == game.FLOOR - 3)
+
+    def test_a_note_that_falls_into_the_net_rides_with_it(self):
+        notes = Notes(gfx.Dice(5732))
+        notes.q.append([120.0, 200.0, 0.0, 40.0, 0, -1])
+        for _ in range(20):
+            notes.update(FRAME_MS / 1000, 233, 100.0, 70, 218)
+        self.assertEqual(20, notes.q[0][5])  # 20 px from the net's left end
+        drawn = []
+        saved = arcade2.pictures.draw
+        arcade2.pictures.draw = lambda cv, name, x, y, alpha=255: drawn.append((name, x, y))
+        try:
+            notes.draw(None, 0, 233, 150, 218)
+        finally:
+            arcade2.pictures.draw = saved
+        self.assertEqual([("gravpong_note_0", 150 + 20 - 4, 219)], drawn)
+
+    def test_the_hit_pause_holds_the_squashed_bubble_two_frames_with_the_sparks_hidden_then_the_pop_starts(self):
+        class Canvas:
+            pictures = True
+
+            def fill(self, *args):
+                pass
+
+        game, now = lost()
+        game.covers = True
+        drawn, saved = [], arcade2.pictures.draw
+        arcade2.pictures.draw = lambda cv, name, x, y, alpha=255: drawn.append(name) or True
+        try:
+            for frame in range(4):
+                drawn.clear()
+                game.last = game.since + frame * FRAME_MS
+                game.paint(Canvas())
+                squashed = [n for n in drawn if n.startswith("gravpong_bubble_")]
+                with self.subTest(frame=frame):
+                    if frame < 2:
+                        self.assertEqual(1, len(squashed))
+                        self.assertTrue(squashed[0].endswith("_squash"))
+                        self.assertTrue(game.fx.hide)
+                        self.assertNotIn("gravpong_pop_0", drawn)
+                    else:
+                        self.assertEqual([], squashed)
+                        self.assertFalse(game.fx.hide)
+                        self.assertIn("gravpong_pop_%d" % ((frame - 2) * FRAME_MS // GravityPong.POP_MS), drawn)
+        finally:
+            arcade2.pictures.draw = saved
+        self.assertEqual(2 * FRAME_MS, GravityPong.HIT_MS)
+
+    def test_the_board_crashes_when_the_hit_pause_ends(self):
+        class Canvas:
+            pictures = True
+
+            def fill(self, *args):
+                pass
+
+        game, now = lost()
+        game.covers = True
+        drawn, saved = [], arcade2.pictures.draw
+        arcade2.pictures.draw = lambda cv, name, x, y, alpha=255: drawn.append(name) or True
+        try:
+            for ms in range(0, 200, FRAME_MS):
+                drawn.clear()
+                game.last = game.since + ms
+                game.paint(Canvas())
+                with self.subTest(ms=ms):
+                    self.assertEqual(ms >= GravityPong.HIT_MS, "gravpong_crash" in drawn)
+        finally:
+            arcade2.pictures.draw = saved
 
 
 class Heard:

@@ -1,8 +1,8 @@
 """Meteors', Bucket's and BUBBLE's painted sprites in the frames the README's GIFs are made from (P773, story 4; P573):
 over each render_scene row, every pictures.draw call is logged with the game's numbers as they are in that frame. The
 walker's sprite is drawn where Rules.walker_x is, in the run's pose for that place and facing his way, the bucket's
-where Rules.bucket_x is, and BUBBLE's bubble centred where the game's bubble is, at the size of its radius. Each row runs in its own process, as tools/render_scene.py sets module state (the clock, the
-engines). Needs clang. Run from the repository root: python3 -m unittest discover tests. --- MVP (P773) ---"""
+where Rules.bucket_x is, and BUBBLE's bubble centred where the game's bubble is, at the size of its radius. Each row
+runs in its own process, as tools/render_scene.py sets module state (the clock, the engines). Needs clang. Run from the repository root: python3 -m unittest discover tests. --- MVP (P773) ---"""
 
 import os
 import shutil
@@ -118,7 +118,9 @@ class BubbleTest(unittest.TestCase):
         g = self.game
         play = [d for d in self.bubbles if d[4] == self.PLAY]
         frames = [d[0] for d in play]
-        self.assertEqual(sorted(set(frames)), frames)
+        self.assertEqual(list(range(frames[-1] + 1)), frames)  # every frame of play, once, from the first (0)
+        over = [d[0] for d in self.bubbles if d[4] != self.PLAY]
+        self.assertEqual(frames[-1] + 1, over[0])  # then the hit-pause's squash, the frame after the loss
         self.assertGreater(len(frames), 50)
         self.assertGreater(max(d[7] for d in play), 6)  # the bubble swelled in the row
         for k, name, x, y, state, bx, by, radius, px in play:
@@ -128,14 +130,17 @@ class BubbleTest(unittest.TestCase):
                 self.assertIn(name, g.BUBBLES[size])
                 self.assertEqual(int(bx) - half, x)
                 self.assertEqual(min(int(by), g.FLOOR - int(radius)) - half, y)  # on the floor once it is down there
+                if int(by) > g.FLOOR - int(radius):
+                    self.assertTrue(name.endswith("_squash"))
 
     def test_the_net_is_drawn_once_a_frame_at_the_paddles_place(self):
         g = self.game
         frames = [d[0] for d in self.nets]
-        self.assertEqual(sorted(set(frames)), frames)
+        self.assertEqual(list(range(frames[-1] + 1)), frames)  # every frame, once, in play and over
+        self.assertGreater(len(frames), 400)
         for k, name, x, y, state, bx, by, radius, px in self.nets:
             with self.subTest(frame=k):
-                self.assertIn(name, g.NETS)
+                self.assertIn(name, [n for names in g.NETS.values() for n in names])
                 self.assertEqual((int(px), g.PY - 2), (x, y))  # its end ropes on the hit row PY
         self.assertEqual(g.PY - 2, g.NET_Y)
 
