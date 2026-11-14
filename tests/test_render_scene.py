@@ -27,6 +27,8 @@ import render_scene  # noqa: E402
 from clang_lib import S3LCD_SRC  # noqa: E402
 from PIL import Image  # noqa: E402
 from test_blend import SHIM  # noqa: E402
+sys.path.insert(0, os.path.join(ROOT, "art"))  # export: the committed pictures
+from export import pack_bytes  # noqa: E402
 
 TOOL = os.path.join(ROOT, "tools", "render_scene.py")
 A_COLUMNS = bytes((0x7C, 0x12, 0x11, 0x12, 0x7C, 0, 0, 0))  # a made-up A: bit 0 is the top row
@@ -369,8 +371,7 @@ class SmokeTest(unittest.TestCase):
                 self.assertGreater(len(last.getcolors(1 << 16)), 1)
 
     def test_flappys_row_under_the_score_bar_is_the_painted_sky(self):
-        with open(os.path.join(ROOT, "games", "art", "flappy_sky.bin"), "rb") as f:
-            sky = f.read()
+        sky = pack_bytes("flappy_sky")
         y = self.SKY_ROW  # the picture's panel column y of each panel row, one row per game column
         colours = {rgb(int.from_bytes(sky[r * 480 + 2 * y:r * 480 + 2 * y + 2], "little")) for r in range(320)}
         first, _ = self.sheet("flappy")

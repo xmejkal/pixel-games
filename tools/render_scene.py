@@ -1,6 +1,6 @@
 """Draw a game, a scene or the overlay on the Mac, the board's way, to a PNG sheet and a GIF (P596, P795). Each frame
 runs lcd.TftOut.draw on tests/drawing_tft.DrawingTft, the display stood in, with the C engines through ctypes
-(fx_fire.c, fx_balls.c, world.c) and the painted art from games/art, so the frame is the one the board shows. Needs
+(fx_fire.c, fx_balls.c, world.c) and the painted art from games/packs, so the frame is the one the board shows. Needs
 clang and Pillow; the text needs MicroPython's 8x8 font, read from the clone build.sh makes under ~/esp. From the
 repository root:
     python3 -B tools/render_scene.py [--filter nearest|linear] [--tap N | --hold N] [--title] [--seed S]
@@ -167,7 +167,7 @@ def engines():
     """The C engines the board has, through ctypes: the heat field, the balls and the bodies."""
     fire.engine = Engine(build(core("fx_fire"), ("-I", S3LCD_SRC)))
     balls.engine, plugins.engine = balls_lib.engine(), world_lib.engine()
-    pictures.ROOT = os.path.join(ROOT, "games", "")  # the board's /art/... is games/art/... here
+    pictures.ROOT = os.path.join(ROOT, "games", "")  # the board's /packs/... is games/packs/... here
 
 
 def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, hold_ms=0):
