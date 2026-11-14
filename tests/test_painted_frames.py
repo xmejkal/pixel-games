@@ -1,8 +1,8 @@
-"""Meteors' and Bucket's painted sprites in the frames the README's GIFs are made from (P773, story 4): over each
-render_scene row, every pictures.draw call is logged with the game's rules as they are in that frame. The walker's
-sprite is drawn where Rules.walker_x is, in the run's pose for that place and facing his way, and the bucket's where
-Rules.bucket_x is. Each row runs in its own process, as tools/render_scene.py sets module state (the clock, the
-engines). Needs clang. Run from the repository root: python3 -m unittest discover tests. --- MVP (P773) ---"""
+"""Meteors', Bucket's and BUBBLE's painted sprites in the frames the README's GIFs are made from (P773, story 4; P573):
+over each render_scene row, every pictures.draw call is logged with the game's numbers as they are in that frame. The
+walker's sprite is drawn where Rules.walker_x is, in the run's pose for that place and facing his way, the bucket's
+where Rules.bucket_x is, and BUBBLE's bubble centred where the game's bubble is, at the size of its radius. Each row
+runs in its own process, as tools/render_scene.py sets module state (the clock, the engines). Needs clang. Run from the repository root: python3 -m unittest discover tests. --- MVP (P773) ---"""
 
 import os
 import shutil
@@ -13,7 +13,8 @@ import unittest
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # One line per pictures.draw of a picture with one of the prefixes: the frame, the picture, x, y, then the game's state
-# and the rules' numbers the test needs, as they are when the picture is drawn.
+# and the numbers the test needs, each an expression over game (game.rules.walker_x, game.radius()), as they are when
+# the picture is drawn.
 SCRIPT = r"""
 import itertools, sys
 sys.path.insert(0, "tools")
@@ -29,7 +30,7 @@ def logged(cv, name, x, y, alpha=255):
     if name.startswith(prefixes):
         game = made[0]
         lines.append(" ".join(str(v) for v in (frame[0], name, int(x), int(y), game.state)
-                              + tuple(getattr(game.rules, f) for f in fields)))
+                              + tuple(eval(f, {"game": game}) for f in fields)))
     return draw(cv, name, x, y, alpha)
 pictures.draw = logged
 for k, _ in enumerate(itertools.islice(rs.frames(row), row.last)):
@@ -44,7 +45,7 @@ def drawn(subject, prefixes, fields):
                          capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     lines = [line.split() for line in run.stdout.split("\n") if line[:1].isdigit()]
-    return [(int(k), name, int(x), int(y), int(state)) + tuple(int(v) for v in rest)
+    return [(int(k), name, int(x), int(y), int(state)) + tuple(float(v) for v in rest)
             for k, name, x, y, state, *rest in lines]
 
 
@@ -57,7 +58,7 @@ class WalkerTest(unittest.TestCase):
         import gfx
         import meteors
         cls.game, cls.PLAY = meteors, gfx.PLAY
-        cls.draws = drawn("meteors", ("meteors_run_",), ("walker_x", "dir"))
+        cls.draws = drawn("meteors", ("meteors_run_",), ("game.rules.walker_x", "game.rules.dir"))
 
     def test_the_walker_is_drawn_once_a_frame_where_rules_walker_x_is(self):
         mt = self.game
@@ -86,7 +87,7 @@ class BucketTest(unittest.TestCase):
         import bucket
         import gfx
         cls.game, cls.OVER = bucket, gfx.OVER
-        cls.draws = drawn("bucket", ("bucket_bucket", "bucket_tipped"), ("bucket_x",))
+        cls.draws = drawn("bucket", ("bucket_bucket", "bucket_tipped"), ("game.rules.bucket_x",))
 
     def test_the_bucket_is_drawn_once_a_frame_where_rules_bucket_x_is_its_foot_on_the_rail(self):
         bk = self.game
@@ -98,6 +99,50 @@ class BucketTest(unittest.TestCase):
                 self.assertEqual(bucket_x, x)
                 self.assertEqual("bucket_tipped" if state == self.OVER else "bucket_bucket", name)
                 self.assertEqual(bk.RAIL_Y - (bk.TIPPED_H if state == self.OVER else bk.BUCKET_H), y)
+
+
+@unittest.skipUnless(shutil.which("clang"), "clang is missing: the C engines are not built, so the rows were not drawn")
+class BubbleTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(ROOT, "tests", "stubs"))
+        sys.path.insert(0, os.path.join(ROOT, "games"))
+        import arcade2
+        import gfx
+        cls.game, cls.PLAY = arcade2.GravityPong, gfx.PLAY
+        fields = ("game.bx", "game.by", "game.radius()", "game.px")
+        cls.bubbles = drawn("gravitypong", ("gravpong_bubble_",), fields)
+        cls.nets = drawn("gravitypong", ("gravpong_net_",), fields)
+
+    def test_the_bubble_is_drawn_once_a_frame_of_play_centred_where_it_is_at_the_size_of_its_radius(self):
+        g = self.game
+        play = [d for d in self.bubbles if d[4] == self.PLAY]
+        frames = [d[0] for d in play]
+        self.assertEqual(list(range(frames[-1] + 1)), frames)  # every frame of play, once, from the first (0)
+        over = [d[0] for d in self.bubbles if d[4] != self.PLAY]
+        self.assertEqual(frames[-1] + 1, over[0])  # then the hit-pause's squash, the frame after the loss
+        self.assertGreater(len(frames), 50)
+        self.assertGreater(max(d[7] for d in play), 6)  # the bubble swelled in the row
+        for k, name, x, y, state, bx, by, radius, px in play:
+            size = (int(radius) - 6) // 2
+            half = g.BOX[size] // 2
+            with self.subTest(frame=k):
+                self.assertIn(name, g.BUBBLES[size])
+                self.assertEqual(int(bx) - half, x)
+                self.assertEqual(min(int(by), g.FLOOR - int(radius)) - half, y)  # on the floor once it is down there
+                if int(by) > g.FLOOR - int(radius):
+                    self.assertTrue(name.endswith("_squash"))
+
+    def test_the_net_is_drawn_once_a_frame_at_the_paddles_place(self):
+        g = self.game
+        frames = [d[0] for d in self.nets]
+        self.assertEqual(list(range(frames[-1] + 1)), frames)  # every frame, once, in play and over
+        self.assertGreater(len(frames), 400)
+        for k, name, x, y, state, bx, by, radius, px in self.nets:
+            with self.subTest(frame=k):
+                self.assertIn(name, [n for names in g.NETS.values() for n in names])
+                self.assertEqual((int(px), g.PY - 2), (x, y))  # its end ropes on the hit row PY
+        self.assertEqual(g.PY - 2, g.NET_Y)
 
 
 if __name__ == "__main__":
