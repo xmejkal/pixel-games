@@ -45,10 +45,9 @@ import itertools, sys
 sys.path.insert(0, "tools")
 sys.path.insert(0, "art")
 import render_scene as rs
-from export import from_bin
+from export import from_bin, pack_bytes
 import rescue
-with open("games/art/rescue_night.bin", "rb") as f:
-    street = from_bin(f.read(), 320, 240).convert("RGB")
+street = from_bin(pack_bytes("rescue_night"), 320, 240).convert("RGB")
 row = rs.SUBJECTS["rescue"]
 presses, last, plant, seed = eval(sys.argv[1]), int(sys.argv[2]), eval(sys.argv[3]), eval(sys.argv[4])
 if presses:

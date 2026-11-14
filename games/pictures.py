@@ -1,95 +1,150 @@
 """
-The painted pictures (P562): read from the board's /art folder into PSRAM, drawn by one blit_buffer call each.
+The painted pictures (P562): read from the board's /packs folder into PSRAM, drawn by one blit_buffer call each.
 
 art/paint.py makes them on the Mac, already in the panel's layout and byte order, and writes art_index.py. Each game
 loads only its own art set (art_index.PICTURE_SETS) when the box switches to it, so the box starts its first game
-without reading every set first: 2.9 MB took 15 to 20 s on the board (P773). A game asks draw() for a picture and
-draw_layer() for a window of a scrolling strip; both answer False when there is no art (on the Mac, with the st7789
-backend, or at ORIENTATION 180), and the game then draws its old shapes.
+without reading every set first: 2.9 MB took 15 to 20 s on the board (P773). A set is one pack file (P814): one open,
+where a folder of 681 picture files cost up to 88 ms an open and 22 s for Rescue's set, then reads of CHUNK_SIZE
+bytes, each short enough that the sound's callback runs between two of them and the music stays fed. A game asks
+draw() for a picture and draw_layer() for a window of a scrolling strip; both answer False when there is no art (on the
+Mac, with the st7789 backend, or at ORIENTATION 180), and the game then draws its old shapes.
 """
+
+import time
+from binascii import hexlify
 
 try:
     import art_index
 except ImportError:  # no art made yet
     art_index = None
 
-ROOT = "/"  # where the art folder is: the board's root; a Mac tool points it at games/
+ROOT = "/"  # where the packs folder is: the board's root; a Mac tool points it at games/
+MAGIC = b"PIXPACK1"  # a pack's first 8 bytes (art/export.py writes them); the next 8 are its build id
+HEADER = 16
+CHUNK_SIZE = 8192  # bytes per read: about 6 ms on the board, well under the 48 ms the sound counts late (P814)
 PICS = {}  # name: (w, h, memoryview into the block) of the loaded set
 SETS = {}  # game name: its layers, each [name, top, w, h, speed, keyed, memoryview], back to front
 ready = False
 loaded = None  # (set, only) that PICS holds, or None
-
-
-def files_of(sets, only=None):
-    """{path: bytes} of the pictures of these sets (only those named in only, when given) and of their layers."""
-    sizes = {}  # each file once: a layer's file is also a picture, and an alias shares its file
-    for name in [n for game in sets for n in art_index.PICTURE_SETS[game]]:
-        if only is None or name in only:
-            w, h, path = art_index.ART[name]
-            sizes[path] = w * h * 2
-    if only is None:
-        for row in [row for game in sets for row in layer_sets().get(game, ())]:
-            sizes[row[6]] = row[2] * row[3] * 2
-    return sizes
-
-
-def layer_sets():
-    return getattr(art_index, "LAYER_SETS", None) or {"runner": getattr(art_index, "LAYERS", ())}
+load_ms = 0  # how long the last load read, in ms; 0 after free(): App.switch prints it
 
 
 def free():
     """Drop the loaded set: its pictures go, and the block they were read into is the next set's (P773)."""
-    global ready, loaded
+    global ready, loaded, load_ms
     PICS.clear()
     SETS.clear()
-    ready, loaded = False, None
+    ready, loaded, load_ms = False, None, 0
 
 
 def block(n):
     """n bytes to read pictures into: on the board, the start of s3lcd's pool in PSRAM, one block the collector does
     not scan (P562: 733 KB in the heap made each collection cost about 90 ms). It is made once, as big as the largest
-    set, and every set is read into it in turn. On the Mac (or an older image) a bytearray."""
+    pack, and every set is read into it in turn. On the Mac (or an older image) a bytearray."""
     try:
         import s3lcd
-        largest = max(sum(files_of((game,)).values()) for game in art_index.PICTURE_SETS)
+        largest = max(total for path, total, build_id in art_index.PACKS.values())
         return memoryview(s3lcd.pool(max(n, largest)))
     except (ImportError, AttributeError, ValueError):  # no pool (the Mac, an older image, or a pool kept smaller)
         return memoryview(bytearray(n))
 
 
+def spans(game, only=None):
+    """The (offset, length) spans of the game's pack to read after its header: all of it, or the pictures in only."""
+    path, total, build_id = art_index.PACKS[game]
+    if only is None:
+        return [(HEADER, total - HEADER)]
+    out = {}  # each entry once: an alias shares its picture's entry
+    for name in art_index.PICTURE_SETS[game]:
+        if name in only:
+            w, h, _, at = art_index.ART[name]
+            out[at] = w * h * 2
+    return sorted(out.items())
+
+
+def read_chunks(f, view):
+    """Fill view from f, CHUNK_SIZE bytes a call into a slice of the block (no buffer of its own), so the sound's
+    callback runs between two calls. Returns the bytes read: fewer than len(view) at the file's end."""
+    got = 0
+    while got < len(view):
+        n = f.readinto(view[got:got + CHUNK_SIZE])
+        if not n:
+            break
+        got += n
+    return got
+
+
+def read_pack(game, parts, buf, at):
+    """Read the game's pack into buf from at: its header, checked against PACKS, then each of parts. Returns each
+    part read as (offset in the pack, length, place in buf), or None when the pack's size or header is not this
+    build's."""
+    path, total, build_id = art_index.PACKS[game]
+    out = []
+    with open(ROOT + path, "rb") as f:
+        if f.seek(0, 2) != total:
+            return None
+        f.seek(0)
+        head = buf[at:at + HEADER]
+        if read_chunks(f, head) != HEADER or bytes(head[:len(MAGIC)]) != MAGIC or \
+                hexlify(head[len(MAGIC):]).decode() != build_id:
+            return None
+        at += HEADER
+        for offset, n in parts:
+            f.seek(offset)
+            if read_chunks(f, buf[at:at + n]) != n:
+                return None
+            out.append((offset, n, at))
+            at += n
+    return out
+
+
+def view(buf, parts, offset, n):
+    """The n bytes at offset in a pack, in the part read that holds them, or None when none does."""
+    for start, length, at in parts:
+        if start <= offset and offset + n <= start + length:
+            return buf[at + offset - start:at + offset - start + n]
+    return None
+
+
+def since(start):
+    """The ms from start (time.ticks_ms()) to now; 0 on the Mac, where CPython's time has no ticks."""
+    return time.ticks_diff(time.ticks_ms(), start) if hasattr(time, "ticks_diff") else 0
+
+
 def load(game=None, only=None):
     """Read one game's art set once (game: its name in art_index.PICTURE_SETS; only: just these of its pictures), and
-    free the set loaded before. game None reads every set, for the tools on the Mac. Answers whether art is there."""
-    global ready, loaded
+    free the set loaded before. game None reads every pack, for the tools on the Mac. A pack whose size or header is
+    not this build's is refused aloud: no art, rather than another build's. Answers whether art is there."""
+    global ready, loaded, load_ms
     if art_index is None:
         return False
     if loaded == (game, only):
         return ready
     free()
+    start = time.ticks_ms() if hasattr(time, "ticks_ms") else 0  # the Mac's CPython has no ticks
     sets = tuple(art_index.PICTURE_SETS) if game is None else (game,) if game in art_index.PICTURE_SETS else ()
-    sizes = files_of(sets, only)
-    total = sum(sizes.values())
-    if not total:
+    reads = [(g, spans(g, only)) for g in sets]
+    if not any(n for _, parts in reads for _, n in parts):
         return False
-    buf, files, at = block(total), {}, 0  # path: its slice of the block
-    try:
-        for path, n in sizes.items():
-            files[path] = view = buf[at:at + n]
-            at += n
-            with open(ROOT + path, "rb") as f:
-                f.readinto(view)
-    except OSError:  # a file missing on the board: no art at all, rather than half of it
-        return False
-    for name in [n for g in sets for n in art_index.PICTURE_SETS[g]]:
-        w, h, path = art_index.ART[name]
-        if path in files:
-            PICS[name] = (w, h, files[path])
-    if only is None:
-        for g in sets:
-            if g in layer_sets():
-                SETS[g] = [[name, top, w, h, speed, keyed, files[path]] for name, top, w, h, speed, keyed, path
-                           in layer_sets()[g]]
-    ready, loaded = True, (game, only)
+    buf, at, read = block(sum(HEADER + sum(n for _, n in parts) for _, parts in reads)), 0, {}
+    for g, parts in reads:
+        try:
+            read[g] = read_pack(g, parts, buf, at)
+        except OSError:  # no pack there
+            read[g] = None
+        if read[g] is None:
+            print("stale art: copy games/packs", art_index.PACKS[g][0])
+            return False
+        at += HEADER + sum(n for _, n in parts)
+    for g in sets:
+        for name in art_index.PICTURE_SETS[g]:
+            w, h, _, offset = art_index.ART[name]
+            if only is None or name in only:
+                PICS[name] = (w, h, view(buf, read[g], offset, w * h * 2))
+        if only is None and g in art_index.LAYER_SETS:
+            SETS[g] = [[name, top, w, h, speed, keyed, view(buf, read[g], offset, w * h * 2)]
+                       for name, top, w, h, speed, keyed, _, offset in art_index.LAYER_SETS[g]]
+    ready, loaded, load_ms = True, (game, only), since(start)
     return True
 
 
