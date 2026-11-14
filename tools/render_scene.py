@@ -100,7 +100,7 @@ SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the p
     "rescue": Subject(Rescue, Rescue.hint, 60, 214, every=3, presses=((0, 1), (145, 32)), shot=112),
     "flappy": Subject(Flappy, Flappy.hint, 5, 70, every=3, tap=12, shot=60),
     "runner": Subject(Runner, Runner.hint, 10, 75, every=3, hold=40),
-    "snake": Subject(Snake, Snake.hint, 600, 740, every=3, seed=35, presses=tuple((k, 1) for k in SNAKE_PRESSES), shot=683),
+    "snake": Subject(Snake, Snake.hint, 630, 740, every=3, seed=35, presses=tuple((k, 1) for k in SNAKE_PRESSES), shot=683),
     "stack": Subject(Stack, Stack.hint, 5, 72, tap=25),
     "cave": Subject(Cave, Cave.hint, 3, 28, every=1, hold=1, shot=25),
     "tunnel": Subject(Tunnel, Tunnel.hint, 5, 62, tap=25, shot=60),
