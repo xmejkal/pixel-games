@@ -1,6 +1,7 @@
 """Three side-on games for one button: flappy (tap), runner (tap, hold for a high jump), snake (tap turns right)."""
 
 import random
+import time
 from math import exp, sqrt
 
 import pictures
@@ -10,7 +11,8 @@ from array import array
 from effects import FireTrail
 from cues import Cue
 from fire import FireLayer, ramp
-from gfx import (BLACK, GREEN, GREY, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565)
+from gfx import (ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Dice, Game,
+                 Particles, c565)
 
 W, H = WIDTH, HEIGHT
 BIRD = ("..kkkk...", ".kyyyywk.", "kyyyyywkk", "kkkyyyyoo", "kwwkyyyok", ".kwwkkkk.", "..kkk....")
@@ -328,18 +330,173 @@ class Runner(Game):
         cv.sprite(RUN_TOP + leg, RUN_COLOURS, 52, top, 2)
 
 
+# FEED's picture names, made once (P573): no formatting while drawing. The head faces each of DIRS in four poses; the
+# feed's tiles are its six kinds in a shuffle twelve long, so the feed does not stripe.
+FEED_DIRS, FEED_POSES = ("r", "d", "l", "u"), ("open", "gulp", "chew", "glow")
+FEED_KINDS = ("photo", "text", "video", "ad", "chart", "selfie")
+FEED_ORDER = (0, 3, 5, 1, 4, 2, 3, 0, 5, 2, 1, 4)
+HEADS = tuple(tuple("snake_head_%s_%s" % (d, pose) for pose in FEED_POSES) for d in FEED_DIRS)
+TILES = tuple("snake_tile_%s" % FEED_KINDS[k] for k in FEED_ORDER)
+SEEN = tuple("snake_seen_%d" % k for k in range(3))
+DOTS = tuple("snake_dot_%d" % k for k in range(3))
+BULGES = tuple("snake_bulge_%d" % k for k in range(2))
+RIPPLES = tuple("snake_ripple_%d" % k for k in range(4))
+PINGS = tuple("snake_ping_%d" % k for k in range(3))
+THUMBS = tuple("snake_thumb_%d" % k for k in range(3))
+FEED_DIGITS = tuple("snake_digit_%d" % d for d in range(10))
+
+
+class Slide:
+    """The head's slide from its last cell into its new one: eased out over the first SLIDE_MS of each step, in
+    256ths, so it never passes the new cell; across a wrap there is no slide, it is at the new cell. Whole numbers
+    only: no float a frame."""
+
+    SLIDE_MS = 60
+
+    @classmethod
+    def eased(cls, ms):
+        """How far the slide is after ms of the step, 0 to 256: fast at first, slow into the cell."""
+        rest = cls.SLIDE_MS - min(ms, cls.SLIDE_MS)
+        return 256 - rest * rest * 256 // (cls.SLIDE_MS * cls.SLIDE_MS)
+
+    @staticmethod
+    def at(a, b, e, cell):
+        """The px from a to b, e 256ths of the way; b itself when they are more than a cell apart (a wrap)."""
+        if a - b > cell or b - a > cell:
+            return b
+        return a + (b - a) * e // 256
+
+
+class Flip:
+    """The death's flip: the head holds its bite for HOLD_MS, then each tile turns over to SEEN, head first,
+    STAGGER_MS after the one before it (less when the feed is long, so the last starts by LAST_MS), through its three
+    poses, POSE_MS each. The flip takes at most LAST_MS + 2 * POSE_MS, 600 ms, and ends by END_MS, inside the over
+    window (Game.OVER_MS, 900)."""
+
+    HOLD_MS, STAGGER_MS, LAST_MS, POSE_MS = 120, 30, 520, 40
+    END_MS = HOLD_MS + LAST_MS + 2 * POSE_MS
+
+    @classmethod
+    def stagger(cls, n):
+        return min(cls.STAGGER_MS, cls.LAST_MS // max(1, n - 1))
+
+    @classmethod
+    def pose(cls, i, n, ms):
+        """Tile i's pose of the flip after ms, for a feed n long: -1 not yet turned, else 0, 1 or 2 (SEEN)."""
+        t = ms - cls.HOLD_MS - i * cls.stagger(n)
+        return -1 if t < 0 else min(2, t // cls.POSE_MS)
+
+
+class Meals:
+    """The dots the feed has eaten: each goes down the feed as a bulge, one tile a step, and the last one ripples the
+    glass where it was eaten, ring by ring."""
+
+    RIPPLE, RIPPLE_MS, ALPHAS = 48, 70, (230, 180, 120, 64)  # art/sets/snake.py's ripple and its rings' alphas
+
+    def __init__(self):
+        self.steps = []  # the step of each meal still going down the feed
+        self.at, self.x, self.y = None, 0, 0  # ms of the last meal, and the middle of its cell
+
+    def eaten(self, step, ms, x, y):
+        self.steps.append(step)
+        self.at, self.x, self.y = ms, x, y
+
+    def stepped(self, step, n):
+        """The feed took step and is n long: a bulge past its tail is gone."""
+        if self.steps and step - self.steps[0] >= n:
+            self.steps.pop(0)
+
+    def draw(self, cv, game, e):
+        """The bulges on the feed's tiles (next to the head only once the head has slid off it, e at 256), then the
+        last meal's ripple."""
+        body, n = game.body, len(game.body)
+        for meal in self.steps:
+            i = game.steps - meal
+            if 0 < i < n and (i > 1 or e == 256):
+                pictures.draw(cv, BULGES[i % 2], game.x_of(body[i]) - 2, game.y_of(body[i]) - 2)
+        if self.at is not None:
+            k = time.ticks_diff(game.last, self.at) // self.RIPPLE_MS
+            if k < 4:
+                half = self.RIPPLE // 2
+                pictures.draw(cv, RIPPLES[k], self.x - half, self.y - half, self.ALPHAS[k])
+
+
+class StatusBar:
+    """FEED's score bar is the phone's status bar: 10:00, the notch with its camera and the live count beside a red
+    dot, the best, the signal and a battery that drains as the feed grows. It fills HUD_RECT, so it is drawn by fills
+    and text only (lcd.Strip)."""
+
+    BAR, BONE = c565(26, 28, 40), c565(240, 232, 214)
+    CHARGE = 18  # px of a full battery; 1 less for each CHARGE_POINTS points, never under 1
+    CHARGE_POINTS, LOW = 2, 5
+
+    @classmethod
+    def draw(cls, cv, score, best):
+        cv.fill(0, 0, WIDTH, 16, cls.BAR)
+        cv.text("10:00", 10, 4, cls.BONE)
+        cv.fill(112, 0, 96, 13, BLACK)  # the notch, its bottom corners rounded
+        cv.fill(114, 13, 92, 1, BLACK)
+        cv.fill(117, 14, 86, 1, BLACK)
+        cv.fill(121, 4, 5, 5, c565(30, 36, 60))  # the camera's lens
+        cv.fill(122, 5, 2, 2, c565(90, 110, 170))
+        cv.fill(134, 4, 5, 5, ACCENT)
+        cv.text(str(score), 143, 3, cls.BONE)
+        best = "best %d" % best
+        cv.text(best, 254 - 8 * len(best), 4, GREY)
+        for k in range(4):  # the signal
+            cv.fill(262 + k * 3, 10 - k * 2, 2, 2 + k * 2, cls.BONE)
+        cv.box(280, 4, 22, 9, cls.BONE)  # the battery, its pip and its charge
+        cv.fill(302, 6, 2, 5, cls.BONE)
+        charge = cls.charge(score)
+        cv.fill(282, 6, charge, 5, cls.BONE if charge > cls.LOW else ACCENT)
+
+    @classmethod
+    def charge(cls, score):
+        return max(1, cls.CHARGE - score // cls.CHARGE_POINTS)
+
+
 class Snake(Game):
+    """FEED (P573): an endless feed of phone-screen tiles crawls over the glass and grows by eating red notification
+    dots; you are eaten by your own feed. A tap turns it right. The head slides into each cell, gulps the dot and
+    chews it, the dot goes down the feed as a bulge, and the glass ripples. When the feed meets itself every tile
+    turns over to a grey SEEN, head to tail, and the card says YOU SAW n. YOU REMEMBER 0. Watercolour noir at
+    10:00: the street mirrored in the glass, six hues for the feed, and one accent, the dot."""
+
     name = "snake"
     hint = "tap turns right"
     bg = c565(14, 34, 22)
     accent = GREEN
+    BONE = StatusBar.BONE  # art/sets/snake.py's
     CELL, COLS, ROWS, TOP = 12, 26, 18, 21
+    LEFT = 4
     DIRS = ((1, 0), (0, 1), (-1, 0), (0, -1))
+
+    # --- the painted look: art/sets/snake.py's sizes, which the board has no art/ to read (tests/test_paint.py pins
+    # them), and the feel's numbers, set by eye on Mac frames of tools/render_scene.py
+    HEAD, HALO, BULGE, THUMB_W = 16, 36, 16, 32
+    HALO_ALPHA, HALO_NEAR_ALPHA = 70, 120  # the head's glow; brighter when a dot is near
+    RIPPLE, RIPPLE_ALPHAS = Meals.RIPPLE, Meals.ALPHAS
+    DOT_MS, NEAR = 160, 2  # a pulse pose's time, the cells at which the head glows
+    PING, PING_MS, PING_RING_MS, PING_ALPHAS = 28, 1200, 80, (200, 130, 70)  # the dot calls once each PING_MS
+    DOT_PULSE = (0, 1, 2, 1)
+    SPARKS = 6  # the bone sparks of a meal, on the game's own Dice
+    CARD_MS = Flip.END_MS + 40  # the card, once the flip is over
+    CARD_X, CARD_Y, CARD_RIGHT, CARD_TOP = 60, 70, 219, 85  # snake_over, and its plate's right end and top, for n
+    TITLE_BEST_RIGHT, TITLE_BEST_TOP, DIGIT_W = 201, 131, 8
+    OPEN, GULP, CHEW, GLOW = range(4)
 
     def setup(self):
         self.body = [(12, 9), (11, 9), (10, 9)]
         self.d, self.acc = 0, 0.0
         self.food = self.spot()
+        self.covers = pictures.load(self.name)  # the painted glass covers the screen, so no fill goes under it
+        self.made = 3  # tiles made so far: tile i of the body is number made - i, so its kind stays as it crawls
+        self.steps = 0  # the steps taken
+        self.ate_step = -9  # the step of the last meal, for the gulp and the chew
+        self.gone = None  # the cell the tail left in the last step, for its slide out
+        self.meals = Meals()
+        self.dice = Dice(5731)  # the effects' own random stream: the rules' draws stay as they are
+        self.glints = Particles()  # the meals' bone sparks, apart from the rules' pops in fx
 
     def spot(self):
         for _ in range(60):
@@ -359,25 +516,121 @@ class Snake(Game):
         dx, dy = self.DIRS[self.d]
         nxt = ((self.body[0][0] + dx) % self.COLS, (self.body[0][1] + dy) % self.ROWS)
         if nxt in self.body[:-1]:
-            return self.die(*self.centre(nxt))
+            return self.die(*self.centre(nxt), (ACCENT, self.BONE))
         self.body.insert(0, nxt)
+        self.made += 1
+        self.steps += 1
+        self.meals.stepped(self.steps, len(self.body))
         if nxt == self.food:
             self.score += 1
-            self.pop(*self.centre(nxt), RED)
+            self.pop(*self.centre(nxt), ACCENT)
             self.food = self.spot()
+            self.ate(nxt)
         else:
-            self.body.pop()
+            self.gone = self.body.pop()
+
+    def ate(self, cell):
+        """A meal at cell: the gulp, the bulge down the feed, the ripple and the bone sparks."""
+        self.ate_step, self.gone = self.steps, None
+        x, y = self.centre(cell)
+        self.meals.eaten(self.steps, self.last, x, y)
+        dice = self.dice
+        for _ in range(self.SPARKS):
+            self.glints.add(x + dice.spread(4), y + dice.spread(4), dice.spread(70), -40 - dice.below(90), self.BONE,
+                        0.3 + dice.below(30) / 100, 120.0)
 
     def centre(self, cell):
         return 4 + cell[0] * self.CELL + 6, self.TOP + cell[1] * self.CELL + 6
 
+    def step(self, now_ms, pressed, held):
+        """Game.step; then the meals' sparks fly."""
+        super().step(now_ms, pressed, held)
+        if self.glints.p:
+            self.glints.update(self.dt)
+
+    def over_ms(self):
+        """ms since the feed met itself: age is read before the frame's play, so in the frame of the loss it is still
+        play's."""
+        return time.ticks_diff(self.last, self.since)
+
+    def eased(self):
+        """How far the head has slid into its cell, 0 to 256: by the ms of this step, all the way when over."""
+        return 256 if self.state == OVER else Slide.eased(int(self.acc))
+
+    def x_of(self, cell):
+        return self.LEFT + cell[0] * self.CELL
+
+    def y_of(self, cell):
+        return self.TOP + cell[1] * self.CELL
+
+    def head_pose(self):
+        """Gulp in the step of a meal, chew in the next, glow when a dot is within NEAR cells, else open."""
+        since = self.steps - self.ate_step
+        if since == 0:
+            return self.GULP
+        if since == 1:
+            return self.CHEW
+        (hx, hy), (fx, fy) = self.body[0], self.food
+        return self.GLOW if abs(hx - fx) + abs(hy - fy) <= self.NEAR else self.OPEN
+
     def paint_static(self, cv):
+        if pictures.draw(cv, "snake_morning", 0, 0):  # the painted glass (P573)
+            return
         n, left = self.CELL, 4
         for i in range(0, self.COLS, 2):  # a stripe lawn
             cv.fill(left + i * n, self.TOP, n, self.ROWS * n, c565(20, 48, 30))
         cv.box(left - 2, self.TOP - 2, self.COLS * n + 4, self.ROWS * n + 4, GREY)
 
     def paint(self, cv):
+        """The dot, the tail's tile sliding out, the feed (turning over to SEEN when over), the bulges going down it,
+        the ripple of the last meal, the head in its glow sliding into its cell, and the meals' sparks."""
+        if not (self.covers and getattr(cv, "pictures", False)):
+            return self.paint_flat(cv)
+        body, n, over = self.body, len(self.body), self.state == OVER
+        ms = self.over_ms() if over else 0
+        e = self.eased()
+        if not over:
+            self.draw_dot(cv)
+            self.draw_tail(cv, e)
+        for i in range(1, n):
+            k = Flip.pose(i, n, ms) if over else -1
+            pictures.draw(cv, TILES[(self.made - i) % 12] if k < 0 else SEEN[k], self.x_of(body[i]), self.y_of(body[i]))
+        if not over:
+            self.meals.draw(cv, self, e)
+        self.draw_head(cv, e, Flip.pose(0, n, ms) if over else -1)
+        self.glints.draw(cv)
+
+    def draw_dot(self, cv):
+        """The red dot, pulsing, and now and then its ping, a red ring spreading from it."""
+        x, y = self.x_of(self.food), self.y_of(self.food)
+        k = self.last % self.PING_MS // self.PING_RING_MS
+        if k < 3:
+            pictures.draw(cv, PINGS[k], x + 6 - self.PING // 2, y + 6 - self.PING // 2, self.PING_ALPHAS[k])
+        pictures.draw(cv, DOTS[self.DOT_PULSE[self.last // self.DOT_MS % 4]], x, y)
+
+    def draw_tail(self, cv, e):
+        """The tile the tail left, sliding into the tail's cell under it while the head slides, then gone."""
+        gone = self.gone
+        if gone is None or e == 256:
+            return
+        tail, n, cell = self.body[-1], len(self.body), self.CELL
+        pictures.draw(cv, TILES[(self.made - n) % 12], Slide.at(self.x_of(gone), self.x_of(tail), e, cell),
+                      Slide.at(self.y_of(gone), self.y_of(tail), e, cell))
+
+    def draw_head(self, cv, e, flip):
+        """The head slid e 256ths from its last cell into its new one, in its glow; or its pose of the flip."""
+        body, cell = self.body, self.CELL
+        x = Slide.at(self.x_of(body[1]), self.x_of(body[0]), e, cell)
+        y = Slide.at(self.y_of(body[1]), self.y_of(body[0]), e, cell)
+        if flip >= 0:
+            return pictures.draw(cv, SEEN[flip], x, y)
+        pose = self.CHEW if self.state == OVER else self.head_pose()  # over: biting its own tile
+        pictures.draw(cv, "snake_halo", x + 6 - self.HALO // 2, y + 6 - self.HALO // 2,
+                      self.HALO_NEAR_ALPHA if pose == self.GLOW else self.HALO_ALPHA)
+        pictures.draw(cv, HEADS[self.d][pose], x - 2, y - 2)
+
+    def paint_flat(self, cv):
+        """The look before FEED, where there is no art: a lawn, an apple, a green snake with a yellow head."""
         n, left = self.CELL, 4
         fx, fy = self.food
         x, y = left + fx * n, self.TOP + fy * n
@@ -395,3 +648,45 @@ class Snake(Game):
         ex, ey = left + hx * n + 6 + dx * 3, self.TOP + hy * n + 6 + dy * 3
         cv.fill(ex - 3 * abs(dy) - 1, ey - 3 * abs(dx) - 1, 3, 3, BLACK)
         cv.fill(ex + 3 * abs(dy) - 1, ey + 3 * abs(dx) - 1, 3, 3, BLACK)
+
+    def draw_hud(self, cv):
+        """The phone's status bar (StatusBar), drawn again only when the score or the best change."""
+        if not self.covers:
+            return Game.draw_hud(self, cv)
+        StatusBar.draw(cv, self.score, max(self.score, BEST.get(self.name, 0)))
+
+    def number(self, cv, value, right, top):
+        """value in digit pictures, right-aligned at right, the last digit first."""
+        x, rest = right, value
+        while True:
+            x -= self.DIGIT_W
+            pictures.draw(cv, FEED_DIGITS[rest % 10], x, top)
+            rest //= 10
+            if not rest:
+                return
+
+    def draw_title(self, cv):
+        """FEED: the title card; the feed scrolls up the glass under the words, three columns of tiles, and the thumb
+        flicks it; the best on its plate."""
+        if not pictures.draw(cv, "snake_title", 0, 0):
+            return Game.draw_title(self, cv)
+        a, cell = self.age, self.CELL
+        rise = a * 60 // 1000  # px the feed has scrolled up
+        for col in range(3):
+            x = 124 + col * 26
+            for row in range(7):
+                y = 236 - row * 14 - (rise + col * 5) % 14
+                if 150 <= y <= 224:
+                    pictures.draw(cv, TILES[(row + col * 5 + rise // 14) % 12], x, y)
+        pictures.draw(cv, THUMBS[a // 120 % 3], 196, 200)
+        self.number(cv, BEST.get(self.name, 0), self.TITLE_BEST_RIGHT, self.TITLE_BEST_TOP)
+
+    def draw_over(self, cv):
+        """The flip plays over the live scene first; then YOU SAW n. YOU REMEMBER 0."""
+        if self.over_ms() < self.CARD_MS:
+            return
+        if not pictures.draw(cv, "snake_over", self.CARD_X, self.CARD_Y):
+            return Game.draw_over(self, cv)
+        self.number(cv, self.score, self.CARD_RIGHT, self.CARD_TOP)
+        if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
+            cv.text("tap to retry", self.CARD_X + 52, self.CARD_Y + 84, self.BONE)

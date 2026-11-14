@@ -32,7 +32,7 @@ import pictures  # noqa: E402
 MODULES = {
     "fire.py": (("runner", ("sky",)),),
     "marshmallow.py": (("runner", ("sky",)),),
-    "arcade.py": (("flappy", None), ("runner", None)),
+    "arcade.py": (("flappy", None), ("runner", None), ("snake", None)),
     "track.py": (("runner", None),),
     "arcade2.py": (("stack", None), ("gravpong", None)),
     "bucket.py": (("bucket", None),),
