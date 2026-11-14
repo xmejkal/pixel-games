@@ -13,6 +13,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "art"))  # the art modules import each other by their plain names
 
 import PIL  # noqa: E402
+import PIL.ImageOps  # noqa: E402
 from PIL import Image  # noqa: E402
 
 from brush import ACCENT, rnd  # noqa: E402
@@ -181,6 +182,92 @@ class RentTest(unittest.TestCase):
             write(m, ch, 2, 2, 4, 2)
             masks.add(m.tobytes())
         self.assertEqual(len(masks), len(GLYPHS))  # no two letters look the same, the space included
+
+
+class BubbleTest(unittest.TestCase):
+    """Gravity pong as BUBBLE (P573): its pictures as the game asks for them, the sizes and places the game copies,
+    the workers' poses, and the one accent. The files themselves are the expected output, judged on the preview."""
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(REPO, "tests", "stubs"))
+        sys.path.insert(0, os.path.join(REPO, "games"))
+        import time
+        if not hasattr(time, "ticks_diff"):
+            time.ticks_diff = lambda a, b: a - b
+            time.ticks_us = lambda: int(time.perf_counter() * 1e6)
+            time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
+        import arcade2
+        cls.game = arcade2.GravityPong
+        cls.painting = gravpong_set.ART_SET.paint()
+        index = {}
+        exec(read("games", "art_index.py"), index)
+        cls.art, cls.sets = index["ART"], index["PICTURE_SETS"]
+
+    def asked(self):
+        """Every picture name the game holds or writes out."""
+        g = self.game
+        names = [n for k in g.BUBBLES + g.FILMS + g.HALOS for n in k] + list(g.NETS + g.POPS + g.NOTE_NAMES + g.DIGITS)
+        names += [n for side in g.WORKERS for poses in side.values() for n in poses] + [n for k in g.STANDS for n in k]
+        return names + re.findall(r'"(gravpong_[a-z_]+)"', read("games", "arcade2.py"))
+
+    def test_every_name_the_game_asks_for_is_in_its_set(self):
+        for name in self.asked():
+            with self.subTest(name=name):
+                self.assertIn(name, self.sets["gravpong"])
+
+    def test_the_set_is_no_larger_than_the_pool(self):
+        size = sum(self.art[n][0] * self.art[n][1] * 2 for n in self.sets["gravpong"])
+        self.assertLess(size, 739200)  # runner's set makes the pool; a smaller one needs no reset (P573)
+
+    def test_the_game_copies_the_sets_sizes_and_places(self):
+        g, a = self.game, gravpong_set
+        self.assertEqual(a.SIZES, g.SIZES)
+        self.assertEqual(tuple(a.BOX[d] for d in a.SIZES), g.BOX)
+        self.assertEqual((a.RINGS, a.GLOW_ALPHAS, a.FILM_ALPHA), (g.RINGS, g.GLOW_ALPHAS, g.FILM_ALPHA))
+        self.assertEqual((a.FLOOR, a.NET_Y, a.NET_Y + a.NET_TOP, a.NET[0]), (g.FLOOR, g.NET_Y, g.PY, g.PW))
+        self.assertEqual(a.WORKER + (a.hand_dx(),), (g.WORKER_W, g.WORKER_H, g.HAND_DX))
+        self.assertEqual((a.POP, a.POP_FRAMES, a.SPOT, a.COIN), (g.POP, g.POP_FRAMES, (g.SPOT_W, g.SPOT_H), g.COIN))
+        self.assertEqual((a.BOARD[:2], a.PLATE[2] - 3, a.PLATE[1] + 2), (g.BOARD, g.PLATE_RIGHT, g.PLATE_TOP))
+        self.assertEqual(a.TITLE_PLATE[0] + a.PLATE_W - 3, g.TITLE_BEST_RIGHT)
+        self.assertEqual(a.TITLE_PLATE[1] + 3, g.TITLE_BEST_TOP)
+        for (x, y), right in zip(a.CARD_PLATES, (g.SCORE_RIGHT, g.BEST_RIGHT)):
+            self.assertEqual((g.CARD_X + x + a.PLATE_W - 3, g.CARD_Y + y + 3), (right, g.CARD_PLATE_TOP))
+
+    def test_sizes_and_key(self):
+        shown = {name: img.size + (keyed,) for name, (img, keyed) in self.painting.pictures.items()}
+        for name in ("gravpong_midnight", "gravpong_title"):
+            self.assertEqual((320, 240, False), shown[name])
+        self.assertEqual((200, 100, False), shown["gravpong_over"])
+        for d, b in zip(self.game.SIZES, self.game.BOX):
+            for name in self.game.BUBBLES[self.game.SIZES.index(d)]:
+                self.assertEqual((b, b, True), shown[name])
+        self.assertEqual((70, 12, True), shown["gravpong_net_0"])
+
+    def test_the_bubble_is_as_wide_as_its_size_in_the_round_pose(self):
+        for d in self.game.SIZES:
+            img = self.painting.pictures["gravpong_bubble_%d_round" % d][0]
+            cols = [x for x in range(img.width) if any(img.getpixel((x, y))[3] for y in range(img.height))]
+            with self.subTest(d=d):
+                self.assertEqual(d, cols[-1] - cols[0] + 1)
+
+    def test_each_right_worker_is_the_mirror_of_the_left_and_stands_on_the_last_row_holding_the_net(self):
+        g, pics = self.game, self.painting.pictures
+        for name in gravpong_set.WORKER_POSES:
+            left, right = pics["gravpong_worker_l_" + name][0], pics["gravpong_worker_r_" + name][0]
+            with self.subTest(pose=name):
+                self.assertEqual(to_bin(PIL.ImageOps.mirror(left), True), to_bin(right, True))
+                alpha = left.getchannel("A")
+                self.assertTrue(any(alpha.getpixel((x, left.height - 1)) for x in range(left.width)))
+                hand = g.PY - (g.FLOOR - g.WORKER_H)  # the net's row, in the picture
+                self.assertTrue(any(alpha.getpixel((g.WORKER_W // 2 + g.HAND_DX + dx, hand + dy))
+                                    for dx in (-1, 0) for dy in (0, 1, 2)))
+
+    def test_one_accent(self):
+        for name in ("gravpong_midnight", "gravpong_crash", "gravpong_title", "gravpong_over"):
+            with self.subTest(name=name):
+                shown = {p[:3] for p in q565(self.painting.pictures[name][0]).get_flattened_data() if p[3]}
+                self.assertIn(board_colour(ACCENT), shown)
 
 
 if __name__ == "__main__":

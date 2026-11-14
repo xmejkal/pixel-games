@@ -1,10 +1,10 @@
-"""Three more for one button: stack (tap drops the block), cave (hold to rise), gravity pong (tap turns the paddle)."""
+"""Three more for one button: stack (tap drops the block), cave (hold to rise), BUBBLE (tap turns the net)."""
 
 import random
 
 import pictures
-
-from gfx import ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
+from gfx import (ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, TITLE, WHITE, WIDTH, YELLOW, Dice, Game,
+                 Particles, c565, shade)
 
 W, H = WIDTH, HEIGHT
 
@@ -274,17 +274,99 @@ class Cave(Game):
         cv.line(hx - 14, y - 11, hx + 30, y - 11 + int(self.t * 40) % 3, WHITE)  # rotor
 
 
+# BUBBLE's picture names, made once (P573): no formatting while drawing. Each size's bubble in its five poses, its film
+# (the round one's four turns, then the other poses) and its glow's three rings; each worker's run, backing, and spent
+# run and backing, and its two stands, the left worker's first.
+BUBBLE_SIZES, BUBBLE_RINGS = (12, 16, 20, 24, 28), (26, 16, 8)
+BUBBLE_POSES = ("round", "squash", "stretch", "wobblea", "wobbleb")
+BUBBLES = tuple(tuple("gravpong_bubble_%d_%s" % (d, pose) for pose in BUBBLE_POSES) for d in BUBBLE_SIZES)
+FILMS = tuple(tuple("gravpong_film_%d_%s" % (d, f) for f in ("round0", "round1", "round2", "round3") + BUBBLE_POSES[1:])
+              for d in BUBBLE_SIZES)
+HALOS = tuple(tuple("gravpong_halo_%d_%d" % (d, ring) for ring in BUBBLE_RINGS) for d in BUBBLE_SIZES)
+WORKERS = tuple({kind: tuple("gravpong_worker_%s_%s%d" % (side, kind, k) for k in range(4))
+                 for kind in ("run", "back", "trun", "tback")} for side in "lr")
+STANDS = tuple(("gravpong_worker_%s_stand" % side, "gravpong_worker_%s_tired" % side) for side in "lr")
+
+
+class Sparks(Particles):
+    """The particles of a game that can hide them for a few frames: BUBBLE's hit-pause holds the pop still."""
+
+    hide = False
+
+    def draw(self, cv):
+        if not self.hide:
+            Particles.draw(self, cv)
+
+
 class GravityPong(Game):
+    """BUBBLE (P573): two night workers carry a net across an exchange floor at midnight and keep a soap bubble in the
+    air. A tap turns them round. Each catch sends the bubble up again, faster; the net sags and springs back, and the
+    workers tire. A missed bubble hits the floor and pops into banknotes, the ticker board's chart crashes, and the
+    card says IT WAS NEVER REAL. Watercolour noir at midnight: ink, bone, the film's cool tone and one accent."""
+
     name = "gravpong"
-    hint = "tap flips paddle"
+    hint = "tap turns the net"
     bg = c565(10, 30, 40)
     accent = c565(40, 220, 230)
+    BONE = c565(232, 224, 204)  # art/sets/gravpong.py's
+    ROPE = c565(236, 226, 202)
+    FILM = (c565(112, 178, 226), c565(196, 170, 220), c565(250, 246, 236), c565(255, 178, 96))  # the film's drops
+    HUD_SCORE, HUD_BEST = BONE, ACCENT
     PW, PY = 70, 218
+    RADIUS = 6  # the bubble's radius, px
+
+    # --- the painted look: art/sets/gravpong.py's sizes and places, which the board has no art/ to read
+    # (tests/test_paint.py pins them), and the feel's numbers, set by eye on Mac frames of tools/render_scene.py
+    FLOOR, NET_Y = 236, 216  # the floor's first row; the net picture's top (its end ropes on the rows PY, PY + 1)
+    SIZES = BUBBLE_SIZES  # the bubble's diameters, one per radius 6, 8, 10, 12, 14
+    BOX = (18, 24, 28, 34, 38)  # each size's square picture, its middle on the bubble's middle
+    RINGS = BUBBLE_RINGS  # px the glow's rings reach past the bubble, outer first
+    GLOW_ALPHAS, FILM_ALPHA = (34, 42, 54), 120
+    DROPS = 8  # the film's drops at each catch
+    WORKER_W, WORKER_H, HAND_DX = 22, 28, 7  # a worker's picture; px from its middle to the hands on the net's end
+    STEP_PX, STRIDE = 8, 4  # px the net moves for each pose of the workers' run, and the run's poses
+    POP, POP_FRAMES, POP_MS = 40, 5, 60
+    BOARD, PLATE_RIGHT, PLATE_TOP, DIGIT_W = (92, 22), 219, 76, 8  # the board's top left; the index's plate
+    CARD_X, CARD_Y = 60, 70  # gravpong_over, and its plates' right ends and top, for the score and the best
+    SCORE_RIGHT, BEST_RIGHT, CARD_PLATE_TOP = 137, 217, 137
+    TITLE_BEST_RIGHT, TITLE_BEST_TOP, COIN = 201, 137, 10
+    SQUASH_MS, WOBBLE_MS, TIRED_MS = 80, 640, 300  # after a catch: the squash's 2 frames, the wobble, the workers' sigh
+    STRETCH_VY = 470  # px/s: faster than this, up or down, the bubble stretches
+    SPOT_W, SPOT_H = 48, 10  # the bubble's light on the floor
+    TIRED_SCORE = 15  # from this score the workers are spent
+    FILM_MS = 120  # the round film turns a quarter swirl this often
+    SPRING, DAMP, KICK = 250.0, 11.0, 0.19  # the net's sag: stack's spring, kicked by the catch's speed
+    NET_POSES = (-0.5, 1.5, 4.0)  # sag in px: under the first, the net bulges up; under the next, it is flat, then
+    # it sags, and deeper it is deep
+    HIT_MS, CARD_MS = 80, 700  # the hit-pause's 2 frames before the pop; the card after the death
+    NOTES, NOTE_FALL, NOTE_POSES = 14, 46.0, (0, 1, 2, 1)  # the banknotes: their count, top speed (px/s), the flip
+    SWAY = (0, 1, 2, 2, 1, 0, -1, -2, -2, -1)  # a falling note's sway, px, one step each 60 ms
+    INDEX = tuple(min(9999999, int(100 * 1.3 ** n)) for n in range(64))  # the board's index at each score: a bubble
+
+    BUBBLES, FILMS, HALOS = BUBBLES, FILMS, HALOS
+    ROUND, SQUASH, STRETCH, WOBBLE_A, WOBBLE_B = range(5)
+    NETS = tuple("gravpong_net_%d" % k for k in range(4))
+    POPS = tuple("gravpong_pop_%d" % k for k in range(POP_FRAMES))
+    NOTE_NAMES = tuple("gravpong_note_%d" % k for k in range(3))
+    DIGITS = tuple("gravpong_digit_%d" % d for d in range(10))
+    WORKERS, STANDS = WORKERS, STANDS
 
     def setup(self):
         self.px, self.pdir = 125.0, 1
         self.bx, self.by, self.vx, self.vy = 160.0, 60.0, 70.0, 0.0
         self.trail = []
+        self.covers = pictures.load(self.name)  # the painted midnight covers the screen, so no fill goes under it
+        self.fx = Sparks()
+        self.dice = Dice(5732)  # the notes' own random stream: the rules' draws stay as they are
+        self.caught_at = -10000  # ms of the last catch, for the squash, the wobble and the workers' sigh
+        self.sag, self.sag_v = 0.0, 0.0  # the net's sag at its middle, px, and its speed
+        self.notes = []  # [x, y, vx, vy, k] of each banknote, k its own phase
+        self.popped = False
+        self.pop_x, self.pop_y = 0, 0
+
+    def radius(self):
+        """The bubble's radius in px."""
+        return self.RADIUS
 
     def play(self, pressed, held):
         dt = self.dt
@@ -305,20 +387,173 @@ class GravityPong(Game):
             self.by, self.vy = 24.0, abs(self.vy)
         if self.vy > 0 and before < self.PY - 6 <= self.by and self.px - 6 <= self.bx <= self.px + self.PW + 6:
             self.score += 1
+            self.landed(self.vy)
             self.vy = -(410 + min(self.score, 25) * 9)
             self.vx += self.pdir * 70 + random.randrange(-25, 26)
             self.vx = max(-200.0, min(200.0, self.vx))
-            self.fx.burst(self.bx, self.PY, self.accent, 9, 120.0, 0.4, 250.0)
+            self.fx.burst(self.bx, self.PY, self.BONE, 9, 120.0, 0.4, 250.0)
         elif self.by > H + 6:
-            self.die(self.bx, H - 10)
+            self.pop_x, self.pop_y = int(self.bx), self.FLOOR - self.radius() * 3 // 4
+            self.die(self.bx, self.pop_y, (self.FILM[0], self.BONE))
+
+    def landed(self, vy):
+        """A catch at vy px/s: the squash and the sigh from now, and the net kicked down."""
+        self.caught_at = self.last
+        self.sag_v += vy * self.KICK
+        dice, r = self.dice, self.radius()
+        for _ in range(self.DROPS):  # the film sheds drops where the net strikes it, on the game's own Dice
+            self.fx.add(self.bx + dice.spread(r), self.by + r - 2, dice.spread(90), -60 - dice.below(120),
+                        self.FILM[dice.below(4)], 0.3 + dice.below(30) / 100, 400.0)
+
+    def step(self, now_ms, pressed, held):
+        """Game.step, then the net's spring in play and over, and over, the pop's notes: they start after the
+        hit-pause and flutter down on the game's own Dice."""
+        super().step(now_ms, pressed, held)
+        if self.state == TITLE:
+            return
+        dt = self.dt
+        self.sag_v -= (self.SPRING * self.sag + self.DAMP * self.sag_v) * dt
+        self.sag += self.sag_v * dt
+        if self.state != OVER:
+            return
+        if not self.popped and self.over_ms() >= self.HIT_MS:
+            self.popped = True
+            dice = self.dice
+            for k in range(self.NOTES):
+                self.notes.append([float(self.pop_x + dice.spread(10)), float(self.pop_y - dice.below(12)),
+                                   float(dice.spread(160)), float(-120 - dice.below(220)), dice.below(40)])
+        floor, px = self.FLOOR - 3, self.px
+        for q in self.notes:
+            if q[1] >= floor:
+                continue
+            q[2] -= q[2] * 2.5 * dt  # the air holds a note back
+            q[3] = min(q[3] + 420 * dt, self.NOTE_FALL)
+            q[0] += q[2] * dt
+            q[1] += q[3] * dt
+            if q[3] > 0 and px <= q[0] <= px + self.PW and self.PY + 1 <= q[1] < self.PY + 5:  # caught in the net
+                q[1] = floor + 0.0
+                q[4] = -1 - int(q[0] - px)  # remembers its place in the net
+            elif q[1] >= floor:
+                q[1] = floor + 0.0
+
+    def over_ms(self):
+        """ms since the bubble was lost: age is read before the frame's play, so in the frame of the loss it is
+        still play's."""
+        return self.last - self.since
+
+    def number(self, cv, value, right, top):
+        """value in digit pictures, right-aligned at right, the last digit first."""
+        x, rest = right, value
+        while True:
+            x -= self.DIGIT_W
+            pictures.draw(cv, self.DIGITS[rest % 10], x, top)
+            rest //= 10
+            if not rest:
+                return
+
+    def size(self):
+        """The index of the bubble's size: its pictures are drawn one to one for its radius."""
+        return (self.radius() - 6) // 2
+
+    def pose(self):
+        """The bubble's pose: squashed for 2 frames after a catch, stretched while it is fast, wobbling as it settles,
+        else round."""
+        since = self.last - self.caught_at
+        if since < self.SQUASH_MS:
+            return self.SQUASH
+        if self.vy < -self.STRETCH_VY or self.vy > self.STRETCH_VY:
+            return self.STRETCH
+        if since < self.WOBBLE_MS:
+            return self.WOBBLE_A + since // 80 % 2
+        return self.ROUND
+
+    def bubble_y(self):
+        """The bubble's drawn middle row: where it is, or on the floor once it is down there."""
+        return min(int(self.by), self.FLOOR - self.radius())
+
+    def draw_bubble(self, cv, x, y, k, pose, glow=1):
+        """The bubble of size k in pose with its middle at (x, y): the glow's rings, the film and the rim."""
+        d = self.SIZES[k]
+        for i, ring in enumerate(self.RINGS):
+            n = (d + ring) // 2
+            pictures.draw(cv, self.HALOS[k][i], x - n, y - n, self.GLOW_ALPHAS[i] * glow)
+        b = self.BOX[k] // 2
+        film = self.last // self.FILM_MS % 4 if pose == self.ROUND else pose + 3
+        pictures.draw(cv, self.FILMS[k][film], x - b, y - b, self.FILM_ALPHA)
+        pictures.draw(cv, self.BUBBLES[k][pose], x - b, y - b)
+
+    def draw_crew(self, cv, px, tired, over):
+        """The workers on the net's ends at px, running their way (the left one faces right) or standing, and the
+        net between them, its sag from the spring. The gap between them widens as the bubble swells."""
+        gap, step = min(self.score // 4, 4), int(px) // self.STEP_PX
+        for side in (0, 1):
+            if over:
+                name = self.STANDS[side][1]
+            else:
+                ahead = (self.pdir > 0) == (side == 0)  # the worker runs the way it faces
+                kind = ("trun" if tired else "run") if ahead else ("tback" if tired else "back")
+                name = self.WORKERS[side][kind][(step if side == 0 else -step) % self.STRIDE]
+            if side == 0:
+                x = px - gap - self.HAND_DX - self.WORKER_W // 2
+            else:
+                x = px + self.PW + gap + self.HAND_DX - self.WORKER_W // 2
+            pictures.draw(cv, name, x, self.FLOOR - self.WORKER_H)
+        if gap:  # the net's ends reach out to the hands
+            cv.fill(px - gap, self.PY, gap, 1, self.ROPE)
+            cv.fill(px + self.PW, self.PY, gap, 1, self.ROPE)
+        sag, k = self.sag, 0
+        while k < 3 and sag >= self.NET_POSES[k]:
+            k += 1
+        pictures.draw(cv, self.NETS[k], px, self.NET_Y)
+
+    def draw_notes(self, cv):
+        """The banknotes, each flipping as it falls, flat once it lies."""
+        t, floor = self.last // 60, self.FLOOR - 3
+        for x, y, _, _, k in self.notes:
+            if y >= floor:
+                if k < 0:  # in the net: it rides with it
+                    x = self.px - 1 - k
+                pictures.draw(cv, self.NOTE_NAMES[0 if k % 3 else 2], int(x), self.FLOOR - 4 if k >= 0 else self.PY + 1)
+                continue
+            pictures.draw(cv, self.NOTE_NAMES[self.NOTE_POSES[(t + k) % 4]], int(x) + self.SWAY[(t + k) % 10], int(y))
 
     def paint_static(self, cv):
+        if pictures.draw(cv, "gravpong_midnight", 0, 0):  # the painted midnight (P573)
+            return
         cv.gradient(16, H, (6, 20, 34), (14, 50, 62), 16)
         for x in range(0, W, 40):  # court lines
             cv.fill(x, 16, 1, H, c565(20, 70, 80))
         cv.fill(0, 20, W, 2, GREY)
 
     def paint(self, cv):
+        if not (self.covers and getattr(cv, "pictures", False)):
+            return self.paint_flat(cv)
+        over, px = self.state == OVER, int(self.px)
+        age = self.over_ms() if over else 0
+        if over and age >= self.HIT_MS:
+            pictures.draw(cv, "gravpong_crash", self.BOARD[0], self.BOARD[1])
+        else:
+            self.number(cv, self.INDEX[min(self.score, 63)], self.PLATE_RIGHT, self.PLATE_TOP)
+        tired = self.score >= self.TIRED_SCORE or self.last - self.caught_at < self.TIRED_MS
+        self.draw_crew(cv, px, tired, over)
+        self.fx.hide = over and age < self.HIT_MS
+        if not over:
+            y = self.bubble_y()
+            if y > 60:  # its light on the floor, brighter as it comes down
+                pictures.draw(cv, "gravpong_spot", int(self.bx) - self.SPOT_W // 2, self.FLOOR - self.SPOT_H + 2,
+                              (y - 60) * (y - 60) // 300)
+            self.draw_bubble(cv, int(self.bx), y, self.size(), self.pose())
+            return
+        if age < self.HIT_MS:  # the hit-pause: the bubble held squashed on the floor, its glow flaring
+            self.draw_bubble(cv, self.pop_x, self.FLOOR - self.radius() * 3 // 4, self.size(), self.SQUASH, 3)
+            return
+        k = (age - self.HIT_MS) // self.POP_MS
+        if k < self.POP_FRAMES:
+            pictures.draw(cv, self.POPS[k], self.pop_x - self.POP // 2, self.pop_y - self.POP // 2)
+        self.draw_notes(cv)
+
+    def paint_flat(self, cv):
+        """The look before BUBBLE, where there is no art: a fading trail and a square ball over a paddle."""
         for i, (tx, ty) in enumerate(self.trail):  # the ball's tail fades
             cv.fill(tx - 4 + i // 2, ty - 4 + i // 2, 8 - i // 2 * 2, 8 - i // 2 * 2, shade(60, 160, 180, 0.2 + i * 0.15))
         px = int(self.px)
@@ -327,3 +562,29 @@ class GravityPong(Game):
         cv.fill(px + (self.PW - 10 if self.pdir > 0 else 0), self.PY, 10, 8, YELLOW)  # the leading end
         cv.fill(self.bx - 6, self.by - 6, 12, 12, WHITE)
         cv.fill(self.bx - 3, self.by - 3, 4, 4, c565(190, 220, 255))
+
+    def draw_title(self, cv):
+        """BUBBLE: the title card; a coin on the empty net, then the bubble grows from it through its five sizes over
+        1.2 s and wobbles; the best on its plate."""
+        if not pictures.draw(cv, "gravpong_title", 0, 0):
+            return Game.draw_title(self, cv)
+        a, cx = self.age, 160
+        if a < 240:
+            pictures.draw(cv, "gravpong_coin", cx - self.COIN // 2, self.PY - self.COIN)
+        else:
+            k = min(4, (a - 240) * 5 // 960)
+            r = self.SIZES[k] // 2
+            pose = self.SQUASH if (a - 240) % 192 < 40 else (self.WOBBLE_A + a // 80 % 2 if a < 1500 else self.ROUND)
+            self.draw_bubble(cv, cx, self.PY - r, k, pose)
+        self.number(cv, BEST.get(self.name, 0), self.TITLE_BEST_RIGHT, self.TITLE_BEST_TOP)
+
+    def draw_over(self, cv):
+        """The pop and the notes play over the live scene first; then IT WAS NEVER REAL, the score and the best."""
+        if self.over_ms() < self.CARD_MS:
+            return
+        if not pictures.draw(cv, "gravpong_over", self.CARD_X, self.CARD_Y):
+            return Game.draw_over(self, cv)
+        self.number(cv, self.score, self.SCORE_RIGHT, self.CARD_PLATE_TOP)
+        self.number(cv, BEST.get(self.name, 0), self.BEST_RIGHT, self.CARD_PLATE_TOP)
+        if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
+            cv.text("tap to retry", self.CARD_X + 52, self.CARD_Y + 86, self.BONE)
