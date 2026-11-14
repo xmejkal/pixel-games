@@ -1,6 +1,6 @@
 """The art sets, one per game, in the order they are painted and their pictures are written."""
 
-from sets import bucket, flappy, gravpong, meteors, rescue, runner, stack
+from sets import bucket, flappy, gravpong, meteors, rescue, runner, snake, stack
 
 ART_SETS = (runner.ART_SET, stack.ART_SET, flappy.ART_SET, rescue.ART_SET, meteors.ART_SET, bucket.ART_SET,
-            gravpong.ART_SET)
+            gravpong.ART_SET, snake.ART_SET)
