@@ -7,7 +7,8 @@ The step is not saved. App(knob=None) has no volume pane.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
 main.py opens the Speaker. run() with no speaker is the silent box.
 
-run() prints `ready` once the display is set up, then `game <name>` at the start and after each D14 press. Its loop
+run() prints `ready` once the display is set up, then `game <name>` at the start and after each D14 press, and
+`switch <name> <ms> ms, load <ms> ms`: how long the switch took and the art's load in it (P814). Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
 Each frame the game paints into a list of recorded draw calls (gfx.Canvas); render.Dirty finds the rectangles that
 changed since the last frame, and only those are drawn into one 51,200-byte RGB565 buffer and blitted. Nothing at module level touches hardware.
@@ -82,7 +83,8 @@ class App:
         self.switch()
 
     def switch(self):
-        """Move to the next game and say its name."""
+        """Move to the next game and say its name, then how long the switch took and its art's load in it (P814)."""
+        start = time.ticks_ms()
         self.index = (self.index + 1) % len(self.games)
         self.game = None
         pictures.free()  # the last game's art set goes: the next game loads its own (P773)
@@ -99,6 +101,7 @@ class App:
         self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
         print("game", self.game.name)
+        print("switch %s %d ms, load %d ms" % (self.game.name, time.ticks_diff(self.mark, start), pictures.load_ms))
 
     def collect(self):
         """gc.collect(), timed. Called at quiet moments, so a pause lands where nobody is playing."""

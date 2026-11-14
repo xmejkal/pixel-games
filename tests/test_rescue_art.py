@@ -1,4 +1,4 @@
-"""The fireman's pictures (P800): the committed games/art files hold every cycle's poses, the left ones the exact
+"""The fireman's pictures (P800): the committed games/packs hold every cycle's poses, the left ones the exact
 mirror of the right, and the motion that a run cycle needs. art/mocap.py on a tiny skeleton the test writes. And,
 only when the CMU files are downloaded, the rescue set painted again gives the committed bytes. Run from the
 repository root: python3 -m unittest discover tests."""
@@ -16,23 +16,19 @@ sys.path.insert(0, os.path.join(REPO, "art"))  # the art modules import each oth
 from PIL import ImageOps  # noqa: E402
 
 import mocap  # noqa: E402
-from export import from_bin, to_bin  # noqa: E402
+from export import committed_index, from_bin, pack_bytes, to_bin  # noqa: E402
 
 CYCLES = {c.name: c.poses for c in mocap.CYCLES}  # run 12, spray 6, turn 4
 LOOPS = ("run", "spray")  # the cycles that repeat; the turn plays once
 
 
 def art():
-    index = {}
-    with open(os.path.join(REPO, "games", "art_index.py")) as f:
-        exec(f.read(), index)
-    return index["ART"]
+    return committed_index()["ART"]
 
 
 def picture(name):
-    w, h, path = art()[name]
-    with open(os.path.join(REPO, "games", path), "rb") as f:
-        return from_bin(f.read(), w, h)
+    w, h = art()[name][:2]
+    return from_bin(pack_bytes(name), w, h)
 
 
 def opaque_rows(img):
@@ -47,7 +43,7 @@ def mask_difference(a, b):
 
 
 class CommittedPosesTest(unittest.TestCase):
-    """On the committed games/art files, not painted again: these hold without the CMU files."""
+    """On the committed games/packs, not painted again: these hold without the CMU files."""
 
     @classmethod
     def setUpClass(cls):
@@ -131,7 +127,7 @@ class GameAndArtAgreeTest(unittest.TestCase):
 
 
 class PeopleAndCarryPosesTest(unittest.TestCase):
-    """PR 2's cycles on the committed games/art files: the carry (with an adult and with a child), each person's run
+    """PR 2's cycles on the committed games/packs: the carry (with an adult and with a child), each person's run
     and wave, and the dog. Each loops, so the last pose steps to the first as any other."""
 
     @classmethod
@@ -248,17 +244,17 @@ class TinySkeletonTest(unittest.TestCase):
 
 
 class WithoutTheCaptureTest(unittest.TestCase):
-    """art/paint.py paints without the CMU files: the captured pictures are read back from games/art as committed."""
+    """art/paint.py paints without the CMU files: the captured pictures are read back from games/packs as committed."""
 
-    def test_the_pictures_come_back_from_games_art(self):
+    def test_the_pictures_come_back_from_games_packs(self):
         from sets import rescue as art_set  # noqa: E402
         with tempfile.TemporaryDirectory() as empty, contextlib.redirect_stdout(io.StringIO()) as said:
             pictures = art_set.CapturedPictures(empty).pictures()
-        self.assertIn("read back from games/art", said.getvalue())
+        self.assertIn("read back from games/packs", said.getvalue())
         self.assertEqual(set(art_set.CapturedPictures.names()), set(pictures))
         for name in ("rescue_carrykid_r3", "rescue_granny_wave_l7", "rescue_run_r0"):
-            with self.subTest(name=name), open(os.path.join(REPO, "games", "art", name + ".bin"), "rb") as f:
-                self.assertEqual(f.read(), to_bin(pictures[name], True))
+            with self.subTest(name=name):
+                self.assertEqual(pack_bytes(name), to_bin(pictures[name], True))
 
 
 class RepaintTest(unittest.TestCase):
@@ -273,8 +269,8 @@ class RepaintTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             painting = rescue.ART_SET.paint()
         for name, (img, keyed) in painting.pictures.items():
-            with self.subTest(name=name), open(os.path.join(REPO, "games", "art", name + ".bin"), "rb") as f:
-                self.assertEqual(to_bin(img, keyed), f.read())
+            with self.subTest(name=name):
+                self.assertEqual(to_bin(img, keyed), pack_bytes(name))
 
     def test_the_game_s_strides_are_the_capture_s(self):
         """games/rescue.py keeps each cycle's stride in px: the capture's stride at the figure's size."""
