@@ -120,6 +120,7 @@ class BubbleTest(unittest.TestCase):
         frames = [d[0] for d in play]
         self.assertEqual(sorted(set(frames)), frames)
         self.assertGreater(len(frames), 50)
+        self.assertGreater(max(d[7] for d in play), 6)  # the bubble swelled in the row
         for k, name, x, y, state, bx, by, radius, px in play:
             size = (int(radius) - 6) // 2
             half = g.BOX[size] // 2
