@@ -1,4 +1,4 @@
-"""Meteors' pictures (P773, story 4): the committed games/art files hold every picture the game draws, none empty, the
+"""Meteors' pictures (P773, story 4): the committed games/packs hold every picture the game draws, none empty, the
 walker's left poses the exact mirror of the right, his soles on the last row, his top within the 32 px hit box, his
 torso at the box's middle and a pixel of him in the box's columns on every row; the game's copies of the art's sizes
 agree. Only when the CMU files are downloaded: the stride the game walks by, and the set painted again gives the
@@ -20,7 +20,7 @@ from PIL import ImageOps  # noqa: E402
 
 import meteors as game  # noqa: E402  games/meteors.py
 import mocap  # noqa: E402
-from export import to_bin  # noqa: E402
+from export import pack_bytes, to_bin  # noqa: E402
 from sets import meteors as art_set  # noqa: E402  art/sets/meteors.py
 from test_rescue_art import art, opaque_rows, picture  # noqa: E402
 
@@ -40,7 +40,7 @@ def torso_middle(img):
 
 
 class CommittedPicturesTest(unittest.TestCase):
-    """On the committed games/art files, not painted again: these hold without the CMU files."""
+    """On the committed games/packs, not painted again: these hold without the CMU files."""
 
     @classmethod
     def setUpClass(cls):
@@ -126,8 +126,8 @@ class CaptureTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             painting = art_set.ART_SET.paint()
         for name, (img, keyed) in painting.pictures.items():
-            with self.subTest(name=name), open(os.path.join(REPO, "games", "art", name + ".bin"), "rb") as f:
-                self.assertEqual(to_bin(img, keyed), f.read())
+            with self.subTest(name=name):
+                self.assertEqual(to_bin(img, keyed), pack_bytes(name))
 
 
 if __name__ == "__main__":
