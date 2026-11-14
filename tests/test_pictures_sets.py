@@ -116,11 +116,13 @@ class LoadTest(unittest.TestCase):
                 pass
 
         box = app.App(None, lambda: 1, lambda: 1, games=(Painted, Plain), out=Out())
-        with contextlib.redirect_stdout(io.StringIO()):  # the box says each game's name
+        with contextlib.redirect_stdout(io.StringIO()) as said:  # the box says each game's name
             box.start()
             self.assertIn("bucket_scene", pictures.PICS)
             box.switch()
         self.assertEqual({}, pictures.PICS)
+        self.assertRegex(said.getvalue(), r"switch painted \d+ ms, load \d+ ms\n")  # each switch's time (P814)
+        self.assertRegex(said.getvalue(), r"switch plain \d+ ms, load 0 ms\n")  # a game without art loads none
 
     def test_on_the_board_every_set_reads_into_the_one_pool_as_big_as_the_largest_pack(self):
         pool = Pool()
