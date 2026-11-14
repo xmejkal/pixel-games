@@ -85,7 +85,7 @@ def memory():
     st = os.statvfs("/")
     say("flash_free", st[0] * st[3], "B")
     say("flash_total", st[0] * st[2], "B")
-    say("art_on_board", sum(os.stat("/art/" + f)[6] for f in os.listdir("/art")), "B")
+    say("art_on_board", sum(os.stat("/packs/" + f)[6] for f in os.listdir("/packs")), "B")
 
 
 def bench():
