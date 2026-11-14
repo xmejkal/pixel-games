@@ -1589,3 +1589,6 @@ than the control.
   the score) is asked at the same play.
 - Before and after: not run yet. The "before" run is his 3-minute play of master's GravityPong on the board, then the
   deploy of this branch and his 3-minute play of BUBBLE, in the same session.
+- For the PO, before the play: a bot that taps when the net goes the wrong way scores about the same as on master
+  (a mean of 24.8 against 21.8 over 12 seeds when it looks one frame in two), after the swelling bubble alone had
+  made it 214.0. Look for flatness: whether the round still feels the same from 0 to 20 points.
