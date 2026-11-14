@@ -34,7 +34,7 @@ Rescue's figures and Meteors' walker come from the [CMU Graphics Lab Motion Capt
 - everyone's wave: 13:27, frames 1850 to 2030.
 - Meteors' walker: the fireman's run, 9:1.
 
-The dog is drawn by hand. CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission". Its home page says "you may not resell this data directly, even in converted form". So the data is not in this repository, only the painted pictures. Without the CMU files, `art/paint.py` reads those pictures back from `games/art`.
+The dog is drawn by hand. CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission". Its home page says "you may not resell this data directly, even in converted form". So the data is not in this repository, only the painted pictures. Without the CMU files, `art/paint.py` reads those pictures back from `games/packs`.
 
 Rescue's shout is cut from "Please help somebody!" by Nocturnal_Vanguard (OpenGameArt, CC0), kept as `games/help16k.wav` with its `SOURCE.txt`. The art is now 2,892,784 bytes. The box does not read it all at the start: each game reads only its own art set when the box switches to it, and the last game's set is freed (P773). The first game, Marshmallow, reads only the 153,600-byte sky. Every set is read into one picture pool in PSRAM, made once as big as the largest set (the runner's, 739,200 bytes). After copying art that makes a set bigger, the board needs a hard reset: a soft reset keeps the smaller pool (bench.md, P562).
 
@@ -95,8 +95,12 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
 2. Build the firmware with the driver and the engine: `./build.sh engine`.
 3. Put the board in download mode: `mpremote bootloader`.
 4. Write the image: `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
-5. Copy the games: `mpremote cp games/*.py :`.
-6. Reset the board. `main.py` starts the games.
+5. Copy the games and their art: `mpremote cp games/*.py :` and `mpremote cp -r games/packs :`. Copy both each time:
+   `games/art_index.py` names each pack's build, and the board refuses a pack from another build (it prints
+   `stale art: copy games/packs` and the game draws its plain shapes). Each game's pictures are one file in `/packs`
+   (P814).
+6. Reset the board. `main.py` starts the games. If the board ran older games, its old `/art` folder of picture files
+   is no longer read: once the games show their pictures from `/packs`, remove it with `mpremote rm -r :art`.
 
 If the board stays dark after a long press of its D14 button, hold D14 for 1 to 2 seconds. That button also switches the board's power off.
 
