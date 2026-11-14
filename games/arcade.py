@@ -681,7 +681,7 @@ class Snake(Game):
                 y = 236 - row * 14 - (rise + col * 5) % 14
                 if 150 <= y <= 224:
                     pictures.draw(cv, TILES[(row + col * 5 + rise // 14) % 12], x, y)
-        pictures.draw(cv, THUMBS[a // 120 % 3], 196, 200)
+        pictures.draw(cv, THUMBS[a // 120 % 3], 168, 196)  # on the right column, flicking it
         self.number(cv, BEST.get(self.name, 0), self.TITLE_BEST_RIGHT, self.TITLE_BEST_TOP)
 
     def draw_over(self, cv):
