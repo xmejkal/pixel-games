@@ -34,7 +34,8 @@ def trace(seed=SEED, frames=FRAMES):
     for k in range(frames):
         now += FRAME_MS
         score = game.score
-        tap = k == 0 or (game.state == gfx.PLAY and k % EVERY == 0 and (game.bx - game.px - game.PW / 2) * game.pdir < -20)
+        away = (game.bx - game.px - game.PW / 2) * game.pdir < -20
+        tap = k == 0 or (game.state == gfx.PLAY and k % EVERY == 0 and away)
         game.step(now, tap, tap)
         if game.score != score:
             events.append((k, "catch", game.score, round(game.bx, 2), round(game.vx, 2)))
@@ -47,53 +48,34 @@ def trace(seed=SEED, frames=FRAMES):
     return events, checkpoints
 
 
-# The trace on master 4088c42's rules (P573 step 1).
+# The trace on BUBBLE's rules (P573): master 4088c42's, with D9's swelling radius. The first four catches are as on
+# master (the radius is 6 under 4 points); from the fifth the walls, the ceiling, the catch and the death reach as far
+# as the bubble does, so the round runs on otherwise: on master it ended at frame 765 with 26 points.
 EVENTS = (
     (19, "catch", 1, 213.2, 118.0),
     (58, "catch", 2, 233.76, -62.0),
     (99, "catch", 3, 132.08, -128.0),
     (140, "catch", 4, 87.92, 185.0),
-    (181, "catch", 5, 240.0, -200.0),
-    (221, "catch", 6, 86.0, 200.0),
-    (264, "catch", 7, 202.0, -200.0),
-    (299, "catch", 8, 86.0, 200.0),
-    (330, "catch", 9, 298.0, -148.0),
-    (360, "catch", 10, 120.4, -200.0),
-    (393, "catch", 11, 150.0, 200.0),
-    (424, "catch", 12, 234.0, -200.0),
-    (453, "catch", 13, 6.0, 200.0),
-    (480, "catch", 14, 222.0, 200.0),
-    (505, "catch", 15, 210.0, -200.0),
-    (529, "catch", 16, 18.0, -200.0),
-    (554, "catch", 17, 190.0, 200.0),
-    (577, "catch", 18, 258.0, -200.0),
-    (599, "catch", 19, 82.0, -125.0),
-    (622, "catch", 20, 41.0, 197.0),
-    (643, "catch", 21, 206.48, 200.0),
-    (663, "catch", 22, 266.0, -200.0),
-    (684, "catch", 23, 98.0, -200.0),
-    (704, "catch", 24, 70.0, 200.0),
-    (725, "catch", 25, 238.0, 200.0),
-    (744, "catch", 26, 242.0, -139.0),
-    (765, "death", 26, 125.24, -139.0),
+    (181, "catch", 5, 238.0, -200.0),
+    (218, "catch", 6, 72.0, 200.0),
+    (252, "catch", 7, 288.0, -200.0),
+    (291, "catch", 8, 32.0, 200.0),
+    (324, "catch", 9, 296.0, 112.0),
+    (355, "catch", 10, 189.04, -49.0),
+    (384, "catch", 11, 132.2, -96.0),
+    (411, "catch", 12, 28.52, -149.0),
+    (438, "death", 12, 155.04, 149.0),
 )
 CHECKPOINTS = (
     (0, 1, 0, 125.0, 160.0, 60.0, 70.0, 0.0),
     (50, 1, 1, 222.16, 271.52, 111.19, -118.0, 225.8),
     (100, 1, 3, 122.0, 126.96, 211.18, -128.0, -416.2),
     (150, 1, 4, 110.8, 161.92, 94.86, 185.0, -238.0),
-    (200, 1, 5, 60.96, 88.0, 24.7, -200.0, -59.8),
-    (250, 1, 6, 234.48, 314.0, 53.6, -200.0, 139.2),
-    (300, 1, 8, 55.6, 94.0, 199.9, 200.0, -461.2),
-    (350, 1, 9, 192.32, 179.6, 72.28, -148.0, 283.0),
-    (400, 1, 11, 169.12, 206.0, 111.62, 200.0, -363.4),
-    (450, 1, 12, 15.68, 26.0, 169.55, -200.0, 434.8),
-    (500, 1, 14, 213.84, 250.0, 121.66, -200.0, 411.2),
-    (550, 1, 16, 131.04, 158.0, 144.7, 200.0, 450.0),
-    (600, 1, 19, 66.24, 77.0, 207.51, -125.0, -560.2),
-    (650, 1, 21, 249.52, 262.48, 69.82, 200.0, -453.4),
-    (700, 1, 23, 0.0, 38.0, 139.63, 200.0, 533.8),
-    (750, 1, 26, 180.0, 208.64, 80.23, -139.0, -510.2),
+    (200, 1, 5, 38.64, 86.0, 26.0, -200.0, 59.8),
+    (250, 1, 6, 242.24, 304.0, 192.08, -200.0, 422.4),
+    (300, 1, 8, 80.64, 104.0, 91.32, 200.0, -294.8),
+    (350, 1, 9, 167.6, 211.44, 137.04, -112.0, 366.2),
+    (400, 1, 11, 49.52, 70.76, 47.92, -96.0, 259.4),
 )
 
 
@@ -126,8 +108,8 @@ class RulesTest(unittest.TestCase):
         game.play(False, False)
         self.assertEqual(1, game.score)
         self.assertEqual(-(410 + 1 * 9), game.vy)
-        game.score = 30  # the speed stops growing at 25 points
-        game.by, game.vy = game.PY - 8.0, 100.0
+        game.score = 30  # the speed stops growing at 25 points; the bubble is 14 px round by then (D9)
+        game.by, game.vy = game.PY - 16.0, 100.0
         game.play(False, False)
         self.assertEqual(-(410 + 25 * 9), game.vy)
 
@@ -181,6 +163,56 @@ class RulesTest(unittest.TestCase):
         game.play(False, False)
         self.assertEqual(gfx.PLAY, game.state)  # H + 5.83: not yet
         game.by = gfx.HEIGHT + 6.5
+        game.play(False, False)
+        self.assertEqual(gfx.OVER, game.state)
+
+
+class SwellTest(unittest.TestCase):
+    """D9 (P573): the bubble's radius grows with the score, and every rule that read 6 px reads it."""
+
+    def test_the_radius_is_6_and_2_more_for_each_4_points_up_to_14(self):
+        game = playing()
+        for score, radius in ((0, 6), (3, 6), (4, 8), (8, 10), (12, 12), (15, 12), (16, 14), (40, 14)):
+            game.score = score
+            with self.subTest(score=score):
+                self.assertEqual(radius, game.radius())
+
+    def test_the_walls_and_the_ceiling_hold_the_bubble_by_its_radius(self):
+        game = playing()
+        game.score = 16
+        game.bx, game.by, game.vx, game.vy = 15.0, 100.0, -100.0, 0.0
+        game.play(False, False)
+        self.assertEqual((14.0, 100.0), (game.bx, game.vx))
+        game.bx, game.vx = gfx.WIDTH - 15.0, 100.0
+        game.play(False, False)
+        self.assertEqual((gfx.WIDTH - 14.0, -100.0), (game.bx, game.vx))
+        game.by, game.vy = 34.0, -200.0
+        game.play(False, False)
+        self.assertEqual(18.0 + 14, game.by)
+        self.assertGreater(game.vy, 0)
+
+    def test_a_bubble_already_leaving_a_wall_is_not_turned_back(self):
+        game = playing()
+        game.score = 16  # radius 14: a bubble that moves to x 12 is inside the wall's reach but already going right
+        game.bx, game.by, game.vx, game.vy = 8.0, 100.0, 100.0, 0.0
+        game.play(False, False)
+        self.assertEqual((14.0, 100.0), (game.bx, game.vx))
+
+    def test_the_catch_window_and_the_death_line_reach_the_radius(self):
+        for bx, caught in ((100 - 14.0, True), (100 - 15.0, False), (170 + 14.0, True), (170 + 15.0, False)):
+            game = playing()
+            game.score = 16
+            game.px, game.pdir = 100.0 - (170 + 16 * 4) * 0.04, 1  # at 100 once it has moved
+            game.bx, game.by, game.vx, game.vy = bx, game.PY - 16.0, 0.0, 100.0
+            game.play(False, False)
+            with self.subTest(bx=bx):
+                self.assertEqual(caught, game.score == 17)
+        game = playing()
+        game.score, game.px = 16, 0.0
+        game.bx, game.by, game.vx, game.vy = 300.0, gfx.HEIGHT + 13.0, 0.0, 0.0
+        game.play(False, False)
+        self.assertEqual(gfx.PLAY, game.state)  # H + 13.83: inside the reach of 14
+        game.by = gfx.HEIGHT + 14.5
         game.play(False, False)
         self.assertEqual(gfx.OVER, game.state)
 

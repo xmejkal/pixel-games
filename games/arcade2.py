@@ -367,8 +367,9 @@ class GravityPong(Game):
         self.pop_x, self.pop_y = 0, 0
 
     def radius(self):
-        """The bubble's radius in px."""
-        return self.RADIUS
+        """The bubble's radius in px: 6, and 2 more for each 4 points up to 14 (D9, P573): the bubble swells as the
+        score climbs, and its walls, ceiling, catch and death all reach as far as it does."""
+        return self.RADIUS + 2 * min(self.score // 4, 4)
 
     def play(self, pressed, held):
         dt = self.dt
@@ -382,19 +383,21 @@ class GravityPong(Game):
         self.bx += self.vx * dt
         before, self.by = self.by, self.by + self.vy * dt
         self.trail = (self.trail + [(self.bx, self.by)])[-5:]
-        if self.bx < 6 or self.bx > W - 6:
-            self.bx = max(6.0, min(W - 6.0, self.bx))
-            self.vx = -self.vx
-        if self.by < 24:
-            self.by, self.vy = 24.0, abs(self.vy)
-        if self.vy > 0 and before < self.PY - 6 <= self.by and self.px - 6 <= self.bx <= self.px + self.PW + 6:
+        r = self.radius()
+        if self.bx < r:  # the walls send it back inward: a radius that grew at a catch never flips one leaving a wall
+            self.bx, self.vx = float(r), abs(self.vx)
+        elif self.bx > W - r:
+            self.bx, self.vx = float(W - r), -abs(self.vx)
+        if self.by < 18 + r:  # the ceiling: under the score bar, however big the bubble
+            self.by, self.vy = 18.0 + r, abs(self.vy)
+        if self.vy > 0 and before < self.PY - r <= self.by and self.px - r <= self.bx <= self.px + self.PW + r:
             self.score += 1
             self.landed(self.vy)
             self.vy = -(410 + min(self.score, 25) * 9)
             self.vx += self.pdir * 70 + random.randrange(-25, 26)
             self.vx = max(-200.0, min(200.0, self.vx))
             self.fx.burst(self.bx, self.PY, self.BONE, 9, 120.0, 0.4, 250.0)
-        elif self.by > H + 6:
+        elif self.by > H + r:
             self.pop_x, self.pop_y = int(self.bx), self.FLOOR - self.radius() * 3 // 4
             self.die(self.bx, self.pop_y, (self.FILM[0], self.BONE))
 
