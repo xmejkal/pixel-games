@@ -4,7 +4,7 @@ rock and its glow, the coal that dims, the impact's light on the ground, the lan
 only warm bright things are the meteors, the coals and the impacts.
 
 The walker is painted only when the CMU files are in mocap.CMU_DIR. Without them his pictures are read back from
-games/art as committed, so art/paint.py still paints every other set and writes the same files.
+games/packs as committed, so art/paint.py still paints every other set and writes the same files.
 """
 
 from math import cos, hypot, pi, sin
@@ -187,7 +187,7 @@ RUN = mocap.CYCLES[0]  # the run of subject 9, trial 1: 12 poses, a stride of 1.
 
 class WalkerPoses:
     """The walker's pictures by name, run and hit, facing right and left: painted from the CMU files when they are
-    there, else read back from the committed games/art files (and said so)."""
+    there, else read back from the committed games/packs (and said so)."""
 
     def __init__(self, folder=mocap.CMU_DIR):
         self.folder, self.capture = folder, mocap.Capture(folder)
@@ -200,7 +200,7 @@ class WalkerPoses:
     def pictures(self):
         missing = self.capture.missing()
         if missing:
-            print("meteors: no %s in %s: the walker is read back from games/art, not painted again" % (
+            print("meteors: no %s in %s: the walker is read back from games/packs, not painted again" % (
                 ", ".join(missing), self.folder))
             return read_committed(self.names())
         out = {}

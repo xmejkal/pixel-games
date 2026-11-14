@@ -2,10 +2,9 @@
 and the fireman's cycles (run, spray, turn) posed by motion capture through art/mocap.py, facing right and left.
 
 The fireman is painted only when the CMU files are in mocap.CMU_DIR. Without them his pictures are read back from
-games/art as committed, so art/paint.py still paints every other set and writes the same files.
+games/packs as committed, so art/paint.py still paints every other set and writes the same files.
 """
 
-import os
 from math import cos, pi, sin
 
 from PIL import Image, ImageChops, ImageDraw, ImageOps
@@ -13,10 +12,9 @@ from PIL import Image, ImageChops, ImageDraw, ImageOps
 import mocap
 from artset import ArtSet, Painting
 from brush import H, W, Sprite, Strip, autocontrast, blur, glaze, jitter, lay, rnd, scale
-from export import from_bin
+from export import committed_index, from_bin, pack_bytes
 from letters import text_width, write
 
-REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LANE = 180  # the street lane: the bottom 60 px, from this row down
 FEET = 214  # the row the fireman's soles stand on (games/rescue.py's FEET)
 DOOR = (16, 132, 58, LANE)  # the station's door: x0, y0, x1, y1
@@ -562,7 +560,7 @@ def paint_dog(i):
 class CapturedPictures:
     """The pictures painted from motion capture by name: the fireman's cycles, his carry with an adult and with a
     child, and each person's run and wave. Painted from the CMU files when they are there, else read back from the
-    committed games/art files (and said so). The left poses are the right ones mirrored."""
+    committed games/packs (and said so). The left poses are the right ones mirrored."""
 
     def __init__(self, folder=mocap.CMU_DIR):
         self.folder, self.capture = folder, mocap.Capture(folder)
@@ -570,7 +568,7 @@ class CapturedPictures:
     def pictures(self):
         missing = self.capture.missing()
         if missing:
-            print("rescue: no %s in %s: the motion-captured pictures are read back from games/art, not painted again"
+            print("rescue: no %s in %s: the motion-captured pictures are read back from games/packs, not painted again"
                   % (", ".join(missing), self.folder))
             return self.committed()
         out = {}
@@ -614,16 +612,9 @@ class CapturedPictures:
 
 
 def read_committed(names):
-    """The pictures of names as committed in games/art, read back through games/art_index.py."""
-    index = {}
-    with open(os.path.join(REPO, "games", "art_index.py")) as f:
-        exec(f.read(), index)
-    out = {}
-    for name in names:
-        w, h, path = index["ART"][name]
-        with open(os.path.join(REPO, "games", path), "rb") as f:
-            out[name] = from_bin(f.read(), w, h)
-    return out
+    """The pictures of names as committed in games/packs, read back through games/art_index.py."""
+    art = committed_index()["ART"]
+    return {name: from_bin(pack_bytes(name), *art[name][:2]) for name in names}
 
 
 def paint_rescue():

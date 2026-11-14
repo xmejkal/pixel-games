@@ -17,11 +17,11 @@ import PIL.ImageOps  # noqa: E402
 from PIL import Image  # noqa: E402
 
 from brush import ACCENT, rnd  # noqa: E402
-from export import from_bin, q565, to_bin  # noqa: E402
+from export import from_bin, pack_bytes, q565, to_bin  # noqa: E402
 from letters import GLYPHS, write  # noqa: E402
 from looks import NightInk, Watercolour  # noqa: E402
 from paint import main  # noqa: E402
-from sets import gravpong as gravpong_set, runner as runner_set, snake as snake_set, stack as stack_set  # noqa: E402
+from sets import ART_SETS, gravpong as gravpong_set, runner as runner_set, snake as snake_set, stack as stack_set  # noqa: E402
 from sets.runner import RED, run_cycle, runner  # noqa: E402
 
 PREVIEW_PILLOW = "12.3.0"  # preview.png was written with it; fonts and zlib change PNG bytes, not the board files
@@ -45,9 +45,10 @@ class PaintedFilesTest(unittest.TestCase):
     def tearDownClass(cls):
         cls.tmp.cleanup()
 
-    def test_every_bin_as_committed(self):
-        made, kept = os.path.join(self.tmp.name, "games", "art"), os.path.join(REPO, "games", "art")
-        self.assertEqual(sorted(os.listdir(made)), sorted(n for n in os.listdir(kept) if n.endswith(".bin")))
+    def test_every_pack_as_committed(self):
+        made, kept = os.path.join(self.tmp.name, "games", "packs"), os.path.join(REPO, "games", "packs")
+        self.assertEqual(sorted(os.listdir(made)), sorted(os.listdir(kept)))  # games/packs holds the packs only
+        self.assertEqual(sorted("%s.pak" % art_set.name for art_set in ART_SETS), sorted(os.listdir(kept)))
         for name in os.listdir(made):
             with self.subTest(name=name):
                 self.assertTrue(same_bytes(os.path.join(made, name), os.path.join(kept, name)))
@@ -63,8 +64,9 @@ class PaintedFilesTest(unittest.TestCase):
         art = index["ART"]
         aliases = ["runner_jump"] + ["rescue_smoke%d" % i for i in range(5)]  # in the sets' order
         self.assertEqual(aliases, list(art)[-len(aliases):])
-        self.assertEqual(art["runner_jump"], art["runner_apex"])
-        self.assertEqual(art["rescue_smoke4"], art["meteors_smoke4"])  # another set's file, no copy
+        self.assertEqual(art["runner_jump"], art["runner_apex"])  # within its set: the same entry, no copy
+        self.assertEqual(("rescue", art["meteors_smoke4"][:2]), (art["rescue_smoke4"][2], art["rescue_smoke4"][:2]))
+        self.assertEqual(pack_bytes("meteors_smoke4"), pack_bytes("rescue_smoke4"))  # another set's: a copy in its own
         self.assertIs(index["LAYER_SETS"]["runner"], index["LAYERS"])
 
     def test_preview_as_committed(self):
@@ -82,23 +84,23 @@ class OneSetAloneTest(unittest.TestCase):
         rnd.random()
         painting = stack_set.ART_SET.paint()
         for name, (img, keyed) in painting.pictures.items():
-            with self.subTest(name=name), open(os.path.join(REPO, "games", "art", name + ".bin"), "rb") as f:
-                self.assertEqual(to_bin(img, keyed), f.read())
+            with self.subTest(name=name):
+                self.assertEqual(to_bin(img, keyed), pack_bytes(name))
 
 
     def test_snake_alone_as_committed(self):
         rnd.random()
         painting = snake_set.ART_SET.paint()
         for name, (img, keyed) in painting.pictures.items():
-            with self.subTest(name=name), open(os.path.join(REPO, "games", "art", name + ".bin"), "rb") as f:
-                self.assertEqual(to_bin(img, keyed), f.read())
+            with self.subTest(name=name):
+                self.assertEqual(to_bin(img, keyed), pack_bytes(name))
 
     def test_gravpong_alone_as_committed(self):
         rnd.random()
         painting = gravpong_set.ART_SET.paint()
         for name, (img, keyed) in painting.pictures.items():
-            with self.subTest(name=name), open(os.path.join(REPO, "games", "art", name + ".bin"), "rb") as f:
-                self.assertEqual(to_bin(img, keyed), f.read())
+            with self.subTest(name=name):
+                self.assertEqual(to_bin(img, keyed), pack_bytes(name))
 
 
 def board_colour(rgb):
@@ -113,8 +115,7 @@ class LooksTest(unittest.TestCase):
     def setUpClass(cls):
         rnd.seed(runner_set.ART_SET.seed)  # the same sprite whichever test ran before
         cls.sprite = runner(run_cycle()[0])
-        with open(os.path.join(REPO, "games", "art", "bg.bin"), "rb") as f:
-            cls.bg = from_bin(f.read(), 320, 240)  # the runner's fallback, as the board shows it
+        cls.bg = from_bin(pack_bytes("bg"), 320, 240)  # the runner's fallback, as the board shows it
 
     def test_watercolour_is_the_picture(self):
         self.assertIs(Watercolour().apply(self.sprite), self.sprite)

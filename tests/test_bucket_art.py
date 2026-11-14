@@ -1,4 +1,4 @@
-"""Bucket's pictures (P773, story 4): the committed games/art files hold every picture the game draws, none empty, at
+"""Bucket's pictures (P773, story 4): the committed games/packs hold every picture the game draws, none empty, at
 the sizes the game draws them by; a pile's column is the crates in the woods the falling crates show, and the rows and
 places the game keeps (the rail, the chimneys, the river's glints) are the painted scene's. Run from the repository
 root: python3 -m unittest discover tests."""

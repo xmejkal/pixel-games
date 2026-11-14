@@ -389,6 +389,82 @@ class NetTest(unittest.TestCase):
         self.assertEqual(-1, game.pdir)
 
 
+class Drawn:
+    """pictures.draw as logged: each (name, x, y, alpha) one paint of a game with its art draws."""
+
+    pictures = True
+
+    def __init__(self, game):
+        self.calls, saved = [], arcade2.pictures.draw
+        arcade2.pictures.draw = lambda cv, name, x, y, alpha=255: self.calls.append((name, x, y, alpha)) or True
+        try:
+            game.covers = True
+            game.paint(self)
+        finally:
+            arcade2.pictures.draw = saved
+
+    def fill(self, *args):
+        pass
+
+    def named(self, prefix):
+        return [c for c in self.calls if c[0].startswith(prefix)]
+
+
+class CrewDrawingTest(unittest.TestCase):
+    """The net, the workers and the light pool as drawn at each of the net's widths (P573's review)."""
+
+    def crew(self, score, px, sag=0.0):
+        game = playing()
+        game.score, game.px, game.pdir, game.last = score, float(px), 1, 10000
+        game.net.sag = sag
+        return game, Drawn(game)
+
+    def test_the_net_is_drawn_at_its_width_in_the_picture_for_its_sag(self):
+        for score in (0, 16, 20, 24):
+            for sag, pose in ((-2.0, 0), (0.0, 1), (4.0, 2), (9.0, 3)):
+                game, drawn = self.crew(score, 100, sag)
+                with self.subTest(score=score, sag=sag):
+                    self.assertEqual(pose, game.net.pose())
+                    self.assertEqual([(GravityPong.NETS[game.net_width()][pose], 100, game.NET_Y, 255)],
+                                     drawn.named("gravpong_net_"))
+
+    def test_the_workers_hold_the_nets_ends_and_the_pool_lies_under_its_middle(self):
+        g = GravityPong
+        for score in (0, 16, 20, 24):
+            game, drawn = self.crew(score, 100)
+            pw = game.net_width()
+            left, right = drawn.named("gravpong_worker_l_")[0], drawn.named("gravpong_worker_r_")[0]
+            pool = drawn.named("gravpong_pool")[0]
+            with self.subTest(score=score):
+                self.assertEqual(100 - g.HAND_DX - g.WORKER_W // 2, left[1])
+                self.assertEqual(100 + pw + g.HAND_DX - g.WORKER_W // 2, right[1])
+                self.assertEqual(100 + pw // 2 - g.POOL_W // 2, pool[1])
+
+    def test_spent_workers_step_slower_and_slump_every_other_step(self):
+        g = GravityPong
+        top = g.FLOOR - g.WORKER_H
+        game, drawn = self.crew(0, 26)  # fresh: a pose each 8 px, no slump
+        left = drawn.named("gravpong_worker_l_")[0]
+        self.assertEqual((g.WORKERS[0]["run"][26 // g.STEP_PX % 4], top), left[:3][::2])
+        game, drawn = self.crew(g.TIRED_SCORE + 1, 26)  # spent: a pose each 13 px; step 2, no slump
+        left = drawn.named("gravpong_worker_l_")[0]
+        self.assertEqual((g.WORKERS[0]["trun"][26 // g.TIRED_STEP_PX % 4], top), left[:3][::2])
+        self.assertNotEqual(26 // g.STEP_PX % 4, 26 // g.TIRED_STEP_PX % 4)
+        game, drawn = self.crew(g.TIRED_SCORE + 1, 13)  # step 1: slumped 1 px
+        self.assertEqual({top + 1}, {c[2] for c in drawn.named("gravpong_worker_")})
+
+    def test_the_notes_fall_into_the_net_only_within_its_width(self):
+        game, now = lost()
+        game.score, game.px, game.popped = 24, 100.0, True  # the net 46 px wide
+        game.notes.q[:] = [[120.0, 200.0, 0.0, 40.0, 0, -1], [160.0, 200.0, 0.0, 40.0, 0, -1]]
+        for _ in range(30):
+            now += FRAME_MS
+            game.step(now, False, False)
+        inside, outside = game.notes.q
+        self.assertEqual(20, inside[5])  # in the net, 20 px from its left end
+        self.assertEqual((-1, game.FLOOR - 3), (outside[5], outside[1]))  # past its 46 px: on the floor
+
+
 class Heard:
     """signals.Signals as the game box gives it: the names emitted, in order."""
 

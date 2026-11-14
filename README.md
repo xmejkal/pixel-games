@@ -34,9 +34,9 @@ Rescue's figures and Meteors' walker come from the [CMU Graphics Lab Motion Capt
 - everyone's wave: 13:27, frames 1850 to 2030.
 - Meteors' walker: the fireman's run, 9:1.
 
-The dog is drawn by hand. CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission". Its home page says "you may not resell this data directly, even in converted form". So the data is not in this repository, only the painted pictures. Without the CMU files, `art/paint.py` reads those pictures back from `games/art`.
+The dog is drawn by hand. CMU asks for this line: "The data used in this project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217." Its FAQ says "The motion capture data may be copied, modified, or redistributed without permission". Its home page says "you may not resell this data directly, even in converted form". So the data is not in this repository, only the painted pictures. Without the CMU files, `art/paint.py` reads those pictures back from `games/packs`.
 
-Rescue's shout is cut from "Please help somebody!" by Nocturnal_Vanguard (OpenGameArt, CC0), kept as `games/help16k.wav` with its `SOURCE.txt`. The art is now 2,892,784 bytes. The box does not read it all at the start: each game reads only its own art set when the box switches to it, and the last game's set is freed (P773). The first game, Marshmallow, reads only the 153,600-byte sky. Every set is read into one picture pool in PSRAM, made once as big as the largest set (the runner's, 739,200 bytes). After copying art that makes a set bigger, the board needs a hard reset: a soft reset keeps the smaller pool (bench.md, P562).
+Rescue's shout is cut from "Please help somebody!" by Nocturnal_Vanguard (OpenGameArt, CC0), kept as `games/help16k.wav` with its `SOURCE.txt`. The art is 3,955,632 bytes in eight packs, one file per game's set (P814). The box does not read it all at the start: each game reads only its own art set when the box switches to it, and the last game's set is freed (P773). The first game, Marshmallow, reads only the 153,600-byte sky. Every set is read into one picture pool in PSRAM, made once as big as the largest pack (the runner's, 739,216 bytes). After copying art that makes a pack bigger, the board needs a hard reset. A soft reset keeps the smaller pool (bench.md, P562). A branch that adds pictures follows [docs/art-packs.md](docs/art-packs.md).
 
 ## What it looks like
 
@@ -95,8 +95,19 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
 2. Build the firmware with the driver and the engine: `./build.sh engine`.
 3. Put the board in download mode: `mpremote bootloader`.
 4. Write the image: `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
-5. Copy the games: `mpremote cp games/*.py :`.
-6. Reset the board. `main.py` starts the games.
+5. Copy the games and their art: `mpremote cp games/*.py :` and `mpremote cp -r games/packs :`. Copy both each time.
+   `games/art_index.py` names each pack's build, and the board refuses a pack from another build: it prints
+   `art: <game> pack is not this build: ...` and the game draws its plain shapes. Each game's pictures are one file in
+   `/packs` (P814).
+6. Hard-reset the board: `mpremote reset`, its reset button, or unplug it and plug it in again. A soft reset is not
+   enough after art that makes a pack bigger, as the first copy of the packs does: each pack is 16 bytes bigger than
+   the set it replaces (the runner's is 739,216 bytes), and a soft reset keeps the smaller picture pool. The pictures then go quietly into a 739 KB block of the heap, which slows every
+   garbage collection. `main.py` starts the games. The console shows `game <name>`, then
+   `switch <name> N ms, load N ms` at each switch: how long the switch took and the art's load in it.
+7. An older board also holds the `/art` folder of picture files. Both folders fit: with `/art` the board had 4.98 MB
+   of flash free, and `/packs` takes 2.9 MB. The games no longer read `/art`. Once they show their pictures, remove it
+   with `mpremote rm -r :art` (mpremote 1.29.0 here, see `mpremote --version`; an mpremote whose `rm` has no `-r`
+   cannot remove the folder).
 
 If the board stays dark after a long press of its D14 button, hold D14 for 1 to 2 seconds. That button also switches the board's power off.
 
@@ -279,7 +290,7 @@ Runs now:
   `/spark:identify`: list its open facts with `parts.py --unverified inmp441-i2s-mic-round --project .`. The wiring
   guide with pictures is `docs/wiring.html`, also at https://claude.ai/artifact/Xyppus2vF8xmC3Etc9Rbm4.
 - The HUD is drawn once into a strip and blitted each frame (P599).
-- Fifteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Eight are painted: runner, flappy, stack (stack as RENT), rescue (P800, a fireman and the people he saves from motion capture, under meteors, on the fire's field), Meteors and Bucket (P773), GravityPong as BUBBLE and Snake as FEED (P573). The other five are flat: Cave, Tunnel, Road, Starfire and CubeTiming. Each game loads only its own painted set when the box switches to it (P773); the largest, runner's, sets the size of the one block they are read into. All the painted art is 3,918,744 B (art/paint.py's count, 2026-11-14); the load time on the board is not measured since.
+- Fifteen games. One is an effect scene: the ball pit. Marshmallow is a game on the fire's field, Bucket a game on the rain's physics and Meteors a game on the bodies on fire (P773). Eight are painted: runner, flappy, stack (stack as RENT), rescue (P800, a fireman and the people he saves from motion capture, under meteors, on the fire's field), Meteors and Bucket (P773), GravityPong as BUBBLE and Snake as FEED (P573). The other five are flat: Cave, Tunnel, Road, Starfire and CubeTiming. Each painted game loads only its own set when the box switches to it (P773), from one pack file (P814). On the board on 2026-11-14 every set loaded in under 0.6 s; Rescue's took 548 ms, down from 22,272 ms when each picture was its own file.
 - The double buffer: the game paints into PSRAM, and `show()` copies the frame and returns.
 - Measured fps per painted game, from `bench.md`: flappy 24 under an autopilot (run92, the P602 run before the fire went on), runner 21 to 24 with no play, both at a 40 ms frame pace; stack 24.
 
