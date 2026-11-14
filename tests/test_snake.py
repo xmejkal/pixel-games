@@ -176,5 +176,30 @@ class RulesTest(unittest.TestCase):
         self.assertEqual(4, len(game.body))  # no meal: the tail goes as the head comes
 
 
+
+class Heard:
+    """signals.Signals as the game box gives it: the names emitted, in order."""
+
+    def __init__(self):
+        self.names = []
+
+    def emit(self, name, value=None):
+        self.names.append(name)
+
+
+class SoundTest(unittest.TestCase):
+    def test_a_turn_steps_a_meal_picks_up_and_the_bite_dies(self):
+        self.assertEqual({"eat": "pickup", "turn": "footstep", "die": "die"},
+                         {k: c.sound for k, c in Snake.cues.items()})
+        game = playing(food=(13, 9))
+        game.signals = Heard()
+        game.play(False, False)  # a meal
+        game.play(True, True)  # a turn, down
+        game.body = [(5, 5), (5, 6), (6, 6), (6, 5), (6, 4)]
+        game.d = 1
+        game.play(False, False)  # into its own body
+        self.assertEqual(["eat", "turn", "die"], game.signals.names)
+
+
 if __name__ == "__main__":
     unittest.main()

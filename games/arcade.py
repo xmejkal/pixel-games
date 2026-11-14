@@ -467,6 +467,7 @@ class Snake(Game):
     bg = c565(14, 34, 22)
     accent = GREEN
     BONE = StatusBar.BONE  # art/sets/snake.py's
+    cues = {"eat": Cue("pickup"), "turn": Cue("footstep"), "die": Cue("die")}
     CELL, COLS, ROWS, TOP = 12, 26, 18, 21
     LEFT = 4
     DIRS = ((1, 0), (0, 1), (-1, 0), (0, -1))
@@ -508,6 +509,7 @@ class Snake(Game):
     def play(self, pressed, held):
         if pressed:
             self.d = (self.d + 1) % 4
+            self.emit("turn")
         self.acc += self.dt * 1000
         period = max(70, 160 - self.score * 4)
         if self.acc < period:
@@ -530,7 +532,8 @@ class Snake(Game):
             self.gone = self.body.pop()
 
     def ate(self, cell):
-        """A meal at cell: the gulp, the bulge down the feed, the ripple and the bone sparks."""
+        """A meal at cell: the sound, the gulp, the bulge down the feed, the ripple and the bone sparks."""
+        self.emit("eat")
         self.ate_step, self.gone = self.steps, None
         x, y = self.centre(cell)
         self.meals.eaten(self.steps, self.last, x, y)
