@@ -1592,3 +1592,8 @@ than the control.
 - For the PO, before the play: a bot that taps when the net goes the wrong way scores about the same as on master
   (a mean of 24.8 against 21.8 over 12 seeds when it looks one frame in two), after the swelling bubble alone had
   made it 214.0. Look for flatness: whether the round still feels the same from 0 to 20 points.
+
+## P573 (#778), 2026-11-14: snake as FEED, the PO's play test
+
+- Written before the play (the plan's target, as for BUBBLE above): the system the theme aims at is "the attention
+  economy". The PO is not told this; his own words are matched against it afterwards.
