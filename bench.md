@@ -1578,3 +1578,14 @@ than the control.
   in Marshmallow (88 to 95 ms, P773 above). Not fixed in this story.
 - The control has 23 fps in 10 of its 11 windows, so the control itself is under the 24 fps line.
 - Open: the PO's hand, eye and ear. No run shows how the game looks or plays.
+
+## P573 (#778), 2026-11-14: gravity pong as BUBBLE, the PO's play test
+
+- Written before the play (the plan's target, as for RENT under P568): the system the theme aims at is "a speculative
+  bubble kept up by the people who gain least from it". The PO is not told this; his own words are matched against it
+  afterwards.
+- Pass line (D3): his verdict "exciting" or stronger, and the average fps in pure-play intervals at most 2 below the
+  same average before, at least 6 pure-play intervals in each run. His yes or no on D9 (the bubble's radius grows with
+  the score) is asked at the same play.
+- Before and after: not run yet. The "before" run is his 3-minute play of master's GravityPong on the board, then the
+  deploy of this branch and his 3-minute play of BUBBLE, in the same session.
