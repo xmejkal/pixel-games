@@ -200,7 +200,8 @@ class SwellTest(unittest.TestCase):
         self.assertEqual((14.0, 100.0), (game.bx, game.vx))
 
     def test_the_catch_window_and_the_death_line_reach_the_radius(self):
-        for bx, caught in ((100 - 14.0, True), (100 - 15.0, False), (170 + 14.0, True), (170 + 15.0, False)):
+        right = 100 + 62  # at 16 points the spent workers' net is 62 wide
+        for bx, caught in ((100 - 14.0, True), (100 - 15.0, False), (right + 14.0, True), (right + 15.0, False)):
             game = playing()
             game.score = 16
             game.px, game.pdir = 100.0 - (170 + 16 * 4) * 0.04, 1  # at 100 once it has moved
@@ -348,6 +349,44 @@ class FeelTest(unittest.TestCase):
                     self.assertEqual(ms >= GravityPong.HIT_MS, "gravpong_crash" in drawn)
         finally:
             arcade2.pictures.draw = saved
+
+
+class NetTest(unittest.TestCase):
+    """The spent workers' net shrinks (P573's review, a second named rule change): 70 px, and 8 less for each 4 points
+    past TIRED_SCORE, down to 46, its middle kept at the catch that shrinks it."""
+
+    def test_the_net_is_70_px_until_the_tired_score_then_8_less_each_4_points_down_to_46(self):
+        game = playing()
+        widths = {}
+        for score in range(0, 40):
+            game.score = score
+            widths[score] = game.net_width()
+        self.assertEqual({70}, {widths[k] for k in range(16)})
+        self.assertEqual((62, 62, 54, 54, 46, 46), tuple(widths[k] for k in (16, 19, 20, 23, 24, 39)))
+
+    def test_the_catch_that_shrinks_the_net_keeps_its_middle(self):
+        game = playing()
+        game.score, game.px, game.pdir = 15, 100.0, 1
+        game.bx, game.by, game.vx, game.vy = 140.0, game.PY - 16.0, 0.0, 100.0
+        game.play(False, False)
+        self.assertEqual(16, game.score)
+        moved = 100.0 + (170 + 15 * 4) * 0.04
+        self.assertAlmostEqual(moved + (70 - 62) / 2, game.px)
+
+    def test_the_catch_window_and_the_walls_read_the_narrow_net(self):
+        for bx, caught in ((100 + 46 + 14.0, True), (100 + 46 + 15.0, False)):
+            game = playing()
+            game.score = 24  # the net 46 wide, the bubble 14 round
+            game.px, game.pdir = 100.0 - (170 + 20 * 4) * 0.04, 1
+            game.bx, game.by, game.vx, game.vy = bx, game.PY - 16.0, 0.0, 100.0
+            game.play(False, False)
+            with self.subTest(bx=bx):
+                self.assertEqual(caught, game.score == 25)
+        game = playing()
+        game.score, game.px, game.pdir = 24, gfx.WIDTH - 47.0, 1
+        game.play(False, False)
+        self.assertEqual(gfx.WIDTH - 46.0, game.px)  # the net reaches the right wall at its own width
+        self.assertEqual(-1, game.pdir)
 
 
 class Heard:

@@ -462,8 +462,9 @@ class GravityPong(Game):
         return self.MIN_RADIUS + 2 * min(self.score // 4, 4)
 
     def net_width(self):
-        """The net's width in px."""
-        return NET_WIDTHS[0]
+        """The net's width in px: 70, and 8 less for each 4 points past TIRED_SCORE down to 46 (a second named rule
+        change, P573's review): the spent workers hold a smaller net under a bigger bubble."""
+        return NET_WIDTHS[min(3, max(0, (self.score - self.TIRED_SCORE + 3) // 4))]
 
     def play(self, pressed, held):
         dt, pw = self.dt, self.net_width()
@@ -485,6 +486,7 @@ class GravityPong(Game):
             self.by, self.vy = 18.0 + r, abs(self.vy)
         if self.vy > 0 and before < self.PY - r <= self.by and self.px - r <= self.bx <= self.px + pw + r:
             self.score += 1
+            self.px += (pw - self.net_width()) / 2  # a net that shrinks at the catch keeps its middle
             self.landed(self.vy)
             self.vy = -(410 + min(self.score, 25) * 9)
             self.vx += self.pdir * 70 + random.randrange(-25, 26)
