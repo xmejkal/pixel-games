@@ -29,8 +29,10 @@ POSES = ("open", "gulp", "chew", "glow")
 HEAD = 16  # the head's picture, 2 px past its cell on each side, so the hero reads at 1x
 HALO = 36  # the head's see-through glow
 BULGE = 16
-RIPPLE, RIPPLES = 48, 4  # the glass's ripple where the feed eats: its rings
-PING, PINGS = 28, 3  # the dot's ping: a red ring that spreads from it now and then, calling
+RIPPLE, RIPPLES = 48, 4  # the glass's ripple where the feed eats: its rings, opaque
+PING, PINGS = 28, 3  # the dot's ping: a red ring that spreads from it now and then, calling; opaque
+GLOW = 32  # each tile's light on the glass under it, drawn see-through: the street lights up along the feed
+BITE, BITES = 56, 2  # the bite's flash where the feed meets itself
 DOT_POSES, SEEN_POSES, BULGE_POSES, THUMB_POSES = 3, 3, 2, 3
 THUMB = (32, 40)
 DIGIT_W, DIGIT_H = 8, 12
@@ -194,7 +196,7 @@ def glass(street):
     cold streak of the sky across it from the lower left, and a dot at each cell's corner, the screen's grid."""
     mirrored = ImageEnhance.Color(ImageOps.mirror(street).convert("RGB")).enhance(1.7)
     mirrored = mirrored.point(lambda v: int(255 * (v / 255) ** 1.8))  # the glass keeps the lights, drops the greys
-    lum = sum(luma(p) for p in mirrored.getdata()) / (W * H)
+    lum = sum(luma(p) for p in mirrored.get_flattened_data()) / (W * H)
     k = (REFLECTION - luma(GLASS)) / lum
     base = Image.new("RGB", (W, H), GLASS)
     out = ImageChops.add(base, mirrored.point(lambda v: int(v * k)))
@@ -301,14 +303,29 @@ def tile(kind):
 SEEN_GREY = (96, 98, 112)
 
 
+def squeezed(img, w=6):
+    """A 12 x 12 tile turned half away: w px wide in the middle of its cell, its near edge lit."""
+    narrow = img.resize((w, CELL), Image.NEAREST)
+    out = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
+    out.paste(narrow, ((CELL - w) // 2, 0))
+    for j in range(1, CELL - 1):
+        out.putpixel(((CELL - w) // 2, j), (255, 255, 255, 255))
+    return out
+
+
+def turn(kind):
+    """The flip's first pose, 12 x 12 keyed: the tile itself turned half away, so the flip reads as a turn."""
+    return squeezed(tile(kind))
+
+
 def seen(k):
-    """The flip to SEEN, 12 x 12 keyed: 0 the tile half turned, its pale back; 1 edge-on, a bright line; 2 the grey
-    tile with the two ticks of a message read."""
+    """The flip to SEEN, 12 x 12 keyed: 0 the grey back half turned; 1 edge-on, a bright line; 2 the grey tile with
+    the two ticks of a message read. The game turns each tile through turn, 1, 0 and 2."""
     img = Image.new("RGBA", (CELL, CELL), (0, 0, 0, 0))
     if k == 0:
         for j in range(1, 11):
             for i in range(3, 9):
-                c = mix((236, 236, 244), (150, 152, 168), (j - 1) / 10)
+                c = mix((176, 178, 192), (96, 98, 112), (j - 1) / 10)
                 img.putpixel((i, j), (mix(c, (255, 255, 255), 0.3) if i == 3 else c) + (255,))
         for j in range(1, 11):
             img.putpixel((2, j), mix(GLASS, (200, 200, 220), 0.4) + (255,))
@@ -410,9 +427,9 @@ def halo():
 
 
 def bulge(k):
-    """The swallowed dot going down the feed, 16 x 16 keyed: a swollen white tile, the red dot glowing through it,
-    wide (0) or tall (1)."""
-    rx, ry = (7.4, 6.2) if k == 0 else (6.2, 7.4)
+    """The swallowed dot going down the feed, 16 x 16 keyed: a swollen white tile ringed in the accent, the red dot
+    big in it, wide (0) or tall (1), so it reads at 1x."""
+    rx, ry = (7.9, 6.9) if k == 0 else (6.9, 7.9)
     n, c = BULGE, (BULGE - 1) / 2
     img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
 
@@ -423,9 +440,10 @@ def bulge(k):
         for i in range(n):
             if body(i, j):
                 r = hypot(i - c, j - c)
-                col = ACCENT if r < 2.6 else mix((255, 184, 186), (232, 240, 255), min(1.0, (r - 2.6) / 4))
+                col = ACCENT if r < 3.4 else (255, 255, 255) if r < 4.6 else mix((255, 236, 236), (226, 240, 255),
+                                                                                  min(1.0, (r - 4.6) / 3))
                 edge = any(not body(i + di, j + dj) for di, dj in ((1, 0), (-1, 0), (0, 1), (0, -1)))
-                img.putpixel((i, j), ((150, 214, 250) if edge else col) + (255,))
+                img.putpixel((i, j), (ACCENT if edge else col) + (255,))
     return img
 
 
@@ -448,10 +466,10 @@ def dot(k):
 
 
 def ripple(k):
-    """The glass rippling where the feed eats, 48 x 48 keyed, ring k of RIPPLES, each wider and thinner; drawn
-    see-through, fainter as it spreads."""
+    """The glass rippling where the feed eats, 48 x 48 keyed, ring k of RIPPLES, each wider and thinner, opaque, so it
+    reads at 1x on the dark glass with no blend."""
     n, c = RIPPLE, RIPPLE / 2
-    r, w = 8 + k * 5, 3.4 - k * 0.6
+    r, w = 8 + k * 5, 3.6 - k * 0.8
     img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
     for j in range(n):
         for i in range(n):
@@ -463,14 +481,55 @@ def ripple(k):
 
 
 def ping(k):
-    """The dot calling, 28 x 28 keyed, ring k of PINGS in the accent, each wider; drawn see-through."""
+    """The dot calling, 28 x 28 keyed, ring k of PINGS in the accent, each wider and thinner, opaque."""
     n, c = PING, PING / 2
-    r = 6.5 + k * 3.2
+    r, w = 7 + k * 3.2, 2.2 - k * 0.5
     img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
     for j in range(n):
         for i in range(n):
-            if abs(hypot(i + 0.5 - c, j + 0.5 - c) - r) <= 0.8:
+            if abs(hypot(i + 0.5 - c, j + 0.5 - c) - r) <= w / 2:
                 img.putpixel((i, j), ACCENT + (255,))
+    return img
+
+
+def glow(kind):
+    """A tile's light on the glass, 32 x 32 keyed, drawn see-through under it: its hue, lightened, softest at the
+    edge, so the street in the glass lights up along the feed and where it has been."""
+    hue = mix(HUES[kind], (255, 255, 255), 0.2)
+    img = Image.new("RGBA", (GLOW, GLOW), (0, 0, 0, 0))
+    c = GLOW / 2
+    for j in range(GLOW):
+        for i in range(GLOW):
+            u, v = abs(i + 0.5 - c) / c, abs(j + 0.5 - c) / c
+            r = (u ** 3 + v ** 3) ** (1 / 3)
+            if r < 1:
+                img.putpixel((i, j), mix(hue, mix(GLASS, HUES[kind], 0.5), r) + (255,))
+    return img
+
+
+def bite(k):
+    """The bite, 56 x 56 keyed: a white-hot jagged burst with the accent at its heart (0), then its rays thrown wider
+    and broken (1)."""
+    n, c = BITE, BITE / 2
+    img = Image.new("RGBA", (n, n), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    state = rnd.getstate()
+    rnd.seed(7)  # the same rays in both poses
+    rays = [(k2 * 2 * pi / 14 + rnd.uniform(-0.15, 0.15), rnd.uniform(0.6, 1.0)) for k2 in range(14)]
+    rnd.setstate(state)
+    if k == 0:
+        pts = []
+        for m, (a, far) in enumerate(rays):
+            r = (c - 3) * far if m % 2 == 0 else (c - 3) * far * 0.42
+            pts.append((c + r * cos(a), c + r * sin(a)))
+        d.polygon(pts, fill=(255, 250, 236, 255))
+        d.ellipse((c - 9, c - 9, c + 9, c + 9), fill=(255, 255, 255, 255))
+        d.ellipse((c - 4, c - 4, c + 4, c + 4), fill=ACCENT + (255,))
+        return img
+    for m, (a, far) in enumerate(rays):
+        r0, r1 = (c - 3) * far * 0.55, (c - 2) * far
+        d.line([(c + r0 * cos(a), c + r0 * sin(a)), (c + r1 * cos(a), c + r1 * sin(a))],
+               fill=((255, 250, 236) if m % 3 else ACCENT) + (255,), width=2)
     return img
 
 
@@ -617,6 +676,11 @@ def paint_snake():
         pics["snake_bulge_%d" % k] = (bulge(k), True)
     for k in range(SEEN_POSES):
         pics["snake_seen_%d" % k] = (seen(k), True)
+    for kind in KINDS:
+        pics["snake_turn_" + kind] = (turn(kind), True)
+        pics["snake_glow_" + kind] = (glow(kind), True)
+    for k in range(BITES):
+        pics["snake_bite_%d" % k] = (bite(k), True)
     for k in range(DOT_POSES):
         pics["snake_dot_%d" % k] = (dot(k), True)
     for k in range(RIPPLES):
@@ -634,7 +698,7 @@ def paint_snake():
 
 # --- the preview sheet ---------------------------------------------------------------------------------------------
 
-HALO_ALPHA, RIPPLE_ALPHAS = 70, (230, 180, 120, 64)  # games/arcade.py's
+HALO_ALPHA, GLOW_ALPHA = 70, 84  # games/arcade.py's
 
 
 def over(out, img, x, y):
@@ -658,6 +722,10 @@ BODY = [(14, 9), (13, 9), (12, 9), (11, 9), (10, 9), (10, 10), (10, 11), (10, 12
 def snake_scene(pics, pose="open", flip=0):
     """A frame of play: the feed crawling right with a dot bulging down it, the head's glow, a dot ahead."""
     out = pics["snake_morning"].copy()
+    for k, cell in enumerate(BODY[1:], 1):
+        x, y = cell_xy(cell)
+        seen_through(out, pics["snake_glow_" + KINDS[(len(BODY) - k) * 5 % 6]], x + 6 - GLOW // 2, y + 6 - GLOW // 2,
+                     GLOW_ALPHA)
     for k, cell in enumerate(BODY[1:], 1):
         name = "snake_tile_" + KINDS[(len(BODY) - k) * 5 % 6]
         if k <= flip:
@@ -683,15 +751,16 @@ def snake_sheet(painting, sheet, y):
     sheet.put("snake (FEED): snake_morning in play, the feed, the head and its glow, a dot, at 2x",
               snake_scene(pics).resize((W * 2, H * 2), Image.NEAREST), 10, y)
     x = W * 2 + 30
-    row = Image.new("RGB", (len(KINDS) * 14 + 3 * 14 + 3 * 14, 14), GLASS)
+    row = Image.new("RGB", (2 * len(KINDS) * 13 + 3 * 13 + 3 * 13, 14), GLASS)
     for k, kind in enumerate(KINDS):
-        over(row, pics["snake_tile_" + kind], k * 14 + 1, 1)
+        over(row, pics["snake_tile_" + kind], k * 13 + 1, 1)
+        over(row, pics["snake_turn_" + kind], (len(KINDS) + SEEN_POSES + DOT_POSES + k) * 13 + 1, 1)
     for k in range(SEEN_POSES):
-        over(row, pics["snake_seen_%d" % k], (len(KINDS) + k) * 14 + 1, 1)
+        over(row, pics["snake_seen_%d" % k], (len(KINDS) + k) * 13 + 1, 1)
     for k in range(DOT_POSES):
-        over(row, pics["snake_dot_%d" % k], (len(KINDS) + SEEN_POSES + k) * 14 + 1, 1)
-    at = sheet.put("snake_tile_<kind>, snake_seen_0..2, snake_dot_0..2, at 4x",
-                   row.resize((row.width * 4, row.height * 4), Image.NEAREST), x, y) + 10
+        over(row, pics["snake_dot_%d" % k], (len(KINDS) + SEEN_POSES + k) * 13 + 1, 1)
+    at = sheet.put("snake_tile_<kind>, snake_seen_0..2, snake_dot_0..2, snake_turn_<kind>, at 2x",
+                   row.resize((row.width * 2, row.height * 2), Image.NEAREST), x, y) + 10
     heads = Image.new("RGB", (len(POSES) * 18 + 2 * 18, len(DIRS) * 18), GLASS)
     for j, d in enumerate(DIRS):
         for i, pose in enumerate(POSES):
@@ -700,12 +769,14 @@ def snake_sheet(painting, sheet, y):
         over(heads, pics["snake_bulge_%d" % k], (len(POSES) + k) * 18 + 1, 1)
     at = sheet.put("snake_head_<dir>_<pose> (open, gulp, chew, glow) and snake_bulge_0..1, at 4x",
                    heads.resize((heads.width * 4, heads.height * 4), Image.NEAREST), x, at) + 10
-    thumbs = Image.new("RGB", (THUMB_POSES * 34 + 10 * (DIGIT_W + 2), THUMB[1]), GLASS)
+    thumbs = Image.new("RGB", (THUMB_POSES * 34 + 10 * (DIGIT_W + 2) + BITES * (BITE + 2), BITE), GLASS)
+    for k in range(BITES):
+        over(thumbs, pics["snake_bite_%d" % k], THUMB_POSES * 34 + 10 * (DIGIT_W + 2) + k * (BITE + 2), 0)
     for k in range(THUMB_POSES):
         over(thumbs, pics["snake_thumb_%d" % k], k * 34, 0)
     for n in range(10):
         over(thumbs, pics["snake_digit_%d" % n], THUMB_POSES * 34 + n * (DIGIT_W + 2), 14)
-    sheet.put("snake_thumb_0..2 32x40 and snake_digit_0..9, at 2x",
+    sheet.put("snake_thumb_0..2, snake_digit_0..9, snake_bite_0..1, at 2x (the glows are in the frame)",
               thumbs.resize((thumbs.width * 2, thumbs.height * 2), Image.NEAREST), x, at)
     y += H * 2 + 32
     title = pics["snake_title"].copy()

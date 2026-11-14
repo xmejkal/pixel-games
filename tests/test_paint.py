@@ -312,7 +312,8 @@ class FeedTest(unittest.TestCase):
         """Every picture name the game holds or writes out."""
         m = self.module
         names = [n for poses in m.HEADS for n in poses]
-        names += list(m.TILES + m.SEEN + m.DOTS + m.BULGES + m.RIPPLES + m.PINGS + m.THUMBS + m.FEED_DIGITS)
+        names += list(m.TILES + m.TURNS + m.GLOWS + m.BITES + m.SEEN + m.DOTS + m.BULGES + m.RIPPLES + m.PINGS
+                      + m.THUMBS + m.FEED_DIGITS)
         return names + re.findall(r'"(snake_[a-z_]+)"', read("games", "arcade.py"))
 
     def test_every_name_the_game_asks_for_is_in_its_set(self):
@@ -329,10 +330,11 @@ class FeedTest(unittest.TestCase):
         self.assertEqual((a.CELL, a.COLS, a.ROWS, a.LEFT, a.TOP), (g.CELL, g.COLS, g.ROWS, g.LEFT, g.TOP))
         self.assertEqual((a.KINDS, a.DIRS, a.POSES), (m.FEED_KINDS, m.FEED_DIRS, m.FEED_POSES))
         self.assertEqual(sorted(m.FEED_ORDER), sorted(list(range(6)) * 2))  # each kind twice in the shuffle
-        self.assertEqual((a.HEAD, a.HALO, a.BULGE, a.RIPPLE, a.PING, a.THUMB[0]),
-                         (g.HEAD, g.HALO, g.BULGE, g.RIPPLE, g.PING, g.THUMB_W))
-        self.assertEqual((a.HALO_ALPHA, a.RIPPLE_ALPHAS, a.DIGIT_W), (g.HALO_ALPHA, g.RIPPLE_ALPHAS, g.DIGIT_W))
-        self.assertEqual((a.RIPPLES, a.PINGS, a.DOT_POSES), (len(m.RIPPLES), len(m.PINGS), len(m.DOTS)))
+        self.assertEqual((a.HEAD, a.HALO, a.BULGE, a.RIPPLE, a.PING, a.THUMB[0], a.GLOW, a.BITE),
+                         (g.HEAD, g.HALO, g.BULGE, m.Meals.RIPPLE, g.PING, g.THUMB_W, g.GLOW_PX, g.BITE))
+        self.assertEqual((a.HALO_ALPHA, a.GLOW_ALPHA, a.DIGIT_W), (g.HALO_ALPHA, g.GLOW_ALPHA, g.DIGIT_W))
+        self.assertEqual((a.RIPPLES, a.PINGS, a.DOT_POSES, a.BITES), (len(m.RIPPLES), len(m.PINGS), len(m.DOTS),
+                                                                      len(m.BITES)))
         self.assertEqual((g.CARD_X + a.CARD_PLATE[0] + a.PLATE_W - 3, g.CARD_Y + a.CARD_PLATE[1] + 3),
                          (g.CARD_RIGHT, g.CARD_TOP))
         self.assertEqual((a.TITLE_PLATE[0] + a.PLATE_W - 3, a.TITLE_PLATE[1] + 3),
@@ -351,7 +353,7 @@ class FeedTest(unittest.TestCase):
         for name in ("snake_morning", "snake_title"):
             self.assertEqual((320, 240, False), sizes[name])
         self.assertEqual((200, 100, False), sizes["snake_over"])
-        for name in self.module.TILES + self.module.SEEN + self.module.DOTS:
+        for name in self.module.TILES + self.module.TURNS + self.module.SEEN + self.module.DOTS:
             self.assertEqual((a.CELL, a.CELL, True), sizes[name])
         for name in [n for poses in self.module.HEADS for n in poses]:
             self.assertEqual((a.HEAD, a.HEAD, True), sizes[name])
@@ -379,10 +381,11 @@ class FeedTest(unittest.TestCase):
                 for c in reds:  # a painted picture's red is the accent's glow: its hue
                     h = colorsys.rgb_to_hsv(*(v / 255 for v in c))[0]
                     self.assertLess(min(abs(h - hue), 1 - abs(h - hue)), 12 / 360, c)  # blended into the ink
-        for name in self.module.TILES + self.module.SEEN + self.module.THUMBS:
+        for name in self.module.TILES + self.module.TURNS + self.module.GLOWS + self.module.SEEN + self.module.THUMBS:
             with self.subTest(name=name):
                 self.assertNotIn(accent, shown(self.painting.pictures[name][0]))
-        for name in self.module.DOTS + ("snake_over", "snake_title", "snake_head_r_gulp", "snake_bulge_0"):
+        for name in self.module.DOTS + self.module.PINGS + self.module.BITES + ("snake_over", "snake_title",
+                                                                                "snake_head_r_gulp", "snake_bulge_0"):
             with self.subTest(name=name):
                 self.assertIn(accent, shown(self.painting.pictures[name][0]))
 

@@ -150,7 +150,8 @@ class BubbleTest(unittest.TestCase):
 class FeedTest(unittest.TestCase):
     """FEED (P573) over the snake row: the head in every frame of play on its slide from its last cell into its new
     one, at the new one once the slide is done and never past it; the dot in every frame of play where the food is;
-    over, the bite, then the flip head to tail by its clock, then the card."""
+    over, the bite, then the flip head to tail by its clock (each tile turned, edge-on, its back, SEEN), then the
+    card."""
 
     FIELDS = ("game.body[0][0]", "game.body[0][1]", "game.body[1][0]", "game.body[1][1]", "game.acc", "game.food[0]",
               "game.food[1]", "game.over_ms()", "len(game.body)")
@@ -162,7 +163,8 @@ class FeedTest(unittest.TestCase):
         import arcade
         import gfx
         cls.game, cls.module, cls.PLAY, cls.OVER = arcade.Snake, arcade, gfx.PLAY, gfx.OVER
-        cls.draws = drawn("snake", ("snake_head_", "snake_dot_", "snake_seen_", "snake_tile_", "snake_over"),
+        cls.draws = drawn("snake", ("snake_head_", "snake_dot_", "snake_seen_", "snake_turn_", "snake_tile_",
+                                    "snake_over"),
                           cls.FIELDS)
 
     def play(self, prefix):
@@ -205,7 +207,7 @@ class FeedTest(unittest.TestCase):
         self.assertGreater(len(over), 20)
         for f, ds in sorted(over.items()):
             names, ms, n = [d[1] for d in ds], int(ds[0][12]), int(ds[0][13])
-            seen = [k for k in names if k.startswith("snake_seen_")]
+            seen = [k for k in names if k.startswith(("snake_seen_", "snake_turn_"))]  # the tiles turning or turned
             with self.subTest(frame=f, ms=ms):
                 self.assertEqual(sum(flip.pose(i, n, ms) >= 0 for i in range(n)), len(seen))
                 self.assertEqual(ms < flip.HOLD_MS, any(k.endswith("_chew") for k in names))  # the bite, then no head

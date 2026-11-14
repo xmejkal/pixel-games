@@ -337,6 +337,9 @@ FEED_KINDS = ("photo", "text", "video", "ad", "chart", "selfie")
 FEED_ORDER = (0, 3, 5, 1, 4, 2, 3, 0, 5, 2, 1, 4)
 HEADS = tuple(tuple("snake_head_%s_%s" % (d, pose) for pose in FEED_POSES) for d in FEED_DIRS)
 TILES = tuple("snake_tile_%s" % FEED_KINDS[k] for k in FEED_ORDER)
+TURNS = tuple("snake_turn_%s" % FEED_KINDS[k] for k in FEED_ORDER)  # each tile half turned: the flip's first pose
+GLOWS = tuple("snake_glow_%s" % FEED_KINDS[k] for k in FEED_ORDER)  # each tile's light on the glass
+BITES = tuple("snake_bite_%d" % k for k in range(2))
 SEEN = tuple("snake_seen_%d" % k for k in range(3))
 DOTS = tuple("snake_dot_%d" % k for k in range(3))
 BULGES = tuple("snake_bulge_%d" % k for k in range(2))
@@ -366,15 +369,24 @@ class Slide:
             return b
         return a + (b - a) * e // 256
 
+    @classmethod
+    def xy(cls, out, ax, ay, bx, by, e, cell):
+        """at for both axes, into out (a list made once, so no tuple a frame); answers out."""
+        out[0] = cls.at(ax, bx, e, cell)
+        out[1] = cls.at(ay, by, e, cell)
+        return out
+
 
 class Flip:
-    """The death's flip: the head holds its bite for HOLD_MS, then each tile turns over to SEEN, head first,
-    STAGGER_MS after the one before it (less when the feed is long, so the last starts by LAST_MS), through its three
-    poses, POSE_MS each. The flip takes at most LAST_MS + 2 * POSE_MS, 600 ms, and ends by END_MS, inside the over
-    window (Game.OVER_MS, 900)."""
+    """The death's flip: the head holds its bite for HOLD_MS while the feed shakes, then each tile turns over to SEEN,
+    head first, STAGGER_MS after the one before it (less when the feed is long, so the last starts by LAST_MS), like a
+    card: itself half turned, edge-on, its grey back half turned, then grey with the read ticks, POSE_MS each. The
+    flip takes at most LAST_MS + 3 * POSE_MS, 600 ms, and ends by END_MS, inside the over window (Game.OVER_MS,
+    900)."""
 
-    HOLD_MS, STAGGER_MS, LAST_MS, POSE_MS = 120, 30, 520, 40
-    END_MS = HOLD_MS + LAST_MS + 2 * POSE_MS
+    HOLD_MS, STAGGER_MS, LAST_MS, POSE_MS, POSES = 120, 30, 480, 40, 4
+    END_MS = HOLD_MS + LAST_MS + (POSES - 1) * POSE_MS
+    SHAKE = (3, -3, 2)  # px the feed kicks sideways in each 40 ms of the hold
 
     @classmethod
     def stagger(cls, n):
@@ -382,16 +394,44 @@ class Flip:
 
     @classmethod
     def pose(cls, i, n, ms):
-        """Tile i's pose of the flip after ms, for a feed n long: -1 not yet turned, else 0, 1 or 2 (SEEN)."""
+        """Tile i's pose of the flip after ms, for a feed n long: -1 not yet turned, else 0 to 3 (SEEN)."""
         t = ms - cls.HOLD_MS - i * cls.stagger(n)
-        return -1 if t < 0 else min(2, t // cls.POSE_MS)
+        return -1 if t < 0 else min(cls.POSES - 1, t // cls.POSE_MS)
+
+    @classmethod
+    def kick(cls, ms):
+        """px the feed is kicked sideways ms after the bite: SHAKE during the hold, then 0."""
+        return cls.SHAKE[ms // 40] if ms < cls.HOLD_MS else 0
+
+
+class Trail:
+    """Where the feed has been: the last SLOTS lit cells its tail left, each glowing on the glass in its tile's hue and
+    fading out over FADE_MS. The slots are made once and written over in turn."""
+
+    SLOTS, FADE_MS, ALPHA = 3, 900, 56
+
+    def __init__(self):
+        self.slots = [[0, 0, 0, None] for _ in range(self.SLOTS)]  # x, y, the glow's index in GLOWS, ms
+        self.next = 0
+
+    def left(self, x, y, k, ms):
+        slot = self.slots[self.next]
+        slot[0], slot[1], slot[2], slot[3] = x, y, k, ms
+        self.next = (self.next + 1) % self.SLOTS
+
+    def draw(self, cv, now, half):
+        for x, y, k, ms in self.slots:
+            if ms is not None:
+                age = time.ticks_diff(now, ms)
+                if age < self.FADE_MS:
+                    pictures.draw(cv, GLOWS[k], x - half, y - half, self.ALPHA * (self.FADE_MS - age) // self.FADE_MS)
 
 
 class Meals:
     """The dots the feed has eaten: each goes down the feed as a bulge, one tile a step, and the last one ripples the
     glass where it was eaten, ring by ring."""
 
-    RIPPLE, RIPPLE_MS, ALPHAS = 48, 70, (230, 180, 120, 64)  # art/sets/snake.py's ripple and its rings' alphas
+    RIPPLE, RIPPLE_MS = 48, 70  # art/sets/snake.py's ripple: its rings are opaque, so no blend
 
     def __init__(self):
         self.steps = []  # the step of each meal still going down the feed
@@ -418,7 +458,7 @@ class Meals:
             k = time.ticks_diff(game.last, self.at) // self.RIPPLE_MS
             if k < 4:
                 half = self.RIPPLE // 2
-                pictures.draw(cv, RIPPLES[k], self.x - half, self.y - half, self.ALPHAS[k])
+                pictures.draw(cv, RIPPLES[k], self.x - half, self.y - half)
 
 
 class StatusBar:
@@ -476,9 +516,10 @@ class Snake(Game):
     # them), and the feel's numbers, set by eye on Mac frames of tools/render_scene.py
     HEAD, HALO, BULGE, THUMB_W = 16, 36, 16, 32
     HALO_ALPHA, HALO_NEAR_ALPHA = 70, 120  # the head's glow; brighter when a dot is near
-    RIPPLE, RIPPLE_ALPHAS = Meals.RIPPLE, Meals.ALPHAS
+    GLOW_PX, GLOW_ALPHA = 32, 84  # every other tile's light on the glass, see-through: the other blend besides the halo
     DOT_MS, NEAR = 160, 2  # a pulse pose's time, the cells at which the head glows
-    PING, PING_MS, PING_RING_MS, PING_ALPHAS = 28, 1200, 80, (200, 130, 70)  # the dot calls once each PING_MS
+    PING, PING_MS, PING_RING_MS = 28, 1200, 80  # the dot calls once each PING_MS, three opaque rings
+    BITE = 56
     DOT_PULSE = (0, 1, 2, 1)
     SPARKS = 6  # the bone sparks of a meal, on the game's own Dice
     CARD_MS = Flip.END_MS + 40  # the card, once the flip is over
@@ -498,6 +539,9 @@ class Snake(Game):
         self.meals = Meals()
         self.dice = Dice(5731)  # the effects' own random stream: the rules' draws stay as they are
         self.glints = Particles()  # the meals' bone sparks, apart from the rules' pops in fx
+        self.trail = Trail()
+        self.bit = (0, 0)  # the cell the head bit into
+        self.xy = [0, 0]  # Slide.xy's answer, made once
 
     def spot(self):
         for _ in range(60):
@@ -518,6 +562,7 @@ class Snake(Game):
         dx, dy = self.DIRS[self.d]
         nxt = ((self.body[0][0] + dx) % self.COLS, (self.body[0][1] + dy) % self.ROWS)
         if nxt in self.body[:-1]:
+            self.bit = nxt
             return self.die(*self.centre(nxt), (ACCENT, self.BONE))
         self.body.insert(0, nxt)
         self.made += 1
@@ -529,6 +574,9 @@ class Snake(Game):
             self.food = self.spot()
             self.ate(nxt)
         else:
+            i = len(self.body) - 1  # the tail's tile: its light, if it had one, stays on the glass a while
+            if (self.made - i) % 2 == 0:
+                self.trail.left(self.x_of(self.body[i]), self.y_of(self.body[i]), (self.made - i) % 12, self.last)
             self.gone = self.body.pop()
 
     def ate(self, cell):
@@ -585,55 +633,75 @@ class Snake(Game):
         cv.box(left - 2, self.TOP - 2, self.COLS * n + 4, self.ROWS * n + 4, GREY)
 
     def paint(self, cv):
-        """The dot, the tail's tile sliding out, the feed (turning over to SEEN when over), the bulges going down it,
-        the ripple of the last meal, the head in its glow sliding into its cell, and the meals' sparks."""
+        """The light of the feed and of where it has been on the glass, the dot, the tail's tile sliding out, the feed
+        (turning over to SEEN when over), the bulges going down it, the ripple of the last meal, the head in its glow
+        sliding into its cell, the bite's flash, and the meals' sparks."""
         if not (self.covers and getattr(cv, "pictures", False)):
             return self.paint_flat(cv)
         body, n, over = self.body, len(self.body), self.state == OVER
         ms = self.over_ms() if over else 0
-        e = self.eased()
+        e, kick, half = self.eased(), Flip.kick(ms) if over else 0, self.GLOW_PX // 2 - 6
+        self.trail.draw(cv, self.last, half)
+        for i in range(1, n):  # every other tile's light (each 32 px wide, so it lights its neighbours too), out
+            if (self.made - i) % 2 == 0 and (not over or Flip.pose(i, n, ms) < 0):  # once it has turned
+                pictures.draw(cv, GLOWS[(self.made - i) % 12], self.x_of(body[i]) - half + kick,
+                              self.y_of(body[i]) - half, self.GLOW_ALPHA)
         if not over:
             self.draw_dot(cv)
             self.draw_tail(cv, e)
         for i in range(1, n):
             k = Flip.pose(i, n, ms) if over else -1
-            pictures.draw(cv, TILES[(self.made - i) % 12] if k < 0 else SEEN[k], self.x_of(body[i]), self.y_of(body[i]))
+            pictures.draw(cv, self.tile_name(i, k), self.x_of(body[i]) + kick, self.y_of(body[i]))
         if not over:
             self.meals.draw(cv, self, e)
-        self.draw_head(cv, e, Flip.pose(0, n, ms) if over else -1)
+        self.draw_head(cv, e, Flip.pose(0, n, ms) if over else -1, kick)
+        if over and ms < Flip.HOLD_MS:  # the bite: a white-hot burst where the head met its own feed
+            x, y = self.centre(self.bit)
+            pictures.draw(cv, BITES[ms * 2 // Flip.HOLD_MS], x - self.BITE // 2, y - self.BITE // 2)
         self.glints.draw(cv)
+
+    def tile_name(self, i, k):
+        """Tile i's picture in pose k of the flip: itself (-1), itself half turned (0), edge-on (1), its grey back
+        half turned (2), grey SEEN (3)."""
+        if k < 0:
+            return TILES[(self.made - i) % 12]
+        if k == 0:
+            return TURNS[(self.made - i) % 12]
+        return SEEN[(1, 0, 2)[k - 1]]
 
     def draw_dot(self, cv):
         """The red dot, pulsing, and now and then its ping, a red ring spreading from it."""
         x, y = self.x_of(self.food), self.y_of(self.food)
         k = self.last % self.PING_MS // self.PING_RING_MS
         if k < 3:
-            pictures.draw(cv, PINGS[k], x + 6 - self.PING // 2, y + 6 - self.PING // 2, self.PING_ALPHAS[k])
-        pictures.draw(cv, DOTS[self.DOT_PULSE[self.last // self.DOT_MS % 4]], x, y)
+            pictures.draw(cv, PINGS[k], x + 6 - self.PING // 2, y + 6 - self.PING // 2)
+        pulse = self.DOT_PULSE
+        pictures.draw(cv, DOTS[pulse[self.last // self.DOT_MS % len(pulse)]], x, y)
 
     def draw_tail(self, cv, e):
         """The tile the tail left, sliding into the tail's cell under it while the head slides, then gone."""
         gone = self.gone
         if gone is None or e == 256:
             return
-        tail, n, cell = self.body[-1], len(self.body), self.CELL
-        pictures.draw(cv, TILES[(self.made - n) % 12], Slide.at(self.x_of(gone), self.x_of(tail), e, cell),
-                      Slide.at(self.y_of(gone), self.y_of(tail), e, cell))
+        tail, n = self.body[-1], len(self.body)
+        xy = Slide.xy(self.xy, self.x_of(gone), self.y_of(gone), self.x_of(tail), self.y_of(tail), e, self.CELL)
+        pictures.draw(cv, TILES[(self.made - n) % 12], xy[0], xy[1])
 
-    def draw_head(self, cv, e, flip):
+    def draw_head(self, cv, e, flip, kick=0):
         """The head slid e 256ths from its last cell into its new one, in its glow; or its pose of the flip."""
-        body, cell = self.body, self.CELL
-        x = Slide.at(self.x_of(body[1]), self.x_of(body[0]), e, cell)
-        y = Slide.at(self.y_of(body[1]), self.y_of(body[0]), e, cell)
+        last, new = self.body[1], self.body[0]
+        xy = Slide.xy(self.xy, self.x_of(last), self.y_of(last), self.x_of(new), self.y_of(new), e, self.CELL)
+        x, y = xy[0] + kick, xy[1]
         if flip >= 0:
-            return pictures.draw(cv, SEEN[flip], x, y)
+            return pictures.draw(cv, self.tile_name(0, flip), x, y)
         pose = self.CHEW if self.state == OVER else self.head_pose()  # over: biting its own tile
         pictures.draw(cv, "snake_halo", x + 6 - self.HALO // 2, y + 6 - self.HALO // 2,
                       self.HALO_NEAR_ALPHA if pose == self.GLOW else self.HALO_ALPHA)
         pictures.draw(cv, HEADS[self.d][pose], x - 2, y - 2)
 
     def paint_flat(self, cv):
-        """The look before FEED, where there is no art: a lawn, an apple, a green snake with a yellow head."""
+        """The look before FEED, where there is no art: a lawn, an apple, a green snake with a yellow head. It stays
+        for the st7789 backend, ORIENTATION 180 and a board without games/art, where pictures.draw answers False."""
         n, left = self.CELL, 4
         fx, fy = self.food
         x, y = left + fx * n, self.TOP + fy * n
@@ -673,7 +741,7 @@ class Snake(Game):
         flicks it; the best on its plate."""
         if not pictures.draw(cv, "snake_title", 0, 0):
             return Game.draw_title(self, cv)
-        a, cell = self.age, self.CELL
+        a = self.age
         rise = a * 60 // 1000  # px the feed has scrolled up
         for col in range(3):
             x = 124 + col * 26
