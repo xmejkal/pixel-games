@@ -185,5 +185,28 @@ class RulesTest(unittest.TestCase):
         self.assertEqual(gfx.OVER, game.state)
 
 
+class Heard:
+    """signals.Signals as the game box gives it: the names emitted, in order."""
+
+    def __init__(self):
+        self.names = []
+
+    def emit(self, name, value=None):
+        self.names.append(name)
+
+
+class SoundTest(unittest.TestCase):
+    def test_a_catch_plays_the_jump_and_the_loss_the_die(self):
+        self.assertEqual({"catch": "jump", "die": "die"}, {k: c.sound for k, c in GravityPong.cues.items()})
+        game = playing()
+        game.signals = Heard()
+        game.px, game.pdir = 100.0, 1
+        game.bx, game.by, game.vx, game.vy = 140.0, game.PY - 8.0, 0.0, 100.0
+        game.play(False, False)
+        game.bx, game.by, game.vy = 300.0, gfx.HEIGHT + 20.0, 10.0
+        game.play(False, False)
+        self.assertEqual(["catch", "die"], game.signals.names)
+
+
 if __name__ == "__main__":
     unittest.main()

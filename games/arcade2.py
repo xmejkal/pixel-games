@@ -3,6 +3,7 @@
 import random
 
 import pictures
+from cues import Cue
 from gfx import (ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, TITLE, WHITE, WIDTH, YELLOW, Dice, Game,
                  Particles, c565, shade)
 
@@ -312,6 +313,7 @@ class GravityPong(Game):
     ROPE = c565(236, 226, 202)
     FILM = (c565(112, 178, 226), c565(196, 170, 220), c565(250, 246, 236), c565(255, 178, 96))  # the film's drops
     HUD_SCORE, HUD_BEST = BONE, ACCENT
+    cues = {"catch": Cue("jump"), "die": Cue("die")}
     PW, PY = 70, 218
     RADIUS = 6  # the bubble's radius, px
 
@@ -397,7 +399,8 @@ class GravityPong(Game):
             self.die(self.bx, self.pop_y, (self.FILM[0], self.BONE))
 
     def landed(self, vy):
-        """A catch at vy px/s: the squash and the sigh from now, and the net kicked down."""
+        """A catch at vy px/s: the sound, the squash and the sigh from now, and the net kicked down."""
+        self.emit("catch")
         self.caught_at = self.last
         self.sag_v += vy * self.KICK
         dice, r = self.dice, self.radius()
