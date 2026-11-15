@@ -1592,3 +1592,14 @@ than the control.
 - For the PO, before the play: a bot that taps when the net goes the wrong way scores about the same as on master
   (a mean of 24.8 against 21.8 over 12 seeds when it looks one frame in two), after the swelling bubble alone had
   made it 214.0. Look for flatness: whether the round still feels the same from 0 to 20 points.
+
+## P573 (#778), 2026-11-14: snake as FEED, the PO's play test
+
+- Written before the play (the plan's target, as for BUBBLE above): the system the theme aims at is "the attention
+  economy". The PO is not told this; his own words are matched against it afterwards.
+- Frame budget (P573's review, counted on the Mac over the snake row, each pictures.draw over the backdrop): in play
+  at most n + 18 picture blits a frame for a feed n long, 37 at n = 19 (frame 687), and of them at most
+  (n - 1) / 2 + 4 blended (13 at n = 19: 9 tile glows, every other tile's, 3 trail glows and the head's halo). Over:
+  at most 33 blits, 13 blended. The build before the review drew at most 26 blits, 3 blended (the halo, the ping and
+  the ripple, now opaque, as are the bite and the bulge). Not measured on the board: the after run shows what the
+  glows cost against the 24 fps line.
