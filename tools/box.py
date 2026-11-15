@@ -77,8 +77,8 @@ class Compiler:
     the viper modules need and which leaves bytecode files as they are), with -s <name>.py so a traceback names the
     module. With dry_run it prints each command and runs none."""
 
-    def __init__(self, dry_run=False, run=subprocess.run):
-        self.dry_run, self.run = dry_run, run
+    def __init__(self, dry_run=False, run=None):
+        self.dry_run, self.run = dry_run, run or subprocess.run  # run: subprocess.run, or a test's fake
 
     def call(self, args):
         if self.dry_run:

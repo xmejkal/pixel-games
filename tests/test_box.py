@@ -7,6 +7,7 @@ import io
 import os
 import subprocess
 import sys
+import types
 import unittest
 from unittest import mock
 
@@ -85,7 +86,7 @@ class DeployTest(unittest.TestCase):
 
     def test_dry_run_prints_each_command_and_runs_none(self):
         with mock.patch.object(box.subprocess, "run") as run, contextlib.redirect_stdout(io.StringIO()) as said:
-            self.assertEqual(0, box.main(["deploy", "--dry-run", "snake"]))
+            self.assertEqual(0, box.main(["deploy", "--py", "--dry-run", "snake"]))
         run.assert_not_called()
         lines = said.getvalue().splitlines()
         self.assertEqual(["mpremote ls :", "mpremote mkdir :packs", "mpremote " + " ".join(COPY)], lines[:3])
@@ -99,6 +100,91 @@ class DeployTest(unittest.TestCase):
             self.assertEqual("out", box.Mpremote().run(["ls", ":"]))
         run.assert_called_once_with(["mpremote", "ls", ":"], cwd=box.ROOT, check=True, capture_output=True,
                                     text=True)
+
+
+VERSION = "MicroPython v1.29.0 on 2026-08-29; mpy-cross emitting mpy v6.3\n"
+MODULES = [n[:-3] for n in sorted(os.listdir(box.GAMES)) if n.endswith(".py") and n != "main.py"]
+OLD_PY = "ls :\n         139 boot.py\n           0 packs/\n        9000 app.py\n        2000 main.py\n       31000 arcade.py\n" \
+         "        4000 crackle_c.mpy\n"
+OLD_MPY = "ls :\n           0 packs/\n        5000 app.mpy\n        2000 main.py\n        4000 crackle_c.mpy\n" \
+          "        3000 gfx.mpy\n"
+
+
+class FakeMpyCross:
+    """subprocess.run for mpy-cross: answers --version with version and records each call."""
+
+    def __init__(self, version=VERSION):
+        self.version, self.calls = version, []
+
+    def __call__(self, args, **kw):
+        self.calls.append(args)
+        return types.SimpleNamespace(stdout=self.version if args[1:] == ["--version"] else "")
+
+
+class MpyTest(unittest.TestCase):
+    """The deploy of .mpy files (P821), with a fake mpy-cross and the fake runner."""
+
+    def deploy(self, listing, version=VERSION):
+        runner, mpy_cross = FakeRunner(listing), FakeMpyCross(version)
+        box.Deploy(runner, box.Compiler(run=mpy_cross)).run(["snake"])
+        return runner.commands, mpy_cross.calls
+
+    def test_it_compiles_each_module_but_main_for_the_chip_naming_its_source(self):
+        commands, calls = self.deploy(EMPTY)
+        self.assertEqual(["mpy-cross", "--version"], calls[0])
+        self.assertEqual(len(MODULES), len(calls) - 1)
+        for module, call in zip(MODULES, calls[1:]):
+            self.assertEqual(["mpy-cross", "-march=xtensawin", "-s", module + ".py", "-o"], call[:5])
+            self.assertEqual((module + ".mpy", "games/%s.py" % module), (os.path.basename(call[5]), call[6]))
+        self.assertNotIn("main", [os.path.basename(c[-1])[:-3] for c in calls[1:]])
+
+    def test_the_mpy_files_go_with_main_py_and_no_rm_on_a_clean_board(self):
+        commands, calls = self.deploy(EMPTY)
+        self.assertEqual([["ls", ":"], ["mkdir", ":packs"]], commands[:2])
+        copy = commands[2]
+        self.assertEqual([m + ".mpy" for m in MODULES], [os.path.basename(f) for f in copy[1:-3]])
+        self.assertEqual(["games/main.py", "games/box_bank.raw", ":"], copy[-3:])
+        self.assertEqual(["cp", "games/packs/snake.pak", ":packs/snake.pak"], commands[3])
+        self.assertNotIn("rm", [c[0] for c in commands])
+        self.assertEqual(["reset"], commands[-1])
+
+    def test_the_board_s_old_py_files_go_after_the_mpy_files_and_main_py_stays(self):
+        commands, calls = self.deploy(OLD_PY)
+        self.assertEqual("cp", commands[1][0])
+        self.assertEqual(["rm", ":app.py", ":arcade.py"], commands[2])
+
+    def test_py_copies_the_sources_and_removes_only_their_mpy_files(self):
+        runner = FakeRunner(OLD_MPY)
+        box.Deploy(runner).run(["snake"])
+        self.assertEqual(COPY, runner.commands[1])
+        self.assertEqual(["rm", ":app.mpy", ":gfx.mpy"], runner.commands[2])  # crackle_c.mpy stays
+
+    def test_an_mpy_cross_of_another_version_is_refused_before_any_board_command(self):
+        for version in ("MicroPython v1.22.0; mpy-cross emitting mpy v6.2\n", "mpy-cross 1.0\n"):
+            with self.subTest(version):
+                runner = FakeRunner()
+                with self.assertRaisesRegex(box.Refused, "the board needs mpy v6.3"):
+                    box.Deploy(runner, box.Compiler(run=FakeMpyCross(version))).run(["snake"])
+                self.assertEqual([], runner.commands)
+
+    def test_no_mpy_cross_says_so_and_exits_1(self):
+        missing = FileNotFoundError(2, "No such file or directory", "mpy-cross")
+        runner = FakeRunner()
+        with mock.patch.object(box, "Mpremote", lambda dry_run=False: runner), \
+                mock.patch.object(box.subprocess, "run", side_effect=missing), \
+                contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual(1, box.main(["deploy", "snake"]))
+        self.assertTrue(said.getvalue().startswith("no mpy-cross: "), said.getvalue())
+        self.assertEqual([], runner.commands)
+
+    def test_dry_run_prints_the_compiles_and_runs_nothing(self):
+        with mock.patch.object(box.subprocess, "run") as run, contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual(0, box.main(["deploy", "--dry-run", "snake"]))
+        run.assert_not_called()
+        lines = said.getvalue().splitlines()
+        self.assertEqual(["mpy-cross --version", "mpremote ls :", "mpremote mkdir :packs"], lines[:3])
+        self.assertRegex(lines[3], r"^mpy-cross -march=xtensawin -s app\.py -o \S+app\.mpy games/app\.py$")
+        self.assertTrue(lines[3 + len(MODULES)].endswith(" games/main.py games/box_bank.raw :"))
 
 
 class ListTest(unittest.TestCase):
@@ -175,7 +261,7 @@ class MainTest(unittest.TestCase):
         self.assertEqual("lineup 3: bucket rescue snake\n", said)
 
     def test_a_failed_mpremote_prints_its_error_and_exits_1(self):
-        code, said = self.main(["deploy", "snake"], FailingRunner(99))
+        code, said = self.main(["deploy", "--py", "snake"], FailingRunner(99))
         self.assertEqual((1, "mpremote ls : failed: could not enter raw repl\n"), (code, said))
 
     def test_no_mpremote_exits_1(self):
