@@ -42,7 +42,7 @@ MODULES = {
     "marshmallow.py": (("runner", ("sky",)),),
     "arcade.py": (("flappy", None), ("runner", None)),
     "track.py": (("runner", None),),
-    "arcade2.py": (("stack", None),),
+    "arcade2.py": (("stack", None), ("gravpong", None)),
     "bucket.py": (("bucket", None),),
     "meteors.py": (("meteors", None),),
     "rescue.py": (("rescue", None),),
