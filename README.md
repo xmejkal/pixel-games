@@ -108,11 +108,11 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so step 6 is
    done; `--dry-run` prints the commands. `tools/crackle.sh` copies `.py` files, which run instead of their `.mpy`
    files until the next deploy. By hand: `mpremote cp games/*.py games/box_bank.raw :`, `mpremote cp -r games/packs :`
-   and, when the board has one, `mpremote rm :lineup.py`, or the box keeps the old lineup. To pick a lineup, Claude runs `box.py list`, then `box.py deploy NAME...`, then
-   `box.py log --seconds 20`, which prints the console's `lineup`, `import` and `switch` lines after the boot.
-   `games/art_index.py` names each pack's build, and the board refuses a pack from another build: it prints
-   `art: <game> pack is not this build: ...` and the game draws its plain shapes. Each game's pictures are one file in
-   `/packs` (P814).
+   and, when the board has one, `mpremote rm :lineup.py`, or the box keeps the old lineup. To pick a lineup, Claude
+   runs `box.py list`, then `box.py deploy NAME...`, then `box.py log --seconds 20`, which prints the console's
+   `lineup`, `import` and `switch` lines after the boot. `games/art_index.py` names each pack's build, and the board
+   refuses a pack from another build: it prints `art: <game> pack is not this build: ...` and the game draws its plain
+   shapes. Each game's pictures are one file in `/packs` (P814).
 6. Hard-reset the board: `mpremote reset`, its reset button, or unplug it and plug it in again. A soft reset is not
    enough after art that makes a pack bigger, as the first copy of the packs does: each pack is 16 bytes bigger than
    the set it replaces (the runner's is 739,216 bytes), and a soft reset keeps the smaller picture pool. The pictures then go quietly into a 739 KB block of the heap, which slows every
