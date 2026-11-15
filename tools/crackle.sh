@@ -68,8 +68,8 @@ fi
 echo "crackle_c.mpy sha256 $(shasum -a 256 "$ROOT/engine/natmod/crackle/crackle_c.mpy" | cut -d' ' -f1), engine $(git -C "$ROOT/engine" rev-parse --short HEAD)"
 mpremote cp "$ROOT/engine/natmod/crackle/crackle_c.mpy" :crackle_c.mpy + cp "$CRACKLE_PY" :crackle.py \
     + cp "$ROOT/games/fire.py" :fire.py + cp "$ROOT/games/sound.py" :sound.py
-# The game box's own files, always: app.py imports each of them (the knob and the overlay, P764)
-mpremote cp "$ROOT/games/app.py" :app.py + cp "$ROOT/games/overlay.py" :overlay.py \
+# The game box's own files, always: app.py imports each of them (the knob and the overlay, P764; the catalog, P817)
+mpremote cp "$ROOT/games/app.py" :app.py + cp "$ROOT/games/catalog.py" :catalog.py + cp "$ROOT/games/overlay.py" :overlay.py \
     + cp "$ROOT/games/volume.py" :volume.py + cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py \
     + cp "$ROOT/games/lcd.py" :lcd.py + cp "$ROOT/games/render.py" :render.py + cp "$ROOT/games/gfx.py" :gfx.py \
     + cp "$ROOT/games/marshmallow.py" :marshmallow.py

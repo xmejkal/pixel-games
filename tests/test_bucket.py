@@ -24,6 +24,7 @@ from test_fire import Recorder, Tft  # noqa: E402
 
 import app  # noqa: E402
 import bucket as bk  # noqa: E402
+import catalog  # noqa: E402
 import gfx  # noqa: E402
 import lcd  # noqa: E402
 import plugins  # noqa: E402
@@ -227,8 +228,9 @@ class BucketTest(SeededTest):
         self.assertEqual((game.physics_plugin,), game.plugins)
 
     def test_it_takes_the_rains_place_in_the_game_box(self):
-        self.assertIn(Bucket, app.GAMES)
-        self.assertNotIn("rain", [g.name for g in app.GAMES])
+        games = app.games_for(catalog.NAMES)
+        self.assertIn(Bucket, games)
+        self.assertNotIn("rain", [g.name for g in games])
 
     def test_a_box_moves_after_one_frame_in_play(self):
         game = self.game

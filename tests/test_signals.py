@@ -23,6 +23,7 @@ import app  # noqa: E402
 import arcade  # noqa: E402
 import bank  # noqa: E402
 import box_bank  # noqa: E402
+import catalog  # noqa: E402
 import cues  # noqa: E402
 import gfx  # noqa: E402
 import signals  # noqa: E402
@@ -104,7 +105,7 @@ class TestBank(unittest.TestCase):
         b = bank.Bank(os.path.join(GAMES, "box_bank.raw"), box_bank.BOX_BANK_INDEX)
         self.assertEqual(os.path.getsize(os.path.join(GAMES, "box_bank.raw")),
                          2 * sum(n for _, n in box_bank.BOX_BANK_INDEX.values()))
-        for game in app.GAMES:
+        for game in app.games_for(catalog.NAMES):
             for cue in game.cues.values():
                 self.assertTrue(len(b.get(cue.sound)), "%s: %s" % (game.name, cue.sound))
 

@@ -1,13 +1,17 @@
 """
 The game box: the marshmallow roast on the fire effect (P773, P595), the ball pit (P598), the bucket game on the C
 engine's bodies (P773, once the rain demo of P593) and ten one-button games on the GDI display.
+The box plays a lineup (P817): the ordered names of the games it holds, from the board's lineup.py (LINEUP), or every
+game of catalog.CATALOG when the board has none. A game's module is imported only when the box builds that game, so
+the boot imports no game. tools/box.py writes lineup.py and copies only the lineup's games and art.
 The BOOT button plays, the board's own button (D14) moves to the next game from any state.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
 The step is not saved. App(knob=None) has no volume pane.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
 main.py opens the Speaker. run() with no speaker is the silent box.
 
-run() prints `ready` once the display is set up, then `game <name>` at the start and after each D14 press, and
+run() prints `lineup <n>: <names>` and `import <ms> ms` (how long this module's own imports took), then `ready` once
+the display is set up, then `game <name>` at the start and after each D14 press, and
 `switch <name> <ms> ms, load <ms> ms`: how long the switch took and the art's load in it (P814). Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
 Each frame the game paints into a list of recorded draw calls (gfx.Canvas); render.Dirty finds the rectangles that
@@ -17,31 +21,26 @@ changed since the last frame, and only those are drawn into one 51,200-byte RGB5
 import gc
 import time
 
+STARTED = time.ticks_ms() if hasattr(time, "ticks_ms") else 0  # for run()'s import line; CPython has no ticks (P817)
+
 import buttons
 import encoder
 import gdi
 import gfx
 import pictures
 import pins
-from arcade import Flappy, Runner, Snake
-from arcade2 import Cave, GravityPong, Stack
-from balls import BallPit
 from bank import Bank
 from box_bank import BOX_BANK_INDEX
-from bucket import Bucket
+from catalog import CATALOG, NAMES, lineup_fault
 from cues import SoundCues
-from fire import Fire  # noqa: F401  the probes and tools/crackle.sh start it as app.Fire
 from lcd import open_tft
-from marshmallow import Marshmallow
-from meteors import Meteors
 from overlay import Overlay, VolumePane
 from render import StOut
-from rescue import Rescue
 from signals import Signals
-from space3d import CubeTiming, Starfire
 from speaker import Speaker
 from volume import MasterVolume, VolumeKnob
-from world3d import Road, Tunnel
+
+IMPORT_MS = pictures.since(STARTED)  # this module's imports: no game's module is among them (P817)
 
 FPS_EVERY_MS = 5000
 FRAME_MS = 40  # each frame starts this long after the last, so objects move in equal steps; 0 = as fast as it goes. 110 while a send took 63 to 71 ms, 60 at 31 ms, 40 since partial show (P533 slice 5)
@@ -57,15 +56,67 @@ FRAME_MODE = "auto"
 # "s3lcd" is russhughes' C driver (smooth on the bench); "st7789" is our driver with dirty boxes. s3lcd falls back to
 # st7789 when the image has no such module.
 BACKEND = "s3lcd"
-GAMES = (Marshmallow, BallPit, Meteors, Bucket, Rescue, Flappy, Runner, Snake, Stack, Cave, Tunnel, Road, Starfire, CubeTiming, GravityPong)
+
+
+# --- MVP (P817) ---
+def games_for(names):
+    """The game classes for names, in their order, each one's module imported only now. An unknown name raises
+    ValueError naming it."""
+    rows = {row[0]: row for row in CATALOG}
+    classes = []
+    for name in names:
+        if name not in rows:
+            raise ValueError("no game %s in the catalog" % name)
+        classes.append(getattr(__import__(rows[name][1]), rows[name][2]))
+    return tuple(classes)
+
+
+class Lineup:
+    """The games the box plays, in order: their names, and game(i), which builds the i-th, importing its module only
+    then. Lineup.of(classes) is one of classes already imported (a test's or a probe's)."""
+
+    def __init__(self, names, classes=None):
+        self.names, self.classes = tuple(names), classes
+
+    @classmethod
+    def of(cls, classes):
+        return cls([c.name for c in classes], tuple(classes))
+
+    def __len__(self):
+        return len(self.names)
+
+    def game(self, i):
+        c = self.classes[i] if self.classes is not None else games_for((self.names[i],))[0]
+        return c()
+
+
+def read_lineup():
+    """The names the box plays: LINEUP of the board's lineup.py, or every game of the catalog when there is none. A
+    lineup.py that fails (it raises, has no LINEUP, or lineup_fault refuses it) prints `lineup refused: <why>` and
+    the box plays every game, so it never stays dark."""
+    try:
+        import lineup
+    except ImportError:
+        return NAMES
+    except Exception as e:  # a syntax error, or one the file raised
+        return refuse_lineup(repr(e))
+    why = lineup_fault(getattr(lineup, "LINEUP", None))
+    return refuse_lineup(why) if why else lineup.LINEUP
+
+
+def refuse_lineup(why):
+    print("lineup refused:", why)
+    return NAMES
+# --- MVP ---
 
 
 class App:
     """Owns the display, the two buttons and the current game. frame() is one pass of the loop."""
 
-    def __init__(self, display, read_fire, read_boot, games=GAMES, full=False, gc_floor=0, out=None, knob=None,
+    def __init__(self, display, read_fire, read_boot, games, full=False, gc_floor=0, out=None, knob=None,
                  cues=None):
-        self.display, self.games = display, games
+        self.display = display
+        self.games = games if isinstance(games, Lineup) else Lineup.of(games)  # a Lineup, or a tuple of classes
         self.fire = buttons.Button(read_fire, buttons.BOOT_BUTTON_ON)  # BOOT plays: holding it is safe once running
         self.boot = buttons.Button(read_boot, pins.ONBOARD_BUTTON_ON)  # D14 switches: a long hold powers the board off
         self.out = out or StOut(display, full)
@@ -91,7 +142,7 @@ class App:
         if self.cues:
             self.cues.stop()  # --- MVP (P768) --- before the next game's setup, so the last game's sound does not play over it
         gc.collect()
-        self.game = self.games[self.index]()
+        self.game = self.games.game(self.index)
         self.signals.clear()  # --- MVP (P768) --- the last game's listeners go
         self.game.signals = self.signals
         if self.cues:
@@ -195,8 +246,9 @@ def open_speaker(knob=None):
     return Speaker(knob.volume if knob else None)
 
 
-def run(games=GAMES, knob=None, speaker=None):
-    """The loop main.py starts. knob: a caller's VolumeKnob (the probe's). With none, the box opens its own, so two
+def run(games=None, knob=None, speaker=None):
+    """The loop main.py starts. games: a Lineup, a tuple of classes (a probe's), or None for the board's lineup
+    (read_lineup). knob: a caller's VolumeKnob (the probe's). With none, the box opens its own, so two
     encoders never share the counter unit. speaker: a Speaker that run() opens after the first game's setup, or None for the
     silent box (P768)."""
     import select
@@ -228,8 +280,10 @@ def run(games=GAMES, knob=None, speaker=None):
         except (OSError, ValueError) as e:  # no bank on the board, or a short one: the silent box
             print("sound off:", repr(e))
             speaker = None
-    app = App(display, fire.value, boot.value, games=games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob,
+    app = App(display, fire.value, boot.value, games=Lineup(read_lineup()) if games is None else games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob,
               cues=cues)
+    print("lineup %d: %s" % (len(app.games), " ".join(app.games.names)))  # --- MVP (P817) ---
+    print("import %d ms" % IMPORT_MS)
     app.fire.watch(fire)
     app.boot.watch(boot)
     if full:

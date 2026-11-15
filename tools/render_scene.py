@@ -85,7 +85,7 @@ class Subject:
                                                                     self.seed)
 
 
-SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the presses and counts set by eye (P795)
+SUBJECTS = {  # the fire, the rain, games/catalog.py's games in their order, the overlay; the presses and counts set by eye (P795)
     "fire": Subject(fire.Fire, "tap: next mode", 30, 84, seed=fire.SEED),
     "rain": Subject(rain.Rain, "tap: again", 10, 110),
     "marshmallow": Subject(Marshmallow, Marshmallow.hint, 5, 200, every=4, hold=40, shot=195),
