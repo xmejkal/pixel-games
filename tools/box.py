@@ -4,16 +4,21 @@ lineup is the ordered names of the games the box plays (games/catalog.py names t
 :lineup.py as LINEUP, and app.read_lineup plays every game when there is none. Every board command goes through one
 Mpremote runner. From the repository root:
     python3 tools/box.py list [--board]
-    python3 tools/box.py deploy NAME... [--dry-run]
-    python3 tools/box.py deploy --all [--dry-run]
+    python3 tools/box.py deploy NAME... [--py] [--dry-run]
+    python3 tools/box.py deploy --all [--py] [--dry-run]
     python3 tools/box.py log [--seconds N] [--port PORT]
 list: each game of the catalog with its art sets and their bytes. --board also reads :lineup.py, which stops the
 running game until the board resets.
-deploy NAME...: the order of the names is the order the box plays them in. It refuses an unknown, a repeated or an empty lineup before any command; then makes :packs when the board
-has none, copies games/*.py and games/box_bank.raw (the sound bank) to :, each pack the lineup needs to :packs (mpremote
-skips a file whose sha256 is the same), writes :lineup.py and hard-resets the board (the picture pool is sized at boot).
-deploy --all copies every game and pack and removes :lineup.py when the board has one. --dry-run prints each command
-and runs none, as for a board with no :packs and no :lineup.py.
+deploy NAME...: the order of the names is the order the box plays them in. It refuses an unknown, a repeated or an
+empty lineup before any command, and an mpy-cross that does not emit mpy v6.3, the board's .mpy version (P821). Then it
+makes :packs when the board has none, compiles games/*.py but main.py with mpy-cross into .mpy files (they import in
+about half the time of a .py), copies them with games/main.py and games/box_bank.raw (the sound bank) to : and removes
+each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). It copies each pack the
+lineup needs to :packs (mpremote skips a file whose sha256 is the same), writes :lineup.py and hard-resets the board
+(the picture pool is sized at boot). --py copies games/*.py instead and removes the board's .mpy files of those
+modules (crackle_c.mpy stays). deploy --all copies every game and pack and removes :lineup.py when the board has one.
+--dry-run prints each command and runs none, mpy-cross included, as for a board with no :packs, no :lineup.py and no
+old .py or .mpy files.
 log: resets the board itself (a hard reset, trying again while the board still reboots from a deploy), then prints
 its console for N seconds (20 by default), opening the port again while USB comes back: the `lineup`, `import`,
 `game` and `switch` lines. The port is the one mpremote's auto picks: the first USB serial port, sorted.
@@ -22,6 +27,7 @@ A failed mpremote command prints its error and box.py exits with 1. Claude picks
 
 import argparse
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -34,6 +40,7 @@ import art_index  # noqa: E402  pure data
 import catalog  # noqa: E402  pure data
 
 SECONDS = 20  # log's default
+MPY = "6.3"  # the board's sys.implementation._mpy: version 6, sub-version 3; mpy-cross must emit this (P821)
 RESET_TRIES, RESET_PAUSE_S = 5, 2  # log's reset, while the board still reboots from a deploy's reset
 
 
@@ -65,11 +72,44 @@ def sets_for(names):
     return tuple(dict.fromkeys(s for name in names for s in catalog.ROWS[name][3]))
 
 
-class Deploy:
-    """Puts a lineup's games on the board through a runner: names, or None for every game and no lineup.py."""
+class Compiler:
+    """Compiles game modules into .mpy files with mpy-cross (P821), each for the board's chip (-march=xtensawin, which
+    the viper modules need and which leaves bytecode files as they are), with -s <name>.py so a traceback names the
+    module. With dry_run it prints each command and runs none."""
 
-    def __init__(self, runner, games=GAMES):
-        self.runner, self.games = runner, games  # games: the folder whose files go, named as games/<file>
+    def __init__(self, dry_run=False, run=subprocess.run):
+        self.dry_run, self.run = dry_run, run
+
+    def call(self, args):
+        if self.dry_run:
+            print(" ".join(args))
+            return ""
+        return self.run(args, cwd=ROOT, check=True, capture_output=True, text=True).stdout
+
+    def check(self):
+        """Refuses an mpy-cross that does not emit the board's .mpy version."""
+        said = self.call(["mpy-cross", "--version"])
+        found = re.search(r"mpy v(\d+\.\d+)", said)
+        if not self.dry_run and (found is None or found.group(1) != MPY):
+            raise Refused("mpy-cross emits %s, the board needs mpy v%s: pip install mpy-cross==1.29.0" % (
+                found.group(0) if found else repr(said.strip()), MPY))
+
+    def compile(self, sources, folder):
+        """Each source (games/<name>.py) compiled to folder/<name>.mpy; answers the .mpy paths."""
+        out = []
+        for source in sources:
+            name = os.path.basename(source)
+            out.append(os.path.join(folder, name[:-3] + ".mpy"))
+            self.call(["mpy-cross", "-march=xtensawin", "-s", name, "-o", out[-1], source])
+        return out
+
+
+class Deploy:
+    """Puts a lineup's games on the board through a runner: names, or None for every game and no lineup.py. With a
+    compiler the modules go as .mpy files and main.py as itself; with None (--py) every module goes as its .py."""
+
+    def __init__(self, runner, compiler=None, games=GAMES):
+        self.runner, self.compiler, self.games = runner, compiler, games  # games: the folder, named as games/<file>
 
     def run(self, names):
         if names is not None:
@@ -77,11 +117,12 @@ class Deploy:
             why = catalog.lineup_fault(names)
             if why:
                 raise Refused(why)
+        if self.compiler:
+            self.compiler.check()  # before any board command
         on_board = board_names(self.runner.run(["ls", ":"]))
         if "packs/" not in on_board:
             self.runner.run(["mkdir", ":packs"])
-        sources = ["games/" + n for n in sorted(os.listdir(self.games)) if n.endswith(".py")] + ["games/box_bank.raw"]
-        self.runner.run(["cp"] + sources + [":"])
+        self.copy_code(on_board)
         for s in sets_for(catalog.NAMES if names is None else names):
             path = art_index.PACKS[s][0]
             self.runner.run(["cp", "games/" + path, ":" + path])
@@ -90,6 +131,23 @@ class Deploy:
         elif "lineup.py" in on_board:
             self.runner.run(["rm", ":lineup.py"])
         self.runner.run(["reset"])
+
+    def copy_code(self, on_board):
+        """The modules as .mpy files, then the board's .py of each goes; or (no compiler) as .py files, then the
+        board's .mpy of each goes. main.py and the sound bank go as they are."""
+        sources = sorted(n for n in os.listdir(self.games) if n.endswith(".py"))
+        modules = [n[:-3] for n in sources if n != "main.py"]
+        if self.compiler is None:
+            self.runner.run(["cp"] + ["games/" + n for n in sources] + ["games/box_bank.raw", ":"])
+            stale = [n[:-3] + ".mpy" for n in sources]
+        else:
+            with tempfile.TemporaryDirectory() as tmp:
+                compiled = self.compiler.compile(["games/%s.py" % m for m in modules], tmp)
+                self.runner.run(["cp"] + compiled + ["games/main.py", "games/box_bank.raw", ":"])
+            stale = [m + ".py" for m in modules]
+        stale = [":" + n for n in stale if n in on_board]
+        if stale:
+            self.runner.run(["rm"] + stale)
 
     def write_lineup(self, names):
         with tempfile.TemporaryDirectory() as tmp:
@@ -181,6 +239,7 @@ def main(argv=None):
     deploy = sub.add_parser("deploy", help="copy the games' code and the lineup's packs, write :lineup.py")
     deploy.add_argument("names", nargs="*", metavar="NAME", help="the lineup: the box plays them in this order")
     deploy.add_argument("--all", action="store_true", help="every game, and no :lineup.py")
+    deploy.add_argument("--py", action="store_true", help="copy the .py files, not .mpy files built by mpy-cross")
     deploy.add_argument("--dry-run", action="store_true", help="print each command, run none")
     log = sub.add_parser("log", help="reset the board (a hard reset), then print its console")
     log.add_argument("--seconds", type=float, default=SECONDS)
@@ -194,7 +253,8 @@ def main(argv=None):
             if args.board:
                 print(board_lineup(Mpremote()))
         elif args.command == "deploy":
-            Deploy(Mpremote(args.dry_run)).run(None if args.all else args.names)
+            Deploy(Mpremote(args.dry_run), None if args.py else Compiler(args.dry_run)).run(
+                None if args.all else args.names)
         else:
             reset(Mpremote())
             for line in Console(serial_port(args.port)).lines(args.seconds):
@@ -206,7 +266,7 @@ def main(argv=None):
         print("mpremote %s failed: %s" % (" ".join(e.cmd[1:]), (e.stderr or "").strip() or "exit %d" % e.returncode))
         return 1
     except FileNotFoundError as e:
-        print("no mpremote:", e)
+        print("no %s:" % (e.filename or "mpremote"), e)  # mpremote or mpy-cross
         return 1
     return 0
 
