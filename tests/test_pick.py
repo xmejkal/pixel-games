@@ -157,7 +157,7 @@ class CardTest(unittest.TestCase):
         with mock.patch.object(cv, "big", wraps=cv.big) as big:
             app.NameCard("snake", 3, 5).draw_title(cv)
         self.assertEqual(["snake", "3 / 5"], [c.args[0] for c in big.call_args_list])
-        self.assertIn("BOOT plays", [op[5] for op in cv.ops if op[4] == 3])
+        self.assertIn("BOOT loads", [op[5] for op in cv.ops if op[4] == 3])
 
 
 class NothingImportedTest(unittest.TestCase):

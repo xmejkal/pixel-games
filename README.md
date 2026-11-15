@@ -281,7 +281,7 @@ Runs now:
   `loop=True` is one voice: its signal carries a level from 0 to 256 (`self.emit("fire", self.fire_k)`), and 0 ends
   it. To add a sound, add it to `tools/sound_bank.py`, run the tool, and name the cue in the game's `cues`.
   `games/box_bank.SOURCES.md` gives each sound's source and license. Since PR 3 a small music loop
-  plays in every game: `App.switch` starts it once, as a protected voice of the group `music`, and the tune is a
+  plays in every game: `App.build` starts it once, as a protected voice of the group `music`, and the tune is a
   note list in `tools/sound_bank.py`. `docs/sound.md` says how a game gets a sound. All 14 games keep their fps
   with the music, within 1 fps (bench.md, P768). The box
   does not save the step. The sound probe passes its own knob to the box, so only one

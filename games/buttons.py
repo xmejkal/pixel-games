@@ -32,6 +32,12 @@ class Button:
         self.watched = True
         pin.irq(self.edge, pin.IRQ_FALLING if self.pressed_level == 0 else pin.IRQ_RISING)
 
+    def forget(self):
+        """Drop each push made until now, and take the level as it is: the box was busy (a game's import and load),
+        so a press then was not meant for what comes after it (P818)."""
+        self.taken = self.pushes
+        self.raw = self.held = self.read() == self.pressed_level
+
     def edge(self, pin):
         self.pushes += 1  # a soft interrupt, run after the current C call: too late to read the pin itself
 

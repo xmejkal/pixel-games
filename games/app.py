@@ -91,11 +91,13 @@ class Lineup:
     def __len__(self):
         return len(self.names)
 
+    import_ms = 0  # how long the last game(i) took to import its module (P818)
+
     def game(self, i):
         """The i-th game, built; import_ms is how long the import of its module took (0 for classes, P818)."""
-        start = time.ticks_ms() if hasattr(time, "ticks_ms") else 0
+        start = time.ticks_ms()
         c = self.classes[i] if self.classes is not None else games_for((self.names[i],))[0]
-        self.import_ms = pictures.since(start)
+        self.import_ms = time.ticks_diff(time.ticks_ms(), start)
         return c()
 
 
@@ -133,12 +135,11 @@ class App:
         self.display = display
         self.games = games if isinstance(games, Lineup) else Lineup.of(games)  # a Lineup, or a tuple of classes
         self.fire = buttons.Button(read_fire, buttons.BOOT_BUTTON_ON)  # BOOT plays: holding it is safe once running
-        self.boot = buttons.Button(read_boot, pins.ONBOARD_BUTTON_ON)  # D14 switches: a long hold powers the board off
+        self.boot = buttons.Button(read_boot, pins.ONBOARD_BUTTON_ON)  # D14 picks: a long hold powers the board off
         self.out = out or StOut(display, full)
         self.frames, self.mark, self.us, self.state, self.gc_floor = 0, 0, [0, 0, 0, 0], 0, gc_floor
         self.index = len(games) - 1
         self.game = None
-        self.picked = None  # --- MVP (P818) --- time.ticks_ms() of the last pick while its NameCard is up, else None
         self.overlay = Overlay()  # --- MVP (P762) --- system information over every game
         self.knob = knob  # --- MVP (P764) --- the volume's knob, or None: then the overlay has no volume pane
         self.volume_pane = self.overlay.add(VolumePane(knob.volume)) if knob else None
@@ -168,9 +169,9 @@ class App:
         the picked game is built when the pick settles (frame())."""
         self.index = (self.index + 1) % len(self.games)
         self.leave()
-        self.game = NameCard(self.games.names[self.index], self.index + 1, len(self.games))
+        self.game = NameCard(self.games.names[self.index], self.index + 1, len(self.games), now)
         self.out.reset()
-        self.picked = now
+        self.new_interval()  # the fps and time lines never name a card
         print("pick", self.game.name)
 
     def build(self):
@@ -178,7 +179,6 @@ class App:
         import in it (P814, P818)."""
         start = time.ticks_ms()
         self.leave()
-        self.picked = None
         gc.collect()
         self.game = self.new_game()
         self.game.signals = self.signals
@@ -186,11 +186,17 @@ class App:
             self.cues.follow(self.game, self.signals)
             self.cues.music()
         self.out.reset()
-        self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
-        self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
+        self.new_interval()
+        self.fire.forget()  # --- MVP (P818) --- a press during the import and the load was for the frozen screen
+        self.boot.forget()
         print("game", self.game.name)
         print("switch %s %d ms, load %d ms, import %d ms" % (self.game.name, time.ticks_diff(self.mark, start),
-                                                            pictures.load_ms, getattr(self.games, "import_ms", 0)))
+                                                            pictures.load_ms, self.games.import_ms))
+
+    def new_interval(self):
+        """The fps and time lines count from now."""
+        self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
+        self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
 
     def new_game(self):
         """The game at index, built. One whose module is missing (an ImportError: a copy by hand left it out) is
@@ -217,20 +223,23 @@ class App:
         self.worst, self.last = max(self.worst, time.ticks_diff(t0, self.last)), t0
         before = us[:]
         now = time.ticks_ms()
-        pressed, switched = self.fire.update(now), self.boot.update(now)  # Input
+        pressed, switched = self.fire.update(now), self.boot.update(now) and len(self.games) > 1  # Input; one game: no pick
         if self.knob:
             self.knob.poll(now)  # --- MVP (P764) ---
+        settled = isinstance(self.game, NameCard) and (pressed or time.ticks_diff(now, self.game.at) >= SETTLE_MS)
         if switched:
             self.pick(now)  # --- MVP (P818) ---
-        elif self.picked is not None and (pressed or time.ticks_diff(now, self.picked) >= SETTLE_MS):
-            self.build()  # the pick settled; a BOOT press that settles it is used up here
+        elif settled:
+            self.build()  # a BOOT press that settles a pick is used up here
         else:
             self.game.step(now, pressed, self.fire.held)  # FixedUpdate, Update, LateUpdate
+        if switched or settled:  # the new interval's stages: a build's time is not this frame's
+            us, t0, before = self.us, time.ticks_us(), self.us[:]
         self.overlay.update(now)  # after the switch, so a turn shows in this frame and a pane sees this frame's game
         game = self.game
         if game.state != self.state:  # the title and the game over are quiet: collect there
             self.state = game.state
-            if self.gc_floor and self.state != 1:
+            if self.gc_floor and self.state != 1 and not isinstance(game, NameCard):  # build() collects after a card
                 self.collect()
         us[0] += time.ticks_diff(time.ticks_us(), t0)
         self.out.draw(game, us, self.overlay)  # Render, then Present: one show()
@@ -260,10 +269,11 @@ class App:
 # --- MVP (P818) ---
 class NameCard(gfx.Game):
     """The picked game's name while a pick waits to settle: the name big in the middle, "n / N" under it and
-    "BOOT plays" small, on the plain background. It stays in TITLE, loads nothing and has no cues."""
+    "BOOT loads" small, on the plain background. It stays in TITLE, loads nothing and has no cues. at: the pick's
+    time.ticks_ms(), from which the pick settles."""
 
-    def __init__(self, name, n, count):
-        self.name, self.n, self.count = name, n, count
+    def __init__(self, name, n, count, at=0):
+        self.name, self.n, self.count, self.at = name, n, count, at
         super().__init__()
 
     def step(self, now_ms, pressed, held):
@@ -274,7 +284,7 @@ class NameCard(gfx.Game):
         cv.big(self.name, cx - 12 * len(self.name), cy - 30, gfx.WHITE, 3)
         place = "%d / %d" % (self.n, self.count)
         cv.big(place, cx - 8 * len(place), cy + 6, gfx.GREY, 2)
-        cv.text("BOOT plays", cx - 40, cy + 34, gfx.YELLOW)
+        cv.text("BOOT loads", cx - 40, cy + 34, gfx.YELLOW)
 
 
 def open_st7789():
