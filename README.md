@@ -97,10 +97,15 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
 4. Write the image: `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
 5. Copy the games and their art with `python3 tools/box.py deploy --all`, or only some games with
    `python3 tools/box.py deploy NAME...` (P817): the box then plays only these, in this order. The deploy copies the
-   code of every game (`games/*.py`) and `games/box_bank.raw` (the sound), but only the packs of the named games; packs
-   an earlier deploy copied stay on the board. The names are `games/catalog.py`'s, and `python3 tools/box.py list`
+   code of every game and `games/box_bank.raw` (the sound), but only the packs of the named games; packs an earlier
+   deploy copied stay on the board. The code goes as `.mpy` files (P821), which import in about half the time of a
+   `.py` (5.0 s against 9.9 s for every module, P819): the `mpy-cross` on PATH, the pip package
+   (`pip install mpy-cross==1.29.0`, which must say `mpy v6.3`), compiles every module but `main.py`, which goes as
+   itself, and the deploy removes the board's `.py` of each module, because the board runs a `.py` before an `.mpy` of
+   the same name. `--py` copies `games/*.py` instead and removes those modules' `.mpy` files. The names are `games/catalog.py`'s, and `python3 tools/box.py list`
    shows each with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so
-   step 6 is done; `--dry-run` prints the commands. By hand: `mpremote cp games/*.py
+   step 6 is done; `--dry-run` prints the commands. `tools/crackle.sh` copies `.py` files, which run instead of their
+   `.mpy` files until the next deploy. By hand: `mpremote cp games/*.py
    games/box_bank.raw :`, `mpremote cp -r games/packs :` and, when the board has one, `mpremote rm :lineup.py`, or
    the box keeps the old lineup. To pick a lineup, Claude runs `box.py list`, then `box.py deploy NAME...`, then
    `box.py log --seconds 20`, which prints the console's `lineup`, `import` and `switch` lines after the boot.
