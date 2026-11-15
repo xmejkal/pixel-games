@@ -21,6 +21,7 @@ CATALOG = (
     ("gravpong", "arcade2", "GravityPong", ("gravpong",)),
 )
 NAMES = tuple(row[0] for row in CATALOG)
+ROWS = {row[0]: row for row in CATALOG}  # name: its row
 
 
 def lineup_fault(names):

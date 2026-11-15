@@ -629,7 +629,8 @@ def main():
     app.App.frame = hooked
     try:
         rows = [row for row in __import__("catalog").CATALOG if row[2] == GAME]
-        game = app.games_for((rows[0][0],))[0] if rows else getattr(__import__("burning"), GAME)  # burning imports Fire
+        game = app.games_for((rows[0][0],))[0] if rows else (
+            getattr(__import__("fire"), GAME, None) or getattr(__import__("burning"), GAME))  # Fire needs no burning.py
         app.run(games=(game,), knob=probe.volume and probe.volume.knob)
     except Done:
         pass

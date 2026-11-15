@@ -3,7 +3,9 @@ The game box: the marshmallow roast on the fire effect (P773, P595), the ball pi
 engine's bodies (P773, once the rain demo of P593) and ten one-button games on the GDI display.
 The box plays a lineup (P817): the ordered names of the games it holds, from the board's lineup.py (LINEUP), or every
 game of catalog.CATALOG when the board has none. A game's module is imported only when the box builds that game, so
-the boot imports no game. tools/box.py writes lineup.py and copies only the lineup's games and art.
+the boot imports no game. A game whose module is missing is refused aloud, and the box moves to the next one.
+tools/box.py deploy writes lineup.py and copies every game's code but only the packs of the lineup's games; packs an
+earlier deploy copied stay on the board.
 The BOOT button plays, the board's own button (D14) moves to the next game from any state.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
 The step is not saved. App(knob=None) has no volume pane.
@@ -31,7 +33,7 @@ import pictures
 import pins
 from bank import Bank
 from box_bank import BOX_BANK_INDEX
-from catalog import CATALOG, NAMES, lineup_fault
+from catalog import NAMES, ROWS, lineup_fault
 from cues import SoundCues
 from lcd import open_tft
 from overlay import Overlay, VolumePane
@@ -62,12 +64,11 @@ BACKEND = "s3lcd"
 def games_for(names):
     """The game classes for names, in their order, each one's module imported only now. An unknown name raises
     ValueError naming it."""
-    rows = {row[0]: row for row in CATALOG}
     classes = []
     for name in names:
-        if name not in rows:
+        if name not in ROWS:
             raise ValueError("no game %s in the catalog" % name)
-        classes.append(getattr(__import__(rows[name][1]), rows[name][2]))
+        classes.append(getattr(__import__(ROWS[name][1]), ROWS[name][2]))
     return tuple(classes)
 
 
@@ -107,6 +108,12 @@ def read_lineup():
 def refuse_lineup(why):
     print("lineup refused:", why)
     return NAMES
+
+
+def say_lineup(games):
+    """The lines run() prints before `ready`: the lineup the box plays, and how long this module's imports took."""
+    print("lineup %d: %s" % (len(games), " ".join(games.names)))
+    print("import %d ms" % IMPORT_MS)
 # --- MVP ---
 
 
@@ -142,7 +149,7 @@ class App:
         if self.cues:
             self.cues.stop()  # --- MVP (P768) --- before the next game's setup, so the last game's sound does not play over it
         gc.collect()
-        self.game = self.games.game(self.index)
+        self.game = self.build()
         self.signals.clear()  # --- MVP (P768) --- the last game's listeners go
         self.game.signals = self.signals
         if self.cues:
@@ -153,6 +160,18 @@ class App:
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
         print("game", self.game.name)
         print("switch %s %d ms, load %d ms" % (self.game.name, time.ticks_diff(self.mark, start), pictures.load_ms))
+
+    def build(self):
+        """The game at index, built. One whose module is missing (an ImportError: a copy by hand left it out) is
+        refused aloud and the next one is built; when every game fails, the last error is raised (P817)."""
+        for _ in range(len(self.games)):
+            try:
+                return self.games.game(self.index)
+            except ImportError as e:
+                print("game %s refused: %s" % (self.games.names[self.index], e))
+                error = e
+                self.index = (self.index + 1) % len(self.games)
+        raise error
 
     def collect(self):
         """gc.collect(), timed. Called at quiet moments, so a pause lands where nobody is playing."""
@@ -282,8 +301,7 @@ def run(games=None, knob=None, speaker=None):
             speaker = None
     app = App(display, fire.value, boot.value, games=Lineup(read_lineup()) if games is None else games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob,
               cues=cues)
-    print("lineup %d: %s" % (len(app.games), " ".join(app.games.names)))  # --- MVP (P817) ---
-    print("import %d ms" % IMPORT_MS)
+    say_lineup(app.games)  # --- MVP (P817) ---
     app.fire.watch(fire)
     app.boot.watch(boot)
     if full:

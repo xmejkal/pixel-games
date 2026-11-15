@@ -96,10 +96,11 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
 3. Put the board in download mode: `mpremote bootloader`.
 4. Write the image: `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
 5. Copy the games and their art with `python3 tools/box.py deploy --all`, or only some games with
-   `python3 tools/box.py deploy NAME...` (P817): the box then plays only these, in this order, and the board holds only
-   their art. The names are `games/catalog.py`'s, and `python3 tools/box.py list` shows each with its art's bytes. The
-   deploy copies `games/*.py`, `games/box_bank.raw` (the sound) and the packs, writes `:lineup.py` (`--all` removes
-   it) and hard-resets the board, so step 6 is done; `--dry-run` prints the commands. By hand: `mpremote cp games/*.py
+   `python3 tools/box.py deploy NAME...` (P817): the box then plays only these, in this order. The deploy copies the
+   code of every game (`games/*.py`) and `games/box_bank.raw` (the sound), but only the packs of the named games; packs
+   an earlier deploy copied stay on the board. The names are `games/catalog.py`'s, and `python3 tools/box.py list`
+   shows each with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so
+   step 6 is done; `--dry-run` prints the commands. By hand: `mpremote cp games/*.py
    games/box_bank.raw :`, `mpremote cp -r games/packs :` and, when the board has one, `mpremote rm :lineup.py`, or
    the box keeps the old lineup. To pick a lineup, Claude runs `box.py list`, then `box.py deploy NAME...`, then
    `box.py log --seconds 20`, which prints the console's `lineup`, `import` and `switch` lines after the boot.
