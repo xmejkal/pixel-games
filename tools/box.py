@@ -18,7 +18,8 @@ lineup needs to :packs (mpremote skips a file whose sha256 is the same), writes 
 (the picture pool is sized at boot). --py copies games/*.py instead and removes the board's .mpy files of those
 modules (crackle_c.mpy stays). deploy --all copies every game and pack and removes :lineup.py when the board has one.
 --dry-run prints each command and runs none, mpy-cross included, as for a board with no :packs, no :lineup.py and no
-old .py or .mpy files.
+old .py or .mpy files. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
+again (or with --py). mpy-cross: pip install mpy-cross==1.29.0.post2.
 log: resets the board itself (a hard reset, trying again while the board still reboots from a deploy), then prints
 its console for N seconds (20 by default), opening the port again while USB comes back: the `lineup`, `import`,
 `game` and `switch` lines. The port is the one mpremote's auto picks: the first USB serial port, sorted.
@@ -41,6 +42,7 @@ import catalog  # noqa: E402  pure data
 
 SECONDS = 20  # log's default
 MPY = "6.3"  # the board's sys.implementation._mpy: version 6, sub-version 3; mpy-cross must emit this (P821)
+MPY_CROSS_PIP = "pip install mpy-cross==1.29.0.post2"  # PyPI has no plain 1.29.0
 RESET_TRIES, RESET_PAUSE_S = 5, 2  # log's reset, while the board still reboots from a deploy's reset
 
 
@@ -48,18 +50,32 @@ class Refused(Exception):
     """A lineup the box cannot play: nothing ran on the board."""
 
 
-class Mpremote:
-    """Runs one mpremote command from the repository root and answers its output; with dry_run it prints the command
+class Tool:
+    """Runs one command of a tool from the repository root and answers its output; with dry_run it prints the command
     and runs nothing."""
+
+    name = None
 
     def __init__(self, dry_run=False):
         self.dry_run = dry_run
 
     def run(self, args):
         if self.dry_run:
-            print("mpremote " + " ".join(args))
+            print(" ".join([self.name] + args))
             return ""
-        return subprocess.run(["mpremote"] + args, cwd=ROOT, check=True, capture_output=True, text=True).stdout
+        return subprocess.run([self.name] + args, cwd=ROOT, check=True, capture_output=True, text=True).stdout
+
+
+class Mpremote(Tool):
+    """Every board command."""
+
+    name = "mpremote"
+
+
+class MpyCross(Tool):
+    """The compiler of .mpy files: the pip package mpy-cross on PATH (P821)."""
+
+    name = "mpy-cross"
 
 
 def board_names(listing):
@@ -75,24 +91,18 @@ def sets_for(names):
 class Compiler:
     """Compiles game modules into .mpy files with mpy-cross (P821), each for the board's chip (-march=xtensawin, which
     the viper modules need and which leaves bytecode files as they are), with -s <name>.py so a traceback names the
-    module. With dry_run it prints each command and runs none."""
+    module. tool: an MpyCross, or a test's fake; a dry-run tool compiles nothing."""
 
-    def __init__(self, dry_run=False, run=None):
-        self.dry_run, self.run = dry_run, run or subprocess.run  # run: subprocess.run, or a test's fake
-
-    def call(self, args):
-        if self.dry_run:
-            print(" ".join(args))
-            return ""
-        return self.run(args, cwd=ROOT, check=True, capture_output=True, text=True).stdout
+    def __init__(self, tool):
+        self.tool = tool
 
     def check(self):
         """Refuses an mpy-cross that does not emit the board's .mpy version."""
-        said = self.call(["mpy-cross", "--version"])
+        said = self.tool.run(["--version"])
         found = re.search(r"mpy v(\d+\.\d+)", said)
-        if not self.dry_run and (found is None or found.group(1) != MPY):
-            raise Refused("mpy-cross emits %s, the board needs mpy v%s: pip install mpy-cross==1.29.0" % (
-                found.group(0) if found else repr(said.strip()), MPY))
+        if not self.tool.dry_run and (found is None or found.group(1) != MPY):
+            raise Refused("mpy-cross emits %s, the board needs mpy v%s: %s" % (
+                found.group(0) if found else repr(said.strip()), MPY, MPY_CROSS_PIP))
 
     def compile(self, sources, folder):
         """Each source (games/<name>.py) compiled to folder/<name>.mpy; answers the .mpy paths."""
@@ -100,7 +110,7 @@ class Compiler:
         for source in sources:
             name = os.path.basename(source)
             out.append(os.path.join(folder, name[:-3] + ".mpy"))
-            self.call(["mpy-cross", "-march=xtensawin", "-s", name, "-o", out[-1], source])
+            self.tool.run(["-march=xtensawin", "-s", name, "-o", out[-1], source])
         return out
 
 
@@ -147,7 +157,13 @@ class Deploy:
             stale = [m + ".py" for m in modules]
         stale = [":" + n for n in stale if n in on_board]
         if stale:
-            self.runner.run(["rm"] + stale)
+            try:
+                self.runner.run(["rm"] + stale)
+            except subprocess.CalledProcessError as e:
+                if self.compiler:  # the board runs a .py before an .mpy of the same name
+                    e.stderr = "%s; deploy again: until then the board runs the old .py of some modules" % (
+                        (e.stderr or "").strip())
+                raise
 
     def write_lineup(self, names):
         with tempfile.TemporaryDirectory() as tmp:
@@ -239,7 +255,9 @@ def main(argv=None):
     deploy = sub.add_parser("deploy", help="copy the games' code and the lineup's packs, write :lineup.py")
     deploy.add_argument("names", nargs="*", metavar="NAME", help="the lineup: the box plays them in this order")
     deploy.add_argument("--all", action="store_true", help="every game, and no :lineup.py")
-    deploy.add_argument("--py", action="store_true", help="copy the .py files, not .mpy files built by mpy-cross")
+    deploy.add_argument("--py", action="store_true", help="copy the .py sources, not .mpy files built by mpy-cross: "
+                                                         "to debug on the board, where a traceback then shows the "
+                                                         "source line and a file can be edited in place")
     deploy.add_argument("--dry-run", action="store_true", help="print each command, run none")
     log = sub.add_parser("log", help="reset the board (a hard reset), then print its console")
     log.add_argument("--seconds", type=float, default=SECONDS)
@@ -253,7 +271,7 @@ def main(argv=None):
             if args.board:
                 print(board_lineup(Mpremote()))
         elif args.command == "deploy":
-            Deploy(Mpremote(args.dry_run), None if args.py else Compiler(args.dry_run)).run(
+            Deploy(Mpremote(args.dry_run), None if args.py else Compiler(MpyCross(args.dry_run))).run(
                 None if args.all else args.names)
         else:
             reset(Mpremote())
@@ -263,10 +281,12 @@ def main(argv=None):
         print("refused:", e)
         return 1
     except subprocess.CalledProcessError as e:
-        print("mpremote %s failed: %s" % (" ".join(e.cmd[1:]), (e.stderr or "").strip() or "exit %d" % e.returncode))
+        print("%s failed: %s" % (" ".join(e.cmd), (e.stderr or "").strip() or "exit %d" % e.returncode))
         return 1
     except FileNotFoundError as e:
         print("no %s:" % (e.filename or "mpremote"), e)  # mpremote or mpy-cross
+        if e.filename == MpyCross.name:
+            print("install it:", MPY_CROSS_PIP)
         return 1
     return 0
 

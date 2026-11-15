@@ -13,10 +13,11 @@
 #     VOLUME=ViperMasterVolume KNOB=1 SAVE=1 tools/crackle.sh 60 FireSound   # the knob turns the step and saves it
 #
 # The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None), KNOB (default 0),
-# SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). The game box's files go to the board in each run:
-# games/app.py, catalog.py, overlay.py, volume.py, encoder.py, pins.py, lcd.py, render.py and gfx.py, as .py files: the
-# board runs them instead of the .mpy files tools/box.py deploy copied, until the next deploy (P821). With a VOLUME,
-# games/volume_viper.py goes too. With KNOB=1 the probe passes its knob to the game box (P764), and each change of the
+# SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). Each run copies, as .py files: games/crackle.py,
+# fire.py, sound.py, app.py, catalog.py, overlay.py, volume.py, encoder.py, pins.py, lcd.py, render.py, gfx.py and
+# marshmallow.py; with a VOLUME volume_viper.py; with GAME=BurningBodies burning.py and plugins.py; with GrainCrackle or
+# FireSound fire_bank.py. The board runs these instead of the .mpy files tools/box.py deploy copied, until the next
+# deploy (P821). With KNOB=1 the probe passes its knob to the game box (P764), and each change of the
 # step shows the volume on the screen for 1 s (P762). With KNOB=0 the box opens its own knob, and the sound does not
 # follow it. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the
 # probe spins the step to an end at this period. ALPHA (default None: the pane's own value, 128, see-through) is how

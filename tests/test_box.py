@@ -111,14 +111,29 @@ OLD_MPY = "ls :\n           0 packs/\n        5000 app.mpy\n        2000 main.py
 
 
 class FakeMpyCross:
-    """subprocess.run for mpy-cross: answers --version with version and records each call."""
+    """The mpy-cross tool: answers --version with version and records each command whole."""
+
+    dry_run = False
 
     def __init__(self, version=VERSION):
         self.version, self.calls = version, []
 
-    def __call__(self, args, **kw):
-        self.calls.append(args)
-        return types.SimpleNamespace(stdout=self.version if args[1:] == ["--version"] else "")
+    def run(self, args):
+        self.calls.append(["mpy-cross"] + args)
+        return self.version if args == ["--version"] else ""
+
+
+def real_mpy_cross(version=VERSION, fail=None):
+    """subprocess.run as mpy-cross answers it: raises only under check=True, as subprocess.run does."""
+    def run(args, **kw):
+        if args[0] == "mpremote":
+            raise AssertionError("no board command in this test")
+        if fail and fail in args:
+            if kw.get("check"):
+                raise subprocess.CalledProcessError(1, args, stderr="SyntaxError: invalid syntax\n")
+            return types.SimpleNamespace(stdout="", returncode=1)
+        return types.SimpleNamespace(stdout=version if args[1:] == ["--version"] else "", returncode=0)
+    return run
 
 
 class MpyTest(unittest.TestCase):
@@ -126,7 +141,7 @@ class MpyTest(unittest.TestCase):
 
     def deploy(self, listing, version=VERSION):
         runner, mpy_cross = FakeRunner(listing), FakeMpyCross(version)
-        box.Deploy(runner, box.Compiler(run=mpy_cross)).run(["snake"])
+        box.Deploy(runner, box.Compiler(mpy_cross)).run(["snake"])
         return runner.commands, mpy_cross.calls
 
     def test_it_compiles_each_module_but_main_for_the_chip_naming_its_source(self):
@@ -164,7 +179,7 @@ class MpyTest(unittest.TestCase):
             with self.subTest(version):
                 runner = FakeRunner()
                 with self.assertRaisesRegex(box.Refused, "the board needs mpy v6.3"):
-                    box.Deploy(runner, box.Compiler(run=FakeMpyCross(version))).run(["snake"])
+                    box.Deploy(runner, box.Compiler(FakeMpyCross(version))).run(["snake"])
                 self.assertEqual([], runner.commands)
 
     def test_no_mpy_cross_says_so_and_exits_1(self):
@@ -175,7 +190,33 @@ class MpyTest(unittest.TestCase):
                 contextlib.redirect_stdout(io.StringIO()) as said:
             self.assertEqual(1, box.main(["deploy", "snake"]))
         self.assertTrue(said.getvalue().startswith("no mpy-cross: "), said.getvalue())
+        self.assertIn("install it: pip install mpy-cross==1.29.0.post2\n", said.getvalue())
         self.assertEqual([], runner.commands)
+
+    def test_a_failed_compile_names_mpy_cross_and_copies_nothing(self):
+        runner = FakeRunner()
+        with mock.patch.object(box, "Mpremote", lambda dry_run=False: runner), \
+                mock.patch.object(box.subprocess, "run", real_mpy_cross(fail="games/gfx.py")), \
+                contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual(1, box.main(["deploy", "snake"]))
+        self.assertRegex(said.getvalue(), r"^mpy-cross -march=xtensawin -s gfx\.py -o \S+gfx\.mpy games/gfx\.py failed: "
+                                          r"SyntaxError: invalid syntax\n$")
+        self.assertEqual([["ls", ":"], ["mkdir", ":packs"]], runner.commands)  # no cp, no rm
+
+    def test_a_failed_rm_of_the_old_py_says_deploy_again(self):
+        class RmFails(FakeRunner):
+            def run(self, args):
+                if args[0] == "rm":
+                    raise subprocess.CalledProcessError(1, ["mpremote"] + args, stderr="rm: busy\n")
+                return super().run(args)
+        with self.assertRaises(subprocess.CalledProcessError) as failed:
+            box.Deploy(RmFails(OLD_PY), box.Compiler(FakeMpyCross())).run(["snake"])
+        self.assertEqual("rm: busy; deploy again: until then the board runs the old .py of some modules",
+                         failed.exception.stderr)
+
+    def test_the_refusal_names_the_pip_package_that_exists(self):
+        with self.assertRaisesRegex(box.Refused, r"pip install mpy-cross==1\.29\.0\.post2$"):
+            box.Compiler(FakeMpyCross("mpy v6.2")).check()
 
     def test_dry_run_prints_the_compiles_and_runs_nothing(self):
         with mock.patch.object(box.subprocess, "run") as run, contextlib.redirect_stdout(io.StringIO()) as said:

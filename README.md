@@ -100,14 +100,15 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    code of every game and `games/box_bank.raw` (the sound), but only the packs of the named games; packs an earlier
    deploy copied stay on the board. The code goes as `.mpy` files (P821), which import in about half the time of a
    `.py` (5.0 s against 9.9 s for every module, P819): the `mpy-cross` on PATH, the pip package
-   (`pip install mpy-cross==1.29.0`, which must say `mpy v6.3`), compiles every module but `main.py`, which goes as
-   itself, and the deploy removes the board's `.py` of each module, because the board runs a `.py` before an `.mpy` of
-   the same name. `--py` copies `games/*.py` instead and removes those modules' `.mpy` files. The names are `games/catalog.py`'s, and `python3 tools/box.py list`
-   shows each with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so
-   step 6 is done; `--dry-run` prints the commands. `tools/crackle.sh` copies `.py` files, which run instead of their
-   `.mpy` files until the next deploy. By hand: `mpremote cp games/*.py
-   games/box_bank.raw :`, `mpremote cp -r games/packs :` and, when the board has one, `mpremote rm :lineup.py`, or
-   the box keeps the old lineup. To pick a lineup, Claude runs `box.py list`, then `box.py deploy NAME...`, then
+   (`pip install mpy-cross==1.29.0.post2`, which must say `mpy v6.3`), compiles every module but `main.py`, which goes
+   as itself, and the deploy removes the board's `.py` of each module, because the board runs a `.py` before an `.mpy`
+   of the same name. The `.mpy` files fit MicroPython v1.29: after a flash of another MicroPython, deploy again.
+   `--py` copies `games/*.py` instead and removes those modules' `.mpy` files: for debugging on the board, where a
+   traceback shows the source line. The names are `games/catalog.py`'s, and `python3 tools/box.py list` shows each
+   with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so step 6 is
+   done; `--dry-run` prints the commands. `tools/crackle.sh` copies `.py` files, which run instead of their `.mpy`
+   files until the next deploy. By hand: `mpremote cp games/*.py games/box_bank.raw :`, `mpremote cp -r games/packs :`
+   and, when the board has one, `mpremote rm :lineup.py`, or the box keeps the old lineup. To pick a lineup, Claude runs `box.py list`, then `box.py deploy NAME...`, then
    `box.py log --seconds 20`, which prints the console's `lineup`, `import` and `switch` lines after the boot.
    `games/art_index.py` names each pack's build, and the board refuses a pack from another build: it prints
    `art: <game> pack is not this build: ...` and the game draws its plain shapes. Each game's pictures are one file in
