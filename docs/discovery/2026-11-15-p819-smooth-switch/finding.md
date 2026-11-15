@@ -5,15 +5,17 @@ asked for plans against the stutter when he switches games. His words are on the
 
 ## The short answer
 
-The many picture files were the main cause, and P814 removed it. A switch now freezes the screen for 0.15 to 0.6 s
-while the game's pack loads, and the music stays fed. Two changes in build take most of what is left. P817 puts only
+The many picture files were the main cause, and P814 removed it. For a game that loads a pack, a switch now freezes the
+screen for 0.15 to 0.6 s. P814 reads the pack in chunks so that the music stays fed. This spike did not measure the
+music. Two changes in build take most of what is left. P817 puts only
 the chosen games on the board. P818 loads a game only after you stop pressing. Then skipping costs nothing. After them,
 the best next step is to load the pack behind a moving card, so the screen never stops. Precompiled modules make the
-boot 5 s shorter for little work.
+boot about 5 s shorter for little work.
 
 ## What a switch costs now (measured on the board, 2026-11-15)
 
-The board ran pixel-games master 6912986 with BUBBLE and FEED (MicroPython 1.29.0, FireBeetle 2 ESP32-S3). A probe
+The board ran pixel-games branch p573-feed at 4df0ce7: master with BUBBLE and FEED (MicroPython 1.29.0, FireBeetle 2
+ESP32-S3). A probe
 built each game twice, after `pictures.free()` and `gc.collect()`. The two tries agreed within 4 ms.
 
 | game | setup | of it, the pack load |
@@ -40,17 +42,19 @@ The boot has a second cost. `import app` takes 9,941 ms, because app.py imports 
 | from .py files (today) | 9,941 ms, twice |
 | from .mpy files (mpy-cross 1.29.0) | 5,031 and 5,029 ms |
 
-From .mpy files, the game modules take about 2.8 s of the 5 s: meteors 539 ms, arcade 512, fire 503, arcade2 255,
-balls 256, rescue 223, bucket 202, space3d 126, world3d 118, marshmallow 62. The shared modules take the rest.
+A third run imported the modules one by one from .mpy files. A module's time includes each helper that it imports
+first, so the times are not the cost of one game alone. The nine game modules took 2,293 ms: meteors 539, arcade
+512, balls 256, arcade2 255, rescue 223, bucket 202, space3d 126, world3d 118 and marshmallow 62. fire, a shared
+module that four game modules import, took 503 ms. The raw output is in [raw.txt](raw.txt).
 
 ## The options
 
 Each option says what it changes, what it costs and how sure the number is.
 
 1. Only the chosen games on the board (P817, in build). The box imports and cycles only the lineup's games. It saves
-   up to 2.8 s of the boot import and every load of a game you do not play. Cost: a deploy tool and a lazy import in
-   app.py. A game's first switch then adds its import, 60 to 540 ms from .mpy (measured above), about twice that from
-   .py (not measured per module).
+   part of the boot import and every load of a game you do not play. How much depends on the lineup, and no lineup
+   was measured. Cost: a deploy tool and a lazy import in app.py. A game's first switch then adds its import, which
+   this spike did not measure alone.
 2. Load after the pick settles (P818, next). A press shows the next game's name, and the game loads after a
    short pause with no press, or at once on BOOT. Skipping four games to the fifth loads one game, not five. Cost: a
    name card and a settle timer in App. The landing game still freezes the screen for its load.
@@ -63,11 +67,12 @@ Each option says what it changes, what it costs and how sure the number is.
    alone has six packs, 2,903,080 B). The heap had 6,500,704 B free after the import. Nobody measured whether a 4 MB
    picture pool fits beside the heap that the games need. Cost: option 3
    first, then a pool sized from the lineup and a test of the frame rate with less heap.
-5. Precompiled modules (.mpy). mpy-cross turns each module into bytecode on the Mac, so the board does not compile
-   it. Measured above: the boot import halves, 9.9 s to 5.0 s. Cost: the deploy compiles with the mpy-cross that
-   matches the firmware (1.29.0), and two viper modules need `-march=xtensawin`. An .mpy built for another version
-   does not load. Source: MicroPython's page on .mpy files,
-   https://docs.micropython.org/en/v1.29.0/reference/mpyfiles.html.
+5. Precompiled modules (.mpy). mpy-cross compiles each module on the Mac into an .mpy file, which "holds
+   precompiled code" (MicroPython's page on .mpy files, v1.29.0,
+   https://docs.micropython.org/en/v1.29.0/reference/mpyfiles.html). Measured above: the boot import halves, 9.9 s
+   to 5.0 s. Cost: the deploy runs mpy-cross, and the two viper modules (sound_viper, volume_viper) need
+   `-march=xtensawin`. The same page gives the rule for a match: the file's .mpy version must equal the board's, and
+   the sub-version matters only for a file with native code. mpy-cross 1.29.0 writes version 6.3.
 6. Smaller packs. Fewer animation frames or a simple compression of the keyed sprites make the packs smaller. A
    decode costs time on each load. It pays only when the read is the bound. Nothing is measured, and the pictures
    change, so the PO's eye decides.
@@ -83,4 +88,4 @@ Each option says what it changes, what it costs and how sure the number is.
 ## How the numbers were taken
 
 The probes ran through `mpremote run` from the Mac. The .mpy files went into a separate folder, `/mpytest`, first on
-`sys.path`, and the folder was removed after the runs. The probe scripts are not kept in the repository.
+`sys.path`, and the folder was removed after the runs. The probe scripts are not kept in the repository. raw.txt holds their output.

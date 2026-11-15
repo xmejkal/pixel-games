@@ -1,0 +1,75 @@
+Raw output of the P819 probes on the board, 2026-11-15 (branch p573-feed 4df0ce7).
+
+1. Each game built twice (mpremote run, .py files):
+
+import app 9941 ms, free 6500704
+marshmallow internal largest 172032
+marshmallow field internal
+game marshmallow try 1 setup 155 ms, load 147 ms, rest 8 ms
+marshmallow internal largest 172032
+marshmallow field internal
+game marshmallow try 2 setup 154 ms, load 146 ms, rest 8 ms
+game balls try 1 setup 35 ms, load 0 ms, rest 35 ms
+game balls try 2 setup 35 ms, load 0 ms, rest 35 ms
+meteors internal largest 172032
+meteors field internal
+game meteors try 1 setup 275 ms, load 262 ms, rest 13 ms
+meteors internal largest 172032
+meteors field internal
+game meteors try 2 setup 276 ms, load 263 ms, rest 13 ms
+game bucket try 1 setup 161 ms, load 158 ms, rest 3 ms
+game bucket try 2 setup 160 ms, load 158 ms, rest 2 ms
+game rescue try 1 setup 572 ms, load 567 ms, rest 5 ms
+game rescue try 2 setup 570 ms, load 565 ms, rest 5 ms
+game flappy try 1 setup 430 ms, load 428 ms, rest 2 ms
+game flappy try 2 setup 430 ms, load 429 ms, rest 1 ms
+game runner try 1 setup 609 ms, load 603 ms, rest 6 ms
+game runner try 2 setup 608 ms, load 603 ms, rest 5 ms
+game snake try 1 setup 371 ms, load 369 ms, rest 2 ms
+game snake try 2 setup 371 ms, load 370 ms, rest 1 ms
+game stack try 1 setup 415 ms, load 413 ms, rest 2 ms
+game stack try 2 setup 415 ms, load 414 ms, rest 1 ms
+game cave try 1 setup 0 ms, load 0 ms, rest 0 ms
+game cave try 2 setup 0 ms, load 0 ms, rest 0 ms
+game tunnel try 1 setup 0 ms, load 0 ms, rest 0 ms
+game tunnel try 2 setup 0 ms, load 0 ms, rest 0 ms
+game road try 1 setup 0 ms, load 0 ms, rest 0 ms
+game road try 2 setup 1 ms, load 0 ms, rest 1 ms
+game starfire try 1 setup 2 ms, load 0 ms, rest 2 ms
+game starfire try 2 setup 2 ms, load 0 ms, rest 2 ms
+game cube try 1 setup 1 ms, load 0 ms, rest 1 ms
+game cube try 2 setup 0 ms, load 0 ms, rest 0 ms
+game gravpong try 1 setup 544 ms, load 543 ms, rest 1 ms
+game gravpong try 2 setup 548 ms, load 546 ms, rest 2 ms
+done
+
+2. import app, each after a soft reset, copied from the terminal:
+
+py import app 9941 ms
+mpy import app 5031 ms /mpytest/app.mpy
+py import app 9941 ms
+mpy import app 5029 ms /mpytest/app.mpy
+
+3. Each module imported in turn from .mpy, copied from the terminal:
+
+gfx 365
+pictures 406
+art_index 0
+render 123
+lcd 234
+overlay 234
+cues 237
+speaker 47
+bank 125
+box_bank 58
+fire 503
+marshmallow 62
+balls 256
+meteors 539
+bucket 202
+rescue 223
+arcade 512
+arcade2 255
+space3d 126
+world3d 118
+app 442
