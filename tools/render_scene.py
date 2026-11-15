@@ -89,7 +89,7 @@ class Subject:
 SNAKE_PRESSES = (
     0, 21, 57, 61, 64, 107, 111, 119, 149, 164, 168, 187, 227, 277, 281, 291, 302, 332, 339, 372, 395, 420, 426,
     464, 488, 517, 531, 559, 592, 619, 643, 666, 683, 686, 690)
-SUBJECTS = {  # the fire, the rain, app.GAMES in their order, the overlay; the presses and counts set by eye (P795)
+SUBJECTS = {  # the fire, the rain, games/catalog.py's games in their order, the overlay; the presses and counts set by eye (P795)
     "fire": Subject(fire.Fire, "tap: next mode", 30, 84, seed=fire.SEED),
     "rain": Subject(rain.Rain, "tap: again", 10, 110),
     "marshmallow": Subject(Marshmallow, Marshmallow.hint, 5, 200, every=4, hold=40, shot=195),

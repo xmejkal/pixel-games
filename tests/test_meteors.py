@@ -26,6 +26,7 @@ from test_fire import Recorder, Tft  # noqa: E402
 
 import app  # noqa: E402
 import burning  # noqa: E402
+import catalog  # noqa: E402
 import effects  # noqa: E402
 import fire  # noqa: E402
 import gfx  # noqa: E402
@@ -352,8 +353,9 @@ class MeteorsTest(SeededTest):
         self.assertEqual(0.0, game.physics_plugin.world[3])
 
     def test_it_takes_burnings_place_in_the_game_box(self):
-        self.assertIn(Meteors, app.GAMES)
-        self.assertNotIn("burning", [g.name for g in app.GAMES])
+        games = app.games_for(catalog.NAMES)
+        self.assertIn(Meteors, games)
+        self.assertNotIn("burning", [g.name for g in games])
 
     def test_every_body_starts_parked_off_the_screen(self):
         game = self.game

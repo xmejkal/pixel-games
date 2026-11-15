@@ -65,7 +65,7 @@ class CountingOut(lcd.TftOut):
 
 def count():
     lcd.TftCanvas, lcd.TftOut = CountingCanvas, CountingOut  # open_tft and TftOut look both names up when called
-    app.run(games=(app.Runner,))
+    app.run(games=app.games_for(("runner",)))
 
 
 def bench():

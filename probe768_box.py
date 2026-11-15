@@ -22,7 +22,7 @@ mean Mixer.render of the window. With SOUND = 0 the line is `sound <game> off pr
 import time
 
 SOUND = 1  # 0: the control run, no I2S
-GAME = "Runner"  # a class name in app, or "" for all the games of the box
+GAME = "runner"  # a game's name in games/catalog.py, or "" for all the games of the box
 SWITCH_S = 0  # with all the games: the seconds in each, then the probe switches. 0: no switch. Set SECONDS to
 # SWITCH_S times the games (14 * 12 = 168). The first `sound` line after a switch holds part of the last game.
 SECONDS = 120
@@ -122,7 +122,7 @@ def main():
 
     app.App.frame = hooked
     try:
-        app.run(games=(getattr(app, GAME),) if GAME else app.GAMES, knob=knob, speaker=speaker)
+        app.run(games=app.games_for((GAME,)) if GAME else None, knob=knob, speaker=speaker)
     except Done:
         pass
     print("done")

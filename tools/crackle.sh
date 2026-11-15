@@ -14,7 +14,7 @@
 #
 # The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None), KNOB (default 0),
 # SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). The game box's files go to the board in each run:
-# games/app.py, overlay.py, volume.py, encoder.py, pins.py, lcd.py, render.py and gfx.py. With a VOLUME,
+# games/app.py, catalog.py, overlay.py, volume.py, encoder.py, pins.py, lcd.py, render.py and gfx.py. With a VOLUME,
 # games/volume_viper.py goes too. With KNOB=1 the probe passes its knob to the game box (P764), and each change of the
 # step shows the volume on the screen for 1 s (P762). With KNOB=0 the box opens its own knob, and the sound does not
 # follow it. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the
@@ -68,8 +68,8 @@ fi
 echo "crackle_c.mpy sha256 $(shasum -a 256 "$ROOT/engine/natmod/crackle/crackle_c.mpy" | cut -d' ' -f1), engine $(git -C "$ROOT/engine" rev-parse --short HEAD)"
 mpremote cp "$ROOT/engine/natmod/crackle/crackle_c.mpy" :crackle_c.mpy + cp "$CRACKLE_PY" :crackle.py \
     + cp "$ROOT/games/fire.py" :fire.py + cp "$ROOT/games/sound.py" :sound.py
-# The game box's own files, always: app.py imports each of them (the knob and the overlay, P764)
-mpremote cp "$ROOT/games/app.py" :app.py + cp "$ROOT/games/overlay.py" :overlay.py \
+# The game box's own files, always: app.py imports each of them (the knob and the overlay, P764; the catalog, P817)
+mpremote cp "$ROOT/games/app.py" :app.py + cp "$ROOT/games/catalog.py" :catalog.py + cp "$ROOT/games/overlay.py" :overlay.py \
     + cp "$ROOT/games/volume.py" :volume.py + cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py \
     + cp "$ROOT/games/lcd.py" :lcd.py + cp "$ROOT/games/render.py" :render.py + cp "$ROOT/games/gfx.py" :gfx.py \
     + cp "$ROOT/games/marshmallow.py" :marshmallow.py
