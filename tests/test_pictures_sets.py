@@ -122,8 +122,8 @@ class LoadTest(unittest.TestCase):
             self.assertIn("bucket_scene", pictures.PICS)
             box.switch()
         self.assertEqual({}, pictures.PICS)
-        self.assertRegex(said.getvalue(), r"switch painted \d+ ms, load \d+ ms\n")  # each switch's time (P814)
-        self.assertRegex(said.getvalue(), r"switch plain \d+ ms, load 0 ms\n")  # a game without art loads none
+        self.assertRegex(said.getvalue(), r"switch painted \d+ ms, load \d+ ms, import \d+ ms\n")  # each switch's time (P814, P818)
+        self.assertRegex(said.getvalue(), r"switch plain \d+ ms, load 0 ms, import \d+ ms\n")  # a game without art loads none
 
     def test_on_the_board_every_set_reads_into_the_one_pool_as_big_as_the_largest_pack(self):
         pool = Pool()

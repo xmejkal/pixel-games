@@ -6,15 +6,19 @@ game of catalog.CATALOG when the board has none. A game's module is imported onl
 the boot imports no game. A game whose module is missing is refused aloud, and the box moves to the next one.
 tools/box.py deploy writes lineup.py and copies every game's code but only the packs of the lineup's games; packs an
 earlier deploy copied stay on the board.
-The BOOT button plays, the board's own button (D14) moves to the next game from any state.
+The BOOT button plays. The board's own button (D14) picks the next game of the lineup from any state (P818): the last
+game goes, a NameCard shows the picked name, and nothing is imported or loaded yet. The pick settles when no press came
+for SETTLE_MS, or at a BOOT press (which then does not reach the game): only then is the game built. So pressing
+through four games to the fifth loads only the fifth. The music plays on over a pick.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
 The step is not saved. App(knob=None) has no volume pane.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
 main.py opens the Speaker. run() with no speaker is the silent box.
 
 run() prints `lineup <n>: <names>` and `import <ms> ms` (how long this module's own imports took), then `ready` once
-the display is set up, then `game <name>` at the start and after each D14 press, and
-`switch <name> <ms> ms, load <ms> ms`: how long the switch took and the art's load in it (P814). Its loop
+the display is set up, then `pick <name>` at each D14 press, and `game <name>` with
+`switch <name> <ms> ms, load <ms> ms, import <ms> ms` at the start and when a pick settles: how long the build took,
+the art's load in it (P814) and the import of the game's module in it (P818). Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
 Each frame the game paints into a list of recorded draw calls (gfx.Canvas); render.Dirty finds the rectangles that
 changed since the last frame, and only those are drawn into one 51,200-byte RGB565 buffer and blitted. Nothing at module level touches hardware.
@@ -48,6 +52,7 @@ FPS_EVERY_MS = 5000
 FRAME_MS = 40  # each frame starts this long after the last, so objects move in equal steps; 0 = as fast as it goes. 110 while a send took 63 to 71 ms, 60 at 31 ms, 40 since partial show (P533 slice 5)
 FULL_FRAME_FREE = 400_000
 GC_FLOOR = 1_000_000  # with PSRAM gc is off in the loop; below this much free heap it runs at once
+SETTLE_MS = 700  # a pick builds its game once no D14 press came for this long; the one feel value: the PO's play decides (P818)
 GC_FRAMES = 5  # with gc off, a timed collection every this many frames: small ones often, not one long pause over 8 MB
 # The bench decides the SPI clock. 80 MHz showed a dark screen on 2026-11-01 (the panel's write cycle limit is 16 ns,
 # 62.5 MHz) and 40 MHz worked; 60 MHz is under the limit. If the picture breaks, go back to 40_000_000.
@@ -87,7 +92,10 @@ class Lineup:
         return len(self.names)
 
     def game(self, i):
+        """The i-th game, built; import_ms is how long the import of its module took (0 for classes, P818)."""
+        start = time.ticks_ms() if hasattr(time, "ticks_ms") else 0
         c = self.classes[i] if self.classes is not None else games_for((self.names[i],))[0]
+        self.import_ms = pictures.since(start)
         return c()
 
 
@@ -130,6 +138,7 @@ class App:
         self.frames, self.mark, self.us, self.state, self.gc_floor = 0, 0, [0, 0, 0, 0], 0, gc_floor
         self.index = len(games) - 1
         self.game = None
+        self.picked = None  # --- MVP (P818) --- time.ticks_ms() of the last pick while its NameCard is up, else None
         self.overlay = Overlay()  # --- MVP (P762) --- system information over every game
         self.knob = knob  # --- MVP (P764) --- the volume's knob, or None: then the overlay has no volume pane
         self.volume_pane = self.overlay.add(VolumePane(knob.volume)) if knob else None
@@ -141,16 +150,37 @@ class App:
         self.switch()
 
     def switch(self):
-        """Move to the next game and say its name, then how long the switch took and its art's load in it (P814)."""
-        start = time.ticks_ms()
+        """Move to the next game and build it at once (start() and the probes)."""
         self.index = (self.index + 1) % len(self.games)
+        self.build()
+
+    def leave(self):
+        """The current game goes: its art set, its sounds and its listeners. The music plays on."""
         self.game = None
         pictures.free()  # the last game's art set goes: the next game loads its own (P773)
         if self.cues:
             self.cues.stop()  # --- MVP (P768) --- before the next game's setup, so the last game's sound does not play over it
-        gc.collect()
-        self.game = self.build()
         self.signals.clear()  # --- MVP (P768) --- the last game's listeners go
+
+    # --- MVP (P818) ---
+    def pick(self, now):
+        """A D14 press: the next name of the lineup, on a NameCard. The game goes, and nothing is imported or loaded:
+        the picked game is built when the pick settles (frame())."""
+        self.index = (self.index + 1) % len(self.games)
+        self.leave()
+        self.game = NameCard(self.games.names[self.index], self.index + 1, len(self.games))
+        self.out.reset()
+        self.picked = now
+        print("pick", self.game.name)
+
+    def build(self):
+        """Build the game at index and say its name, then how long the build took, its art's load and its module's
+        import in it (P814, P818)."""
+        start = time.ticks_ms()
+        self.leave()
+        self.picked = None
+        gc.collect()
+        self.game = self.new_game()
         self.game.signals = self.signals
         if self.cues:
             self.cues.follow(self.game, self.signals)
@@ -159,9 +189,10 @@ class App:
         self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
         print("game", self.game.name)
-        print("switch %s %d ms, load %d ms" % (self.game.name, time.ticks_diff(self.mark, start), pictures.load_ms))
+        print("switch %s %d ms, load %d ms, import %d ms" % (self.game.name, time.ticks_diff(self.mark, start),
+                                                            pictures.load_ms, getattr(self.games, "import_ms", 0)))
 
-    def build(self):
+    def new_game(self):
         """The game at index, built. One whose module is missing (an ImportError: a copy by hand left it out) is
         refused aloud and the next one is built; when every game fails, the last error is raised (P817)."""
         for _ in range(len(self.games)):
@@ -190,7 +221,9 @@ class App:
         if self.knob:
             self.knob.poll(now)  # --- MVP (P764) ---
         if switched:
-            self.switch()
+            self.pick(now)  # --- MVP (P818) ---
+        elif self.picked is not None and (pressed or time.ticks_diff(now, self.picked) >= SETTLE_MS):
+            self.build()  # the pick settled; a BOOT press that settles it is used up here
         else:
             self.game.step(now, pressed, self.fire.held)  # FixedUpdate, Update, LateUpdate
         self.overlay.update(now)  # after the switch, so a turn shows in this frame and a pane sees this frame's game
@@ -222,6 +255,26 @@ class App:
             # Once per interval: does the heap fill during play? (P533 run 16; gc.mem_alloc costs about 20 ms per MB)
             print("heap %s alloc %d glyphs %d" % (game.name, gc.mem_alloc(), len(gfx.GLYPHS)))
             self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
+
+
+# --- MVP (P818) ---
+class NameCard(gfx.Game):
+    """The picked game's name while a pick waits to settle: the name big in the middle, "n / N" under it and
+    "BOOT plays" small, on the plain background. It stays in TITLE, loads nothing and has no cues."""
+
+    def __init__(self, name, n, count):
+        self.name, self.n, self.count = name, n, count
+        super().__init__()
+
+    def step(self, now_ms, pressed, held):
+        pass  # never leaves TITLE: the box builds the game instead
+
+    def draw_title(self, cv):
+        cx, cy = gfx.WIDTH // 2, gfx.HEIGHT // 2
+        cv.big(self.name, cx - 12 * len(self.name), cy - 30, gfx.WHITE, 3)
+        place = "%d / %d" % (self.n, self.count)
+        cv.big(place, cx - 8 * len(place), cy + 6, gfx.GREY, 2)
+        cv.text("BOOT plays", cx - 40, cy + 34, gfx.YELLOW)
 
 
 def open_st7789():
