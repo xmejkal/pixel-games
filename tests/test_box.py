@@ -5,6 +5,7 @@ across a reset. Run from the repository root: python3 -B -m unittest tests.test_
 import contextlib
 import io
 import os
+import subprocess
 import sys
 import unittest
 from unittest import mock
@@ -115,6 +116,103 @@ class ListTest(unittest.TestCase):
 
     def test_the_names_mpremote_ls_shows(self):
         self.assertEqual({"boot.py", "packs/", "lineup.py"}, box.board_names(FULL))
+
+
+class FailingRunner(FakeRunner):
+    """Fails each command, as mpremote does while the board still reboots, the first fails times."""
+
+    def __init__(self, fails, listing=EMPTY):
+        super().__init__(listing)
+        self.fails = fails
+
+    def run(self, args):
+        self.commands.append(args)
+        if self.fails:
+            self.fails -= 1
+            raise subprocess.CalledProcessError(1, ["mpremote"] + args, stderr="could not enter raw repl\n")
+        return ""
+
+
+class ResetTest(unittest.TestCase):
+    def test_it_tries_again_after_a_pause_while_the_board_reboots(self):
+        runner, pauses = FailingRunner(2), []
+        box.reset(runner, sleep=pauses.append)
+        self.assertEqual([["reset"]] * 3, runner.commands)
+        self.assertEqual([box.RESET_PAUSE_S] * 2, pauses)
+
+    def test_it_gives_up_after_its_tries(self):
+        runner, pauses = FailingRunner(99), []
+        with self.assertRaises(subprocess.CalledProcessError):
+            box.reset(runner, sleep=pauses.append)
+        self.assertEqual(box.RESET_TRIES, len(runner.commands))
+
+
+class MainTest(unittest.TestCase):
+    def main(self, argv, runner, open_port=None):
+        with mock.patch.object(box, "Mpremote", lambda dry_run=False: runner), \
+                mock.patch.object(box, "serial_port", lambda name=None: open_port), \
+                contextlib.redirect_stdout(io.StringIO()) as said:
+            code = box.main(argv)
+        return code, said.getvalue()
+
+    def test_deploy_with_all_and_a_name_is_a_usage_error(self):
+        runner = FakeRunner()
+        with self.assertRaises(SystemExit) as stop, contextlib.redirect_stderr(io.StringIO()) as said:
+            self.main(["deploy", "--all", "snake"], runner)
+        self.assertEqual(2, stop.exception.code)
+        self.assertIn("deploy takes NAME... or --all", said.getvalue())
+        self.assertEqual([], runner.commands)
+
+    def test_log_resets_the_board_first_then_reads_its_console(self):
+        runner, events = FakeRunner(), []
+
+        def open_port():
+            events.append(list(runner.commands))
+            return Port([b"lineup 3: bucket rescue snake\r\n"] if len(events) == 1 else [])
+        code, said = self.main(["log", "--seconds", "0.3"], runner, open_port)
+        self.assertEqual(0, code)
+        self.assertEqual([["reset"]], events[0])  # the reset ran before the port opened
+        self.assertEqual("lineup 3: bucket rescue snake\n", said)
+
+    def test_a_failed_mpremote_prints_its_error_and_exits_1(self):
+        code, said = self.main(["deploy", "snake"], FailingRunner(99))
+        self.assertEqual((1, "mpremote ls : failed: could not enter raw repl\n"), (code, said))
+
+    def test_no_mpremote_exits_1(self):
+        with mock.patch.object(box.subprocess, "run", side_effect=FileNotFoundError("mpremote")), \
+                contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual(1, box.main(["list", "--board"]))
+        self.assertIn("no mpremote: mpremote", said.getvalue())
+
+    def test_list_board_reads_the_board_s_lineup(self):
+        runner = FakeRunner(FULL)
+        runner.run = lambda args, run=runner.run: run(args) or ("LINEUP = ('cave',)\n" if args[0] == "cat" else "")
+        code, said = self.main(["list", "--board"], runner)
+        self.assertEqual(0, code)
+        self.assertEqual([["ls", ":"], ["cat", ":lineup.py"]], runner.commands)
+        self.assertEqual("board: LINEUP = ('cave',)", said.splitlines()[-1])
+
+
+class SerialPortTest(unittest.TestCase):
+    def test_it_opens_the_port_mpremote_s_auto_picks(self):
+        from serial.tools.list_ports_common import ListPortInfo
+
+        def port(device, vid=None, pid=None):
+            info = ListPortInfo(device, skip_link_detection=True)
+            info.vid, info.pid = vid, pid
+            return info
+        ports = [port("/dev/cu.usbmodem2101", 0x303A, 0x1001), port("/dev/cu.Bluetooth"),
+                 port("/dev/cu.usbmodem1101", 0x303A, 0x1001), port("/dev/cu.debug", 0x303A)]
+        with mock.patch("serial.tools.list_ports.comports", return_value=ports), mock.patch("serial.Serial") as opened:
+            box.serial_port()()
+            box.serial_port("/dev/cu.other")()
+        self.assertEqual([mock.call("/dev/cu.usbmodem1101", 115200, timeout=0.2),
+                          mock.call("/dev/cu.other", 115200, timeout=0.2)], opened.call_args_list)
+
+    def test_no_usb_port_is_an_os_error(self):
+        with mock.patch("serial.tools.list_ports.comports", return_value=[]):
+            with self.assertRaisesRegex(OSError, "no board on USB"):
+                box.serial_port()()
 
 
 class Port:

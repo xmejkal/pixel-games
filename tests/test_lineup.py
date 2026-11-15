@@ -12,6 +12,7 @@ import sys
 import tempfile
 import time
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 GAMES = os.path.join(os.path.dirname(HERE), "games")
@@ -104,6 +105,43 @@ class LineupTest(unittest.TestCase):
             box.start()
         self.assertEqual("cave", box.game.name)
         self.assertEqual(2, len(box.games))
+
+
+class Out:
+    def clear(self):
+        pass
+
+    def reset(self):
+        pass
+
+
+class MissingModuleTest(unittest.TestCase):
+    """A lineup name whose module the board lacks (a copy by hand left it out) is refused, and the box goes on."""
+
+    GHOST = {"ghost": ("ghost", "no_such_module_p817", "Ghost", ())}
+
+    def test_the_box_refuses_it_aloud_and_builds_the_next_game(self):
+        with mock.patch.dict(catalog.ROWS, self.GHOST), contextlib.redirect_stdout(io.StringIO()) as said:
+            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup(("ghost", "cave")), out=Out())
+            box.start()
+            self.assertEqual(("cave", 1), (box.game.name, box.index))
+            box.switch()
+            self.assertEqual(("cave", 1), (box.game.name, box.index))
+        self.assertEqual(2, said.getvalue().count("game ghost refused: No module named 'no_such_module_p817'\n"))
+
+    def test_when_every_game_fails_the_error_is_raised_once(self):
+        with mock.patch.dict(catalog.ROWS, self.GHOST), contextlib.redirect_stdout(io.StringIO()) as said:
+            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup(("ghost",)), out=Out())
+            with self.assertRaises(ImportError):
+                box.start()
+        self.assertEqual(1, said.getvalue().count("game ghost refused"))
+
+
+class SayLineupTest(unittest.TestCase):
+    def test_the_lineup_and_import_lines(self):
+        with contextlib.redirect_stdout(io.StringIO()) as said:
+            app.say_lineup(app.Lineup(("cave", "road")))
+        self.assertEqual("lineup 2: cave road\nimport %d ms\n" % app.IMPORT_MS, said.getvalue())
 
 
 class ReadLineupTest(unittest.TestCase):
