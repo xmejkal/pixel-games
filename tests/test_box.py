@@ -40,9 +40,10 @@ class DeployTest(unittest.TestCase):
         box.Deploy(runner).run(["runner", "snake", "flappy", "marshmallow"])
         self.assertEqual([["ls", ":"], ["mkdir", ":packs"], COPY,
                           ["cp", "games/packs/runner.pak", ":packs/runner.pak"],
-                          ["cp", "games/packs/flappy.pak", ":packs/flappy.pak"]], runner.commands[:5])
-        self.assertEqual(":lineup.py", runner.commands[5][-1])
-        self.assertEqual([["reset"]], runner.commands[6:])
+                          ["cp", "games/packs/snake.pak", ":packs/snake.pak"],
+                          ["cp", "games/packs/flappy.pak", ":packs/flappy.pak"]], runner.commands[:6])
+        self.assertEqual(":lineup.py", runner.commands[6][-1])
+        self.assertEqual([["reset"]], runner.commands[7:])
         self.assertEqual("LINEUP = ('runner', 'snake', 'flappy', 'marshmallow')  # tools/box.py deploy (P817)\n",
                          runner.lineup)
 
@@ -58,7 +59,7 @@ class DeployTest(unittest.TestCase):
         runner = FakeRunner(FULL)
         box.Deploy(runner).run(None)
         packs = [["cp", "games/packs/%s.pak" % s, ":packs/%s.pak" % s]
-                 for s in ("runner", "meteors", "bucket", "rescue", "flappy", "stack")]
+                 for s in ("runner", "meteors", "bucket", "rescue", "flappy", "snake", "stack", "gravpong")]
         self.assertEqual([["ls", ":"], COPY] + packs + [["rm", ":lineup.py"], ["reset"]], runner.commands)
 
     def test_all_on_a_board_with_no_lineup_removes_nothing(self):
@@ -87,8 +88,9 @@ class DeployTest(unittest.TestCase):
         run.assert_not_called()
         lines = said.getvalue().splitlines()
         self.assertEqual(["mpremote ls :", "mpremote mkdir :packs", "mpremote " + " ".join(COPY)], lines[:3])
-        self.assertRegex(lines[3], r"^mpremote cp \S+lineup\.py :lineup\.py$")
-        self.assertEqual(["mpremote reset"], lines[4:])
+        self.assertEqual("mpremote cp games/packs/snake.pak :packs/snake.pak", lines[3])
+        self.assertRegex(lines[4], r"^mpremote cp \S+lineup\.py :lineup\.py$")
+        self.assertEqual(["mpremote reset"], lines[5:])
 
     def test_the_runner_runs_mpremote_from_the_repository_root(self):
         with mock.patch.object(box.subprocess, "run") as run:

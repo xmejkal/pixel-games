@@ -8,13 +8,13 @@ from PIL import Image, ImageChops, ImageDraw
 
 from artset import ArtSet, Painting
 from brush import ACCENT, H, W, Sprite, Strip, autocontrast, blur, glaze, jitter, lay, rnd, scale
+from city import sky_at
 from letters import text_width, write
 
 
 STACK_FLOOR, BLOCK_H = 234, 14
 INK, BONE = (24, 20, 30), (236, 230, 214)  # the noir pair: the pencil and the paper in the sun
 SHADOW = (96, 86, 116)  # grey-violet, every shadow at noon
-NOON = ((128, 120, 150), (196, 192, 208), (238, 234, 226))  # the sky from the top, to the middle, to the haze
 CONCRETE = ((178, 174, 170), (164, 166, 174), (186, 180, 172), (156, 154, 164), (172, 170, 178), (190, 186, 180),
             (160, 156, 154), (170, 172, 168))  # eight greys a little warm or cool, one per floor in turn
 LIT, DARK = (250, 232, 188), INK  # a window of the show flat, and one where nobody lives
@@ -29,9 +29,7 @@ PLATE_W, PLATE_H = 40, 17
 
 
 def noon_at(y):
-    t = max(0.0, min(1.0, y / STACK_FLOOR))
-    a, b, t = (NOON[0], NOON[1], t / 0.5) if t < 0.5 else (NOON[1], NOON[2], (t - 0.5) / 0.5)
-    return tuple(int(p + (q - p) * t) for p, q in zip(a, b))
+    return sky_at(12, y / STACK_FLOOR)
 
 
 def calm(s, lo=0.35):

@@ -11,14 +11,14 @@ CATALOG = (
     ("rescue", "rescue", "Rescue", ("rescue",)),
     ("flappy", "arcade", "Flappy", ("flappy",)),
     ("runner", "arcade", "Runner", ("runner",)),
-    ("snake", "arcade", "Snake", ()),
+    ("snake", "arcade", "Snake", ("snake",)),
     ("stack", "arcade2", "Stack", ("stack",)),
     ("cave", "arcade2", "Cave", ()),
     ("tunnel", "world3d", "Tunnel", ()),
     ("road", "world3d", "Road", ()),
     ("starfire", "space3d", "Starfire", ()),
     ("cube", "space3d", "CubeTiming", ()),
-    ("gravpong", "arcade2", "GravityPong", ()),
+    ("gravpong", "arcade2", "GravityPong", ("gravpong",)),
 )
 NAMES = tuple(row[0] for row in CATALOG)
 

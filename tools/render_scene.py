@@ -85,6 +85,10 @@ class Subject:
                                                                     self.seed)
 
 
+# FEED's row (P573): a bot that turns at most once a step toward the dot, 16 meals, then three turns into itself
+SNAKE_PRESSES = (
+    0, 21, 57, 61, 64, 107, 111, 119, 149, 164, 168, 187, 227, 277, 281, 291, 302, 332, 339, 372, 395, 420, 426,
+    464, 488, 517, 531, 559, 592, 619, 643, 666, 683, 686, 690)
 SUBJECTS = {  # the fire, the rain, games/catalog.py's games in their order, the overlay; the presses and counts set by eye (P795)
     "fire": Subject(fire.Fire, "tap: next mode", 30, 84, seed=fire.SEED),
     "rain": Subject(rain.Rain, "tap: again", 10, 110),
@@ -96,14 +100,15 @@ SUBJECTS = {  # the fire, the rain, games/catalog.py's games in their order, the
     "rescue": Subject(Rescue, Rescue.hint, 60, 214, every=3, presses=((0, 1), (145, 32)), shot=112),
     "flappy": Subject(Flappy, Flappy.hint, 5, 70, every=3, tap=12, shot=60),
     "runner": Subject(Runner, Runner.hint, 10, 75, every=3, hold=40),
-    "snake": Subject(Snake, Snake.hint, 5, 80, tap=20, shot=45),
+    "snake": Subject(Snake, Snake.hint, 630, 740, every=3, seed=35, presses=tuple((k, 1) for k in SNAKE_PRESSES), shot=683),
     "stack": Subject(Stack, Stack.hint, 5, 72, tap=25),
     "cave": Subject(Cave, Cave.hint, 3, 28, every=1, hold=1, shot=25),
     "tunnel": Subject(Tunnel, Tunnel.hint, 5, 62, tap=25, shot=60),
     "road": Subject(Road, Road.hint, 5, 105),
     "starfire": Subject(Starfire, Starfire.hint, 5, 105, hold=3),
     "cubetiming": Subject(CubeTiming, CubeTiming.hint, 5, 99, tap=25),
-    "gravitypong": Subject(GravityPong, GravityPong.hint, 5, 99, tap=16),
+    "gravitypong": Subject(GravityPong, GravityPong.hint, 240, 432, presses=tuple((k, 1) for k in (
+        0, 8, 14, 36, 42, 48, 52, 90, 94, 132, 170, 208, 210, 246, 250, 286, 308, 312)), shot=372),
     "overlay": Subject(balls.BallPit, "turn the knob", 5, 80, every=3, tap=10, show=0),
 }
 

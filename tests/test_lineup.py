@@ -81,9 +81,9 @@ class GamesForTest(unittest.TestCase):
 
 class LineupTest(unittest.TestCase):
     def test_a_lineup_of_names_builds_each_game_only_when_asked(self):
-        lineup = app.Lineup(("cave", "snake"))
-        self.assertEqual((2, ("cave", "snake")), (len(lineup), lineup.names))
-        self.assertEqual("snake", lineup.game(1).name)
+        lineup = app.Lineup(("cave", "road"))
+        self.assertEqual((2, ("cave", "road")), (len(lineup), lineup.names))
+        self.assertEqual("road", lineup.game(1).name)
 
     def test_a_lineup_of_classes_builds_them(self):
         class Game:
