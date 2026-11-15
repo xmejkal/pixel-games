@@ -95,15 +95,23 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
 2. Build the firmware with the driver and the engine: `./build.sh engine`.
 3. Put the board in download mode: `mpremote bootloader`.
 4. Write the image: `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
-5. Copy the games and their art: `mpremote cp games/*.py :` and `mpremote cp -r games/packs :`. Copy both each time.
+5. Copy the games and their art with `python3 tools/box.py deploy --all`, or only some games with
+   `python3 tools/box.py deploy NAME...` (P817): the box then plays only these, in this order, and the board holds only
+   their art. The names are `games/catalog.py`'s, and `python3 tools/box.py list` shows each with its art's bytes. The
+   deploy copies `games/*.py`, `games/box_bank.raw` (the sound) and the packs, writes `:lineup.py` (`--all` removes
+   it) and hard-resets the board, so step 6 is done; `--dry-run` prints the commands. By hand: `mpremote cp games/*.py
+   games/box_bank.raw :`, `mpremote cp -r games/packs :` and, when the board has one, `mpremote rm :lineup.py`, or
+   the box keeps the old lineup. To pick a lineup, Claude runs `box.py list`, then `box.py deploy NAME...`, then
+   `box.py log --seconds 20`, which prints the console's `lineup`, `import` and `switch` lines after the boot.
    `games/art_index.py` names each pack's build, and the board refuses a pack from another build: it prints
    `art: <game> pack is not this build: ...` and the game draws its plain shapes. Each game's pictures are one file in
    `/packs` (P814).
 6. Hard-reset the board: `mpremote reset`, its reset button, or unplug it and plug it in again. A soft reset is not
    enough after art that makes a pack bigger, as the first copy of the packs does: each pack is 16 bytes bigger than
    the set it replaces (the runner's is 739,216 bytes), and a soft reset keeps the smaller picture pool. The pictures then go quietly into a 739 KB block of the heap, which slows every
-   garbage collection. `main.py` starts the games. The console shows `game <name>`, then
-   `switch <name> N ms, load N ms` at each switch: how long the switch took and the art's load in it.
+   garbage collection. `main.py` starts the games. The console shows `lineup <n>: <names>`, `import <ms> ms`
+   (how long `app.py`'s own imports took), then `game <name>`, then `switch <name> N ms, load N ms` at each switch:
+   how long the switch took and the art's load in it.
 7. An older board also holds the `/art` folder of picture files. Both folders fit: with `/art` the board had 4.98 MB
    of flash free, and `/packs` takes 2.9 MB. The games no longer read `/art`. Once they show their pictures, remove it
    with `mpremote rm -r :art` (mpremote 1.29.0 here, see `mpremote --version`; an mpremote whose `rm` has no `-r`
@@ -130,8 +138,8 @@ Runs now:
   On the board it keeps 24 fps with the sound and no late refill (bench.md, P773). The PO's hand, eye and ear on it
   are still open.
 - The fire (P595, `games/fire.py`), the scene under Marshmallow. Since P773 it is not in the box's list. The
-  probes and `tools/crackle.sh` still start it as `app.Fire`: a heat field in C (`engine.HeatField`) burns over the whole
-  screen. A BOOT tap moves through three modes: linear (C writes the screen's frame), picture (the fire over the painted
+  probes and `tools/crackle.sh` still start it (`probe733_games.py` with `GAME = "Fire"`): a heat field in C
+  (`engine.HeatField`) burns over the whole screen. A BOOT tap moves through three modes: linear (C writes the screen's frame), picture (the fire over the painted
   sky) and nearest. It needs the engine image. The flames rise from wandering hot spots, break into tongues, rise at two speeds, lean in gusts of wind and
   throw embers. On the board, B runs at 24 fps with 11.5 to 11.8 ms of step + draw, and the sky variant at 15 to
   16 fps (bench.md, P595). In the picture mode C blends the fire in C at an alpha that follows the heat, full from heat 96

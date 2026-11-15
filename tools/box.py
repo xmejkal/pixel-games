@@ -157,7 +157,7 @@ def serial_port(name=None):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description=__doc__.split("\n")[0], epilog=__doc__,
+    parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = parser.add_subparsers(dest="command", required=True)
     shown = sub.add_parser("list", help="the catalog's games and their art")

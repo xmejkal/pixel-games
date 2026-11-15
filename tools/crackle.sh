@@ -14,7 +14,7 @@
 #
 # The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None), KNOB (default 0),
 # SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). The game box's files go to the board in each run:
-# games/app.py, overlay.py, volume.py, encoder.py, pins.py, lcd.py, render.py and gfx.py. With a VOLUME,
+# games/app.py, catalog.py, overlay.py, volume.py, encoder.py, pins.py, lcd.py, render.py and gfx.py. With a VOLUME,
 # games/volume_viper.py goes too. With KNOB=1 the probe passes its knob to the game box (P764), and each change of the
 # step shows the volume on the screen for 1 s (P762). With KNOB=0 the box opens its own knob, and the sound does not
 # follow it. SPIN_EVERY_MS (default 0) is the overlay's run with no hand: the
