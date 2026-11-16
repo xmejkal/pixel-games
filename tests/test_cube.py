@@ -239,5 +239,29 @@ class LookTest(unittest.TestCase):
         self.assertEqual(gfx.c565(214, 40, 48), gfx.ACCENT)
 
 
+
+class Heard:
+    """signals.Signals as the game box gives it: the names emitted, in order."""
+
+    def __init__(self):
+        self.names = []
+
+    def emit(self, name, value=None):
+        self.names.append(name)
+
+
+class SoundTest(unittest.TestCase):
+    def test_a_smile_plays_the_pickup_a_flag_the_siren_and_the_last_flag_only_the_die(self):
+        self.assertEqual({"good": "pickup", "miss": "siren", "die": "die"},
+                         {k: c.sound for k, c in CubeTiming.cues.items()})
+        game = at_err(0.0)
+        game.signals = Heard()
+        game.play(True, True)  # on time
+        game.play(True, True)  # again in the same lap: a flag
+        game.lives = 1
+        game.play(True, True)  # the last life
+        self.assertEqual(["good", "miss", "die"], game.signals.names)
+
+
 if __name__ == "__main__":
     unittest.main()

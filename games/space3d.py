@@ -6,6 +6,7 @@ import random
 import time
 
 import pictures
+from cues import Cue
 from gfx import (ACCENT, BEST, CYAN, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Dice, Game,
                  Particles, c565, shade)
 
@@ -238,6 +239,7 @@ class CubeTiming(Game):
     accent = c565(230, 60, 220)
     INK, BONE = c565(18, 16, 26), c565(232, 224, 204)  # art/looks.py's NightInk, with gfx's ACCENT
     HUD_SCORE, HUD_BEST = BONE, BONE
+    cues = {"good": Cue("pickup"), "miss": Cue("siren"), "die": Cue("die")}
     F, D, TILT, MARK = 200, 5.0, 0.6, 7
     TC, TS = math.cos(0.6), math.sin(0.6)
     _yaw, _c, _s = None, 1.0, 0.0
@@ -306,6 +308,8 @@ class CubeTiming(Game):
         self.verdict.give(Verdict.FLAG, self.last)
         if self.lives <= 0:
             self.die(x, y, (ACCENT, self.BONE))
+        else:
+            self.emit("miss")
 
     def play(self, pressed, held):
         self.yaw += self.w * self.dt
@@ -329,7 +333,9 @@ class CubeTiming(Game):
                 self.smiled(x, y)
 
     def smiled(self, x, y):
-        """A good tap at the lens (x, y): COMPLIANT, the cables kicked by the speed-up, the flash's sparks."""
+        """A good tap at the lens (x, y): the sound, COMPLIANT, the cables kicked by the speed-up, the flash's
+        sparks."""
+        self.emit("good")
         self.verdict.give(Verdict.OK, self.last)
         self.sway.kick()
         dice = self.dice
