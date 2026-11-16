@@ -37,11 +37,10 @@ from motion import StepClock
 from plugins import Plugin
 
 try:
-    import engine
-except ImportError:  # the image with s3lcd only
+    import _engine as engine  # the firmware's C module (P848: _engine, so a package engine can load beside it)
+except ImportError:  # the image with s3lcd only, and the Mac
     engine = None
-# --- MVP (P602) --- the import above succeeds on the Mac too: it finds the repository's engine/ folder, an empty
-# package. Only the C engine has HeatField
+# Only the C engine has HeatField: an older firmware may lack it
 if not hasattr(engine, "HeatField"):
     engine = None
 

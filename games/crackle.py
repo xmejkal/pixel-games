@@ -5,14 +5,14 @@ the I2S. add_pops(n) queues n pops, and the next render starts them. counts() gi
 
 - Crackle is plain Python and the reference. It takes 21 ms for 16 ms of sound on the board (run145b), so on the board
   it only renders SampledCrackle's pops.
-- NativeCrackle runs the same integer math in C, engine/core/fx_crackle.c, loaded from crackle_c.mpy with no firmware
+- NativeCrackle runs the same integer math in C, engine/core/fx_crackle.c, loaded from _crackle.mpy with no firmware
   rebuild: 0.4 ms a block. A Mac test wants it equal to Crackle sample for sample, so a change to one is a change to
   both, by fx_crackle.h's rules: every value under 2^30, signed values shift only with >>, no / or %.
 - GrainCrackle (P751) is the fire of P750's demo g: a low flame roar (the bed, played in grains) and one bank pop per
-  ember, mixed in C by engine/core/fx_grains.c from the same crackle_c.mpy, out of a sample bank (fire_bank.raw, made
+  ember, mixed in C by engine/core/fx_grains.c from the same _crackle.mpy, out of a sample bank (fire_bank.raw, made
   on the Mac by tools/fire_bank.py). No filter, so nothing rings or overflows.
 - FireSound (P753) is GrainCrackle's pops plus whooshes: follow_bodies sets one whoosh of smooth noise per falling
-  burning body from its airspeed (BurningBodies), in integer C, engine/core/fx_noise.c, in the same crackle_c.mpy.
+  burning body from its airspeed (BurningBodies), in integer C, engine/core/fx_noise.c, in the same _crackle.mpy.
   Later, not MVP: a bed of noise that follow_field sets from HeatField.stats is off (BED = False), as the PO heard
   it as wind. So on Fire, FireSound plays the pops alone, with no grain bed either. On a firmware with no stats it is
   a GrainCrackle.
@@ -132,13 +132,13 @@ class Crackle:
 
 
 class NativeCrackle:
-    """The same crackle in C: crackle_c.mpy, built by engine/natmod/crackle. Its state is a bytearray, which the heap
-    aligns to 16 bytes, so the C reads its int32 fields aligned. ImportError when crackle_c.mpy is not on the board."""
+    """The same crackle in C: _crackle.mpy, built by engine/natmod/crackle. Its state is a bytearray, which the heap
+    aligns to 16 bytes, so the C reads its int32 fields aligned. ImportError when _crackle.mpy is not on the board."""
 
     pending = None
 
     def __init__(self, seed, look=CRACKLE_LOOK):
-        import crackle_c
+        import _crackle as crackle_c
         check_look(look)
         self.c = crackle_c
         self.state = bytearray(crackle_c.SIZE)
@@ -167,9 +167,9 @@ def ticks():
 
 
 class GrainCrackle:
-    """The grains in C: crackle_c.mpy's grains_ functions. The bank is read once into a bytearray (print: its load
-    time), and the state is a bytearray too, so the C keeps no pointer. native is the module, crackle_c on the board
-    and a Mac stand-in in tests (engine/tests/grains_lib.py). ImportError when crackle_c.mpy is not on the board.
+    """The grains in C: _crackle.mpy's grains_ functions. The bank is read once into a bytearray (print: its load
+    time), and the state is a bytearray too, so the C keeps no pointer. native is the module, _crackle on the board
+    and a Mac stand-in in tests (engine/tests/grains_lib.py). ImportError when _crackle.mpy is not on the board.
     render and counts are NativeCrackle's. --- MVP (P751) --- The bank lives in an engine.SoundBank, outside the GC
     heap, which a collection would otherwise walk for 7.6 ms; a firmware without one, and the Mac, get a bytearray.
     takes_rises tells FirePlugin that add_pops takes the births' rises."""
@@ -182,10 +182,10 @@ class GrainCrackle:
         from fire_bank import FIRE_BANK_INDEX
 
         if native is None:
-            import crackle_c as native
+            import _crackle as native
         if engine is None:
             try:
-                import engine
+                import _engine as engine
             except ImportError:
                 pass
         check_grain_look(look)
@@ -268,11 +268,11 @@ class FireSound(GrainCrackle):
 
     def __init__(self, seed, look=GRAIN_LOOK, bank_path=BANK_FILE, native=None, engine=None, stats=None, bed=BED):
         if native is None:
-            import crackle_c as native
+            import _crackle as native
         if stats is None:
             if engine is None:
                 try:
-                    import engine
+                    import _engine as engine
                 except ImportError:
                     pass
             stats = hasattr(getattr(engine, "HeatField", None), "stats")

@@ -34,7 +34,7 @@ class Bank:
     def __init__(self, path, index, engine=None):
         if engine is None:
             try:
-                import engine
+                import _engine as engine
             except ImportError:
                 pass
         nbytes = os.stat(path)[6]

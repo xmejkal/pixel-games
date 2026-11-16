@@ -57,7 +57,7 @@ def main():
     print("gc bank", 2 * len(bank), timed(gc.collect), timed(gc.collect), timed(gc.collect))
     del bank
     gc.collect()
-    import engine
+    import _engine as engine
 
     bank = engine.SoundBank(2 * BANK_SAMPLES)
     print("gc soundbank", 2 * BANK_SAMPLES, timed(gc.collect), timed(gc.collect), timed(gc.collect))

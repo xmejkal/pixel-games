@@ -207,8 +207,8 @@ class NoEngineTest(unittest.TestCase):
 
     # --- MVP (P602) ---
     def test_alone_the_mac_has_no_engine(self):
-        """On the Mac `import engine` finds the repository's engine/ folder, so fire.engine is None only by its check.
-        Run alone, no other test's tearDown sets it."""
+        """On the Mac `import _engine` raises ImportError (P848: the firmware's C module is _engine), so fire.engine
+        is None. Run alone, no other test's tearDown sets it."""
         root = os.path.dirname(HERE)
         run = subprocess.run([sys.executable, "-m", "unittest", "tests.test_fire.NoEngineTest.test_no_c_shows_and_"
                               "nothing_else_is_drawn"], cwd=root, capture_output=True, text=True)
