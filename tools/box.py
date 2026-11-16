@@ -11,14 +11,19 @@ list: each game of the catalog with its art sets and their bytes. --board also r
 running game until the board resets.
 deploy NAME...: the order of the names is the order the box plays them in. It refuses an unknown, a repeated or an
 empty lineup before any command, and an mpy-cross that does not emit mpy v6.3, the board's .mpy version (P821). Then it
-makes :packs when the board has none, compiles games/*.py but main.py with mpy-cross into .mpy files (they import in
+runs tools/firmware_probe.py on the board (P848) and refuses a firmware whose C module is still named engine (flash
+the image of ./build.sh engine first), one that lacks a name the games need of _engine (Bodies, HeatField, Balls,
+SoundBank, HeatField.cool) and an answer it does not know; a firmware with no C module deploys, as the stock image.
+Then it makes :packs when the board has none, compiles games/*.py but main.py with mpy-cross into .mpy files (they import in
 about half the time of a .py), copies them with games/main.py and games/box_bank.raw (the sound bank) to : and removes
-each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). It copies each pack the
+each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). It copies the crackle,
+engine/natmod/crackle/_crackle.mpy (tools/crackle.sh builds it), to :_crackle.mpy, or says that Fire plays without its
+crackle when it is not built; the board's crackle_c.mpy stays, for a flash of the rollback image. It copies each pack the
 lineup needs to :packs (mpremote skips a file whose sha256 is the same), writes :lineup.py and hard-resets the board
 (the picture pool is sized at boot). --py copies games/*.py instead and removes the board's .mpy files of those
-modules (crackle_c.mpy stays). deploy --all copies every game and pack and removes :lineup.py when the board has one.
+modules (_crackle.mpy and crackle_c.mpy stay). deploy --all copies every game and pack and removes :lineup.py when the board has one.
 --dry-run prints each command and runs none, mpy-cross included, as for a board with no :packs, no :lineup.py and no
-old .py or .mpy files. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
+old .py or .mpy files, and never refuses the firmware. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
 again (or with --py). mpy-cross: pip install mpy-cross==1.29.0.post2.
 log: resets the board itself (a hard reset, trying again while the board still reboots from a deploy), then prints
 its console for N seconds (20 by default), opening the port again while USB comes back: the `lineup`, `import`,
@@ -45,6 +50,10 @@ SECONDS = 20  # log's default
 MPY = "6.3"  # the board's sys.implementation._mpy: version 6, sub-version 3; mpy-cross must emit this (P821)
 MPY_CROSS_PIP = "pip install mpy-cross==1.29.0.post2"  # PyPI has no plain 1.29.0
 RESET_TRIES, RESET_PAUSE_S = 5, 2  # log's reset, while the board still reboots from a deploy's reset
+PROBE = "tools/firmware_probe.py"  # mpremote runs it on the board before a deploy (P848)
+FIRMWARE_NAMES = ("Bodies", "HeatField", "Balls", "SoundBank", "HeatField.cool")  # what the games need of _engine
+FLASH = "flash the image of ./build.sh engine first"
+CRACKLE = "engine/natmod/crackle/_crackle.mpy"  # the crackle's native module, as tools/crackle.sh builds it (P848)
 
 
 class Refused(Exception):
@@ -84,6 +93,22 @@ def board_names(listing):
     return {line.split()[-1] for line in listing.splitlines() if line.strip() and line.split()[0].isdigit()}
 
 
+def firmware_fault(answer):
+    """Why a deploy refuses the firmware that answered tools/firmware_probe.py, or None: the games can use its C, or
+    it has none (the stock image, the games play without the C). Stage 9 of the engine plan removes it (P848)."""
+    lines = [line.strip() for line in answer.strip().splitlines()]
+    if lines == ["_engine ImportError", "engine Bodies yes"]:
+        return "the board's C module is still named engine: " + FLASH
+    if lines in (["_engine ImportError", "engine ImportError"], ["_engine ImportError", "engine Bodies no"]):
+        return None
+    said = [line.split(" ") for line in lines]
+    if [row[:2] for row in said] == [["_engine", name] for name in FIRMWARE_NAMES] and \
+            all(len(row) == 3 and row[2] in ("yes", "no") for row in said):
+        lacks = [row[1] for row in said if row[2] == "no"]
+        return "the firmware lacks %s: %s" % (", ".join(lacks), FLASH) if lacks else None
+    return "unknown firmware answer: %r" % answer.strip()
+
+
 def sets_for(names):
     """The art sets the games of names load, each once, in the lineup's order."""
     return tuple(dict.fromkeys(s for name in names for s in catalog.ROWS[name][3]))
@@ -117,10 +142,12 @@ class Compiler:
 
 class Deploy:
     """Puts a lineup's games on the board through a runner: names, or None for every game and no lineup.py. With a
-    compiler the modules go as .mpy files and main.py as itself; with None (--py) every module goes as its .py."""
+    compiler the modules go as .mpy files and main.py as itself; with None (--py) every module goes as its .py.
+    crackle: the path of _crackle.mpy from the repository root (CRACKLE when None); say: where a note goes."""
 
-    def __init__(self, runner, compiler=None, games=GAMES):
+    def __init__(self, runner, compiler=None, games=GAMES, crackle=None, say=print):
         self.runner, self.compiler, self.games = runner, compiler, games  # games: the folder, named as games/<file>
+        self.crackle, self.say = CRACKLE if crackle is None else crackle, say
 
     def run(self, names):
         if names is not None:
@@ -130,10 +157,12 @@ class Deploy:
                 raise Refused(why)
         if self.compiler:
             self.compiler.check()  # before any board command
+        self.check_firmware()
         on_board = board_names(self.runner.run(["ls", ":"]))
         if "packs/" not in on_board:
             self.runner.run(["mkdir", ":packs"])
         self.copy_code(on_board)
+        self.copy_crackle()
         for s in sets_for(catalog.NAMES if names is None else names):
             path = art_index.PACKS[s][0]
             self.runner.run(["cp", "games/" + path, ":" + path])
@@ -165,6 +194,23 @@ class Deploy:
                     e.stderr = "%s; deploy again: until then the board runs the old .py of some modules" % (
                         (e.stderr or "").strip())
                 raise
+
+    def check_firmware(self):
+        """Refuses the board's firmware by firmware_fault, before any other board command. A dry run never refuses."""
+        answer = self.runner.run(["run", PROBE])
+        if getattr(self.runner, "dry_run", False):
+            return
+        fault = firmware_fault(answer)
+        if fault:
+            raise Refused(fault)
+
+    def copy_crackle(self):
+        """_crackle.mpy to :_crackle.mpy when it is built; the board's crackle_c.mpy stays until stage 9, so a flash of
+        the rollback image keeps its crackle."""
+        if os.path.isfile(os.path.join(ROOT, self.crackle)):
+            self.runner.run(["cp", self.crackle, ":_crackle.mpy"])
+        else:
+            self.say("no _crackle.mpy: Fire plays without its crackle")
 
     def write_lineup(self, names):
         with tempfile.TemporaryDirectory() as tmp:

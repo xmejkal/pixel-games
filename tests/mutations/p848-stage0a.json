@@ -1,0 +1,38 @@
+[
+ {
+  "file": "tools/box.py",
+  "name": "the old firmware passes",
+  "find": "        return \"the board's C module is still named engine: \" + FLASH\n",
+  "replace": "        return None\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a missing name passes",
+  "find": "return \"the firmware lacks %s: %s\" % (\", \".join(lacks), FLASH) if lacks else None",
+  "replace": "return None"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "an unknown answer passes",
+  "find": "    return \"unknown firmware answer: %r\" % answer.strip()\n",
+  "replace": "    return None\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the dry run refuses",
+  "find": "        if getattr(self.runner, \"dry_run\", False):\n            return\n",
+  "replace": "        if False:\n            return\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the firmware is not checked",
+  "find": "        self.check_firmware()\n",
+  "replace": ""
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the built crackle is not copied",
+  "find": "            self.runner.run([\"cp\", self.crackle, \":_crackle.mpy\"])\n",
+  "replace": "            pass\n"
+ }
+]

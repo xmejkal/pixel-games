@@ -8,7 +8,7 @@ stock machine.I2S, and heard by a microphone.
     mpremote run probe733_games.py      # after sed set GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE, VOLUME, LEVEL,
                                         # KNOB, SAVE and SECONDS
 
-tools/crackle.sh runs it with a crackle (P747): it builds crackle_c.mpy and copies it and games/crackle.py first.
+tools/crackle.sh runs it with a crackle (P747): it builds _crackle.mpy and copies it and games/crackle.py first.
 
 It changes no file in games/. It replaces App.frame with a hook that runs after each frame: the per-frame refill, the
 microphone's read, the 5 s report, a switch to a new copy of the game every 30 s (the heavy frame of D19, none with
