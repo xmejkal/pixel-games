@@ -1661,3 +1661,20 @@ than the control.
 - Not measured yet: runner, snake, stack, cave, tunnel, road, starfire, cube, gravpong. No early stage (N to 0b-2)
   changes them; their baseline is taken before the first stage that touches them.
 - An idle game sits on its game-over screen, so each later stage compares a game in the same state as here.
+
+## P856 (#1221), 2026-11-16: the game-over box kept with cv.keep
+
+- The board: a lineup of flappy alone (`box.py deploy flappy`), so the box boots into flappy and, left alone, sits on
+  its game-over screen. Before: master 484a7af (`logs/run-p856-over-before.log`). After: branch p856-over-keep
+  (`logs/run-p856-over-after.log`). Six 5 s lines each, on the game-over screen.
+
+| | fps | over phase, average ms | paint, ms | worst gap, ms |
+|---|---|---|---|---|
+| before | 18 | 19.7 to 20.2 | 41.7 to 42.1 | 79 |
+| after | 21 to 22 | 6.4 to 6.7 | 28.8 to 29.2 | 71 to 72 |
+
+- The kept box is a 200 x 100 strip (40 KB), copied every frame; the remaining 6.5 ms is that copy and the blinking
+  retry. The net's hashes are unchanged (the pixels are the same).
+- Open: the baseline with all 15 games (P846 above) had flappy at 13 to 16 fps on the same screen, gc 7.4 to 7.5 ms on
+  its idle lines, against 5.5 ms before and 6.4 ms after here with flappy alone (the kept strip adds about 0.9 ms of gc
+  and about 39 KB of heap). More loaded games make the frame slower; not explained yet.
