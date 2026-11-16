@@ -5,7 +5,8 @@ art/paint.py makes them on the Mac, already in the panel's layout and byte order
 loads only its own art set (art_index.PICTURE_SETS) when the box switches to it, so the box starts its first game
 without reading every set first: 2.9 MB took 15 to 20 s on the board (P773). A set is one pack file (P814): one open,
 where a folder of 681 picture files cost up to 88 ms an open and 22 s for Rescue's set, then reads of CHUNK_SIZE
-bytes, each short enough that the sound's callback runs between two of them and the music stays fed. A game asks
+bytes, each short enough that the sound's callback runs between two of them and the music stays fed. load_steps reads
+it as a generator, a chunk a step, so the box draws its card between steps (P822); load runs it to its end. A game asks
 draw() for a picture and draw_layer() for a window of a scrolling strip; both answer False when there is no art (on the
 Mac, with the st7789 backend, or at ORIENTATION 180), and the game then draws its old shapes.
 """

@@ -11,6 +11,10 @@ The BOOT button plays. The board's own button (D14) picks the next game of the l
 game goes, a NameCard shows the picked name, and nothing is imported or loaded yet. The pick settles when no press came
 for SETTLE_MS, or at a BOOT press (which then does not reach the game): only then is the game built. So pressing
 through four games to the fifth loads only the fifth. The music plays on over a pick.
+The build after a settle runs behind the card (P822): the settle's frame draws "loading", the next imports the game's
+module (it cannot be split), and each later frame reads BUILD_CHUNKS chunks of its art set (Lineup.game_steps,
+pictures.load_steps) while the card shows a bar, until the game plays. A D14 press during it stops it and picks the
+next game; a BOOT press goes nowhere. start() and switch() still build at once.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
 The step is not saved. App(knob=None) has no volume pane.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
@@ -18,8 +22,11 @@ main.py opens the Speaker. run() with no speaker is the silent box.
 
 run() prints `lineup <n>: <names>` and `import <ms> ms` (how long this module's own imports took), then `ready` once
 the display is set up, then `pick <name>` at each D14 press, and `game <name>` with
-`switch <name> <ms> ms, load <ms> ms, import <ms> ms` at the start and when a pick settles: how long the build took,
-the art's load in it (P814) and the import of the game's module in it (P818). Its loop
+`switch <name> <ms> ms, load <ms> ms, import <ms> ms` at the start: how long the build took, the time the art's reads
+took in it (P814) and the import of the game's module in it (P818). A build behind the card adds
+`, frames <n>, worst <ms> ms, longest <ms> ms` (P822): its ms run from the settle to the game, frames are the card's
+frames during the build, worst the longest gap between two frame starts, and longest the build's longest share of
+one frame (the import or the setup shows there). Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
 Each frame the game paints into a list of recorded draw calls (gfx.Canvas); render.Dirty finds the rectangles that
 changed since the last frame, and only those are drawn into one 51,200-byte RGB565 buffer and blitted. Nothing at module level touches hardware.
