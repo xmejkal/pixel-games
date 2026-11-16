@@ -208,10 +208,10 @@ class App:
             try:
                 return self.games.game(self.index)
             except Exception as e:
-                print("game %s refused: %r" % (self.games.names[self.index], e))
                 error = e
                 pictures.free()  # a half-loaded set goes
-                gc.collect()  # and the half-built game: run() turned the collector off
+                gc.collect()  # and the half-built game (run() may have turned the collector off), before the line
+                print("game %s refused: %r" % (self.games.names[self.index], e))  # is built on a heap with room
                 self.index = (self.index + 1) % len(self.games)
         raise error
 

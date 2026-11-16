@@ -159,22 +159,36 @@ class BrokenSetupTest(unittest.TestCase):
         Broken, calls = self.broken(MemoryError("memory allocation failed, allocating 739216 bytes"))
         free = pictures.free
         with mock.patch.object(pictures, "free", side_effect=lambda: (calls.append("free"), free())), \
+                mock.patch.object(app.gc, "collect", side_effect=lambda: calls.append("collect")), \
                 contextlib.redirect_stdout(io.StringIO()) as said:
             box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup.of((Broken, app.games_for(("cave",))[0])),
                           out=Out())
             box.start()
         self.assertEqual(("cave", 1), (box.game.name, box.index))
-        self.assertEqual(["free", "setup", "free"], calls[:3])  # build()'s leave(), the failed setup, its own free
+        self.assertEqual(["free", "collect", "setup", "free", "collect"], calls[:5])  # build()'s leave() and collect,
+        # the failed setup, then its own free and collect before the refusal line
         self.assertEqual(1, said.getvalue().count("game broken refused: MemoryError('memory allocation failed, "
                                                   "allocating 739216 bytes')\n"))
 
-    def test_when_every_game_fails_the_last_error_is_raised(self):
-        Broken, _ = self.broken(MemoryError())
+    def test_an_mpy_of_another_build_is_refused_too(self):
+        Broken, _ = self.broken(ValueError("incompatible .mpy file"))
         with contextlib.redirect_stdout(io.StringIO()) as said:
-            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup.of((Broken,)), out=Out())
-            with self.assertRaises(MemoryError):
+            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup.of((Broken, app.games_for(("cave",))[0])),
+                          out=Out())
+            box.start()
+        self.assertEqual("cave", box.game.name)
+        self.assertIn("game broken refused: ValueError('incompatible .mpy file')", said.getvalue())
+
+    def test_when_every_game_fails_the_last_error_is_raised(self):
+        First, _ = self.broken(MemoryError())
+        Last, _ = self.broken(ValueError("last"))
+        Last.name = "last"
+        with contextlib.redirect_stdout(io.StringIO()) as said:
+            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup.of((First, Last)), out=Out())
+            with self.assertRaises(ValueError):
                 box.start()
         self.assertEqual(1, said.getvalue().count("game broken refused: MemoryError()"))
+        self.assertEqual(1, said.getvalue().count("game last refused: ValueError('last')"))
 
 
 class SayLineupTest(unittest.TestCase):
