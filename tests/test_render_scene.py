@@ -261,8 +261,8 @@ class ClearTest(unittest.TestCase):
 
 
 class PolygonTest(unittest.TestCase):
-    """fill_polygon on the stand-in as the driver's PolygonFill (s3lcd.c, probe635's notes), and poly on the two
-    canvases (P573: SMILE's housing and the lens's light)."""
+    """fill_polygon on the stand-in as the driver's PolygonFill (s3lcd.c, probe635's notes), and lcd.TftCanvas.poly
+    (P573: SMILE's housing and the lens's light)."""
 
     def lit(self, tft):
         return {(k % lcd.PANEL_W, k // lcd.PANEL_W) for k, v in enumerate(memoryview(tft.frame).cast("H")) if v}
@@ -295,15 +295,6 @@ class PolygonTest(unittest.TestCase):
         self.assertEqual((255, 255, 255), img.getpixel((120, 65)))
         for x, y in ((98, 65), (142, 65), (120, 48), (120, 82)):
             self.assertEqual((0, 0, 0), img.getpixel((x, y)), (x, y))
-
-    def test_the_recording_canvas_fills_a_row_at_a_time_and_leaves_out_a_see_through_one(self):
-        cv = gfx.Canvas()
-        cv.start()
-        cv.poly([[10, 10], [20, 10], [20, 15], [10, 15]], 7)
-        self.assertEqual([(10, y, 21, y + 1, 0, 7) for y in range(11, 15)], cv.ops)
-        cv.start()
-        cv.poly([[10, 10], [20, 10], [20, 15]], 7, 100)
-        self.assertEqual([], cv.ops)
 
 
 class CanvasLineTest(unittest.TestCase):

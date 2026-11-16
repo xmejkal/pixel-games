@@ -138,7 +138,9 @@ class TftCanvas(Canvas):
         """A filled polygon, points a list of [x, y] in game px, by the driver's fill_polygon: rows of hlines, each
         blended when alpha is under 255, its tiles marked (P573). The panel's points go into a list made once for
         each count of points, so a frame makes no list. The driver fills the rows strictly between the topmost and
-        the bottommost point (a game column at each end is left out) and allocates its own points."""
+        the bottommost point (a game column at each end is left out) and allocates its own points. Only a painted
+        look draws polygons (SMILE's housing and its lens's light), and pictures need ORIENTATION 0, so the map is
+        line's at 0 only."""
         n = len(points)
         out = self.polys.get(n)
         if out is None:
@@ -146,12 +148,8 @@ class TftCanvas(Canvas):
         for i in range(n):
             x, y = points[i]
             q = out[i]
-            if self.turned:  # line's map, for each point
-                q[0] = PANEL_W - 1 - int(y)
-                q[1] = int(x)
-            else:
-                q[0] = int(y)
-                q[1] = PANEL_H - 1 - int(x)
+            q[0] = int(y)
+            q[1] = PANEL_H - 1 - int(x)
         self.tft.fill_polygon(out, 0, 0, c, alpha)
 
     def line(self, x0, y0, x1, y1, c):
