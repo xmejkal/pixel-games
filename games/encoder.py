@@ -14,8 +14,8 @@ Two limits, both from the bench and the board record (bench.md, P758):
   (P757), calls take_detents(), which has a dead band.
 - ENC_A and ENC_B are the board's RX and TX pads (P757), which the image gives to its serial console at each
   reset. take_pads() makes them plain inputs, and from then on the console's input no longer follows the RX pad
-  (run174). So a program that has an encoder on these pads calls take_pads() at its start: app.run and on_board do.
-  Until that call, a turn of the knob can type into the console. bench.md, P757, has why SDA and SCL did not work.
+  (run174). So a program that has an encoder on these pads calls take_pads() at its start: main.py's boot (P850),
+  app.run and on_board do. Until that call, a turn of the knob can type into the console. bench.md, P757, has why SDA and SCL did not work.
 """
 
 import time

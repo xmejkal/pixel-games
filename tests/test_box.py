@@ -1,7 +1,8 @@
 """tools/box.py (P817) with a fake runner, so no board: the exact mpremote commands of a deploy with and without
 :packs and :lineup.py on the board, --all, --dry-run, each refusal with no command run, list, and the console's read
 across a reset. The firmware check (P848) reads the answers tools/firmware_probe.py prints, run here on the Mac with
-stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. Run from the repository root:
+stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. deploy --engine (P850) writes or
+removes :engine_config.py. Run from the repository root:
 python3 -B -m unittest tests.test_box. --- MVP (P817) ---"""
 
 import contextlib
@@ -83,10 +84,10 @@ def setUpModule():
     unittest.addModuleCleanup(patch.stop)
 
 
-def deploy(runner, compiler=None, crackle=NOT_BUILT, said=None, pauses=None):
+def deploy(runner, compiler=None, crackle=NOT_BUILT, said=None, pauses=None, reference=None):
     """A Deploy that tells said (a list), or no one, what it says, and keeps its pauses in pauses."""
     return box.Deploy(runner, compiler, crackle=crackle, say=(said if said is not None else []).append,
-                      sleep=(pauses if pauses is not None else []).append)
+                      sleep=(pauses if pauses is not None else []).append, reference=reference)
 
 
 class FakeRunner:
@@ -97,13 +98,16 @@ class FakeRunner:
 
     def __init__(self, listing=EMPTY, firmware=NEW, folders=None):
         self.listing, self.firmware, self.commands, self.lineup = listing, firmware, [], None
-        self.folders = folders or {}
+        self.folders, self.config = folders or {}, None
 
     def run(self, args):
         self.commands.append(args)
         if args[-1] == ":lineup.py" and args[0] == "cp":
             with open(args[1]) as f:
                 self.lineup = f.read()
+        if args[-1] == ":engine_config.py" and args[0] == "cp":
+            with open(args[1]) as f:
+                self.config = f.read()
         if args[0] == "ls" and args != ["ls", ":"]:
             return self.folders.get(args[1][1:], "")
         return self.listing if args == ["ls", ":"] else self.firmware if args == PROBE else ""
@@ -403,8 +407,70 @@ class PackageTest(unittest.TestCase):
         at = lines.index("mpremote mkdir :engine")
         self.assertRegex(lines[at - 1], r"^mpy-cross -march=xtensawin -s engine/signals\.py -o \S+signals\.mpy "
                                         r"games/engine/signals\.py$")
-        self.assertRegex(lines[at + 1], r"^mpremote cp \S+__init__\.mpy \S+clock\.mpy \S+signals\.mpy :engine/$")
+        self.assertRegex(lines[at + 1], r"^mpremote cp \S+__init__\.mpy \S+accel\.mpy \S+clock\.mpy \S+signals\.mpy "
+                                        r":engine/$")
         self.assertNotIn("mpremote ls :engine", lines)
+
+
+WITH_CONFIG = "ls :\n         139 boot.py\n           0 packs/\n          40 engine_config.py\n"
+
+
+class EngineTest(unittest.TestCase):
+    """deploy --engine (P850, stage 0b-2): `reference` forces every part's reference version, `reference=PART,...`
+    the named parts, in :engine_config.py, which main.py reads at boot. A deploy without --engine removes the file,
+    so a forced setting lasts one deploy."""
+
+    def deploy(self, reference, listing=EMPTY):
+        runner = FakeRunner(listing)
+        deploy(runner, reference=reference).run(["snake"])
+        return runner
+
+    def test_engine_reference_writes_all(self):
+        runner = self.deploy(box.engine_reference("reference"))
+        self.assertEqual('REFERENCE = "all"  # tools/box.py deploy --engine\n', runner.config)
+        self.assertEqual(["reset"], runner.commands[-1])
+        self.assertEqual(":engine_config.py", runner.commands[-2][-1])
+
+    def test_engine_reference_names_writes_them(self):
+        for value, names in (("reference=volume", "('volume',)"), ("reference=sum,volume", "('sum', 'volume')")):
+            with self.subTest(value):
+                runner = self.deploy(box.engine_reference(value), WITH_CONFIG)
+                self.assertEqual("REFERENCE = %s  # tools/box.py deploy --engine\n" % names, runner.config)
+                self.assertNotIn(["rm", ":engine_config.py"], runner.commands)
+
+    def test_a_deploy_without_engine_removes_the_config(self):
+        runner = self.deploy(None, WITH_CONFIG)
+        self.assertEqual([["rm", ":engine_config.py"], ["reset"]], runner.commands[-2:])
+        self.assertIsNone(runner.config)
+
+    def test_a_deploy_without_engine_on_a_board_without_the_config_removes_nothing(self):
+        runner = self.deploy(None)
+        self.assertNotIn(":engine_config.py", [n for c in runner.commands for n in c])
+
+    def test_the_engine_value_is_read(self):
+        self.assertEqual("all", box.engine_reference("reference"))
+        self.assertEqual(("volume",), box.engine_reference("reference=volume"))
+        self.assertEqual(("sum", "volume"), box.engine_reference("reference=sum,volume"))
+
+    def test_a_malformed_engine_value_is_refused_before_any_board_command(self):
+        for value in ("fast", "reference=", "reference=,volume", "reference=sum,,volume", "reference=Volume",
+                      "reference=vol ume", "reference=volume;import os", "reference=volume,volume", "reference=all",
+                      "reference\n", "reference=sum\n"):
+            with self.subTest(value):
+                with mock.patch.object(box.subprocess, "run") as run, \
+                        contextlib.redirect_stdout(io.StringIO()) as said:
+                    self.assertEqual(1, box.main(["deploy", "--engine", value, "snake"]))
+                run.assert_not_called()
+                self.assertTrue(said.getvalue().startswith("refused: --engine takes reference or "
+                                                           "reference=PART[,PART...]"), said.getvalue())
+
+    def test_main_passes_the_engine_value_to_the_deploy(self):
+        with mock.patch.object(box.subprocess, "run") as run, contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual(0, box.main(["deploy", "--py", "--dry-run", "--engine", "reference=volume", "snake"]))
+        run.assert_not_called()
+        lines = said.getvalue().splitlines()
+        self.assertRegex(lines[-2], r"^mpremote cp \S+engine_config\.py :engine_config\.py$")
+        self.assertEqual("mpremote reset", lines[-1])
 
 
 class FirmwareTest(unittest.TestCase):
@@ -467,6 +533,29 @@ class FirmwareTest(unittest.TestCase):
         self.assertEqual([PROBE, PROBE, ["ls", ":"]], runner.commands[:3])
         self.assertEqual([box.RESET_PAUSE_S], pauses)
         self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_a_port_that_the_last_log_still_holds_is_tried_again(self):
+        """mpremote 1.29 exits 1 when it cannot open the port at all, as right after a `box.py log` (P850, the board
+        check): `failed to access` for the port, `no device found` for auto when every port is busy. The probe's retry
+        covers both, through box.main and the real Mpremote runner."""
+        for said in ("mpremote: failed to access /dev/cu.usbmodem1101 (it may be in use by another program)\n",
+                     "mpremote: no device found\n"):
+            with self.subTest(said):
+                calls = []
+
+                def run(args, **kw):
+                    calls.append(args)
+                    if args[:2] == ["mpremote", "run"] and len(calls) == 1:
+                        raise subprocess.CalledProcessError(1, args, stderr=said)
+                    return types.SimpleNamespace(stdout=NEW if args[:2] == ["mpremote", "run"] else
+                                                 "ls :\n" + EMPTY if args[1:] == ["ls", ":"] else "")
+
+                with mock.patch.object(box.subprocess, "run", run), mock.patch.object(box.time, "sleep") as sleep, \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(0, box.main(["deploy", "--py", "snake"]))
+                self.assertEqual([["mpremote"] + PROBE] * 2 + [["mpremote", "ls", ":"]], calls[:3])
+                sleep.assert_called_once_with(box.RESET_PAUSE_S)
+                self.assertEqual(["mpremote", "reset"], calls[-1])
 
     def test_a_board_that_never_answers_says_what_to_do(self):
         runner, pauses = FailingRunner(99), []

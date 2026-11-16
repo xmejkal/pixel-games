@@ -4,8 +4,8 @@ lineup is the ordered names of the games the box plays (games/catalog.py names t
 :lineup.py as LINEUP, and app.read_lineup plays every game when there is none. Every board command goes through one
 Mpremote runner. From the repository root:
     python3 tools/box.py list [--board]
-    python3 tools/box.py deploy NAME... [--py] [--dry-run]
-    python3 tools/box.py deploy --all [--py] [--dry-run]
+    python3 tools/box.py deploy NAME... [--py] [--dry-run] [--engine reference[=PART,...]]
+    python3 tools/box.py deploy --all [--py] [--dry-run] [--engine reference[=PART,...]]
     python3 tools/box.py log [--seconds N] [--port PORT]
 list: each game of the catalog with its art sets and their bytes. --board also reads :lineup.py, which stops the
 running game until the board resets.
@@ -25,14 +25,19 @@ the old module; any other file at the root stays, the board's boot.py among them
 engine/natmod/crackle/_crackle.mpy (tools/crackle.sh builds it), to :_crackle.mpy, or says none is copied when it is
 not built; the board's crackle_c.mpy stays, for a flash of the rollback image. It copies each pack the
 lineup needs to :packs (mpremote skips a file whose sha256 is the same), writes :lineup.py and hard-resets the board
-(the picture pool is sized at boot). --py copies games/*.py and games/engine/*.py instead and removes the board's .mpy
-files of those modules (_crackle.mpy and crackle_c.mpy stay). deploy --all copies every game and pack and removes :lineup.py when the board has one.
+(the picture pool is sized at boot). --engine (P850) forces the reference version of parts: `--engine reference` writes
+REFERENCE = "all" to :engine_config.py, `--engine reference=volume` (or reference=sum,volume) the named parts; main.py
+reads it at boot and its `engine` line says what it chose, such as `engine sum=viper volume=reference(forced)
+native=_engine,_crackle.mpy`, with a forced name no part used at its end as unused=<name>. A deploy without --engine
+removes :engine_config.py, so a forced setting lasts one deploy. A malformed value is refused before any command.
+--py copies games/*.py and games/engine/*.py instead and removes the board's .mpy files of those modules (_crackle.mpy
+and crackle_c.mpy stay). deploy --all copies every game and pack and removes :lineup.py when the board has one.
 --dry-run prints each command and runs none, mpy-cross included, as for a board with no :packs, no :engine, no
-:lineup.py and no old .py or .mpy files, and never refuses the firmware. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
+:lineup.py, no :engine_config.py and no old .py or .mpy files, and never refuses the firmware. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
 again (or with --py). mpy-cross: pip install mpy-cross==1.29.0.post2.
 log: resets the board itself (a hard reset, trying again while the board still reboots from a deploy), then prints
-its console for N seconds (20 by default), opening the port again while USB comes back: the `lineup`, `import`,
-`pick`, `game` and `switch` lines, each after the seconds since the log started, on the Mac's clock
+its console for N seconds (20 by default), opening the port again while USB comes back: the `engine`, `lineup`,
+`import`, `pick`, `game` and `switch` lines, each after the seconds since the log started, on the Mac's clock
 (`12.345 pick runner`; logs from before P822 have none). The port is the one mpremote's auto picks: the first USB serial port, sorted.
 A failed mpremote command prints its error and box.py exits with 1. Claude picks a lineup with list, then deploy NAME..., then log.
 --- MVP (P817) ---"""
@@ -64,10 +69,26 @@ ENGINE_LINES = (["engine", "ImportError"], ["engine", "Bodies", "no"], ["engine"
 CRACKLE = "engine/natmod/crackle/_crackle.mpy"  # the crackle's native module, as tools/crackle.sh builds it (P848)
 PACKAGES = ("engine",)  # the folders of games/ that go to the board as folders of the same name (P849)
 MOVED = ("signals",)  # flat modules that moved into a package: the deploy removes their .py and .mpy at the root (P849)
+ENGINE_VALUE = re.compile(r"reference(=[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)*)?")  # --engine's whole value (P850)
+ENGINE_USAGE = "--engine takes reference or reference=PART[,PART...], each PART a lower-case name: got %r"
 
 
 class Refused(Exception):
     """A lineup the box cannot play: nothing ran on the board."""
+
+
+def engine_reference(value):
+    """REFERENCE for :engine_config.py from --engine's value: "all" for `reference`, the part names of
+    `reference=sum,volume` as a tuple. Refuses any other value, a repeated name and the name all. The names are not
+    checked against main.py's parts: the boot line names a forced one that no part used as unused=."""
+    if not ENGINE_VALUE.fullmatch(value):
+        raise Refused(ENGINE_USAGE % value)
+    if value == "reference":
+        return "all"
+    names = tuple(value.split("=", 1)[1].split(","))
+    if len(set(names)) != len(names) or "all" in names:
+        raise Refused(ENGINE_USAGE % value)
+    return names
 
 
 class Tool:
@@ -159,12 +180,13 @@ class Deploy:
     """Puts a lineup's games on the board through a runner: names, or None for every game and no lineup.py. With a
     compiler the modules go as .mpy files and main.py as itself; with None (--py) every module goes as its .py.
     crackle: the path of _crackle.mpy from the repository root (CRACKLE when None); say: where a note goes; sleep:
-    the pause between the probe's tries (time.sleep when None)."""
+    the pause between the probe's tries (time.sleep when None); reference: REFERENCE for :engine_config.py
+    (engine_reference's), or None to remove the board's file (P850)."""
 
-    def __init__(self, runner, compiler=None, games=GAMES, crackle=None, say=print, sleep=None):
+    def __init__(self, runner, compiler=None, games=GAMES, crackle=None, say=print, sleep=None, reference=None):
         self.runner, self.compiler, self.games = runner, compiler, games  # games: the folder, named as games/<file>
         self.crackle, self.say = CRACKLE if crackle is None else crackle, say
-        self.sleep = sleep or time.sleep
+        self.sleep, self.reference = sleep or time.sleep, reference
 
     def run(self, names):
         if names is not None:
@@ -190,6 +212,10 @@ class Deploy:
             self.write_lineup(names)
         elif "lineup.py" in on_board:
             self.runner.run(["rm", ":lineup.py"])
+        if self.reference is not None:
+            self.write_config(self.reference)
+        elif "engine_config.py" in on_board:  # a forced setting lasts one deploy
+            self.runner.run(["rm", ":engine_config.py"])
         self.runner.run(["reset"])
 
     def copy_code(self, on_board):
@@ -270,11 +296,19 @@ class Deploy:
             self.say("no _crackle.mpy built, so none is copied: tools/crackle.sh builds it")
 
     def write_lineup(self, names):
+        self.write("lineup.py", "LINEUP = %r  # tools/box.py deploy (P817)\n" % (names,))
+
+    def write_config(self, reference):
+        self.write("engine_config.py", "REFERENCE = %s  # tools/box.py deploy --engine\n" % (
+            '"all"' if reference == "all" else repr(reference)))
+
+    def write(self, name, text):
+        """A file of text at :<name>."""
         with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, "lineup.py")
+            path = os.path.join(tmp, name)
             with open(path, "w") as f:
-                f.write("LINEUP = %r  # tools/box.py deploy (P817)\n" % (names,))
-            self.runner.run(["cp", path, ":lineup.py"])
+                f.write(text)
+            self.runner.run(["cp", path, ":" + name])
 
 
 def catalog_lines():
@@ -375,6 +409,9 @@ def main(argv=None):
                                                          "to debug on the board, where a traceback then shows the "
                                                          "source line and a file can be edited in place")
     deploy.add_argument("--dry-run", action="store_true", help="print each command, run none")
+    deploy.add_argument("--engine", metavar="reference[=PART,...]",
+                        help="force the reference version of every part (reference) or of the named parts "
+                             "(reference=volume) in :engine_config.py; a deploy without it removes the file")
     log = sub.add_parser("log", help="reset the board (a hard reset), then print its console, each line after the "
                                      "seconds since the log started")
     log.add_argument("--seconds", type=float, default=SECONDS)
@@ -388,8 +425,9 @@ def main(argv=None):
             if args.board:
                 print(board_lineup(Mpremote()))
         elif args.command == "deploy":
-            Deploy(Mpremote(args.dry_run), None if args.py else Compiler(MpyCross(args.dry_run))).run(
-                None if args.all else args.names)
+            reference = None if args.engine is None else engine_reference(args.engine)  # before any command
+            Deploy(Mpremote(args.dry_run), None if args.py else Compiler(MpyCross(args.dry_run)),
+                   reference=reference).run(None if args.all else args.names)
         else:
             reset(Mpremote())
             for line in stamped(Console(serial_port(args.port)).lines(args.seconds)):

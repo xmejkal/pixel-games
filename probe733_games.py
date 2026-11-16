@@ -65,8 +65,8 @@ once per frame by the game box (P764). The probe passes its knob to app.run, so 
 edges <n>` when the step differs from the last printed step (a spin step prints nothing), and `edges <n> windows_max <n>` at the end of
 the 5 s volume line: the most windows that one show() of the window sent (P762). Each change of the step also shows
 the volume on the screen for 1 s: the game box adds a VolumePane to its overlay (games/overlay.py, P764).
-With KNOB = 0 the game box opens its own knob and its own volume: the screen shows that knob, and the sound does not
-follow it.
+With KNOB = 0 the probe builds the game box's own knob and volume through main.compose(), as main.py does (P850): the
+screen shows that knob, and the sound does not follow it.
 With SAVE = 1 (and a VOLUME) the step lives in volume.txt on the board. A line at the start is
 `stored level <n or None>`, the file's step, when LEVEL is None. With KNOB, the knob saves the step 3 s after its last
 change, and the 5 s volume line ends with `saves <n> save_max <ms> save_errors <n>`: the saves and the failed saves of
@@ -631,7 +631,8 @@ def main():
         rows = [row for row in __import__("catalog").CATALOG if row[2] == GAME]
         game = app.games_for((rows[0][0],))[0] if rows else (
             getattr(__import__("fire"), GAME, None) or getattr(__import__("burning"), GAME))  # Fire needs no burning.py
-        app.run(games=(game,), knob=probe.volume and probe.volume.knob)
+        knob = probe.volume and probe.volume.knob  # with KNOB = 0 the box's own knob, as main.py builds it (P850)
+        app.run(games=(game,), knob=knob or __import__("main").compose()[0])
     except Done:
         pass
     finally:

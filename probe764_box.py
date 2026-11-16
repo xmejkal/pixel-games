@@ -68,7 +68,7 @@ def main():
 
     app.App.frame = hooked
     try:
-        app.run()
+        app.run(knob=__import__("main").compose()[0])  # the box's knob, as main.py builds it (P850)
     except Done:
         pass
     print("done")

@@ -9,6 +9,7 @@ pixel-engine submodule.
 | --- | --- |
 | `signals.py` | `Signals`: a game emits a signal by its name, and each listener of that name is called at once |
 | `clock.py` | `since`, `ticks_us` and `ticks_diff`: the board's tick clock, 0 on the Mac |
+| `accel.py` | `Chooser`: chooses each part's version once at boot and says why in the `engine` line (P850) |
 
 - `__init__.py` is empty, so each module imports alone: a later board takes only the modules it needs.
 - A module imports only the modules of the package that its row of `DIRECTION` names, and MicroPython's built-in
@@ -20,6 +21,12 @@ pixel-engine submodule.
 ## The rule of two versions
 
 Each hot part has one interface and two versions. The reference version is plain Python: it runs anywhere and is the
-Mac's test oracle. The fast version is C or viper and gives the reference version's results, faster. `main.py` chooses
-once at the start (stage 0b-2), and a setting forces the reference version per part. A test runs both versions on the
-same input. The rule is P838's ([finding](../../docs/discovery/2026-11-16-p838-engine-layer/finding.md), section 2).
+Mac's test oracle. The fast version is C or viper and gives the reference version's results, faster. `main.py`, the
+composition root, chooses once at the start through `accel.Chooser` (stage 0b-2, P850): `chooser.choose(part, fast,
+reference, label)` answers the fast class, or the reference class when the part is forced or `fast()` raises
+`ImportError`, `AttributeError` or `SyntaxError`. `tools/box.py deploy --engine reference[=PART,...]` forces the
+reference version in the board's `engine_config.py`, which `main.py` reads and hands in: no package module reads it.
+`accel` imports only `os` and `_engine`, and never `_crackle`, whose native code would take executable memory until the
+next soft reset; it looks for `:_crackle.mpy` with `os.stat`. A test runs both versions on the same input:
+`tests/test_twins.py` names it for each part of a `choose` call in `main.py`, and fails for a part without one. The rule
+is P838's ([finding](../../docs/discovery/2026-11-16-p838-engine-layer/finding.md), section 2).

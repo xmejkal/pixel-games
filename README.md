@@ -135,6 +135,9 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    made when the board has none. The deploy then removes each `.py` or `.mpy` in that folder that is not the
    package's, and the `.py` and `.mpy` of each module that moved from the root into the package (`MOVED` in
    `tools/box.py`: `signals`). Any other file at the root stays, MicroPython's `boot.py` among them.
+   `--engine reference` forces the reference version (plain Python) of every part that `main.py` chooses, and
+   `--engine reference=volume` (or `reference=sum,volume`) of the named parts (P850): the deploy writes them to
+   `:engine_config.py`, and a deploy without `--engine` removes it, so a forced setting lasts one deploy.
    - After the first deploy onto `_engine` (stage 0a, P848), keep the new firmware's answer the same way:
      `mpremote run tools/firmware_probe.py > tests/fixtures/firmware/new.txt`. It is owed after the flash, and the card
      is done only with it: `tests/test_box.py` reports it skipped until then.
@@ -153,7 +156,10 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
 6. Hard-reset the board: `mpremote reset`, its reset button, or unplug it and plug it in again. A soft reset is not
    enough after art that makes a pack bigger, as the first copy of the packs does: each pack is 16 bytes bigger than
    the set it replaces (the runner's is 739,216 bytes), and a soft reset keeps the smaller picture pool. The pictures then go quietly into a 739 KB block of the heap, which slows every
-   garbage collection. `main.py` starts the games. The console shows `lineup <n>: <names>`, `import <ms> ms`
+   garbage collection. `main.py` starts the games. The console shows `engine sum=viper volume=viper
+   native=_engine,_crackle.mpy` first (P850): the version `main.py` chose for each part, `reference(forced)` for one
+   that `--engine` forced, `reference(ImportError)` for one whose fast version did not load, the native code on the
+   board, and `unused=<name>` for a forced name that no part has. Then `lineup <n>: <names>`, `import <ms> ms`
    (how long `app.py`'s own imports took), then `game <name>`, then `switch <name> N ms, load N ms, import N ms` each
    time a game is built: how long the build took, the art's load in it and the import of the game's module in it.
    Each D14 press prints `pick <name>` (P818). A build after a pick adds `setup N ms, frames N, worst N ms,
@@ -318,13 +324,15 @@ Runs now:
   one `overlay.add(...)` line. `VolumePane` is the first pane: the volume's step as 16 cells and a number. It
   watches the volume's step, so each change shows it for 1 s, and no caller shows it. The app owns the overlay
   (`App.overlay`), and each output draws it after the game.
-  Status: the game box opens the rotary encoder as the volume's knob (`app.open_knob`) and adds the pane when it has
+  Status: the game box opens the rotary encoder as the volume's knob (`app.open_knob`, with the volume's version
+  that `main.py` chose, P850) and adds the pane when it has
   one, so every game shows the volume for 1 s when the knob turns. To see it, start the box and turn the knob. The
   box plays its first sounds since P768 (PR 1): `Runner` plays `jump` and `die`, and the knob's volume is the `Speaker`'s master volume (the PO's hand on
   it is not yet confirmed). A
   game emits a signal by name (`self.emit("jump")`) and names its cues (`cues = {"jump": Cue("jump")}`).
   `SoundCues` plays the cue's sound from the bank (`games/box_bank.raw`, made by `tools/sound_bank.py`) through
-  the `Speaker`'s `Mixer`. `main.py` opens the `Speaker`. `app.run()` with no speaker is the silent box. Since
+  the `Speaker`'s `Mixer`. `main.py` builds the `Speaker` with the sum it chose. `app.run()` with no speaker is the
+  silent box, and with no knob it has no volume pane. Since
   PR 2 the `Mixer` sums 4 voices (`VoiceSum` in plain Python, `ViperVoiceSum` in `games/sound_viper.py`), and
   `Runner` also plays `land`, `pickup`, `footstep` and a fire loop that gets louder as the flame grows. A cue with
   `loop=True` is one voice: its signal carries a level from 0 to 256 (`self.emit("fire", self.fire_k)`), and 0 ends
@@ -334,8 +342,8 @@ Runs now:
   note list in `tools/sound_bank.py`. `docs/sound.md` says how a game gets a sound. All 14 games keep their fps
   with the music, within 1 fps (bench.md, P768). The box
   does not save the step. The sound probe passes its own knob to the box, so only one
-  encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the box opens its
-  own knob, and the sound does not follow it. A run with no hand went through all 14 games with the knob
+  encoder exists: `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 60 FireSound`. With `KNOB=0` the probe builds
+  the box's own knob through `main.compose()`, and the sound does not follow it. A run with no hand went through all 14 games with the knob
   open, and with the pane shown by a spin of the step (`probe764_box.py`, bench.md, P764, PR B). The PO's hand and
   eye in the games are still open. The picture is see-through by default (`VolumePane.alpha` is 128), and
   `ALPHA=255` on the command makes it solid. The PO turned the knob in the probe and saw it at 192 ("it could be

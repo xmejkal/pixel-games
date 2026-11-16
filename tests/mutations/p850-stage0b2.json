@@ -1,0 +1,110 @@
+[
+ {
+  "file": "games/engine/accel.py",
+  "name": "a forced part is ignored",
+  "find": "        if self.reference == \"all\" or part in self.reference:\n",
+  "replace": "        if False:\n"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "all forces nothing",
+  "find": "if self.reference == \"all\" or part in self.reference:",
+  "replace": "if part in self.reference:"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "a missing fast version raises, with no fallback",
+  "find": "        except FALLBACK as e:\n",
+  "replace": "        except () as e:\n"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "the line drops native=",
+  "find": "        words.append(\"native=\" + (\",\".join(native()) or \"none\"))\n",
+  "replace": ""
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "an unused forced name is not shown",
+  "find": "                words.append(\"unused=\" + \",\".join(unused))\n",
+  "replace": "                pass\n"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "the line names the crackle without its file",
+  "find": "        os.stat(CRACKLE)\n",
+  "replace": "        CRACKLE\n"
+ },
+ {
+  "file": "games/main.py",
+  "name": "the boot reads no engine_config",
+  "find": "    chooser = chooser or Chooser(read_reference())\n",
+  "replace": "    chooser = chooser or Chooser()\n"
+ },
+ {
+  "file": "games/main.py",
+  "name": "the speaker gets the reference sum whatever was chosen",
+  "find": "Speaker(voice_sum(), ",
+  "replace": "Speaker(sound.VoiceSum(), "
+ },
+ {
+  "file": "games/app.py",
+  "name": "the knob gets the reference volume whatever was chosen",
+  "find": "encoder.EDGES_PER_DETENT), volume())",
+  "replace": "encoder.EDGES_PER_DETENT), __import__(\"volume\").MasterVolume())"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "--engine writes nothing",
+  "find": "        if self.reference is not None:\n            self.write_config(self.reference)\n",
+  "replace": "        if self.reference is not None:\n            pass\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a deploy without --engine keeps the old engine_config.py",
+  "find": "            self.runner.run([\"rm\", \":engine_config.py\"])\n",
+  "replace": "            pass\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a malformed --engine value passes",
+  "find": "    if not ENGINE_VALUE.fullmatch(value):\n",
+  "replace": "    if False:\n"
+ },
+ {
+  "file": "games/main.py",
+  "name": "the boot takes the pads only with the knob",
+  "find": "    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first, before app's imports and the knob (P757, P850)\n",
+  "replace": ""
+ },
+ {
+  "file": "games/main.py",
+  "name": "a malformed REFERENCE reaches the Chooser",
+  "find": "    print(\"engine_config refused: REFERENCE = %r\" % (reference,))\n    return ()\n",
+  "replace": "    return reference\n"
+ },
+ {
+  "file": "games/main.py",
+  "name": "the line is printed after the knob opens",
+  "find": "    print(chooser.line())\n    knob = app.open_knob(master)\n",
+  "replace": "    knob = app.open_knob(master)\n    print(chooser.line())\n"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "the line names every fast version viper",
+  "find": "        self.chosen.append((part, label))\n",
+  "replace": "        self.chosen.append((part, \"viper\"))\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "--engine accepts a trailing newline",
+  "find": "ENGINE_VALUE.fullmatch(value)",
+  "replace": "ENGINE_VALUE.match(value)"
+ },
+ {
+  "file": "games/app.py",
+  "name": "the console read takes the text stream, not its buffer",
+  "find": "        stdin.buffer.read(1)\n",
+  "replace": "        stdin.read(1)\n"
+ }
+]

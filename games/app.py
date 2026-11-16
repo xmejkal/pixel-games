@@ -18,7 +18,8 @@ next game; a BOOT press goes nowhere. start() and switch() still build at once.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
 The step is not saved. App(knob=None) has no volume pane.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
-main.py opens the Speaker. run() with no speaker is the silent box.
+main.py, the composition root (P850), builds the knob and the Speaker from the versions it chose. run() with no
+speaker is the silent box, and with no knob it has no volume pane.
 
 run() prints `lineup <n>: <names>` and `import <ms> ms` (how long this module's own imports took), then `ready` once
 the display is set up, then `pick <name>` at each D14 press, and `game <name>` with
@@ -53,8 +54,7 @@ from engine.signals import Signals
 from lcd import open_tft
 from overlay import Overlay, VolumePane
 from render import StOut
-from speaker import Speaker
-from volume import MasterVolume, VolumeKnob
+from volume import VolumeKnob
 
 IMPORT_MS = pictures.since(STARTED)  # this module's imports: no game's module is among them (P817)
 
@@ -421,40 +421,40 @@ def open_st7789():
 
 
 # --- MVP (P764) ---
-def open_knob():
-    """The rotary encoder as the volume's knob, or None when this image has no machine.Encoder.
-    The step is not saved."""
+def open_knob(volume):
+    """The rotary encoder as the volume's knob, or None when this image has no machine.Encoder. volume: the master
+    volume's class that main.py chose (P850): the sound's callback applies it, and the viper scale takes 116 us a block,
+    the plain one 1220 us. The step is not saved."""
     try:
         import machine
 
         machine.Encoder
     except (ImportError, AttributeError):
         return None
-    try:  # the sound's callback applies the volume: the viper scale takes 116 us a block, the plain one 1220 us
-        from volume_viper import ViperMasterVolume as Volume
-    except (ImportError, AttributeError):
-        Volume = MasterVolume
-    return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), Volume())
+    return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), volume())
 
 
-# --- MVP (P768) ---
-def open_speaker(knob=None):
-    """The game box's Speaker, not yet open. The knob's volume is its master volume."""
-    return Speaker(knob.volume if knob else None)
+def read_console(console, stdin):
+    """One waiting byte of the console, read and dropped, so mpremote can reach the board while the box runs
+    (commands/build.md, "The console read"). It reads stdin.buffer, which never decodes: the text stdin takes a byte
+    such as 0xFF or 0x80, which a knob turn on the RX pad types, as the start of a 5-byte character, waits for 4 more
+    bytes and then raises UnicodeError (P850: the PO's knob turn on the board stopped the box)."""
+    if console.poll(0):
+        stdin.buffer.read(1)
 
 
 def run(games=None, knob=None, speaker=None):
     """The loop main.py starts. games: a Lineup, a tuple of classes (a probe's), or None for the board's lineup
-    (read_lineup). knob: a caller's VolumeKnob (the probe's). With none, the box opens its own, so two
-    encoders never share the counter unit. speaker: a Speaker that run() opens after the first game's setup, or None for the
-    silent box (P768)."""
+    (read_lineup). knob: the VolumeKnob main.compose() built (P850), or None for a box with no knob: run opens none of
+    its own, so two encoders never share the counter unit. speaker: a Speaker that run() opens after the first game's
+    setup, or None for the silent box (P768)."""
     import select
     import sys
 
     from machine import Pin
 
-    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first: until here a turn of the knob can type into the console (P757)
-    knob = knob or open_knob()  # --- MVP (P764) ---
+    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first: until here a turn of the knob can type into the console (P757).
+    # main.py took them at boot already (P850); a probe's run may come without; a second take sets the same pull-ups
     out = open_tft(SPI_HZ) if BACKEND == "s3lcd" else None  # None: no s3lcd in this image
     display, full = None, False
     if out:
@@ -498,8 +498,7 @@ def run(games=None, knob=None, speaker=None):
         due = time.ticks_ms()
         while True:  # the s3lcd port may lose USB at init; the lines still print in case it stays
             app.frame()
-            if console.poll(0):
-                sys.stdin.read(1)
+            read_console(console, sys.stdin)
             due = time.ticks_add(due, FRAME_MS)
             wait = time.ticks_diff(due, time.ticks_ms())
             if wait > 0:
