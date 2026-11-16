@@ -1,11 +1,13 @@
 """The net (P846, stage N of the engine plan P844): every game's frames, its cues, the box's game and switch lines and
 the mixer's samples, pinned by hashes on the Mac in tests/golden/. A move that changes a picture or a sound fails here.
 Each subject renders in its own process, NET_WORKERS (8) at a time. NET_TIER=fast compares frames 1 to 5 and the cues
-up to frame 5 (the story run), and leaves the negative tests to the full tier; the full tier, the default, compares
+up to frame 5 (the story run); the negative tests, which prove that the net catches a change, live in
+tests/test_golden_negative.py, which the full suite and the full tier run. The full tier, the default, compares
 every pinned frame, the chained run, the game-over cards, the cues and their sound over the whole run. The net fails,
 never skips, when a tool is missing: with no clang or no font it names the command that brings it. A hash change is
 its own PR, written by `python3 -B tools/render_scene.py --golden tests/golden` on the baseline commit.
-Run from the repository root: python3 -B -m unittest tests.test_golden. --- MVP (P846) ---"""
+Run from the repository root: NET_TIER=fast python3 -B -m unittest tests.test_golden (the story run), or the full tier:
+python3 -B -m unittest tests.test_golden tests.test_golden_negative. --- MVP (P846) ---"""
 
 import os
 import subprocess
@@ -23,21 +25,6 @@ import render_scene  # noqa: E402
 m = net.modules()
 GOLDEN = os.path.join(HERE, "golden")
 TWICE = "cave"  # the subject rendered twice in one run
-# Each negative test: a short subject, full tier, with one patch made in its process before the render; m is
-# mac_host.modules()
-COLOUR = "m.arcade2.Cave.bg = m.arcade2.c565(15, 10, 28)"  # its background, one step of blue more
-MOVED = "m.arcade.Flappy.X = 81"  # the bird one px to the right
-PRESS = "__import__('render_scene').SUBJECTS['flappy'].tap = 13"  # a tap every 13 frames, not 12
-CUE = ("emit = m.arcade.Runner.emit\n"  # the jump says hop: a cue no table plays
-       "m.arcade.Runner.emit = lambda self, name, value=None: emit(self, 'hop' if name == 'jump' else name, value)")
-UNPINNED = ("draw = m.pictures.draw\n"  # one bird picture 1 px down: flappy draws it only in frames the net does not pin
-            "m.pictures.draw = lambda cv, name, x, y, alpha=255: draw(cv, name, x, y + (name == 'flappy_bird00'), alpha)")
-SWAPPED = "c = m.arcade.Runner.cues\nc['jump'], c['land'] = c['land'], c['jump']"  # each plays the other's sound
-QUIETER = "m.arcade.Runner.cues['fire'] = m.cues.Cue('fire', m.arcade.FIRE_SOUND_GAIN // 2, True)"  # the fire at half
-CARD = "m.arcade2.Stack.CARD_X += 1"  # stack's game-over card 1 px to the right
-NEGATIVE = {"colour": ("cave", COLOUR), "moved": ("flappy", MOVED), "press": ("flappy", PRESS), "cue": ("runner", CUE),
-            "unpinned": ("flappy", UNPINNED), "swapped": ("runner", SWAPPED), "quieter": ("runner", QUIETER),
-            "card": ("stack_over", CARD)}
 OWN_CARDS = ("snake", "stack", "gravpong", "cube")  # the games that draw their own game-over card, by catalog name
 # The cues of a game's table that no run of the net emits: pinned here so the thin spots stay in sight
 UNRECORDED = {"bucket": ["die"], "marshmallow": ["burn", "die"], "meteors": ["die"], "rescue": ["help", "help_child"],
@@ -166,53 +153,6 @@ class NetTest(unittest.TestCase):
     def test_two_runs_give_the_same_hashes(self):
         self.assertEqual(self.subjects[TWICE], self.twice)
 
-
-class NegativeTest(unittest.TestCase):
-    """Each NEGATIVE patch, rendered at the full tier, is caught by the net. The fast tier leaves them to the full."""
-
-    @classmethod
-    def setUpClass(cls):
-        if net.tier() == net.FAST:
-            raise unittest.SkipTest("NET_TIER=fast: the negative tests run in the full tier")
-        cls.golden = net.Golden.read(GOLDEN)
-        net.Toolchain.here().check(cls.golden.meta)
-        cls.negative = dict(zip(NEGATIVE, net.run([net.Job(name, net.FULL, patch) for name, patch in NEGATIVE.values()])))
-
-    def caught(self, kind):
-        name = NEGATIVE[kind][0]
-        return net.differences(self.golden.subject(name, net.FULL), self.negative[kind])
-
-    def test_a_changed_colour_is_caught(self):
-        self.assertIn("frame 1 differs", self.caught("colour"))
-
-    def test_a_moved_sprite_is_caught(self):
-        self.assertTrue(any(d.startswith("frame ") for d in self.caught("moved")), self.caught("moved"))
-
-    def test_a_changed_press_timing_is_caught(self):
-        self.assertTrue(self.caught("press"))
-        self.assertNotIn("frame 1 differs", self.caught("press"))  # the first press is the same: later frames differ
-
-    def test_a_changed_cue_is_caught(self):
-        self.assertIn("cues differ", [d.split(":")[0] for d in self.caught("cue")])
-
-    def test_a_change_in_a_frame_the_net_does_not_pin_is_caught_by_the_run(self):
-        found = self.caught("unpinned")
-        self.assertIn("run differs", found)
-        self.assertEqual([], [d for d in found if d.startswith("frame ")], "the shift reached a pinned frame")
-
-    def test_a_swapped_cue_table_is_caught(self):
-        found = self.caught("swapped")
-        self.assertIn("cue table differs: jump, land", found)
-        self.assertIn("sound differs", found)
-
-    def test_a_quieter_cue_is_caught(self):
-        found = self.caught("quieter")
-        self.assertIn("cue table differs: fire", found)
-        self.assertIn("sound differs", found)
-
-    def test_a_moved_game_over_card_is_caught(self):
-        card = self.golden.subjects["stack_over"]["over"][1]
-        self.assertIn("frame %d differs" % card, self.caught("card"))
 
 if __name__ == "__main__":
     unittest.main()
