@@ -353,14 +353,17 @@ class App:
 
 # --- MVP (P818) ---
 class NameCard(gfx.Game):
-    """The picked game's name while a pick waits to settle: the name big in the middle, "n / N" under it and
-    "BOOT loads" small, on the plain background. It stays in TITLE, loads nothing and has no cues. at: the pick's
+    """The picked game's name from the pick until the game plays: the name big in the middle, "n / N" under it, and
+    under that its stage (P822): "BOOT loads" while the pick waits to settle, "loading" during the import, then a bar
+    of the load's progress, on the plain background. It stays in TITLE, loads nothing and has no cues. at: the pick's
     time.ticks_ms(), from which the pick settles."""
 
     WAITING, LOADING = "BOOT loads", "loading"  # --- MVP (P822) --- the stages it says: waiting to settle, the import
+    BAR_W, BAR_H = 160, 8  # the progress bar's outline: only its fill changes between two frames
 
     def __init__(self, name, n, count, at=0):
         self.name, self.n, self.count, self.at, self.stage = name, n, count, at, self.WAITING
+        self.place = "%d / %d" % (n, count)  # made once: the card's frames format nothing
         super().__init__()
 
     def step(self, now_ms, pressed, held):
@@ -369,10 +372,13 @@ class NameCard(gfx.Game):
     def draw_title(self, cv):
         cx, cy = gfx.WIDTH // 2, gfx.HEIGHT // 2
         cv.big(self.name, cx - 12 * len(self.name), cy - 30, gfx.WHITE, 3)
-        place = "%d / %d" % (self.n, self.count)
-        cv.big(place, cx - 8 * len(place), cy + 6, gfx.GREY, 2)
-        if isinstance(self.stage, str):  # a progress has no words
+        cv.big(self.place, cx - 8 * len(self.place), cy + 6, gfx.GREY, 2)
+        if isinstance(self.stage, str):
             cv.text(self.stage, cx - 4 * len(self.stage), cy + 34, gfx.YELLOW)
+            return
+        x, y = cx - self.BAR_W // 2, cy + 34  # a progress 0 to 1: the bar
+        cv.box(x, y, self.BAR_W, self.BAR_H, gfx.GREY)
+        cv.fill(x + 1, y + 1, int((self.BAR_W - 2) * self.stage), self.BAR_H - 2, gfx.YELLOW)
 
 
 def open_st7789():

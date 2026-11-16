@@ -532,6 +532,45 @@ class CardTest(unittest.TestCase):
         self.assertIn("BOOT loads", [op[5] for op in cv.ops if op[4] == 3])
 
 
+    def ops(self, stage):
+        card = app.NameCard("snake", 3, 5)
+        card.stage = stage
+        cv = gfx.Canvas()
+        card.draw_title(cv)
+        return cv.ops
+
+    def bar(self, ops):
+        """The bar's outline and its fill: the box op, and the fills inside it."""
+        boxes = [op for op in ops if op[4] == 1]
+        if not boxes:
+            return None, []
+        x0, y0, x1, y1 = boxes[0][:4]
+        return boxes[0], [op for op in ops if op[4] == 0 and x0 < op[0] and op[2] < x1 and y0 < op[1] and op[3] < y1]
+
+    def test_loading_says_so_with_no_bar(self):
+        ops = self.ops(app.NameCard.LOADING)
+        self.assertIn("loading", [op[5] for op in ops if op[4] == 3])
+        self.assertEqual((None, []), self.bar(ops))
+
+    def test_a_progress_is_a_bar_under_the_place_that_grows_and_says_no_words(self):
+        place = gfx.HEIGHT // 2 + 6 + 2 * 8  # where "3 / 5" ends: drawn big at scale 2 from the middle's y + 6
+        widths = []
+        for progress in (0.0, 0.25, 0.75, 1.0):
+            ops = self.ops(progress)
+            outline, fills = self.bar(ops)
+            self.assertEqual([], [op for op in ops if op[4] == 3])
+            self.assertLess(place, outline[1])
+            widths.append(sum(op[2] - op[0] for op in fills))
+        inside = outline[2] - outline[0] - 2
+        self.assertEqual([0, inside // 4, inside * 3 // 4, inside], widths)
+
+    def test_only_the_bar_changes_between_two_progresses(self):
+        a, b = self.ops(0.25), self.ops(0.5)
+        changed = [op for op in a if op not in b] + [op for op in b if op not in a]
+        self.assertTrue(self.bar(a)[1] and self.bar(b)[1])
+        self.assertEqual(self.bar(a)[1] + self.bar(b)[1], changed)
+
+
 class NothingImportedTest(unittest.TestCase):
     def test_a_pick_imports_nothing_and_a_missing_module_is_refused_when_it_settles(self):
         ghost = {"ghost": ("ghost", "no_such_module_p818", "Ghost", ())}
