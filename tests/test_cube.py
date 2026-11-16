@@ -247,7 +247,7 @@ class Drawn:
     pictures = True
 
     def __init__(self, game, draw):
-        self.calls, self.fills, self.polys, self.boxes, self.texts = [], [], [], [], []
+        self.calls, self.fills, self.polys, self.boxes, self.texts, self.lines = [], [], [], [], [], []
         saved = space3d.pictures.draw
         space3d.pictures.draw = lambda cv, name, x, y, alpha=255: self.calls.append((name, x, y, alpha)) or True
         try:
@@ -262,8 +262,11 @@ class Drawn:
     def box(self, x, y, w, h, c):
         self.boxes.append((int(x), int(y), int(w), int(h), c))
 
-    def line(self, *args):
-        pass
+    def line(self, x0, y0, x1, y1, c):
+        self.lines.append((x0, y0, x1, y1, c))
+
+    def coloured(self, c):
+        return [line[:4] for line in self.lines if line[4] == c]
 
     def poly(self, points, c, alpha=255):
         self.polys.append(([list(p) for p in points], c, alpha))
@@ -394,6 +397,7 @@ class FeelTest(unittest.TestCase):
         self.assertGreater(max(xs), 4.0)  # px: it shows
         self.assertLess(min(xs), -1.0)  # and swings back past the middle
         self.assertLess(abs(xs[-1]), 0.5)
+        self.assertEqual((6.931, -2.759, -0.196), tuple(round(xs[k], 3) for k in (4, 12, 30)))  # its spring and damping
         game = at_err(0.0)
         game.play(True, True)
         self.assertGreater(game.sway.v, 0)  # the good tap kicked it
@@ -431,6 +435,113 @@ class FeelTest(unittest.TestCase):
         self.assertIn("REC", drawn.texts)
         self.assertIn("7", drawn.texts)
         self.assertEqual((0, 0, gfx.WIDTH, 16, game.INK), drawn.fills[0])
+
+
+class DrawingTest(unittest.TestCase):
+    """What paint, draw_hud and draw_over draw, one by one (P573's review: each of these was a planted mutant the
+    tests let through)."""
+
+    def test_the_seen_faces_edges_in_bone_their_panels_and_the_stub_from_the_swaying_joint(self):
+        game = now_playing(CubeTiming.TARGET)
+        game.sway.x = 3.4
+        drawn = Drawn(game, game.paint)
+        h = game.housing
+        edges = [(h.x[a], h.y[a], h.x[b], h.y[b]) for a, b, f, g in h.edges if h.seen[f] or (g >= 0 and h.seen[g])]
+        self.assertEqual(9, len(edges))  # the top and the two sides round the lens
+        jx, jy = game.JOINT[0] + 3, game.JOINT[1]
+        stub = (jx, jy, h.x[h.CENTRE], h.y[h.CENTRE])
+        self.assertEqual(edges + [stub], drawn.coloured(game.BONE))
+        self.assertEqual([(jx + 1, jy, h.x[h.CENTRE] + 1, h.y[h.CENTRE])], drawn.coloured(game.INK))
+        self.assertEqual(8, len(drawn.coloured(game.PANEL)))  # an inset panel on each of the two sides
+
+    def test_the_cables_hang_from_the_joint_moved_by_the_sway(self):
+        game = now_playing(1.0)
+        game.sway.x = -5.6
+        cables = Drawn(game, game.paint).coloured(game.CABLE)
+        jx, jy = game.JOINT[0] - 5, game.JOINT[1]
+        expected = []
+        for ax, ay in game.ANCHORS:
+            mx, my = (jx + ax) // 2, (jy + ay) // 2 + game.SAG
+            expected += [(jx, jy, mx, my), (mx, my, ax, ay)]
+        self.assertEqual(expected, cables)
+
+    def test_the_lit_side_and_the_shaded_side_and_the_top(self):
+        game = now_playing(CubeTiming.TARGET)  # x+ faces left (lit), z+ right (shaded)
+        solid = [p[1] for p in Drawn(game, game.paint).polys if p[2] == 255]
+        self.assertEqual([game.SHADES[0], game.SHADES[1], game.SHADES[2]], solid)
+        game = now_playing(CubeTiming.TARGET - math.pi / 2)  # turned a quarter back: z- faces left, x+ right
+        drawn = Drawn(game, game.paint)
+        h = game.housing
+        for k in range(4):
+            if h.seen[k]:
+                with self.subTest(face=k):
+                    poly = [p for p in drawn.polys if p[0] == [list(q) for q in h.points[k]]][0]
+                    self.assertEqual(game.SHADES[0 if h.facing[k] < 0 else 1], poly[1])
+
+    def test_locked_the_target_closes_the_face_is_framed_and_the_bar_fills_with_an_ink_needle(self):
+        for err, done, lock in ((0.0, False, True), (0.0, True, False), (1.0, False, False)):
+            game = now_playing(CubeTiming.TARGET + err)
+            game.done = done
+            drawn = Drawn(game, game.paint)
+            half, bar = game.TARGET_PX // 2, int(game.tol() * 60)
+            needle = game.BAR_X + int(max(-game.BAR_HALF, min(game.BAR_HALF, game.err() * 60)))
+            with self.subTest(err=err, done=done):
+                self.assertEqual(lock, game.inside())
+                self.assertEqual([(space3d.TARGETS[1 if lock else 0], game.target_x - half, game.target_y - half,
+                                   255)], drawn.named("cube_target_"))
+                frame = (game.FACE_X - 2, game.FACE_Y - 2, game.FACE + 4, game.FACE + 4, game.BONE)
+                self.assertEqual(lock, frame in drawn.boxes)
+                zone = (game.BAR_X - bar, game.BAR_Y, 2 * bar, 6, game.BONE)
+                self.assertEqual(lock, zone in drawn.fills)
+                self.assertEqual(not lock, zone in drawn.boxes)
+                self.assertIn((needle - 1, game.BAR_Y - 3, 3, 12, game.INK if lock else game.BONE), drawn.fills)
+
+    def test_the_billboard_shows_the_score_in_digits(self):
+        game = now_playing(1.0)
+        game.score = 47
+        digits = Drawn(game, game.paint).named("cube_digit_")
+        self.assertEqual([("cube_digit_7", game.BOARD_RIGHT - 8, game.BOARD_TOP, 255),
+                          ("cube_digit_4", game.BOARD_RIGHT - 16, game.BOARD_TOP, 255)], digits)
+
+    def test_over_the_face_stays_frozen_after_the_flags_700_ms(self):
+        game = at_err(1.0)
+        game.last = 10000
+        game.lives = 1
+        game.play(True, True)
+        self.assertEqual(gfx.OVER, game.state)
+        game.last += Verdict.SHOW_MS + 100
+        self.assertEqual([space3d.FACES[2]], [c[0] for c in Drawn(game, game.paint).named("cube_face_")])
+
+    def test_the_card_writes_the_score_and_the_best_and_then_tap_to_retry(self):
+        game = now_playing(1.0)
+        game.score = 12
+        gfx.BEST[game.name] = 30
+        self.addCleanup(gfx.BEST.pop, game.name)
+        game.state, game.since = gfx.OVER, 10000
+        game.last, game.age = 10000 + game.CARD_MS, game.CARD_MS
+        drawn = Drawn(game, game.draw_over)
+        digits = drawn.named("cube_digit_")
+        self.assertEqual([("cube_digit_2", game.SCORE_RIGHT - 8, game.CARD_PLATE_TOP, 255),
+                          ("cube_digit_1", game.SCORE_RIGHT - 16, game.CARD_PLATE_TOP, 255),
+                          ("cube_digit_0", game.BEST_RIGHT - 8, game.CARD_PLATE_TOP, 255),
+                          ("cube_digit_3", game.BEST_RIGHT - 16, game.CARD_PLATE_TOP, 255)], digits)
+        self.assertNotIn("tap to retry", drawn.texts)
+        game.age = 1600  # past OVER_MS, in the blink's shown half
+        self.assertIn("tap to retry", Drawn(game, game.draw_over).texts)
+
+    def test_the_score_bar_names_the_camera_and_the_hour(self):
+        game = now_playing(1.0)
+        self.assertIn("CAM 07  22:00", Drawn(game, game.draw_hud).texts)
+
+    def test_a_smile_throws_six_bone_sparks_from_the_lens(self):
+        game = at_err(0.0)
+        game.play(True, True)
+        self.assertEqual(game.SPARKS, len(game.glints.p))
+        self.assertEqual(6, game.SPARKS)
+        self.assertEqual({game.BONE}, {q[5] for q in game.glints.p})
+        x, y, _ = game.project(game.VERTS[game.MARK], game.yaw)
+        for q in game.glints.p:
+            self.assertTrue(abs(q[0] - x) <= 3 and abs(q[1] - y) <= 3)
 
 
 class Heard:

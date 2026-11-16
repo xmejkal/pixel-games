@@ -227,7 +227,8 @@ class SmileTest(unittest.TestCase):
 
     FIELDS = ("int(game.housing.lens_seen())", "game.project(game.VERTS[7], game.yaw)[0]",
               "game.project(game.VERTS[7], game.yaw)[1]", "game.project(game.VERTS[7], game.yaw)[2]", "game.err()",
-              "game.tol()", "game.verdict.kind", "game.verdict.age(game.last)", "game.over_ms()")
+              "game.tol()", "game.verdict.kind", "game.verdict.age(game.last)", "game.over_ms()", "game.age",
+              "game.housing.x[9]", "game.housing.y[9]")
 
     @classmethod
     def setUpClass(cls):
@@ -305,6 +306,20 @@ class SmileTest(unittest.TestCase):
         self.assertGreater(stamped[v.OK], 100)
         self.assertGreater(stamped[v.FLAG], 20)
         self.assertGreater(flashed, 10)
+
+    def test_the_recording_light_is_on_the_housing_every_frame_of_play_blinking_on_the_games_clock(self):
+        m, g = self.module, self.game
+        poses = set()
+        for k, (ds, target) in self.play_frames().items():
+            lights = [d for d in ds if d[1].startswith("cube_light_")]
+            with self.subTest(frame=k):
+                self.assertEqual(1, len(lights))
+                name, x, y = lights[0][1:4]
+                age, lx, ly = lights[0][14:17]
+                self.assertEqual(m.LIGHTS[int(age) // g.BLINK_MS % 2], name)
+                self.assertEqual((int(lx) - 3, int(ly) - 3), (x, y))
+                poses.add(name)
+        self.assertEqual(set(m.LIGHTS), poses)
 
     def test_over_the_zoom_pixelates_by_its_clock_then_the_card(self):
         g = self.game

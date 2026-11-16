@@ -283,6 +283,26 @@ class PolygonTest(unittest.TestCase):
         self.assertEqual(blend(gfx.RED, gfx.BLUE, 128), px[5 * lcd.PANEL_W + 5])
         self.assertEqual(gfx.BLUE, px[35 * lcd.PANEL_W + 35])
 
+    def test_the_canvas_fills_to_its_edges_and_not_a_pixel_past_them(self):
+        tft = DrawingTft()
+        lcd.TftCanvas(tft).poly([[100, 50], [140, 50], [140, 80], [100, 80]], gfx.WHITE)
+        img, on, off = tft.image(), (255, 255, 255), (0, 0, 0)
+        for (x, y), colour in (((101, 65), on), ((99, 65), off), ((139, 65), on), ((141, 65), off), ((120, 51), on),
+                               ((120, 49), off), ((120, 79), on), ((120, 81), off)):
+            self.assertEqual(colour, img.getpixel((x, y)), (x, y))
+
+    def test_smiles_cone_blends_bone_over_the_frame(self):
+        import space3d
+        tft = DrawingTft()
+        tft.fill(gfx.BLUE)
+        game = space3d.CubeTiming()
+        game.draw_cone(lcd.TftCanvas(tft), 160, 190, True)
+        px = memoryview(tft.frame).cast("H")
+        x, y = 230, 205  # game px inside the triangle from (160, 190) to the monitor face's left edge
+        self.assertEqual(blend(game.BONE, gfx.BLUE, game.CONE_LOCK_ALPHA), px[y + (lcd.PANEL_H - 1 - x) * lcd.PANEL_W])
+        x, y = 230, 170  # above it
+        self.assertEqual(gfx.BLUE, px[y + (lcd.PANEL_H - 1 - x) * lcd.PANEL_W])
+
     def test_the_canvas_turns_the_game_points_and_keeps_one_list_for_each_count(self):
         tft = DrawingTft()
         cv = lcd.TftCanvas(tft)
