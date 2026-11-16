@@ -122,6 +122,50 @@ class ComposeTest(NoNative):
         self.assertIs(ViperMasterVolume, main.viper_volume())
 
 
+class Saved:
+    """A VolumeStore that holds step (None: no file on the board) and refuses a save: the box reads it, never writes."""
+
+    def __init__(self, step):
+        self.step = step
+
+    def load(self):
+        return self.step
+
+    def save(self, step):
+        raise AssertionError("the box saves no step (a save stalls the loop, bench.md P764)")
+
+
+class StartVolumeTest(NoNative):
+    """The box starts at the step `box.py volume N` wrote to :volume.txt (P866), read once at boot and never saved."""
+
+    def start(self, step, encoder=True):
+        with contextlib.ExitStack() as stack:
+            if encoder:
+                stack.enter_context(a_board_with_an_encoder())
+            stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+            return main.compose(Chooser(), store=Saved(step))
+
+    def test_a_saved_step_is_the_knob_s_start(self):
+        for step in (0, 3, volume.STEPS):
+            with self.subTest(step=step):
+                knob, speaker = self.start(step)
+                self.assertEqual(step, knob.volume.step)
+                self.assertIs(knob.volume, speaker.volume)
+
+    def test_no_saved_step_starts_at_the_default(self):
+        knob, speaker = self.start(None)
+        self.assertEqual(volume.DEFAULT_STEP, knob.volume.step)
+
+    def test_the_knob_saves_nothing(self):
+        knob, speaker = self.start(0)
+        self.assertIsNone(knob.store)
+
+    def test_a_box_with_no_encoder_still_starts_silent(self):
+        knob, speaker = self.start(0, encoder=False)
+        self.assertIsNone(knob)
+        self.assertEqual(0, speaker.volume.step)
+
+
 class ConfigTest(unittest.TestCase):
     def test_no_config_forces_nothing(self):
         with mock.patch.dict(sys.modules, {"engine_config": None}):

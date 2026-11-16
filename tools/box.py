@@ -332,9 +332,9 @@ def volume_step(text):
 
 
 class Volume:
-    """The box's start volume from the Mac (P866): set writes the step that volume.VolumeStore reads at boot, then
-    resets the board, so it starts at that step; show reads it. 0 starts the box silent, for work without sound. The
-    knob still turns the step and saves it, so a turn overrides what this wrote."""
+    """The box's start volume from the Mac (P866): set writes the step that main.py reads once at boot (through
+    volume.VolumeStore), then resets the board, so it starts at that step; show reads it. 0 starts the box silent, for
+    work without sound. The knob still turns the volume while the box runs but saves nothing."""
 
     def __init__(self, runner):
         self.runner = runner
@@ -346,7 +346,12 @@ class Volume:
     def show(self):
         if VOLUME_FILE not in board_names(self.runner.run(["ls", ":"])):
             return "board: no %s, so the box starts at step %d" % (VOLUME_FILE, volume.DEFAULT_STEP)
-        return "board: volume step " + self.runner.run(["cat", ":" + VOLUME_FILE]).strip()
+        text = self.runner.run(["cat", ":" + VOLUME_FILE]).strip()
+        try:
+            return "board: volume step %d" % volume_step(text)
+        except Refused:
+            return "board: %s holds %r, which the box ignores: it starts at step %d" % (VOLUME_FILE, text,
+                                                                                         volume.DEFAULT_STEP)
 
 
 def catalog_lines():
@@ -455,7 +460,8 @@ def main(argv=None):
                              "board keeps its own" % (volume.STEPS, VOLUME_FILE))
     loud = sub.add_parser("volume", help="the box's start volume: with STEP, write it and reset the board (0 is "
                                          "silent, for work without sound); alone, print the board's step")
-    loud.add_argument("step", nargs="?", metavar="STEP")
+    loud.add_argument("step", nargs="?", metavar="STEP", help="0 (silent) to %d (full); none: print the board's step"
+                                                              % volume.STEPS)
     log = sub.add_parser("log", help="reset the board (a hard reset), then print its console, each line after the "
                                      "seconds since the log started")
     log.add_argument("--seconds", type=float, default=SECONDS)

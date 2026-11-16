@@ -52,16 +52,20 @@ def choose(chooser):
             chooser.choose("volume", viper_volume, volume.MasterVolume, "viper"))
 
 
-def compose(chooser=None):
+def compose(chooser=None, store=None):
     """The knob (None when this image has no encoder) and the Speaker, not yet open, built from the chosen classes,
-    after the Chooser's line is printed. chooser: the board's, from engine_config, when None."""
+    after the Chooser's line is printed. chooser: the board's, from engine_config, when None. The volume starts at the
+    step in :volume.txt (store, a volume.VolumeStore), which `box.py volume N` writes (P866); it is read once and never
+    saved, so a turn of the knob lasts until the next boot. With no file the step is volume.DEFAULT_STEP."""
     import app
 
     chooser = chooser or Chooser(read_reference())
     voice_sum, master = choose(chooser)
     print(chooser.line())
-    knob = app.open_knob(master)
-    return knob, Speaker(voice_sum(), knob.volume if knob else None)
+    step = (store or volume.VolumeStore()).load()
+    knob = app.open_knob(master, step)
+    level = knob.volume if knob else None if step is None else master(step)  # no encoder: the saved step still holds
+    return knob, Speaker(voice_sum(), level)
 
 
 if __name__ == "__main__":

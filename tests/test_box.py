@@ -821,14 +821,9 @@ class ConsoleTest(unittest.TestCase):
                          list(box.stamped(iter(["lineup 1: cave", "ready"]), clock)))
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class VolumeTest(unittest.TestCase):
-    """The start volume from the Mac (P866): `box.py volume N` writes the step that volume.VolumeStore reads at boot,
-    then resets the board; `deploy --volume N` writes it with the deploy. 0 is silent, so a developer works without
-    sound; the knob still turns and saves it."""
+    """The start volume from the Mac (P866): `box.py volume N` writes the step that main.py reads once at boot, then
+    resets the board; `deploy --volume N` writes it with the deploy. 0 is silent, so a developer works without sound."""
 
     def test_a_step_is_a_number_from_0_to_the_volume_s_steps(self):
         self.assertEqual(0, box.volume_step("0"))
@@ -848,6 +843,8 @@ class VolumeTest(unittest.TestCase):
         runner = FakeRunner(listing="ls :\n           2 volume.txt\n")
         runner.cat = "5"
         self.assertEqual("board: volume step 5", box.Volume(runner).show())
+        runner.cat = "junk"
+        self.assertIn("which the box ignores", box.Volume(runner).show())
         empty = FakeRunner()
         self.assertEqual("board: no volume.txt, so the box starts at step %d" % volume.DEFAULT_STEP,
                          box.Volume(empty).show())
@@ -873,3 +870,7 @@ class VolumeTest(unittest.TestCase):
                     self.assertEqual(1, box.main(argv))
                 self.assertIn("refused:", out.getvalue())
                 made.return_value.run.assert_not_called()
+
+
+if __name__ == "__main__":
+    unittest.main()
