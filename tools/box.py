@@ -69,7 +69,7 @@ ENGINE_LINES = (["engine", "ImportError"], ["engine", "Bodies", "no"], ["engine"
 CRACKLE = "engine/natmod/crackle/_crackle.mpy"  # the crackle's native module, as tools/crackle.sh builds it (P848)
 PACKAGES = ("engine",)  # the folders of games/ that go to the board as folders of the same name (P849)
 MOVED = ("signals",)  # flat modules that moved into a package: the deploy removes their .py and .mpy at the root (P849)
-ENGINE_VALUE = re.compile(r"reference(=[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)*)?$")  # --engine's value (P850)
+ENGINE_VALUE = re.compile(r"reference(=[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)*)?")  # --engine's whole value (P850)
 ENGINE_USAGE = "--engine takes reference or reference=PART[,PART...], each PART a lower-case name: got %r"
 
 
@@ -81,7 +81,7 @@ def engine_reference(value):
     """REFERENCE for :engine_config.py from --engine's value: "all" for `reference`, the part names of
     `reference=sum,volume` as a tuple. Refuses any other value, a repeated name and the name all. The names are not
     checked against main.py's parts: the boot line names a forced one that no part used as unused=."""
-    if not ENGINE_VALUE.match(value):
+    if not ENGINE_VALUE.fullmatch(value):
         raise Refused(ENGINE_USAGE % value)
     if value == "reference":
         return "all"

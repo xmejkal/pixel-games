@@ -17,10 +17,15 @@ TWINS = {
 
 
 def chosen_parts(source):
-    """The part name of each choose(...) call in source, in their order."""
-    return [node.args[0].value for node in ast.walk(ast.parse(source))
-            if isinstance(node, ast.Call) and getattr(node.func, "attr", getattr(node.func, "id", None)) == "choose"
-            and node.args and isinstance(node.args[0], ast.Constant)]
+    """The part name of each <chooser>.choose(...) call in source, in their order (main.py's own choose(chooser) is
+    not one). A call whose part is not a string literal raises ValueError: this test could not name its twin."""
+    parts = []
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "choose":
+            if not (node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str)):
+                raise ValueError("line %d: choose's part is not a string literal" % node.lineno)
+            parts.append(node.args[0].value)
+    return parts
 
 
 def without_twin(source, twins=TWINS):

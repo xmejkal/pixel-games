@@ -13,8 +13,9 @@ from speaker import Speaker
 
 
 def read_reference():
-    """REFERENCE of the board's engine_config.py: "all", a tuple of part names, or () when there is no file. A file
-    that fails prints `engine_config refused: <why>` and forces nothing, so the box never stays dark."""
+    """REFERENCE of the board's engine_config.py: "all", or its part names as a tuple (from a tuple or a list of
+    strings), or () when there is no file or no REFERENCE. A file that fails, or any other REFERENCE, prints
+    `engine_config refused: <why>` and forces nothing, so the box never stays dark."""
     try:
         import engine_config
     except ImportError:
@@ -22,7 +23,13 @@ def read_reference():
     except Exception as e:  # a syntax error, or one the file raised
         print("engine_config refused:", repr(e))
         return ()
-    return getattr(engine_config, "REFERENCE", ())
+    reference = getattr(engine_config, "REFERENCE", ())
+    if reference == "all":
+        return reference
+    if isinstance(reference, (tuple, list)) and all(isinstance(name, str) for name in reference):
+        return tuple(reference)
+    print("engine_config refused: REFERENCE = %r" % (reference,))
+    return ()
 
 
 def viper_sum():

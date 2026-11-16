@@ -22,8 +22,9 @@ class Chooser:
         self.chosen = []  # (part, what was chosen), in the order of the choose calls
 
     def choose(self, part, fast, reference, label):
-        """The fast class (fast() imports and answers it), named label in the line, or the reference class when the
-        part is forced or fast() raises ImportError, AttributeError or SyntaxError."""
+        """The fast class (fast() imports and answers it), or the reference class when the part is forced or fast()
+        raises ImportError, AttributeError or SyntaxError. label: free text that names the fast version's technique
+        in the line (viper today, c for a part in C later)."""
         if self.reference == "all" or part in self.reference:
             self.chosen.append((part, "reference(forced)"))
             return reference
