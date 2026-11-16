@@ -1699,7 +1699,7 @@ than the control.
   incremental build's, and the C code differs only in its names. Not shown: whether the old firmware with today's
   games gives the same count. That needs a control run on the rollback image (P857, spark #1223).
 
-## P857 (#1223), 2026-11-16: the control run, old firmware against new with the same games
+## P857 (#1223), 2026-11-16: the control run, old firmware against new with the same games (before and after the renames)
 
 - On the PO's "go ahead": the rollback image (`~/esp/rollback/engine-2026-11-13/micropython.bin`, sha256
   `21b8ba91…d773`) flashed and verified at 0x10000, the games of a426878 (the commit before P848, engine 9589dcd,
@@ -1712,11 +1712,14 @@ than the control.
 |---|---|---|---|---|
 | old (`engine`) | `logs/run-p857-fire-old-a.log` | 9 | 20 to 22 | 45 to 60 |
 | old (`engine`) | `logs/run-p857-fire-old-b.log` | 2 | 21 to 22 | 40 to 57 |
-| new (`_engine`) | `logs/run-p848-fire-a.log` | 5 | 22 | 41 to 61 |
+| new (`_engine`) | `logs/run-p848-fire-a.log` | 5 | 21 to 22 | 41 to 61 |
 | new (`_engine`) | `logs/run-p848-fire-b.log` | 6 | 22 | 44 to 58 |
 
-- The verdict: the firmware does not cause the late refills. Both firmwares give late refills of the same size, with
-  a wide spread (2 to 9 in 45 s). The cause is in today's games and their load, since run189 (P764) ended at 3.
+- The verdict: no sign that the firmware causes the late refills. Two runs each give the same spread (2 to 9 in 45 s),
+  so a small effect is not ruled out. The cause is not yet known (P858).
+- The flash, its "Hash of data verified", the probe's answer and the flash-back were seen at the bench and are
+  described above; they are not saved as logs. The two Fire logs show the build of `crackle_c.mpy` at engine 9589dcd
+  (old) and of `_crackle.mpy` at engine 1005249 (new).
 - So the plan's sound gate `late 0` cannot hold for this run as it stands. Until the sound's margin is fixed (P858),
   a stage's Fire gate compares its count with this spread: at most 9 in 45 s over two runs, and the crackle plays with
   `dropped 0`.
