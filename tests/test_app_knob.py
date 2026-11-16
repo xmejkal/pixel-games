@@ -122,7 +122,7 @@ class TestAppKnob(unittest.TestCase):
         self.assertIs(box.game, games[-1])  # the pane saw the built game in the frame it was built
 
     def test_open_knob_is_none_without_machine_encoder(self):
-        self.assertIsNone(app.open_knob())  # the Mac has no machine module
+        self.assertIsNone(app.open_knob(volume.MasterVolume))  # the Mac has no machine module
 
 
 if __name__ == "__main__":

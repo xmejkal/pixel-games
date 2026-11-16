@@ -65,6 +65,36 @@ class OldCNames(unittest.TestCase):
         self.assertEqual([], found)
 
 
+class ComposedParts(unittest.TestCase):
+    """--- MVP (P850) --- main.py composes the knob and the speaker from the versions it chose (stage 0b-2), so no
+    caller opens them another way: app.open_speaker and speaker.voice_sum are gone, open_knob takes the chosen volume,
+    and app.run opens no knob of its own, so each probe's run passes one (main.compose builds it)."""
+
+    def callers(self):
+        names = sorted(n for n in os.listdir(ROOT) if n.startswith("probe") and n.endswith(".py"))
+        names += sorted("tools/" + n for n in os.listdir(os.path.join(ROOT, "tools")) if n.endswith(".py"))
+        names += sorted("games/" + n for n in os.listdir(os.path.join(ROOT, "games")) if n.endswith(".py"))
+        for name in names:
+            with open(os.path.join(ROOT, name)) as f:
+                yield name, ast.parse(f.read(), name)
+
+    def test_no_caller_opens_a_part_another_way(self):
+        found = []
+        for name, tree in self.callers():
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+                    continue
+                where = "%s:%d" % (name, node.lineno)
+                owner = node.func.value.id if isinstance(node.func.value, ast.Name) else None
+                if node.func.attr == "open_speaker" or (owner, node.func.attr) == ("speaker", "voice_sum"):
+                    found.append("%s %s" % (where, node.func.attr))
+                elif node.func.attr == "open_knob" and not node.args:
+                    found.append("%s open_knob() without the chosen volume" % where)
+                elif (owner, node.func.attr) == ("app", "run") and "knob" not in [k.arg for k in node.keywords]:
+                    found.append("%s app.run without knob=" % where)
+        self.assertEqual([], found)
+
+
 class ModuledefsCheck(unittest.TestCase):
     """tools/check_moduledefs.sh, which build.sh engine runs on the image's moduledefs.h (P848)."""
 

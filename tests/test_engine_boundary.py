@@ -21,8 +21,8 @@ PACKAGE = os.path.join(GAMES, "engine")
 FIXTURES = os.path.join(HERE, "boundary_fixtures")
 C_MODULE = "_engine"
 # The modules each package module may import besides BUILT_IN: other modules of the package and the C module. It grows
-# with each stage of the plan (0b-2 adds accel: ("_engine",)).
-DIRECTION = {"__init__": (), "signals": (), "clock": ()}
+# with each stage of the plan. accel (0b-2) imports _engine to name it in the boot line, and never _crackle.
+DIRECTION = {"__init__": (), "signals": (), "clock": (), "accel": ("_engine",)}
 # MicroPython v1.29's built-in modules that the engine may use on the ESP32-S3; a new one enters when a module needs it
 BUILT_IN = ("array", "binascii", "builtins", "collections", "errno", "esp", "esp32", "framebuf", "gc", "io", "machine",
             "math", "micropython", "os", "random", "select", "struct", "sys", "time", "uctypes")

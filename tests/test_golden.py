@@ -154,5 +154,27 @@ class NetTest(unittest.TestCase):
         self.assertEqual(self.subjects[TWICE], self.twice)
 
 
+class ChosenMixerTest(unittest.TestCase):
+    """The mixer golden through the classes main.py chooses with no engine_config (P850, stage 0b-2): the fast sum and
+    the fast volume, viper code that the Mac runs as plain Python with test_voices' pointers. The Mac cannot see a
+    32-bit overflow, so sum_match and scale_match also run on the board."""
+
+    def test_the_reference_and_the_chosen_class_give_equal_samples(self):
+        import main
+        import sound_viper
+        import volume_viper
+        from engine.accel import Chooser
+        from test_voices import Ptr
+
+        chosen = main.choose(Chooser())
+        self.assertEqual((sound_viper.ViperVoiceSum, volume_viper.ViperMasterVolume), chosen)
+        with mock.patch.object(sound_viper, "ptr16", lambda buf: Ptr(buf, "H", 0xFFFF), create=True), \
+                mock.patch.object(sound_viper, "ptr32", lambda buf: Ptr(buf, "i", 0), create=True), \
+                mock.patch.object(volume_viper, "ptr16", lambda buf: Ptr(buf, "H", 0xFFFF), create=True):
+            got = net.record_mixer(*chosen)
+        self.assertEqual(net.Golden.read(GOLDEN).mixer, got)
+        self.assertEqual(net.record_mixer(), got)
+
+
 if __name__ == "__main__":
     unittest.main()
