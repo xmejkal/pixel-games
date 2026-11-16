@@ -1638,3 +1638,26 @@ than the control.
 - Not done on the board: a D14 press while runner's bar was filling, and a rescue build. The Mac tests cover the
   close of a stopped load.
 - The PO's words after the play: "yeah, the bar is great, I like it".
+
+## P846 (#1210), 2026-11-16: the board baseline for the engine refactor's gates
+
+- The board: master 3ce8b53's game code (the same as 579b869, the net's base), .mpy, all 15 games. Logs:
+  `logs/run-p846-baseline-a.log` (the PO pressed D14 through six games, nobody played them, so idle games sat on their
+  game-over screens) and `logs/run-p846-baseline-b.log` (the PO played marshmallow for about 85 s, then two picks).
+  Each `fps` and `time` line covers 5 s.
+
+| game | state | fps | worst gap, ms | notes |
+|---|---|---|---|---|
+| marshmallow | played (run b) | 22 to 24 (16 lines) | 48 to 120 | the over phase 7.8 to 12.2 ms in the two lines with a round's end |
+| marshmallow | idle (run a) | 23, 24 | 57, 68 | |
+| balls | idle | 20 to 23 | 76 to 95 | |
+| bucket | idle | 22, 23 | 55 to 93 | |
+| meteors | idle | 16 to 21 | 77 to 137 | |
+| rescue | idle | 18 to 20 | 84 to 150 | |
+| flappy | idle, on its game-over screen | 13 to 16 | 117 to 146 | the over phase up to 83 ms (P856, #1221) |
+
+- Switch lines (run a): `switch balls 283 ms`, `switch meteors 1029 ms` (a first import of 410 ms, `worst 484 ms`),
+  `switch bucket 604 ms`, `switch rescue 1428 ms`, `switch flappy 1398 ms` (`load 483 ms, import 372 ms`).
+- Not measured yet: runner, snake, stack, cave, tunnel, road, starfire, cube, gravpong. No early stage (N to 0b-2)
+  changes them; their baseline is taken before the first stage that touches them.
+- An idle game sits on its game-over screen, so each later stage compares a game in the same state as here.
