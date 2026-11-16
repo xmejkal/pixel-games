@@ -21,7 +21,8 @@ from export import from_bin, pack_bytes, q565, to_bin  # noqa: E402
 from letters import GLYPHS, write  # noqa: E402
 from looks import NightInk, Watercolour  # noqa: E402
 from paint import main  # noqa: E402
-from sets import ART_SETS, gravpong as gravpong_set, runner as runner_set, snake as snake_set, stack as stack_set  # noqa: E402
+from sets import ART_SETS, cube as cube_set, gravpong as gravpong_set, runner as runner_set, snake as snake_set  # noqa: E402
+from sets import stack as stack_set  # noqa: E402
 from sets.runner import RED, run_cycle, runner  # noqa: E402
 
 PREVIEW_PILLOW = "12.3.0"  # preview.png was written with it; fonts and zlib change PNG bytes, not the board files
@@ -98,6 +99,13 @@ class OneSetAloneTest(unittest.TestCase):
     def test_gravpong_alone_as_committed(self):
         rnd.random()
         painting = gravpong_set.ART_SET.paint()
+        for name, (img, keyed) in painting.pictures.items():
+            with self.subTest(name=name):
+                self.assertEqual(to_bin(img, keyed), pack_bytes(name))
+
+    def test_cube_alone_as_committed(self):
+        rnd.random()
+        painting = cube_set.ART_SET.paint()
         for name, (img, keyed) in painting.pictures.items():
             with self.subTest(name=name):
                 self.assertEqual(to_bin(img, keyed), pack_bytes(name))
@@ -400,6 +408,58 @@ class FeedTest(unittest.TestCase):
                 self.assertEqual(to_bin(right.transpose(Image.Transpose.ROTATE_270), True), to_bin(down, True))
                 self.assertEqual(to_bin(right.transpose(Image.Transpose.ROTATE_90), True), to_bin(up, True))
         self.assertEqual(4, len({to_bin(pics["snake_head_r_%s" % p][0], True) for p in snake_set.POSES}))
+
+
+
+class SmileTest(unittest.TestCase):
+    """CubeTiming as SMILE (P573): the first set in night ink. Its pictures' sizes and key, every pixel ink, bone or
+    the accent as the board shows them, the accent only on the recording light, the FLAGGED stamp and the zoom's
+    REC, and the set under the pool. The files themselves are the expected output, judged on the preview."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.painting = cube_set.ART_SET.paint()
+        index = {}
+        exec(read("games", "art_index.py"), index)
+        cls.art, cls.sets = index["ART"], index["PICTURE_SETS"]
+
+    def test_the_set_is_seen_through_night_ink_with_the_one_accent(self):
+        self.assertIsInstance(cube_set.ART_SET.look, NightInk)
+        self.assertEqual(ACCENT, cube_set.ART_SET.look.accent)
+
+    def test_sizes_and_key(self):
+        a = cube_set
+        sizes = {"cube_square": (320, 240, False), "cube_title": (320, 240, False), "cube_over": a.CARD + (False,)}
+        sizes.update({"cube_lens_%d_%s" % (d, pose): (d, d, True) for d in a.LENS_SIZES for pose in a.IRIS})
+        sizes.update({"cube_light_%d" % k: (a.LIGHT, a.LIGHT, True) for k in range(2)})
+        sizes.update({"cube_target_%d" % k: (a.TARGET, a.TARGET, True) for k in range(2)})
+        sizes.update({"cube_flare_%d" % k: (a.FLARE, a.FLARE, True) for k in range(2)})
+        sizes.update({"cube_walker_%s_%d" % (kind, k): a.WALKER + (True,) for kind in ("back", "face")
+                      for k in range(2)})
+        sizes.update({"cube_face_" + pose: (a.FACE, a.FACE, False) for pose in ("neutral", "smile", "frozen")})
+        sizes.update({"cube_stamp_ok": a.STAMP + (True,), "cube_stamp_flag": a.STAMP + (True,)})
+        sizes.update({"cube_zoom_%d" % k: (a.ZOOM, a.ZOOM, False) for k in range(3)})
+        sizes.update({"cube_iris_%d" % k: (a.TITLE_IRIS, a.TITLE_IRIS, True) for k in range(3)})
+        sizes.update({"cube_digit_%d" % d: (a.DIGIT_W, a.DIGIT_H, True) for d in range(10)})
+        shown = {name: img.size + (keyed,) for name, (img, keyed) in self.painting.pictures.items()}
+        self.assertEqual(sizes, shown)
+
+    def test_every_pixel_is_ink_bone_or_the_accent(self):
+        allowed = {board_colour(c) for c in (cube_set.INK, cube_set.BONE, ACCENT)}
+        for name, (img, keyed) in self.painting.pictures.items():
+            with self.subTest(name=name):
+                self.assertLessEqual(shown(img), allowed)  # keyed pixels are skipped: shown() keeps the drawn ones
+
+    def test_the_accent_only_on_the_light_the_flag_and_the_rec(self):
+        accent = board_colour(ACCENT)
+        marked = {"cube_light_0", "cube_light_1", "cube_stamp_flag", "cube_zoom_0", "cube_zoom_1", "cube_zoom_2"}
+        for name, (img, keyed) in self.painting.pictures.items():
+            with self.subTest(name=name):
+                self.assertEqual(name in marked, accent in shown(img))
+
+    def test_the_set_is_no_larger_than_the_pool(self):
+        size = sum(self.art[n][0] * self.art[n][1] * 2 for n in self.sets["cube"])
+        self.assertLess(size, 739200)  # runner's set makes the pool; a smaller one needs no reset (P573)
 
 
 if __name__ == "__main__":
