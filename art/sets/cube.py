@@ -36,13 +36,14 @@ LIVES_AT = (311, 171)  # the right end of the lives' marks, in the monitor's lab
 BOARD = (6, 22, 94, 60)  # the scoring billboard
 BOARD_PLATE = (40, 42, 90, 56)  # its plate for the score's digits
 BAR_X, BAR_Y, BAR_HALF = 150, 228, 100  # the timing bar: its middle, its top row and its half width
-LENS_SIZES = (18, 26, 34)  # far, middle, near
+LENS_SIZES = (22, 30, 38)  # far, middle, near
 IRIS = ("shut", "half", "open")
 LIGHT = 7
 TARGET = 32
 WALKER = (12, 22)
 RING = (160, 212, 132, 8)  # the walkers' ring: its middle, and its radii across and deep
 STAMP = (128, 40)
+STAMP_AT = (188, 188)  # over the monitor, its right end on the monitor's
 FLARE = 40
 ZOOM = 128
 ZOOM_AT = (96, 24)
@@ -50,8 +51,8 @@ DIGIT_W, DIGIT_H = 8, 12
 TITLE_IRIS = 72
 TITLE_IRIS_AT = (124, 74)
 TITLE_PLATE = (170, 200, 40, 17)  # x, y, w, h
-CARD = (190, 72)
-CARD_AT = (58, 160)
+CARD = (190, 78)
+CARD_AT = (58, 158)
 CARD_PLATES = ((36, 46), (114, 46))
 PLATE_W, PLATE_H = 40, 17
 
@@ -336,7 +337,7 @@ def paint_ground(e):
                 e.rect(x, int(y), x + 2, int(y) + 1)
         y += gap
         gap *= 1.22
-    reflect(e, MOON[0], 70, FAR_BASE + 2, H, 7)
+    reflect(e, MOON[0], 70, FAR_BASE + 2, 196, 6)
     for x in (67, 255):
         reflect(e, x, 8, FAR_BASE + 2, 214, 2)
     for x in range(0, W, 2):  # the walkers' ring: a worn ellipse
@@ -378,12 +379,12 @@ def paint_billboard(e):
 
 
 def paint_monitor(e):
-    """The monitor in the corner that shows the one the camera watches: a double bone frame and SUBJECT over it."""
+    """The monitor in the corner that shows the one the camera watches: a double bone frame and YOU over it."""
     x0, y0, x1, y1 = FACE_BOX
     e.rect(x0, y0, x1, y1, INK)
     e.frame(x0, y0, x1, y1)
     e.frame(FACE_AT[0] - 2, FACE_AT[1] - 2, FACE_AT[0] + FACE + 2, FACE_AT[1] + FACE + 2)
-    e.words("SUBJECT", x0 + 4, y0 + 3.5, 0.8, 0.9, BONE, centre=False)
+    e.words("YOU", x0 + 4, y0 + 3.5, 0.8, 0.9, BONE, centre=False)
 
 
 def paint_bar(e):
@@ -416,26 +417,28 @@ def paint_square():
 # --- the camera's sprites ----------------------------------------------------------------------------------------
 
 def lens(size, pose):
-    """The lens, size px across, keyed: a thick bone rim with a hood's shadow at the top, the barrel in ink, and the
-    iris: shut (bone blades round a pinhole), half, or open (a wide black pupil in a bone ring, a glint): staring."""
-    e = Etch(size, size)
-    c, r = size / 2, size / 2 - 0.3
-    e.ellipse(c, c, r, r)  # the rim
-    e.ellipse(c, c + 0.6, r - 1.6, r - 1.8, INK)
-    glass = r - 2.6
+    """The lens, size px across, keyed: an ink collar that parts it from whatever is behind, a thick bone rim, the
+    hood's shade over its top, the barrel in ink, and the iris: shut (bone blades round a pinhole), half, or open (a
+    wide black pupil in a bone ring with a big glint): the camera staring at you."""
+    e = Etch(size, size, (0, 0, 0))
+    c, r = size / 2, size / 2 - 0.2
+    e.ellipse(c, c, r, r, INK)  # the collar
+    e.ellipse(c, c, r - 1.6, r - 1.6)  # the rim
+    e.ellipse(c, c + 0.8, r - 3.6, r - 3.8, INK)  # the barrel, the hood's shade on its top
+    glass = r - 5.2
     if pose == "open":
-        e.ellipse(c, c, glass, glass, BONE, width=1.0)
-        e.ellipse(c - glass * 0.32, c - glass * 0.36, max(0.9, glass * 0.22), max(0.9, glass * 0.2))
-        e.px(c + glass * 0.35, c + glass * 0.35)
+        e.ellipse(c, c, glass, glass, BONE, width=1.2)
+        e.ellipse(c - glass * 0.34, c - glass * 0.36, max(1.2, glass * 0.28), max(1.0, glass * 0.22))
+        e.ellipse(c + glass * 0.38, c + glass * 0.36, max(0.7, glass * 0.1), max(0.7, glass * 0.1))
     else:
-        hole = glass * (0.25 if pose == "shut" else 0.58)
+        hole = glass * (0.28 if pose == "shut" else 0.6)
         e.ellipse(c, c, glass, glass)
         e.ellipse(c, c, hole, hole, INK)
         for k in range(6):  # the blades' edges, spiralling to the hole
             a = k * pi / 3
             e.line([(c + hole * cos(a + 1.2), c + hole * sin(a + 1.2)), (c + glass * cos(a), c + glass * sin(a))],
-                   0.6, INK)
-    return e.keyed()
+                   0.7, INK)
+    return e.keyed((0, 0, 0))
 
 
 def light(k):
@@ -576,6 +579,7 @@ def viewfinder(e, n):
             x = 3 if sx == 0 else n - 5
             y = 3 if sy == 0 else n - 13
             e.rect(x, y, x + 2, y + 10)
+    e.rect(7, 7, 34, 15, INK)
     e.rect(9, 9, 13, 13, ACCENT)
     e.words("REC", 16, 9, 0.9, 1.0, BONE, centre=False)
 
@@ -585,7 +589,8 @@ def zoom(k):
     bone or ink by the share of bone in it, under the viewfinder's marks."""
     n = ZOOM
     e = Etch(n, n)
-    paint_face(e, n * 1.6, "frozen", n / 2 - n * 1.6 * 0.49, n * 0.52 - n * 1.6 * 0.45)
+    big = n * 1.12
+    paint_face(e, big, "frozen", n / 2 - big * 0.5, n * 0.5 - big * 0.46)
     if k:
         block = 8 * k
         src = e.img.copy()
@@ -622,7 +627,7 @@ def stamp(word, colour):
     m = big.resize((w, h), Image.BOX).point(lambda v: 255 if v >= 128 else 0)
     e = Etch(w, h)
     e.fill(m, colour)
-    for _ in range(26):  # the worn specks
+    for _ in range(10):  # the worn specks
         e.px(rnd.uniform(0, w), rnd.uniform(0, h), INK)
     return e.keyed()
 
@@ -641,7 +646,7 @@ def digit(n):
 def iris(k):
     """The title's great lens, 72 x 72 keyed: the iris shut, half open, open (k 0, 1, 2)."""
     n = TITLE_IRIS
-    e = Etch(n, n)
+    e = Etch(n, n, (0, 0, 0))
     c = n / 2
     e.ellipse(c, c, c - 0.5, c - 0.5)
     e.ellipse(c, c, c - 3, c - 3, INK)
@@ -664,18 +669,7 @@ def iris(k):
         e.ellipse(c, c, hole * 0.55, hole * 0.55, BONE, width=0.8)
     e.ellipse(c - glass * 0.38, c - glass * 0.42, 3.2, 2.2)  # the glint
     e.ellipse(c + glass * 0.3, c + glass * 0.36, 1.4, 1.0)
-    return e.keyed()
-
-
-def dimmed(square, keep):
-    """The square with each bone pixel kept by chance keep, the rest ink: the title's dimmed night."""
-    out = square.copy()
-    px = out.load()
-    for y in range(H):
-        for x in range(W):
-            if px[x, y][:3] == BONE and rnd.random() > keep:
-                px[x, y] = INK + (255,)
-    return out
+    return e.keyed((0, 0, 0))
 
 
 def plate(e, x, y, w=PLATE_W, h=PLATE_H):
@@ -683,18 +677,42 @@ def plate(e, x, y, w=PLATE_W, h=PLATE_H):
     e.frame(x, y, x + w, y + h)
 
 
-def paint_title(square):
-    """The title, 320 x 240: the square with its moon, SMILE in great bone letters edged in ink, TAP WHEN THE LENS
-    FACES YOU and BEST with a plate on an ink band; the game opens the great lens on the moon."""
+def paint_title():
+    """The title, 320 x 240: the night, the full moon with its halo, the camera's cables crossing it to the corners
+    (bone on the sky, ink on the moon) and the roofs in silhouette across its foot; SMILE in great bone letters over
+    it, TAP WHEN THE LENS FACES YOU and BEST with a plate under it. The game opens the great lens on the moon."""
     e = Etch(W, H)
-    e.img = square.convert("RGB")
-    e.rect(0, 160, W, 222, INK)
+    cx, cy, r = TITLE_IRIS_AT[0] + TITLE_IRIS // 2, TITLE_IRIS_AT[1] + TITLE_IRIS // 2, 62
+    for _ in range(40):
+        x, y = rnd.uniform(0, W), rnd.uniform(16, 150)
+        if hypot(x - cx, y - cy) > r + 26:
+            e.px(x, y)
+    e.engrave(lambda x, y: max(0.0, 0.62 - (hypot(x - cx, y - cy) - r) / 40) if hypot(x - cx, y - cy) > r + 2 else 0,
+              period=6)
+    ends = ((0, 76), (W, 76), (0, 150), (W, 150))
+    for x, y in ends:
+        e.line([(cx, cy), (x, y)], 1.0)
+    e.ellipse(cx, cy, r, r)
+    e.engrave(lambda x, y: max(0.0, (hypot(x - cx + 10, y - cy + 9) - r * 0.96) / 16), INK, period=6,
+              where=lambda x, y: hypot(x - cx, y - cy) < r)
+    for x, y in ends:
+        k = r / hypot(x - cx, y - cy)
+        e.line([(cx, cy), (cx + (x - cx) * k, cy + (y - cy) * k)], 1.0, INK)
+    x = 0.0
+    while x < W:  # the roofs across the moon's foot
+        w, top = rnd.uniform(14, 30), rnd.uniform(140, 156)
+        e.rect(x, top, x + w, 170, INK)
+        if rnd.random() < 0.45:
+            e.poly([(x - 1, top + 0.5), (x + w / 2, top - w * 0.4), (x + w + 1, top + 0.5)], INK)
+        else:
+            rooftop(e, x, top, w)
+        x += w + rnd.uniform(0, 2)
+    e.rect(0, 16, W, 70, INK)
+    e.rect(0, 69, W, 70)
+    e.rect(0, 160, W, H, INK)
     e.rect(0, 160, W, 161)
-    e.rect(0, 221, W, 222)
-    unit, width = 8.0, 4.4
-    x = 160 - text_width("SMILE", unit) / 2
-    e.words("SMILE", x, 22, unit, width + 4, INK, centre=False)
-    e.words("SMILE", x, 22, unit, width, BONE, centre=False)
+    unit, width = 8.0, 5.0
+    e.words("SMILE", 160 - text_width("SMILE", unit) / 2, 20, unit, width, BONE, centre=False)
     e.words("TAP WHEN THE LENS FACES YOU", 160, 172, 1.4, 1.2)
     e.words("BEST", TITLE_PLATE[0] - 18, TITLE_PLATE[1] + 5, 1.4, 1.1)
     plate(e, *TITLE_PLATE)
@@ -702,7 +720,8 @@ def paint_title(square):
 
 
 def paint_over():
-    """The card, 190 x 72: PROFILE COMPLETE in bone, a rule, and plates for the score and the best."""
+    """The card, 190 x 78: PROFILE COMPLETE in bone, a rule, and plates for the score and the best; the game writes
+    tap to retry under them."""
     w, h = CARD
     e = Etch(w, h)
     e.frame(0, 0, w, h)
@@ -722,7 +741,7 @@ CENTRE = (160, 116)
 VERTS = [((i & 1) * 2 - 1, ((i >> 1) & 1) * 2 - 1, ((i >> 2) & 1) * 2 - 1) for i in range(8)]
 FACES = ((1, 3, 7, 5), (4, 5, 7, 6), (0, 2, 6, 4), (0, 1, 3, 2), (0, 1, 5, 4))  # x+, z+, x-, z-, top
 NORMALS = ((1, 0, 0), (0, 0, 1), (-1, 0, 0), (0, 0, -1), (0, -1, 0))
-SHADES = ((52, 48, 66), (34, 32, 46), (86, 82, 100))  # the housing's sides by their light, and its top
+SHADES = ((42, 39, 56), (27, 25, 38), (66, 62, 82))  # games/space3d.py's: the sides, lit and shaded, and the top
 
 
 def project(v, yaw):
@@ -761,7 +780,7 @@ def cube_scene(pics, yaw=2.25, face_pose="neutral", stamp_name=None, lit=True):
     over(out, pics["cube_lens_%d_%s" % (size, "open" if lit else "half")], x - size // 2, y - size // 2)
     over(out, pics["cube_face_" + face_pose], *FACE_AT)
     if stamp_name:
-        over(out, pics[stamp_name], FACE_BOX[2] - STAMP[0] + 4, FACE_AT[1] + 8)
+        over(out, pics[stamp_name], *STAMP_AT)
     return out.convert("RGB")
 
 
@@ -840,7 +859,7 @@ def paint_cube():
         pics["cube_iris_%d" % k] = (iris(k), True)
     for n in range(10):
         pics["cube_digit_%d" % n] = (digit(n), True)
-    pics["cube_title"] = (paint_title(pics["cube_square"][0]), False)
+    pics["cube_title"] = (paint_title(), False)
     pics["cube_over"] = (paint_over(), False)
     return Painting(pics)
 

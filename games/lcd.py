@@ -66,6 +66,7 @@ class Strip:
 class TftCanvas(Canvas):
     def __init__(self, tft):  # no big buffers: the driver owns the framebuffer; bg_ok, because TftOut paints the still picture
         self.tft, self.full, self.bg_ok, self.clip, self.ops, self.cache, self.kept = tft, False, True, FULL, (), {}, {}
+        self.polys = {}  # a count of points: the panel's points for poly, made once
         self.mono = framebuf.FrameBuffer(bytearray(16 * 8), 16 * 8, 8, framebuf.MONO_HLSB)
         if ORIENTATION not in (0, 180):
             raise ValueError("ORIENTATION must be 0 or 180, not %r" % ORIENTATION)
@@ -132,6 +133,26 @@ class TftCanvas(Canvas):
         skipped (-1: none). The driver clips it and copies it by rows when it is wholly on the panel at alpha 255;
         under 255 it blends each pixel with the frame (P762)."""
         self.tft.blit_buffer(buf, y, PANEL_H - x - w, h, w, alpha, key)
+
+    def poly(self, points, c, alpha=255):
+        """A filled polygon, points a list of [x, y] in game px, by the driver's fill_polygon: rows of hlines, each
+        blended when alpha is under 255, its tiles marked (P573). The panel's points go into a list made once for
+        each count of points, so a frame makes no list. The driver fills the rows strictly between the topmost and
+        the bottommost point (a game column at each end is left out) and allocates its own points."""
+        n = len(points)
+        out = self.polys.get(n)
+        if out is None:
+            out = self.polys[n] = [[0, 0] for _ in range(n)]
+        for i in range(n):
+            x, y = points[i]
+            q = out[i]
+            if self.turned:  # line's map, for each point
+                q[0] = PANEL_W - 1 - int(y)
+                q[1] = int(x)
+            else:
+                q[0] = int(y)
+                q[1] = PANEL_H - 1 - int(x)
+        self.tft.fill_polygon(out, 0, 0, c, alpha)
 
     def line(self, x0, y0, x1, y1, c):
         x0, y0, x1, y1 = [clamp(int(v), -2000, 2000) for v in (x0, y0, x1, y1)]

@@ -1,5 +1,5 @@
 """tools/render_scene.py and tests/drawing_tft.py on the Mac (P795): the font's parse into the framebuf stub, the
-stand-in display's blit, blend and line against the driver's, pictures.ROOT, the button patterns, the font refusal,
+stand-in display's blit, blend, line and polygon fill against the driver's, pictures.ROOT, the button patterns, the font refusal,
 and a smoke run of every subject as a subprocess of the tool. framebuf comes from tests/stubs and time gets the
 MicroPython ticks functions, as in test_fire. Run from the repository root: python3 -B -m unittest tests.test_render_scene.
 --- MVP (P795) ---"""
@@ -227,6 +227,52 @@ class LineTest(unittest.TestCase):
         tft = DrawingTft()
         tft.line(0, 400, 0, 500, 1)
         self.assertEqual([], self.lit(tft))
+
+
+class PolygonTest(unittest.TestCase):
+    """fill_polygon on the stand-in as the driver's PolygonFill (s3lcd.c, probe635's notes), and poly on the two
+    canvases (P573: SMILE's housing and the lens's light)."""
+
+    def lit(self, tft):
+        return {(k % lcd.PANEL_W, k // lcd.PANEL_W) for k, v in enumerate(memoryview(tft.frame).cast("H")) if v}
+
+    def test_a_quad_fills_the_rows_strictly_between_its_top_and_bottom_each_span_with_both_ends(self):
+        tft = DrawingTft()
+        tft.fill_polygon([[10, 10], [20, 10], [20, 15], [10, 15]], 0, 0, 1)
+        self.assertEqual({(x, y) for y in range(11, 15) for x in range(10, 21)}, self.lit(tft))
+        tft = DrawingTft()
+        tft.fill_polygon([[10, 10], [20, 10], [20, 15], [10, 15]], 5, 7, 1)  # moved by its x and y
+        self.assertEqual({(x + 5, y + 7) for y in range(11, 15) for x in range(10, 21)}, self.lit(tft))
+
+    def test_a_see_through_polygon_blends_each_pixel(self):
+        tft = DrawingTft()
+        tft.fill_rect(0, 0, 40, 40, gfx.BLUE)
+        tft.fill_polygon([[0, 0], [30, 0], [0, 30]], 0, 0, gfx.RED, 128)
+        px = memoryview(tft.frame).cast("H")
+        self.assertEqual(blend(gfx.RED, gfx.BLUE, 128), px[5 * lcd.PANEL_W + 5])
+        self.assertEqual(gfx.BLUE, px[35 * lcd.PANEL_W + 35])
+
+    def test_the_canvas_turns_the_game_points_and_keeps_one_list_for_each_count(self):
+        tft = DrawingTft()
+        cv = lcd.TftCanvas(tft)
+        quad = [[100, 50], [140, 50], [140, 80], [100, 80]]
+        cv.poly(quad, gfx.WHITE)
+        made = cv.polys[4]
+        cv.poly(quad, gfx.WHITE)
+        self.assertIs(made, cv.polys[4])  # no list a call
+        img = tft.image()
+        self.assertEqual((255, 255, 255), img.getpixel((120, 65)))
+        for x, y in ((98, 65), (142, 65), (120, 48), (120, 82)):
+            self.assertEqual((0, 0, 0), img.getpixel((x, y)), (x, y))
+
+    def test_the_recording_canvas_fills_a_row_at_a_time_and_leaves_out_a_see_through_one(self):
+        cv = gfx.Canvas()
+        cv.start()
+        cv.poly([[10, 10], [20, 10], [20, 15], [10, 15]], 7)
+        self.assertEqual([(10, y, 21, y + 1, 0, 7) for y in range(11, 15)], cv.ops)
+        cv.start()
+        cv.poly([[10, 10], [20, 10], [20, 15]], 7, 100)
+        self.assertEqual([], cv.ops)
 
 
 class PicturesRootTest(unittest.TestCase):

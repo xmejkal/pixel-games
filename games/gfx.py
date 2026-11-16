@@ -56,7 +56,8 @@ GLYPHS = {}  # each character's dot runs, shared by every canvas
 
 
 class Canvas:
-    """Records what a game draws (fill, box, line, text, big, gradient, sprite, hill, disc), then replays a rectangle."""
+    """Records what a game draws (fill, box, line, text, big, gradient, sprite, poly, hill, disc), then replays a
+    rectangle."""
 
     def __init__(self, full=False):
         """full: the board has PSRAM, so the buffer holds the whole screen and a second one keeps the background."""
@@ -182,6 +183,29 @@ class Canvas:
         cx0, cy0, cx1, cy1 = self.clip
         if x + art[1] > cx0 and x < cx1 and y + art[2] > cy0 and y < cy1:
             self.ops.append((x, y, x + art[1], y + art[2], 4, art[0], x, y))
+
+    def poly(self, points, c, alpha=255):
+        """A filled convex polygon, points a list of [x, y] in game px, as one fill a row (lcd.TftCanvas.poly hands
+        it to the driver's fill_polygon). This canvas has no blend, so a see-through one (alpha under 255) is left
+        out."""
+        if alpha < 255:
+            return
+        n = len(points)
+        top = bottom = int(points[0][1])
+        for i in range(n):
+            y = int(points[i][1])
+            top, bottom = min(top, y), max(bottom, y)
+        for y in range(top, bottom):  # a row's crossings with the edges, as the driver finds them (s3lcd.c PolygonFill)
+            left, right, j = WIDTH, -1, n - 1
+            for i in range(n):
+                xi, yi = points[i]
+                xj, yj = points[j]
+                if (yi < y <= yj) or (yj < y <= yi):
+                    x = int(xi + (y - yi) / (yj - yi) * (xj - xi))
+                    left, right = min(left, x), max(right, x)
+                j = i
+            if right >= left:
+                self.fill(left, y, right - left + 1, 1, c)
 
     def hill(self, cx, base, half, height, c):
         """A triangle, drawn as rows two pixels high."""

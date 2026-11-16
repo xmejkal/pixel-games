@@ -18,7 +18,7 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import gfx  # noqa: E402
-from space3d import CubeTiming  # noqa: E402
+from space3d import CubeTiming, Housing  # noqa: E402
 
 FRAME_MS = 40  # app.py's FRAME_MS
 SEED, FRAMES, EVERY = 3, 1500, 2  # the trace's seed, its length, and the bot's look: one frame in EVERY
@@ -165,6 +165,78 @@ class RulesTest(unittest.TestCase):
         game.done = False
         game.play(True, True)
         self.assertEqual((0, gfx.OVER), (game.lives, game.state))
+
+
+
+def faces_you(normal, yaw):
+    """Whether a face of the cube with this normal faces the eye, worked out here on its own: the face's middle is
+    its normal (a cube 2 wide), turned by the yaw and the tilt; the eye is D before the cube's middle."""
+    c, s, tc, ts = math.cos(yaw), math.sin(yaw), math.cos(CubeTiming.TILT), math.sin(CubeTiming.TILT)
+    x, y, z = normal
+    x, z = x * c + z * s, -x * s + z * c
+    y, z = y * tc - z * ts, y * ts + z * tc
+    return x * x + y * y + z * (z + CubeTiming.D) < 0  # (middle - eye) . normal, the middle being the normal
+
+
+class HousingTest(unittest.TestCase):
+    """The housing as SMILE draws it (P573): its corners where the rules' project puts them, to the last bit, so the
+    lens is the timing cue; its faces facing you as a separate sum says; the lens hidden when its corner is on the
+    back."""
+
+    YAWS = [k * 2 * math.pi / 720 for k in range(720)] + [CubeTiming.TARGET, -1.0, 40.123]
+
+    def test_every_corner_the_top_and_the_light_are_where_project_puts_them(self):
+        game = playing()
+        h = Housing(game)
+        for yaw in self.YAWS:
+            h.update(yaw)
+            for i, v in enumerate(h.points3d):
+                with self.subTest(yaw=yaw, i=i):
+                    self.assertEqual(game.project(v, yaw), (h.x[i], h.y[i], h.z[i]))
+        self.assertEqual(game.VERTS[game.MARK], h.points3d[game.MARK])
+        self.assertEqual(((0, -1, 0), (0.55, -1, 0.55)), h.points3d[h.CENTRE:])
+
+    def test_the_faces_that_face_you(self):
+        h = Housing(playing())
+        normals = ((1, 0, 0), (0, 0, 1), (-1, 0, 0), (0, 0, -1), (0, -1, 0))
+        counts = set()
+        for yaw in self.YAWS:
+            h.update(yaw)
+            with self.subTest(yaw=yaw):
+                self.assertEqual([faces_you(n, yaw) for n in normals], h.seen)
+                self.assertFalse(faces_you((0, 1, 0), yaw))  # the bottom never does
+            counts.add(sum(h.seen))
+        self.assertEqual({2, 3}, counts)  # the top and one or two sides
+
+    def test_the_lens_shows_only_while_its_corner_faces_you(self):
+        h = Housing(playing())
+        shown = []
+        for yaw in self.YAWS[:720]:
+            h.update(yaw)
+            shown.append(h.lens_seen())
+            with self.subTest(yaw=yaw):
+                self.assertEqual(faces_you((1, 0, 0), yaw) or faces_you((0, 0, 1), yaw), h.lens_seen())
+        self.assertTrue(200 < shown.count(False) < 300)  # hidden about a third of a turn, on the back
+        h.update(CubeTiming.TARGET)
+        self.assertTrue(h.lens_seen())  # it faces you when a tap is on time
+
+    def test_an_edge_is_drawn_when_one_of_its_faces_faces_you(self):
+        h = Housing(playing())
+        self.assertEqual(12, len(h.edges))
+        for a, b, f, g in h.edges:
+            self.assertIn(a, h.FACES[f])
+            self.assertIn(b, h.FACES[f])
+            if g >= 0:
+                self.assertIn(a, h.FACES[g])
+        self.assertEqual(4, sum(1 for e in h.edges if e[3] < 0))  # the bottom's four edges join one seen face
+
+
+class LookTest(unittest.TestCase):
+    def test_the_line_colours_are_night_inks(self):
+        sys.path.insert(0, os.path.join(os.path.dirname(HERE), "art"))
+        from looks import NightInk
+        self.assertEqual((gfx.c565(*NightInk.INK), gfx.c565(*NightInk.BONE)), (CubeTiming.INK, CubeTiming.BONE))
+        self.assertEqual(gfx.c565(214, 40, 48), gfx.ACCENT)
 
 
 if __name__ == "__main__":
