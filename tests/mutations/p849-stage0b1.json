@@ -1,0 +1,38 @@
+[
+ {
+  "file": "tools/box.py",
+  "name": "a stale .py in the folder stays",
+  "find": "            kept = [n[:-3] + \".mpy\" for n in sources]\n",
+  "replace": "            kept = [n[:-3] + \".mpy\" for n in sources] + sources\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a removed module stays",
+  "find": "if n.endswith((\".py\", \".mpy\")) and n not in kept))",
+  "replace": "if n.endswith((\".py\", \".mpy\")) and n not in kept and n[:n.rindex(\".\")] + \".py\" in sources))"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a moved module stays at the root",
+  "find": "        stale += [m + kind for m in MOVED for kind in (\".py\", \".mpy\")]\n",
+  "replace": ""
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the folder is never made",
+  "find": "            self.runner.run([\"mkdir\", \":\" + package])\n",
+  "replace": "            pass\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a board without the folder is listed",
+  "find": "        if has_folder:\n            there = board_names",
+  "replace": "        if True:\n            there = board_names"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the package's tracebacks name the flat module",
+  "find": "\"-s\", package + \"/\" + name if package else name,",
+  "replace": "\"-s\", name,"
+ }
+]
