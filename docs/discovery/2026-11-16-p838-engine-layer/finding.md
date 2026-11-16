@@ -17,7 +17,7 @@ reference `file:line` is in pixel-games unless it starts with `engine/`.
 > - **Where it lives:** a Python package beside the games first, behind a boundary test. It moves into pixel-engine
 >   when a second board uses it. A hardware description and `main.py` hold the pins and drivers, and no game touches
 >   them. Every game loses its board and C knowledge, except the C-only games, which declare what they need.
-> - **What comes first:** a safety net of frame and sound hashes, then stage 0 (the package, the deploy, the choice
+> - **What comes first:** a safety net of frame hashes and cue sequences, then stage 0 (the package, the deploy, the choice
 >   of versions), then stage 1 (the input action map), which multiplayer builds on.
 > - **What you decide:** the engine's name, where it lives, and whether the second board only sends presses or also
 >   shows the game.
@@ -61,7 +61,7 @@ shape. The changes it made, one line each:
 16. T5, S5, A7: stage 0 brings board numbers, few larger modules, an import of every engine module at boot, and deploy tests on a temporary tree.
 17. R2: the stages now say which one moves each module into the package.
 18. A4: stage 3 is split into 3a and 3b, and stage 5 into 5a (audio) and 5b (physics).
-19. T6: the logic stages list their mutation rows in the PR. pixel-games has no `tools/mutate.py`, so `--anchors` cannot run there yet.
+19. T6: the logic stages write mutation rows, proven with spark's `tools/mutate.py --root . --anchors` (round 2, item 5).
 20. T7: stage 3 keeps shims for the names the tests patch, with a test that each still resolves, until stage 8.
 21. T8: stage 1 first writes a characterization test of the press sequences on the old code.
 22. S8: the Fire run's `late` count is a gate after stages 1, 3, 6 and 7, and stage 3 does not make P837's 58 ms worse.
@@ -81,6 +81,17 @@ shape. The changes it made, one line each:
 36. U4: the words table, and `accel`'s function is named `choose`.
 37. U5: a table of the console lines that freezes their formats.
 38. U6, U7: the TL;DR is five bullets, and section 8 puts the PO's real decisions first.
+
+Round 2 ran on 2026-11-16: the refuter on Opus checked `fb01a27`. Its findings, one line each:
+
+1. R, high: the chosen versions did not reach the objects that games build in setup (`bucket.py:145-150`, `burning.py:84`, `balls.py:78`). On MicroPython 1.29 a plugin a game built with the reference default ran Python while `main.py` had chosen C. Now `main.py` builds one `parts` record, every scene gets it in its constructor, games build their plugins from `self.parts`, and a test checks that a game's plugin gets the chosen class. `accel.use`, a Service Locator, is gone.
+2. R, high: `tools/crackle.sh` stops at its first failed copy (`set -eo pipefail`, `:33`) and copies flat modules by path (`:70-79`), so the Fire gate broke at stage 1. Each stage that moves a module now updates every tool and probe that names it by its flat path, and its row says which.
+3. R, medium: stages 3a to 6 cannot go in any order. `speaker.py` imports `pins` (`speaker.py:5`) and `lcd.py` imports `gdi` (`lcd.py:28`), so the boundary test fails if they move before stage 7. The order is now N, 0, 1, 2, 3a, 3b, 3c, 4, 7, 5a, 5b, 6, 8, 9.
+4. R, medium: no stage moved `gfx.py`'s canvas and colours or `fast.py`, or made the kit. A new stage 3c does, and section 6 says where every module ends.
+5. R, rejected: spark's `tools/mutate.py --root . --anchors` runs on pixel-games. The mutation rows are proven with it.
+6. R, medium: the 15 games read only player 0, so a remote FIRE for player 1 played no game. As a controller, the remote's FIRE also drives player 0 in a one-player game.
+7. R, low: of the 30 test lines, 15 set the engine to `None`, and 69 more read `fire.engine.*`, `plugins.engine.*` or `balls.engine.*`. `tests/test_plugins.py:102-104` asserts the module attribute. Stage 5b changes those assertions. The refuter counted 16 and 65, and the page gives the counts from the code.
+8. R, low: the TL;DR says "cue sequences", the cue-name test handles a conditional emit (`rescue.py:657`), and the engine sets only the first `covers`.
 
 A correction outside the list: change 2 quoted "Python bodies 5.7 ms for 30 bodies". `bench.md:218` says 5.7 ms for 30
 spring bodies and 40 particles together, so the table cites the rain's 160 Python bodies at 8 to 9 fps
@@ -153,7 +164,9 @@ Lines are `wc -l` at `3ce8b53`. The last column says where each part goes:
 The tests pin most of this on the Mac. `tests/test_pick.py`, `test_lineup.py`, `test_app_knob.py` and
 `test_signals.py` drive `App.frame` with a clock they set. They patch module names such as `app.SETTLE_MS`,
 `app.games_for`, `app.Lineup.game_steps` and `pictures.free`. Nine test files and `tools/render_scene.py:177-178` set
-`fire.engine`, `plugins.engine` and `balls.engine` to the C built by clang, 30 lines in all. `test_painted_frames.py`
+`fire.engine`, `plugins.engine` and `balls.engine`, 30 lines in all: 15 set it to `None`, the others to the C built
+by clang. 69 more lines read `fire.engine.*`, `plugins.engine.*` or `balls.engine.*`, and `tests/test_plugins.py:102-104`
+asserts the module attribute itself. `test_painted_frames.py`
 and `tools/render_scene.py` render real frames through `lcd.TftOut` on a stand-in display (`tests/drawing_tft.py`).
 
 ## 2. The design rule: one interface, a reference and a fast version
@@ -167,16 +180,26 @@ Each hot part of the engine has one interface and two versions:
 
 Five rules come with it:
 
-1. **One choice, at the start, by the composition root.** `main.py` calls `accel.choose(part)` once for each part and
-   hands the result to the engine's constructors. An engine class takes its version as a constructor argument, with
-   the reference version as the default, as `Mixer` takes a `VoiceSum` today (`sound.py:67-68`, `speaker.py:12-18`,
-   `:27`). That is the Strategy pattern, with `accel` as an Abstract Factory
+1. **One choice, at the start, by the composition root, handed down in one record.** `main.py` calls
+   `accel.choose(part)` once for each part and puts the results in one `Parts` record:
+   `parts = Parts(bodies=choose("bodies"), balls=choose("balls"), heat=choose("heat"), voice_sum=choose("sum"),
+   volume=choose("volume"))`. The engine objects that `main.py` builds take their version as a constructor argument,
+   as `Mixer` takes a `VoiceSum` today (`sound.py:67-68`, `speaker.py:12-18`, `:27`). The games build their own
+   plugins in setup (`bucket.py:145-150`, `burning.py:84`, `balls.py:78`), so the `SceneManager` hands every scene
+   the same record in its constructor, and a game builds from it: `PhysicsPlugin(N, self.parts.bodies)`. No engine
+   class and no game asks `accel` for anything. That is Dependency Injection by constructor, with the record as a
+   Parameter Object, not a Service Locator (Martin Fowler,
+   [Dependency Injection](https://martinfowler.com/articles/injection.html), its section "Service Locator vs
+   Dependency Injection", and [Introduce Parameter Object](https://refactoring.com/catalog/introduceParameterObject.html)).
+   Each version is a Strategy, and `accel` is an Abstract Factory
    ([Strategy](https://en.wikipedia.org/wiki/Strategy_pattern),
-   [Abstract Factory](https://en.wikipedia.org/wiki/Abstract_factory_pattern)). Nothing chooses per call.
+   [Abstract Factory](https://en.wikipedia.org/wiki/Abstract_factory_pattern)). Nothing chooses per call. A test builds
+   a game through `Lineup` with a record whose `bodies` is a marker class, and checks that the game's plugin holds it.
+   The refuter showed why on MicroPython 1.29: with a default in the plugin, `main.py` chose C and the game ran Python.
 2. **The setting is per part.** `accel` tries to import a tiny `engine_config.py`, which `main.py` or the deploy
    writes. It holds `REFERENCE = ()` (all fast) or a set of part names, such as `("bodies", "volume")`. `accel` never
-   imports the hardware. The tests have one injection point, `accel.use(engine)`, in place of today's 30 lines that
-   set `fire.engine`, `plugins.engine` and `balls.engine`.
+   imports the hardware. The tests build a `Parts` record too, with the C from clang or with the reference versions,
+   in place of today's 30 lines that set `fire.engine`, `plugins.engine` and `balls.engine`.
 3. **The fast object is the C type itself.** `accel` returns `engine.Bodies`, `engine.Balls` or `engine.HeatField`,
    never a Python wrapper around them. The Python twin matches the C's method set and stays block-shaped: `step(n)`,
    `read(into)`, `drain(into)`, with no accessor per item. Python decides per frame, and C does whole blocks: a buffer,
@@ -343,6 +366,7 @@ class GcPolicy:      # Off (no PSRAM) or Timed(floor, every_frames): today's GC_
 
 ```python
 class Scene:             # the engine's contract: name, ART, cues, ACTIONS, needs, plugins, bg, covers,
+    def __init__(self, parts): ...         # parts: the versions main.py chose, kept as self.parts
     def step(self, now_ms, actions): ...   # draw(cv), paint_static(cv). The engine calls step.
 class Lineup:            # names, build_steps(i): a generator of progress 0 to 1 that returns the Scene
 class SceneManager:      # pick(now), settle(now), frame(now, actions): the scene to draw, and refuses a failing build
@@ -381,7 +405,8 @@ class Bank:              # as today. Its memory is engine.SoundBank (fast) or a 
   as `def` wrappers, so a draw costs no extra call.
 - **The games stop loading and stop importing `pictures`.** The engine loads `Scene.ART` before it builds the game
   (P822, `app.py:128-130`), so each game's own `pictures.load` (the eleven sites in section 1) is a second load that
-  finds the set loaded. The engine sets `covers` from the load's result. A game draws a picture through its canvas,
+  finds the set loaded. The engine sets the first `covers` from the load's result, and a game may still change it while it plays
+  (`marshmallow.py:203`, `meteors.py:349`, `balls.py:73`, `fire.py:194`). A game draws a picture through its canvas,
   `cv.pic(name, x, y, alpha)`. `tools/render_scene.py` builds games without `App`, so it gets its own call to the load.
 
 ### 4.4 Audio
@@ -421,11 +446,13 @@ class RemoteSource(InputSource):  # the link's newest INPUT message: a press cou
 class ActionMap:         # players[i], each with its sources. poll(now) fills each Actions in place. forget()
 ```
 
-- **Players:** `players[0]` is the box's own buttons. A remote board fills `players[1]`.
+- **Players:** `players[0]` is the box's own buttons. A remote board fills `players[1]`. The 15 games read only
+  player 0, so as a controller the remote's FIRE also drives player 0 in a one-player game: the remote plays any game.
+  A two-player game reads `players[1]` for the remote.
 - **The link-lost policy:** when the link is lost, the remote player's held state is released and no press is made.
   A loopback test covers that, and a press count that wraps at 256.
 - **Strategies:** each `InputSource`. The map is data that `main.py` writes, such as "BOOT is FIRE for player 0, D14
-  is NEXT, the remote's button is FIRE for player 1".
+  is NEXT, the remote's button is FIRE for player 1, and for player 0 in a one-player game".
 - **Industry names:** Unity Input System's Actions
   ([Actions](https://docs.unity3d.com/Packages/com.unity.inputsystem@1.7/manual/Actions.html)), Godot's `InputMap`
   ([InputMap](https://docs.godotengine.org/en/stable/classes/class_inputmap.html)) and Nystrom's Command, whose first
@@ -459,9 +486,9 @@ class Canvas: ...        # fill, box, line, text, big, picture, pic, poly, sprit
 
 ```python
 class Plugin: ...        # FixedUpdate and LateUpdate, as plugins.py:37-51
-# accel.choose("bodies"): engine.Bodies or motion.Bodies, the same methods (plugins.py:62)
-# accel.choose("balls"): engine.Balls, or a Null Object. A game that cannot play without it says needs = ("balls",)
-# accel.choose("heat"): engine.HeatField, or a Null Object. Fire and Marshmallow say needs = ("heat",)
+# parts.bodies: engine.Bodies or motion.Bodies, the same methods (plugins.py:62). PhysicsPlugin(n, parts.bodies)
+# parts.balls: engine.Balls, or a Null Object. A game that cannot play without it says needs = ("balls",)
+# parts.heat: engine.HeatField, or a Null Object. Fire and Marshmallow say needs = ("heat",)
 ```
 
 - **Industry names:** Bevy's plugins ([plugins](https://bevy.org/learn/quick-start/getting-started/plugins/)). The
@@ -548,7 +575,9 @@ class Catch(ArcadeGame):
 - **A new game, step by step:** a catalog row, an art set (`art/paint.py`), its cues, its class, and a test from the
   template game. The package gets a short `README.md`, "write a game in 5 steps". A `box.py new-game` can come later.
 - **Cue names:** a Mac test reads each game module and checks that every `cues` key is a name the game emits, or
-  `"die"`, which the kit emits (`gfx.py:364`). The engine cannot see `emit` names at build, so the check is a test.
+  `"die"`, which the kit emits (`gfx.py:364`). It collects the string constants of each `emit` argument, both branches
+  of a conditional expression included, such as `self.emit("help_child" if p.kind == CHILD else "help")`
+  (`rescue.py:657`). The engine cannot see `emit` names at build, so the check is a test.
 - **The boundary test's message** says what to use instead, such as "use cv.pic, not pictures.draw".
 
 ### 4.12 What the console says
@@ -599,7 +628,7 @@ of the two versions is one command.
 - **How it is tested on the Mac:** as today. The stubs give `framebuf` and `micropython`, and the tests give `time` its
   `ticks_*` (`tests/test_app_knob.py:16-17`). The engine's `clock.py` replaces `pictures.py`'s copies
   (`pictures.py:138-150`). The C keeps its clang tests in pixel-engine (`engine/tests/*_lib.py`), and they stand in
-  for the fast version in the twin tests through `accel.use`.
+  for the fast version in the twin tests through a `Parts` record.
 
 ## 6. The refactor stages
 
@@ -615,31 +644,39 @@ pin them. Martin Fowler names this Strangler Fig and Branch by Abstraction
 - a deploy and a board log with `ready`, an `engine` line (from stage 0), a `game` line and a `switch` line for a game
   with a pack.
 - for a stage that touches the frame, the `fps` and `time` lines against bench.md.
+- a stage that moves a module updates every tool and probe that copies, imports or names it by its flat path, and its
+  row says which. Today these are `tools/crackle.sh` (it stops at the first failed copy, `set -eo pipefail` at `:33`,
+  and copies flat modules at `:70-79`), `tools/box.py`, `tools/render_scene.py`, `tools/crackle_wav.py`,
+  `tools/fire_bank.py`, and the probes at the root (`probe733_games.py:5-7`, `probe758.py`, `probe762_paint.py`,
+  `probe768_box.py`, `probe768_sum.py`). A grep of `tools/`, the root and `docs/discovery/` for the module's file name
+  finds them.
 - after stages 1, 3, 6 and 7, the Fire run `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, which had
   `late 0` in every sound line (`bench.md:1116`).
-- for the logic stages (0, 1, 3, 5a, 5b), their mutation rows listed in the PR. pixel-games has no `tools/mutate.py`,
-  so the rows wait for it, and a sweep runs after stage 8.
+- for the logic stages (0, 1, 3b, 5a, 5b), their mutation rows in `tests/mutations/*.json`, proven from pixel-games'
+  root with spark's `tools/mutate.py --root . --anchors tests/mutations/*.json`. A sweep runs after stage 8.
 
 | # | Stage | What it moves | Risk | How it is checked |
 | --- | --- | --- | --- | --- |
 | N | **The net** | New `tests/golden/`: per game, with a fixed seed and clock, the sha256 of the `TftOut` stand-in frame at about 5 frames, and the sequence of signals and cues. It is written again only by an explicit command. `tools/render_scene.py --all` renders the frames | A hash that changes with the Mac's Python | Two runs give the same hashes. From here, a stage that moves code keeps every hash, and a stage that changes pixels says why in its PR. A game PR whose hashes stay needs no play |
-| 0 | **The home and the choice** | The package with an empty `__init__.py`. Moves `signals.py` and the tick shims into it as `events` and `clock`. Adds `accel` with `choose`, `use` and `engine_config.py`, and the `engine` boot line. `box.py deploy` copies the folder as .mpy files and gets `--engine`. Adds the boundary, import-alone and direction tests. `fast.py` stays where it is | The deploy of a folder, a stale `.py` in it, the import time | Deploy tests on a temporary tree: a stale `.py` beside its `.mpy` in the folder, a removed module, `--py` for a folder. Board numbers in the PR: the package's import ms against the same files flat (3 cold boots), `gc.mem_free()` and an idle `gc.collect()` time before and after importing the package and all games, `esp32.idf_heap_info(esp32.HEAP_EXEC)` before and after the viper modules. The `crackle_c.mpy` deploy gap (`tools/box.py:19`) is fixed here or filed |
-| 1 | **Input: the action map** (multiplayer needs it first) | First a characterization test of the press sequences on the old code: a press during a build frame, a press on the frame of the pick, a held press across a switch ([characterization testing](https://michaelfeathers.silvrback.com/characterization-testing)). Then `buttons.py` and `encoder.py` into `input`, with `Actions`, `ActionMap`, `ButtonSource` and `KnobSource`. `main.py` builds the map, and `App` reads it | A press lost or doubled around a pick or a build (`app.py:241-242`) | The characterization test passes before and after. `test_pick`, `test_app_knob`, `test_encoder`. On the board the PO presses through a few games (the same buttons, so no feel change) |
+| 0 | **The home and the choice** | The package with an empty `__init__.py`. Moves `signals.py` and the tick shims into it as `events` and `clock`. Adds `accel` with `choose`, the `Parts` record and `engine_config.py`, and the `engine` boot line. `box.py deploy` copies the folder as .mpy files and gets `--engine`. Adds the boundary, import-alone and direction tests. `fast.py` stays where it is | The deploy of a folder, a stale `.py` in it, the import time | Deploy tests on a temporary tree: a stale `.py` beside its `.mpy` in the folder, a removed module, `--py` for a folder. Board numbers in the PR: the package's import ms against the same files flat (3 cold boots), `gc.mem_free()` and an idle `gc.collect()` time before and after importing the package and all games, `esp32.idf_heap_info(esp32.HEAP_EXEC)` before and after the viper modules. The `crackle_c.mpy` deploy gap (`tools/box.py:19`) is fixed here or filed |
+| 1 | **Input: the action map** (multiplayer needs it first) | First a characterization test of the press sequences on the old code: a press during a build frame, a press on the frame of the pick, a held press across a switch ([characterization testing](https://michaelfeathers.silvrback.com/characterization-testing)). Then `buttons.py` and `encoder.py` into `input`, with `Actions`, `ActionMap`, `ButtonSource` and `KnobSource`. `main.py` builds the map, and `App` reads it. Tools: `tools/crackle.sh:75` and `probe733_games.py:7` copy `encoder.py` | A press lost or doubled around a pick or a build (`app.py:241-242`) | The characterization test passes before and after. `test_pick`, `test_app_knob`, `test_encoder`. On the board the PO presses through a few games (the same buttons, so no feel change) |
 | 2 | **The link** (P832's slices, in the package) | `link`: `Transport`, `EspNowTransport`, `LoopbackTransport`, `Link`. `RemoteSource` for `players[1]`. `LinkPane` | The radio's internal RAM beside the display's DMA buffer (espnow.md section 6) | Loopback tests on the Mac, with the link-lost policy and a wrapped count. espnow.md's step 1 ping-pong, then step 3 (the remote BOOT button) on two boards |
 | 3a | **Scenes, moved** | `Lineup`, `NameCard`, `games_for` and `lineup_fault` into `scenes`, with no change of logic. The rows stay in `catalog.py`. `app.py` keeps re-export shims for the names the tests patch (`SETTLE_MS`, `games_for`, `Lineup.game_steps`), with a test that each still resolves | A patch that no longer reaches the code | `test_pick`, `test_lineup` with their assertions unchanged, and the shim test |
 | 3b | **Scenes, the manager** | `App`'s switch jobs (`app.py:198-308`) into `SceneManager`, `LoadingScreen` as a strategy with `NameCard` as its default | The P822 timing | A `switch` line within bench.md's P822 numbers (`bench.md:1631-1636`). P837 (the 58 ms longest) runs first, or its number is measured beside, so 3b does not make it worse |
+| 3c | **Drawing and the kit** | `gfx.py` splits. Its colours, `Canvas`, `FULL`, the screen size and `rgb565` (today from `st7789.py`, `gfx.py:21`) go into `display`. `fast.py` goes into the package unchanged (its no-op on the board, `bench.md:1033-1035`, is a card of its own). `Game`, `Particles`, `Dice`, `hint_lines` and `BEST` go into a new `games/kit.py` as `ArcadeGame`, with `effects.py` beside it. The scene contract goes into `scenes`. `gfx.py` stays as a re-export shim until stage 8. Tools: `tools/crackle.sh:76` copies `gfx.py` | An import cycle between `display` and `st7789.py` | The net's hashes, every game's tests, `test_hud`, `test_overlay` |
 | 4 | **Assets** | `pictures.py`'s state into `Pictures` with `PackSource` and `PackFormat`. The module's names become bound methods. `bank.py` into `assets`, and `crackle.py` takes its bank memory from it. The canvas gets `pic` | A game that reads `pictures.PICS` directly. A slower draw | `test_pictures_sets`, `test_painted_frames`, the net's hashes. The gate: runner's paint ms in play within 0.5 ms of before. The board's `load` ms against bench.md |
-| 5a | **Audio** | `sound.py`, `sound_viper.py`, `volume.py`, `volume_viper.py`, `cues.py`, `speaker.py` (as `AudioOut`) and `overlay.py` into the package. `VoiceSum` and `MasterVolume` chosen by `accel` | The callback's timing | The twin tests, with the match results in the board log. `test_voices`, `test_volume`, `test_signals`, `test_overlay`. A board run with `--engine reference=volume`, the one audio part whose reference keeps real time |
-| 5b | **Physics** | `plugins.py` and `motion.py` into `physics`. `Bodies`, `Balls` and `HeatField` chosen once by `accel`, the Null Objects and `needs`. The canvas gets `blit_heat` and `blit_balls`. The 30 test lines that set `.engine` become `accel.use` | A game that kept its own `self.c` | The twin test of the bodies. `test_rain`, `test_bucket`, `test_burning`, `test_balls`, `test_fire`, the net's hashes. A board run with `--engine reference=bodies` on a game with few bodies |
-| 6 | **The loop, stats and gc** | `run`'s loop into `Loop`. The timing lines and `gfx.PHASES` into `FrameStats`. The gc choices into `GcPolicy`. `render.py`, `lcd.py` and `st7789.py` into `display` | A collection moved into a frame that plays | The log lines keep their text (section 4.12). fps and the slowest frame against bench.md |
-| 7 | **The hardware** (after 1 and 4) | `hardware.py` and `main.py` as the composition root, the only modules that import `pins` and `gdi`. The display and the audio take their pins. The contract test of the pin names | Pins mixed up between the I2S and the panel | `test_sound`, `test_overlay`, `test_render_scene`, the contract test. A board run with sound and the knob |
-| 8 | **The games** | Each game keeps only its logic. One PR per game for balls, bucket, burning with meteors, and fire with marshmallow, where the C knowledge goes. The one-line removals in the other games (their own `pictures.load`, their `covers` line) go into stages 4 and 5b. The shims of stage 3a and the module names of stage 4 go. The boundary test gets a rule for the games: no `engine`, `pins`, `gdi`, `pictures` or driver | A game that looks or feels different | The game's tests and the net's hashes. The PO plays a game when its hashes change |
+| 7 | **The hardware** (after 1, 3c and 4, before 5a and 6) | `hardware.py` and `main.py` as the composition root, the only modules that import `pins` and `gdi`. The display and the audio take their pins. The contract test of the pin names. `gdi.py` goes, `DC` moves into `hardware.py`, and `app.py`'s `open_*` functions and `run`'s wiring move into `main.py`. Tools: `tools/crackle.sh:75` copies `pins.py` | Pins mixed up between the I2S and the panel | `test_sound`, `test_overlay`, `test_render_scene`, the contract test. A board run with sound and the knob |
+| 5a | **Audio** | `sound.py`, `sound_viper.py`, `volume.py`, `volume_viper.py`, `cues.py`, `speaker.py` (as `AudioOut`) and `overlay.py` into the package, with `crackle.py`'s classes (the bank's index `fire_bank.py` stays content). `VoiceSum` and `MasterVolume` reach the mixer through `parts`. Tools: `tools/crackle.sh:70-71`, `:74-75`, `:79` and `probe733_games.py:5-6` copy these modules | The callback's timing | The twin tests, with the match results in the board log. `test_voices`, `test_volume`, `test_signals`, `test_overlay`. A board run with `--engine reference=volume`, the one audio part whose reference keeps real time |
+| 5b | **Physics** | `plugins.py` and `motion.py` into `physics`. `FirePlugin`'s `HeatField` part into `physics`, the rest of `fire.py` stays in the kit. `Bodies`, `Balls` and `HeatField` reach the games through `parts`, with the Null Objects and `needs`. The canvas gets `blit_heat` and `blit_balls`. The 30 test lines that set `.engine` become `Parts` records, the 69 reads of `X.engine.*` read the record, and the assertions of `tests/test_plugins.py:102-104` change to the record. Tools: `tools/crackle.sh:70-71` copies `fire.py` | A game that kept its own `self.c` | The twin test of the bodies, and the test that a game's plugin gets the chosen class. `test_rain`, `test_bucket`, `test_burning`, `test_balls`, `test_fire`, the net's hashes. A board run with `--engine reference=bodies` on a game with few bodies |
+| 6 | **The loop, stats and gc** | `run`'s loop into `Loop`. The timing lines and `gfx.PHASES` into `FrameStats`. The gc choices into `GcPolicy`. `render.py`, `lcd.py` and `st7789.py` into `display`. Tools: `tools/crackle.sh:74`, `:76`, `tools/render_scene.py` | A collection moved into a frame that plays | The log lines keep their text (section 4.12). fps and the slowest frame against bench.md |
+| 8 | **The games** | Each game keeps only its logic. One PR per game for balls, bucket, burning with meteors, and fire with marshmallow, where the C knowledge goes. The one-line removals in the other games (their own `pictures.load`, their `covers` line) go into stages 4 and 5b. The shims of stages 3a and 3c and the module names of stage 4 go, and what is left of `app.py` goes. After it, `games/` holds only the games, the kit, `catalog.py`, the generated indexes and banks, `hardware.py` and `main.py`. The boundary test gets a rule for the games: no `engine`, `pins`, `gdi`, `pictures` or driver | A game that looks or feels different | The game's tests and the net's hashes. The PO plays a game when its hashes change |
 | 9 | **The move to pixel-engine** (when the T-Display uses the package) | The package to the pixel-engine repository, with its history, together with `tests/stubs/` and the clang libraries its tests use. pixel-games bumps the submodule, and the deploy and the tests read it there | Paths in the deploy and the tests | The boundary, twin and import-alone tests in pixel-engine. The full suites of both repositories. A deploy and a board log |
 
-The order: N, then 0, then 1, before P832 writes any game-facing code. Multiplayer then builds its remote input as an
-`InputSource` and its link as a `Transport` in the package. espnow.md's step 1 ping-pong needs no game code, so it can
-run on the bench while stages 0 and 1 are in review. Stages 3a to 6 can follow in any order. Stage 7 needs stages 1 and
-4. Stage 8 comes last. Stage 3 is the one the PO asked about by name (the loading and the bar).
+The order is the table's: N, 0, 1, 2, 3a, 3b, 3c, 4, 7, 5a, 5b, 6, 8, 9. N, 0 and 1 come before P832 writes any
+game-facing code. Multiplayer then builds its remote input as an `InputSource` and its link as a `Transport` in the
+package. espnow.md's step 1 ping-pong needs no game code, so it can run on the bench while stages 0 and 1 are in
+review. Stage 7 comes before 5a and 6, because `speaker.py` imports `pins` (`speaker.py:5`) and `lcd.py` imports `gdi`
+(`lcd.py:28`), and the boundary test fails while a package module imports either. Stage 8 comes last. Stage 3 is the one the PO asked about by name (the loading and the bar).
 
 ## 7. What not to generalize yet, and why
 
@@ -677,7 +714,8 @@ Three decisions are yours:
    test keeps it movable.
    What you will see: a `pixel/` folder in pixel-games now, and one move PR when the T-Display joins.
 3. **Is the second board only a controller, or also a screen?** As a controller it sends its presses, and the box shows
-   the game. A two-player game then runs on the box alone, with `players[1]` as the remote's input. As a screen the box
+   the game. Its FIRE drives player 0 in a one-player game, so it plays any game. A two-player game runs on the box
+   alone and reads the remote as `players[1]`. As a screen the box
    also sends the game's state each frame, and the T-Display draws it through a `StateView` strategy. Each two-player
    game then needs a state message and a second drawing of itself for the smaller screen. Recommended: start as a
    controller. The screen can follow for one game, once the controller plays well.
