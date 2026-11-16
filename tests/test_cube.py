@@ -351,8 +351,10 @@ class FeelTest(unittest.TestCase):
                 whites = [f for f in drawn.fills if f[:4] == (game.FACE_X, game.FACE_Y, game.FACE, game.FACE)]
                 self.assertEqual(white, bool(whites))
                 self.assertEqual([] if face is None else [face], [c[0] for c in drawn.named("cube_face_")])
-                stamps = [c[0] for c in drawn.named("cube_stamp_")]
-                self.assertEqual(["cube_stamp_ok"] if ms < Verdict.SHOW_MS else [], stamps)
+                stamps = drawn.named("cube_stamp_")
+                off = 4 if ms < Verdict.SLAM_MS else 0  # it lands off its place, then sits
+                self.assertEqual([("cube_stamp_ok", game.STAMP_X - off, game.STAMP_Y - off, 255)]
+                                 if ms < Verdict.SHOW_MS else [], stamps)
                 flares = [c[0] for c in drawn.named("cube_flare_")]
                 self.assertEqual([space3d.FLARES[ms * 2 // Verdict.SLAM_MS]] if ms < Verdict.SLAM_MS else [],
                                  flares)
