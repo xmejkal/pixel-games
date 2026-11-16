@@ -11,14 +11,15 @@ list: each game of the catalog with its art sets and their bytes. --board also r
 running game until the board resets.
 deploy NAME...: the order of the names is the order the box plays them in. It refuses an unknown, a repeated or an
 empty lineup before any command, and an mpy-cross that does not emit mpy v6.3, the board's .mpy version (P821). Then it
-runs tools/firmware_probe.py on the board (P848) and refuses a firmware whose C module is still named engine (flash
-the image of ./build.sh engine first), one that lacks a name the games need of _engine (Bodies, HeatField, Balls,
-SoundBank, HeatField.cool) and an answer it does not know; a firmware with no C module deploys, as the stock image.
+runs tools/firmware_probe.py on the board (P848), up to 3 tries while a running game keeps mpremote out, and refuses
+a firmware whose C module is still named engine (flash the image of ./build.sh engine first), one that registers
+engine beside _engine, one that lacks a name the games need of _engine (Bodies, HeatField, Balls, SoundBank,
+HeatField.cool) and an answer it does not know; a firmware with no C module deploys, as the stock image.
 Then it makes :packs when the board has none, compiles games/*.py but main.py with mpy-cross into .mpy files (they import in
 about half the time of a .py), copies them with games/main.py and games/box_bank.raw (the sound bank) to : and removes
 each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). It copies the crackle,
-engine/natmod/crackle/_crackle.mpy (tools/crackle.sh builds it), to :_crackle.mpy, or says that Fire plays without its
-crackle when it is not built; the board's crackle_c.mpy stays, for a flash of the rollback image. It copies each pack the
+engine/natmod/crackle/_crackle.mpy (tools/crackle.sh builds it), to :_crackle.mpy, or says none is copied when it is
+not built; the board's crackle_c.mpy stays, for a flash of the rollback image. It copies each pack the
 lineup needs to :packs (mpremote skips a file whose sha256 is the same), writes :lineup.py and hard-resets the board
 (the picture pool is sized at boot). --py copies games/*.py instead and removes the board's .mpy files of those
 modules (_crackle.mpy and crackle_c.mpy stay). deploy --all copies every game and pack and removes :lineup.py when the board has one.
@@ -52,7 +53,10 @@ MPY_CROSS_PIP = "pip install mpy-cross==1.29.0.post2"  # PyPI has no plain 1.29.
 RESET_TRIES, RESET_PAUSE_S = 5, 2  # log's reset, while the board still reboots from a deploy's reset
 PROBE = "tools/firmware_probe.py"  # mpremote runs it on the board before a deploy (P848)
 FIRMWARE_NAMES = ("Bodies", "HeatField", "Balls", "SoundBank", "HeatField.cool")  # what the games need of _engine
-FLASH = "flash the image of ./build.sh engine first"
+PROBE_TRIES = 3  # the probe, while a running game keeps mpremote out of the raw REPL (P848: the first try failed)
+FLASH = "flash the image of ./build.sh engine first (README, Build and run)"
+NO_ANSWER = "the board did not answer: close any mpremote or log session, press reset, and deploy again"
+ENGINE_LINES = (["engine", "ImportError"], ["engine", "Bodies", "no"], ["engine", "Bodies", "yes"])
 CRACKLE = "engine/natmod/crackle/_crackle.mpy"  # the crackle's native module, as tools/crackle.sh builds it (P848)
 
 
@@ -95,18 +99,22 @@ def board_names(listing):
 
 def firmware_fault(answer):
     """Why a deploy refuses the firmware that answered tools/firmware_probe.py, or None: the games can use its C, or
-    it has none (the stock image, the games play without the C). Stage 9 of the engine plan removes it (P848)."""
-    lines = [line.strip() for line in answer.strip().splitlines()]
-    if lines == ["_engine ImportError", "engine Bodies yes"]:
-        return "the board's C module is still named engine: " + FLASH
-    if lines in (["_engine ImportError", "engine ImportError"], ["_engine ImportError", "engine Bodies no"]):
-        return None
-    said = [line.split(" ") for line in lines]
-    if [row[:2] for row in said] == [["_engine", name] for name in FIRMWARE_NAMES] and \
-            all(len(row) == 3 and row[2] in ("yes", "no") for row in said):
-        lacks = [row[1] for row in said if row[2] == "no"]
+    it has none (the stock image, the games play without the C). The order of the name lines does not matter. Stage 9
+    of the engine plan removes it (P848)."""
+    rows = [line.split() for line in answer.strip().splitlines()]
+    old = rows[-1:] == [ENGINE_LINES[2]]  # an engine with Bodies: the old C module
+    if len(rows) == 2 and rows[0] == ["_engine", "ImportError"] and rows[1] in ENGINE_LINES:
+        return "the board's C module is still named engine: " + FLASH if old else None
+    said = {row[1]: row[2] for row in rows[:-1] if len(row) == 3 and row[0] == "_engine" and row[2] in ("yes", "no")}
+    if len(rows) - 1 == len(said) == len(FIRMWARE_NAMES) and set(said) == set(FIRMWARE_NAMES) and \
+            rows[-1] in ENGINE_LINES:
+        if old:
+            return "the firmware registers engine beside _engine, so a package engine cannot load: flash the image " \
+                   "of a clean ./build.sh engine first (README, Build and run)"
+        lacks = [name for name in FIRMWARE_NAMES if said[name] == "no"]
         return "the firmware lacks %s: %s" % (", ".join(lacks), FLASH) if lacks else None
-    return "unknown firmware answer: %r" % answer.strip()
+    return "unknown firmware answer: %r: flash the image of ./build.sh engine (README, Build and run), or run " \
+           "`mpremote run tools/firmware_probe.py` and read it" % answer.strip()
 
 
 def sets_for(names):
@@ -143,11 +151,13 @@ class Compiler:
 class Deploy:
     """Puts a lineup's games on the board through a runner: names, or None for every game and no lineup.py. With a
     compiler the modules go as .mpy files and main.py as itself; with None (--py) every module goes as its .py.
-    crackle: the path of _crackle.mpy from the repository root (CRACKLE when None); say: where a note goes."""
+    crackle: the path of _crackle.mpy from the repository root (CRACKLE when None); say: where a note goes; sleep:
+    the pause between the probe's tries (time.sleep when None)."""
 
-    def __init__(self, runner, compiler=None, games=GAMES, crackle=None, say=print):
+    def __init__(self, runner, compiler=None, games=GAMES, crackle=None, say=print, sleep=None):
         self.runner, self.compiler, self.games = runner, compiler, games  # games: the folder, named as games/<file>
         self.crackle, self.say = CRACKLE if crackle is None else crackle, say
+        self.sleep = sleep or time.sleep
 
     def run(self, names):
         if names is not None:
@@ -196,9 +206,15 @@ class Deploy:
                 raise
 
     def check_firmware(self):
-        """Refuses the board's firmware by firmware_fault, before any other board command. A dry run never refuses."""
-        answer = self.runner.run(["run", PROBE])
-        if getattr(self.runner, "dry_run", False):
+        """Refuses the board's firmware by firmware_fault, before any other board command, after PROBE_TRIES tries
+        that mpremote could not run. A dry run never refuses."""
+        try:
+            answer = retried(self.runner, ["run", PROBE], PROBE_TRIES, RESET_PAUSE_S, self.sleep)
+        except subprocess.CalledProcessError as e:
+            said = [line for line in (e.stderr or "").splitlines() if line.strip()]
+            e.stderr = "%s; %s" % (said[-1].strip() if said else "exit %d" % e.returncode, NO_ANSWER)
+            raise
+        if self.runner.dry_run:
             return
         fault = firmware_fault(answer)
         if fault:
@@ -210,7 +226,7 @@ class Deploy:
         if os.path.isfile(os.path.join(ROOT, self.crackle)):
             self.runner.run(["cp", self.crackle, ":_crackle.mpy"])
         else:
-            self.say("no _crackle.mpy: Fire plays without its crackle")
+            self.say("no _crackle.mpy built, so none is copied: tools/crackle.sh builds it")
 
     def write_lineup(self, names):
         with tempfile.TemporaryDirectory() as tmp:
@@ -236,15 +252,20 @@ def board_lineup(runner):
     return "board: " + runner.run(["cat", ":lineup.py"]).strip()
 
 
-def reset(runner, tries=RESET_TRIES, pause=RESET_PAUSE_S, sleep=time.sleep):
-    """A hard reset through the runner, tried again after pause while mpremote cannot reach the board yet."""
+def retried(runner, args, tries, pause, sleep):
+    """The runner's answer to args, tried again after pause while mpremote cannot reach the board."""
     for i in range(tries):
         try:
-            return runner.run(["reset"])
+            return runner.run(args)
         except subprocess.CalledProcessError:
             if i == tries - 1:
                 raise
             sleep(pause)
+
+
+def reset(runner, tries=RESET_TRIES, pause=RESET_PAUSE_S, sleep=time.sleep):
+    """A hard reset through the runner, tried again after pause while mpremote cannot reach the board yet."""
+    return retried(runner, ["reset"], tries, pause, sleep)
 
 
 class Console:

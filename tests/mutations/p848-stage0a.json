@@ -2,7 +2,7 @@
  {
   "file": "tools/box.py",
   "name": "the old firmware passes",
-  "find": "        return \"the board's C module is still named engine: \" + FLASH\n",
+  "find": "        return \"the board's C module is still named engine: \" + FLASH if old else None\n",
   "replace": "        return None\n"
  },
  {
@@ -14,13 +14,13 @@
  {
   "file": "tools/box.py",
   "name": "an unknown answer passes",
-  "find": "    return \"unknown firmware answer: %r\" % answer.strip()\n",
-  "replace": "    return None\n"
+  "find": "    return \"unknown firmware answer: %r: flash the image",
+  "replace": "    return None and \"unknown firmware answer: %r: flash the image"
  },
  {
   "file": "tools/box.py",
   "name": "the dry run refuses",
-  "find": "        if getattr(self.runner, \"dry_run\", False):\n            return\n",
+  "find": "        if self.runner.dry_run:\n            return\n",
   "replace": "        if False:\n            return\n"
  },
  {
@@ -34,5 +34,47 @@
   "name": "the built crackle is not copied",
   "find": "            self.runner.run([\"cp\", self.crackle, \":_crackle.mpy\"])\n",
   "replace": "            pass\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "an image with both names passes",
+  "find": "        if old:\n            return \"the firmware registers engine beside _engine",
+  "replace": "        if False:\n            return \"the firmware registers engine beside _engine"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the probe is tried once",
+  "find": "answer = retried(self.runner, [\"run\", PROBE], PROBE_TRIES, RESET_PAUSE_S, self.sleep)",
+  "replace": "answer = self.runner.run([\"run\", PROBE])"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a line with no yes or no is read",
+  "find": "if len(row) == 3 and row[0] == \"_engine\" and row[2] in (\"yes\", \"no\")}",
+  "replace": "if row[0] == \"_engine\"}"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the crackle path is read from the working folder",
+  "find": "os.path.isfile(os.path.join(ROOT, self.crackle))",
+  "replace": "os.path.isfile(self.crackle)"
+ },
+ {
+  "file": "tools/check_moduledefs.sh",
+  "name": "the module list passes with either name",
+  "find": "if ! grep -q 'MP_QSTR__engine)' \"$DEFS\" || grep -q 'MP_QSTR_engine)' \"$DEFS\"; then",
+  "replace": "if ! grep -q 'MP_QSTR__engine)' \"$DEFS\" && grep -q 'MP_QSTR_engine)' \"$DEFS\"; then"
+ },
+ {
+  "file": "tools/check_moduledefs.sh",
+  "name": "a missing module list passes",
+  "find": "if [ ! -f \"$DEFS\" ]; then\n  echo \"check_moduledefs.sh: no $DEFS\" >&2\n  exit 1\n",
+  "replace": "if [ ! -f \"$DEFS\" ]; then\n  echo \"check_moduledefs.sh: no $DEFS\" >&2\n  exit 0\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a foreign name is read",
+  "find": " and set(said) == set(FIRMWARE_NAMES) and",
+  "replace": " and"
  }
 ]
