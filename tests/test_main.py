@@ -154,6 +154,15 @@ class BootTest(NoNative):
         self.assertIsNone(parts["knob"])
         self.assertIs(ViperVoiceSum, type(parts["speaker"].mixer.sum))
 
+    def test_the_boot_reads_the_board_s_engine_config(self):
+        said = io.StringIO()
+        runs = []
+        with config('REFERENCE = ("sum", "heat")  # tools/box.py deploy --engine\n'), \
+                mock.patch.object(app, "run", lambda **parts: runs.append(parts)), contextlib.redirect_stdout(said):
+            runpy.run_path(os.path.join(GAMES, "main.py"), run_name="__main__")
+        self.assertEqual("engine sum=reference(forced) volume=viper native=none unused=heat\n", said.getvalue())
+        self.assertIs(sound.VoiceSum, type(runs[0]["speaker"].mixer.sum))
+
 
 if __name__ == "__main__":
     unittest.main()

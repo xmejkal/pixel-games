@@ -1,0 +1,74 @@
+[
+ {
+  "file": "games/engine/accel.py",
+  "name": "a forced part is ignored",
+  "find": "        if self.reference == \"all\" or part in self.reference:\n",
+  "replace": "        if False:\n"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "all forces nothing",
+  "find": "if self.reference == \"all\" or part in self.reference:",
+  "replace": "if part in self.reference:"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "a missing fast version raises, with no fallback",
+  "find": "        except FALLBACK as e:\n",
+  "replace": "        except () as e:\n"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "the line drops native=",
+  "find": "        words.append(\"native=\" + (\",\".join(native()) or \"none\"))\n",
+  "replace": ""
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "an unused forced name is not shown",
+  "find": "                words.append(\"unused=\" + \",\".join(unused))\n",
+  "replace": "                pass\n"
+ },
+ {
+  "file": "games/engine/accel.py",
+  "name": "the line names the crackle without its file",
+  "find": "        os.stat(CRACKLE)\n",
+  "replace": "        CRACKLE\n"
+ },
+ {
+  "file": "games/main.py",
+  "name": "the boot reads no engine_config",
+  "find": "    chooser = chooser or Chooser(read_reference())\n",
+  "replace": "    chooser = chooser or Chooser()\n"
+ },
+ {
+  "file": "games/main.py",
+  "name": "the speaker gets the reference sum whatever was chosen",
+  "find": "Speaker(voice_sum(), ",
+  "replace": "Speaker(sound.VoiceSum(), "
+ },
+ {
+  "file": "games/app.py",
+  "name": "the knob gets the reference volume whatever was chosen",
+  "find": "encoder.EDGES_PER_DETENT), volume())",
+  "replace": "encoder.EDGES_PER_DETENT), __import__(\"volume\").MasterVolume())"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "--engine writes nothing",
+  "find": "        if self.reference is not None:\n            self.write_config(self.reference)\n",
+  "replace": "        if self.reference is not None:\n            pass\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a deploy without --engine keeps the old engine_config.py",
+  "find": "            self.runner.run([\"rm\", \":engine_config.py\"])\n",
+  "replace": "            pass\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a malformed --engine value passes",
+  "find": "    if not ENGINE_VALUE.match(value):\n",
+  "replace": "    if False:\n"
+ }
+]
