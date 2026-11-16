@@ -435,14 +435,12 @@ def open_knob(volume):
 
 
 def read_console(console, stdin):
-    """One waiting character of the console, read and dropped, so mpremote can reach the board while the box runs
-    (commands/build.md, "The console read"). A knob turn on the RX pad can type a byte that is no UTF-8: it is dropped
-    too, never raised (P850: the PO's knob turn on the board stopped the box with a UnicodeError here)."""
+    """One waiting byte of the console, read and dropped, so mpremote can reach the board while the box runs
+    (commands/build.md, "The console read"). It reads stdin.buffer, which never decodes: the text stdin takes a byte
+    such as 0xFF or 0x80, which a knob turn on the RX pad types, as the start of a 5-byte character, waits for 4 more
+    bytes and then raises UnicodeError (P850: the PO's knob turn on the board stopped the box)."""
     if console.poll(0):
-        try:
-            stdin.read(1)
-        except UnicodeError:
-            pass
+        stdin.buffer.read(1)
 
 
 def run(games=None, knob=None, speaker=None):

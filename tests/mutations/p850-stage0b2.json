@@ -72,12 +72,6 @@
   "replace": "    if False:\n"
  },
  {
-  "file": "games/app.py",
-  "name": "a byte that is no UTF-8 stops the box",
-  "find": "        except UnicodeError:\n            pass\n",
-  "replace": "        except ():\n            pass\n"
- },
- {
   "file": "games/main.py",
   "name": "the boot takes the pads only with the knob",
   "find": "    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first, before app's imports and the knob (P757, P850)\n",
@@ -106,5 +100,11 @@
   "name": "--engine accepts a trailing newline",
   "find": "ENGINE_VALUE.fullmatch(value)",
   "replace": "ENGINE_VALUE.match(value)"
+ },
+ {
+  "file": "games/app.py",
+  "name": "the console read takes the text stream, not its buffer",
+  "find": "        stdin.buffer.read(1)\n",
+  "replace": "        stdin.read(1)\n"
  }
 ]
