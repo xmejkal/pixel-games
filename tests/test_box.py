@@ -1,7 +1,8 @@
 """tools/box.py (P817) with a fake runner, so no board: the exact mpremote commands of a deploy with and without
 :packs and :lineup.py on the board, --all, --dry-run, each refusal with no command run, list, and the console's read
 across a reset. The firmware check (P848) reads the answers tools/firmware_probe.py prints, run here on the Mac with
-stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. Run from the repository root:
+stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. deploy --engine (P850) writes or
+removes :engine_config.py. Run from the repository root:
 python3 -B -m unittest tests.test_box. --- MVP (P817) ---"""
 
 import contextlib
