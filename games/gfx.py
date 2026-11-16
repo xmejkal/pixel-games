@@ -25,6 +25,7 @@ FULL_PX = 320 * 240  # with PSRAM: the whole screen, 153,600 bytes
 FULL = (0, 0, WIDTH, HEIGHT)
 # --- MVP (P599) ---
 HUD_RECT = (0, 0, WIDTH, 16)  # a game's score bar, kept by Canvas.keep
+OVER_RECT = (WIDTH // 2 - 100, HEIGHT // 2 - 50, 200, 100)  # the game-over box, kept by Canvas.keep (P856)
 LABEL_RECT = (0, 0, WIDTH, 14)  # a scene's one-line label (rain, fire), kept the same way
 
 
@@ -430,15 +431,21 @@ class Game:
             slowest(4, t)
 
     def draw_over(self, cv):
-        """The game-over box over the live scene. A game with its own end (stack's collapse) draws its own."""
-        x, y = WIDTH // 2 - 100, HEIGHT // 2 - 50
-        cv.fill(x, y, 200, 100, BLACK)
-        cv.box(x, y, 200, 100, self.accent)
-        cv.box(x + 3, y + 3, 194, 94, GREY)
+        """The game-over box over the live scene. A game with its own end (stack's collapse) draws its own. The box's
+        still part is kept like the score bar, so it is drawn again only when the game, the score or the best changes:
+        drawn from Python each frame it cost up to 83 ms (flappy, P856). Only the blinking retry is drawn each frame."""
+        cv.keep(("over", self.name, self.score, BEST.get(self.name, 0)), OVER_RECT, self.draw_over_box)
+        if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
+            cv.text("tap to retry", OVER_RECT[0] + 52, OVER_RECT[1] + 74, YELLOW)
+
+    def draw_over_box(self, cv):
+        """The game-over box's still part. Covers OVER_RECT, as keep() asks, with fill, box and text only."""
+        x, y, w, h = OVER_RECT
+        cv.fill(x, y, w, h, BLACK)
+        cv.box(x, y, w, h, self.accent)
+        cv.box(x + 3, y + 3, w - 6, h - 6, GREY)
         cv.big("game over", x + 28, y + 12, RED, 2)
         cv.text("score %d   best %d" % (self.score, BEST.get(self.name, 0)), x + 20, y + 48, WHITE)
-        if self.age >= self.OVER_MS and (self.age // 400) % 2 == 0:
-            cv.text("tap to retry", x + 52, y + 74, YELLOW)
 
     def draw_title(self, cv):
         a, cx, cy = self.age, WIDTH // 2, HEIGHT // 2

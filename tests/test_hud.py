@@ -194,3 +194,60 @@ class RecordingTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def old_draw_over(game, cv):
+    """Game.draw_over before P856, drawn straight onto the panel each frame: the kept box must give its pixels."""
+    x, y = gfx.WIDTH // 2 - 100, gfx.HEIGHT // 2 - 50
+    cv.fill(x, y, 200, 100, gfx.BLACK)
+    cv.box(x, y, 200, 100, game.accent)
+    cv.box(x + 3, y + 3, 194, 94, gfx.GREY)
+    cv.big("game over", x + 28, y + 12, gfx.RED, 2)
+    cv.text("score %d   best %d" % (game.score, gfx.BEST.get(game.name, 0)), x + 20, y + 48, gfx.WHITE)
+    if game.age >= game.OVER_MS and (game.age // 400) % 2 == 0:
+        cv.text("tap to retry", x + 52, y + 74, gfx.YELLOW)
+
+
+class OverBoxTest(unittest.TestCase):
+    """The game-over box (P856): its still part is kept like the score bar, so a frame blits it instead of drawing it
+    again from Python; only the blinking "tap to retry" is drawn each frame."""
+
+    def test_the_kept_box_gives_the_pixels_of_the_box_drawn_each_frame(self):
+        game = Game()
+        game.score, gfx.BEST[game.name] = 12, 345
+        for degrees in (0, 180):
+            for age in (0, game.OVER_MS, game.OVER_MS + 400):  # no retry yet, the retry shown, the retry blinked off
+                with self.subTest(orientation=degrees, age=age), orientation(degrees):
+                    game.age = age
+                    straight, kept = Tft(), Tft()
+                    old_draw_over(game, lcd.TftCanvas(straight))
+                    game.draw_over(lcd.TftCanvas(kept))
+                    self.assertEqual(straight.frame, kept.frame)
+
+    def test_the_box_is_drawn_once_and_blitted_in_each_later_frame(self):
+        game, tft = Game(), Tft()
+        game.score, gfx.BEST[game.name] = 3, 9
+        cv = lcd.TftCanvas(tft)
+        drawn = []
+        box = game.draw_over_box
+        game.draw_over_box = lambda c: (drawn.append(1), box(c))
+        for _ in range(5):
+            game.draw_over(cv)
+        self.assertEqual(1, len(drawn))
+        self.assertEqual(5, tft.blits)
+
+    def test_a_new_score_or_best_or_game_draws_the_box_again(self):
+        game, tft = Game(), Tft()
+        cv = lcd.TftCanvas(tft)
+        drawn = []
+        box = game.draw_over_box
+        game.draw_over_box = lambda c: (drawn.append(1), box(c))
+        game.score, gfx.BEST[game.name] = 1, 5
+        game.draw_over(cv)
+        game.score = 2
+        game.draw_over(cv)
+        gfx.BEST[game.name] = 6
+        game.draw_over(cv)
+        game.name = "probe2"
+        game.draw_over(cv)
+        self.assertEqual(4, len(drawn))
