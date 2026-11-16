@@ -16,7 +16,8 @@
 # The environment also sets the probe's VOLUME (default "": the mix as it is), LEVEL (default None), KNOB (default 0),
 # SAVE (default 0), SAVE_EVERY_MS (default 0) and MIC (default 0). Each run copies, as .py files: games/crackle.py,
 # fire.py, sound.py, app.py, catalog.py, overlay.py, volume.py, encoder.py, pins.py, lcd.py, render.py, gfx.py and
-# marshmallow.py; with a VOLUME volume_viper.py; with GAME=BurningBodies burning.py and plugins.py; with GrainCrackle or
+# marshmallow.py, and the package games/engine/*.py into :engine/, made when the board has none (app.py imports
+# engine.signals, P849); with a VOLUME volume_viper.py; with GAME=BurningBodies burning.py and plugins.py; with GrainCrackle or
 # FireSound fire_bank.py. The board runs these instead of the .mpy files tools/box.py deploy copied, until the next
 # deploy (P821). With KNOB=1 the probe passes its knob to the game box (P764), and each change of the
 # step shows the volume on the screen for 1 s (P762). With KNOB=0 the box opens its own knob, and the sound does not
@@ -76,6 +77,8 @@ mpremote cp "$ROOT/games/app.py" :app.py + cp "$ROOT/games/catalog.py" :catalog.
     + cp "$ROOT/games/volume.py" :volume.py + cp "$ROOT/games/encoder.py" :encoder.py + cp "$ROOT/games/pins.py" :pins.py \
     + cp "$ROOT/games/lcd.py" :lcd.py + cp "$ROOT/games/render.py" :render.py + cp "$ROOT/games/gfx.py" :gfx.py \
     + cp "$ROOT/games/marshmallow.py" :marshmallow.py
+mpremote fs ls :engine > /dev/null 2>&1 || mpremote mkdir :engine
+mpremote cp "$ROOT"/games/engine/*.py :engine/
 if [ -n "$VOLUME" ]; then
     mpremote cp "$ROOT/games/volume_viper.py" :volume_viper.py
 fi
