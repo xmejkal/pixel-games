@@ -1,0 +1,26 @@
+3.020 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+3.045 backend s3lcd
+3.046 mem 7953904
+3.046 frame tft
+3.513 lineup 15: marshmallow balls meteors bucket rescue flappy runner snake stack cave tunnel road starfire cube gravpong
+3.513 import 1671 ms
+3.518 ready
+4.104 marshmallow internal largest 31744
+4.108 marshmallow field internal
+4.111 game marshmallow
+4.114 switch marshmallow 592 ms, load 147 ms, import 405 ms
+9.157 fps marshmallow 23
+9.158 time marshmallow step 6.6 paint 15.0 send 3.9 gc 4.4 fps 23 worst 73 slowest 61 = step 0 paint 57 send 3 gc 0
+9.167 phases marshmallow static 5 paint 10 fx 0 hud 22 over 0 title 52
+9.181 avg marshmallow static 1.4 paint 6.0 fx 0.1 hud 0.9 over 0.0 title 6.4
+9.181 heap marshmallow alloc 209584 glyphs 13
+14.184 fps marshmallow 24
+14.185 time marshmallow step 9.1 paint 9.9 send 3.6 gc 4.6 fps 24 worst 60 slowest 43 = step 10 paint 28 send 3 gc 0
+14.197 phases marshmallow static 0 paint 10 fx 2 hud 19 over 0 title 0
+14.204 avg marshmallow static 0.1 paint 8.1 fx 0.2 hud 1.2 over 0.0 title 0.0
+14.204 heap marshmallow alloc 209424 glyphs 13
+19.216 fps marshmallow 24
+19.217 time marshmallow step 9.0 paint 9.8 send 3.6 gc 4.5 fps 24 worst 48 slowest 32 = step 15 paint 11 send 3 gc 0
+19.227 phases marshmallow static 0 paint 10 fx 0 hud 2 over 0 title 0
+19.232 avg marshmallow static 0.1 paint 8.3 fx 0.1 hud 1.0 over 0.0 title 0.0
+19.233 heap marshmallow alloc 208624 glyphs 13
