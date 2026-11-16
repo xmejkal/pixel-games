@@ -234,7 +234,7 @@ class CubeTiming(Game):
     ink, bone and one accent, the recording light's."""
 
     name = "cube"
-    hint = "tap: mark faces you"
+    hint = "tap when the lens faces you"
     bg = c565(8, 8, 24)
     accent = c565(230, 60, 220)
     INK, BONE = c565(18, 16, 26), c565(232, 224, 204)  # art/looks.py's NightInk, with gfx's ACCENT

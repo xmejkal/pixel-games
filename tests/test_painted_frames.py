@@ -1,4 +1,4 @@
-"""Meteors', Bucket's, BUBBLE's and FEED's painted sprites in the frames the README's GIFs are made from (P773, story 4; P573):
+"""Meteors', Bucket's, BUBBLE's, FEED's and SMILE's painted sprites in the frames the README's GIFs are made from (P773, story 4; P573):
 over each render_scene row, every pictures.draw call is logged with the game's numbers as they are in that frame. The
 walker's sprite is drawn where Rules.walker_x is, in the run's pose for that place and facing his way, the bucket's
 where Rules.bucket_x is, and BUBBLE's bubble centred where the game's bubble is, at the size of its radius. Each row
@@ -14,13 +14,13 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # One line per pictures.draw of a picture with one of the prefixes: the frame, the picture, x, y, then the game's state
 # and the numbers the test needs, each an expression over game (game.rules.walker_x, game.radius()), as they are when
-# the picture is drawn.
+# the picture is drawn. The expressions go to the script joined by semicolons, so one may hold a comma.
 SCRIPT = r"""
 import itertools, sys
 sys.path.insert(0, "tools")
 import render_scene as rs
 import pictures
-subject, prefixes, fields = sys.argv[1], tuple(sys.argv[2].split(",")), sys.argv[3].split(",")
+subject, prefixes, fields = sys.argv[1], tuple(sys.argv[2].split(",")), sys.argv[3].split(";")
 row = rs.SUBJECTS[subject]
 made, make = [], row.game
 row.game = lambda: made.append(make()) or made[-1]
@@ -41,7 +41,7 @@ for k, _ in enumerate(itertools.islice(rs.frames(row), row.last)):
 
 
 def drawn(subject, prefixes, fields):
-    run = subprocess.run([sys.executable, "-B", "-c", SCRIPT, subject, ",".join(prefixes), ",".join(fields)], cwd=ROOT,
+    run = subprocess.run([sys.executable, "-B", "-c", SCRIPT, subject, ",".join(prefixes), ";".join(fields)], cwd=ROOT,
                          capture_output=True, text=True)
     assert run.returncode == 0, run.stderr[-800:]
     lines = [line.split() for line in run.stdout.split("\n") if line[:1].isdigit()]
@@ -215,6 +215,108 @@ class FeedTest(unittest.TestCase):
                 if ms >= flip.END_MS:
                     self.assertEqual(["snake_seen_2"] * n, seen)
         self.assertTrue(any("snake_over" in [d[1] for d in ds] for ds in over.values()))
+
+
+
+@unittest.skipUnless(shutil.which("clang"), "clang is missing: the C engines are not built, so the rows were not drawn")
+class SmileTest(unittest.TestCase):
+    """SMILE (P573) over the cubetiming row: in every frame of play the target, the face in the monitor (or the
+    white of COMPLIANT's flash) and the sixteen walkers; the lens in each frame of play whose marked corner faces
+    you, never in the others, centred on project(VERTS[MARK], yaw) at the size for its depth and the iris for the
+    timing; the stamp for the verdict's time; over, the zoom by its clock, then the card."""
+
+    FIELDS = ("int(game.housing.lens_seen())", "game.project(game.VERTS[7], game.yaw)[0]",
+              "game.project(game.VERTS[7], game.yaw)[1]", "game.project(game.VERTS[7], game.yaw)[2]", "game.err()",
+              "game.tol()", "game.verdict.kind", "game.verdict.age(game.last)", "game.over_ms()")
+
+    @classmethod
+    def setUpClass(cls):
+        sys.path.insert(0, os.path.join(ROOT, "tests", "stubs"))
+        sys.path.insert(0, os.path.join(ROOT, "games"))
+        import gfx
+        import space3d
+        cls.game, cls.module, cls.PLAY, cls.OVER = space3d.CubeTiming, space3d, gfx.PLAY, gfx.OVER
+        cls.draws = drawn("cubetiming", ("cube_",), cls.FIELDS)
+        cls.frames = {}
+        for d in cls.draws:
+            cls.frames.setdefault(d[0], []).append(d)
+
+    def play_frames(self):
+        """Each frame of play: its draws, and the target's numbers (it is drawn after the housing is worked out)."""
+        out = {}
+        for k, ds in self.frames.items():
+            if ds[0][4] == self.PLAY:
+                target = [d for d in ds if d[1].startswith("cube_target_")]
+                out[k] = (ds, target[0] if target else None)
+        return out
+
+    def test_every_frame_of_play_draws_the_target_the_monitor_and_the_sixteen_walkers(self):
+        play = self.play_frames()
+        self.assertEqual(list(range(max(play) + 1)), sorted(play))  # every frame of play, from the first (0)
+        self.assertGreater(len(play), 600)
+        for k, (ds, target) in play.items():
+            names = [d[1] for d in ds]
+            with self.subTest(frame=k):
+                self.assertEqual(1, sum(n.startswith("cube_target_") for n in names))
+                self.assertEqual(16, sum(n.startswith("cube_walker_") for n in names))
+                kind, age = int(target[11]), int(target[12])
+                flash = kind == self.module.Verdict.OK and 0 <= age < self.module.Verdict.FLASH_MS
+                self.assertEqual(0 if flash else 1, sum(n.startswith("cube_face_") for n in names))
+
+    def test_the_lens_is_drawn_once_a_frame_its_corner_faces_you_at_the_exact_projection(self):
+        g, m = self.game, self.module
+        seen = hidden = 0
+        for k, (ds, target) in self.play_frames().items():
+            lenses = [d for d in ds if d[1].startswith("cube_lens_")]
+            shown, mx, my, mz, err, tol = target[5:11]
+            with self.subTest(frame=k):
+                if not shown:
+                    self.assertEqual([], lenses)
+                    hidden += 1
+                    continue
+                seen += 1
+                self.assertEqual(1, len(lenses))
+                size = 0 if mz > g.DEPTHS[0] else 1 if mz > g.DEPTHS[1] else 2
+                iris = 2 if abs(err) <= tol else 1 if abs(err) <= tol * g.NEAR else 0
+                self.assertEqual(m.LENSES[size][iris], lenses[0][1])
+                half = m.LENS_SIZES[size] // 2
+                self.assertEqual((int(mx) - half, int(my) - half), lenses[0][2:4])
+        self.assertGreater(seen, 300)
+        self.assertGreater(hidden, 150)  # the lens hides on the back in many frames
+
+    def test_the_stamp_lands_for_the_verdicts_time_and_says_it_and_a_smile_flashes_at_the_lens(self):
+        g, v = self.game, self.module.Verdict
+        stamped, flashed = {v.OK: 0, v.FLAG: 0}, 0
+        for k, (ds, target) in self.play_frames().items():
+            stamps = [d for d in ds if d[1].startswith("cube_stamp_")]
+            flares = [d for d in ds if d[1].startswith("cube_flare_")]
+            kind, age = int(target[11]), int(target[12])
+            with self.subTest(frame=k):
+                slam = 0 <= age < v.SLAM_MS
+                self.assertEqual(int(slam and kind == v.OK and target[5] == 1), len(flares))
+                flashed += len(flares)
+                if age < 0:
+                    self.assertEqual([], stamps)
+                    continue
+                self.assertEqual(["cube_stamp_ok" if kind == v.OK else "cube_stamp_flag"], [d[1] for d in stamps])
+                off = 4 if slam else 0
+                self.assertEqual((g.STAMP_X - off, g.STAMP_Y - off), stamps[0][2:4])
+                stamped[kind] += 1
+        self.assertGreater(stamped[v.OK], 100)
+        self.assertGreater(stamped[v.FLAG], 20)
+        self.assertGreater(flashed, 10)
+
+    def test_over_the_zoom_pixelates_by_its_clock_then_the_card(self):
+        g = self.game
+        over = {k: ds for k, ds in self.frames.items() if ds[0][4] == self.OVER}
+        self.assertGreater(len(over), 30)
+        for k, ds in over.items():
+            names, ms = [d[1] for d in ds], int(ds[0][13])
+            with self.subTest(frame=k, ms=ms):
+                self.assertIn("cube_zoom_%d" % min(2, ms // g.ZOOM_MS), names)
+                self.assertEqual(ms >= g.CARD_MS, "cube_over" in names)
+                self.assertTrue(all(n.startswith("cube_walker_face_") for n in names if n.startswith("cube_walker_")))
+        self.assertTrue(any("cube_over" in [d[1] for d in ds] for ds in over.values()))
 
 
 if __name__ == "__main__":

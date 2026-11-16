@@ -89,6 +89,9 @@ class Subject:
 SNAKE_PRESSES = (
     0, 21, 57, 61, 64, 107, 111, 119, 149, 164, 168, 187, 227, 277, 281, 291, 302, 332, 339, 372, 395, 420, 426,
     464, 488, 517, 531, 559, 592, 619, 643, 666, 683, 686, 690)
+# SMILE's row (P573): a bot that smiles on time in each lap but taps early in the sixth, the eleventh and the
+# fourteenth, the last flag at frame 616
+SMILE_PRESSES = (0, 26, 92, 153, 210, 262, 304, 360, 405, 446, 485, 516, 556, 589, 616)
 SUBJECTS = {  # the fire, the rain, games/catalog.py's games in their order, the overlay; the presses and counts set by eye (P795)
     "fire": Subject(fire.Fire, "tap: next mode", 30, 84, seed=fire.SEED),
     "rain": Subject(rain.Rain, "tap: again", 10, 110),
@@ -106,7 +109,8 @@ SUBJECTS = {  # the fire, the rain, games/catalog.py's games in their order, the
     "tunnel": Subject(Tunnel, Tunnel.hint, 5, 62, tap=25, shot=60),
     "road": Subject(Road, Road.hint, 5, 105),
     "starfire": Subject(Starfire, Starfire.hint, 5, 105, hold=3),
-    "cubetiming": Subject(CubeTiming, CubeTiming.hint, 5, 99, tap=25),
+    "cubetiming": Subject(CubeTiming, CubeTiming.hint, 497, 660, every=3, presses=tuple((k, 1) for k in SMILE_PRESSES),
+                          shot=589),
     "gravitypong": Subject(GravityPong, GravityPong.hint, 240, 432, presses=tuple((k, 1) for k in (
         0, 8, 14, 36, 42, 48, 52, 90, 94, 132, 170, 208, 210, 246, 250, 286, 308, 312)), shot=372),
     "overlay": Subject(balls.BallPit, "turn the knob", 5, 80, every=3, tap=10, show=0),

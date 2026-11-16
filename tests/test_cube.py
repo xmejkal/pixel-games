@@ -18,7 +18,8 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import gfx  # noqa: E402
-from space3d import CubeTiming, Housing  # noqa: E402
+import space3d  # noqa: E402
+from space3d import CubeTiming, Housing, Sway, Verdict  # noqa: E402
 
 FRAME_MS = 40  # app.py's FRAME_MS
 SEED, FRAMES, EVERY = 3, 1500, 2  # the trace's seed, its length, and the bot's look: one frame in EVERY
@@ -238,6 +239,196 @@ class LookTest(unittest.TestCase):
         self.assertEqual((gfx.c565(*NightInk.INK), gfx.c565(*NightInk.BONE)), (CubeTiming.INK, CubeTiming.BONE))
         self.assertEqual(gfx.c565(214, 40, 48), gfx.ACCENT)
 
+
+
+class Drawn:
+    """A canvas with pictures that logs each pictures.draw as (name, x, y, alpha) and each other call by its kind."""
+
+    pictures = True
+
+    def __init__(self, game, draw):
+        self.calls, self.fills, self.polys, self.boxes, self.texts = [], [], [], [], []
+        saved = space3d.pictures.draw
+        space3d.pictures.draw = lambda cv, name, x, y, alpha=255: self.calls.append((name, x, y, alpha)) or True
+        try:
+            game.covers = True
+            draw(self)
+        finally:
+            space3d.pictures.draw = saved
+
+    def fill(self, x, y, w, h, c):
+        self.fills.append((int(x), int(y), int(w), int(h), c))
+
+    def box(self, x, y, w, h, c):
+        self.boxes.append((int(x), int(y), int(w), int(h), c))
+
+    def line(self, *args):
+        pass
+
+    def poly(self, points, c, alpha=255):
+        self.polys.append(([list(p) for p in points], c, alpha))
+
+    def text(self, words, x, y, c):
+        self.texts.append(words)
+
+    def big(self, words, x, y, c, scale=2):
+        self.texts.append(words)
+
+    def named(self, prefix):
+        return [c for c in self.calls if c[0].startswith(prefix)]
+
+
+def now_playing(yaw, w=2.2, last=10000):
+    game = playing(yaw, w)
+    game.last = last
+    return game
+
+
+class FeelTest(unittest.TestCase):
+    """The look's feel (P573): the iris and the lens's size, the cone, the stamp and the flash, the face in the
+    monitor, the walkers turning, the cables' spring, the zoom and the title."""
+
+    def test_the_iris_opens_as_the_mark_comes_to_the_target(self):
+        tol = 2.2 * 0.12
+        edge = 1e-9  # the yaw's sums round in the last bits
+        for err, iris in ((0.0, 2), (tol - edge, 2), (tol + 0.01, 1), (2 * tol - edge, 1), (2 * tol + 0.01, 0),
+                          (-2 * tol - 0.01, 0), (-tol + edge, 2), (math.pi, 0)):
+            game = now_playing(CubeTiming.TARGET + err)
+            with self.subTest(err=err):
+                self.assertEqual(iris, game.iris())
+
+    def test_the_lens_is_largest_near_and_smallest_far(self):
+        game = playing()
+        self.assertEqual([0, 0, 1, 1, 2, 2], [game.lens_size(z) for z in (1.7, 0.61, 0.6, 0.01, 0.0, -0.6)])
+
+    def test_the_lens_is_drawn_at_the_exact_projection_and_not_at_all_on_the_back(self):
+        for yaw, seen in ((CubeTiming.TARGET, True), (1.0, True), (-0.8, False), (5.6, False)):
+            game = now_playing(yaw)
+            drawn = Drawn(game, game.paint)
+            lenses = drawn.named("cube_lens_")
+            with self.subTest(yaw=yaw):
+                self.assertEqual(seen, game.housing.lens_seen())
+                if not seen:
+                    self.assertEqual([], lenses)
+                    continue
+                x, y, z = game.project(game.VERTS[game.MARK], yaw)
+                k = game.lens_size(z)
+                half = space3d.LENS_SIZES[k] // 2
+                self.assertEqual([(space3d.LENSES[k][game.iris()], int(x) - half, int(y) - half, 255)], lenses)
+
+    def test_the_cone_is_brighter_while_a_tap_would_be_on_time_and_gone_with_the_lens(self):
+        game = now_playing(CubeTiming.TARGET)
+        polys = Drawn(game, game.paint).polys
+        cone = [p for p in polys if p[2] < 255]
+        self.assertEqual(1, len(cone))
+        x, y, _ = game.project(game.VERTS[game.MARK], game.yaw)
+        self.assertEqual(([[int(x), int(y)], [game.FACE_X, game.FACE_Y], [game.FACE_X, game.FACE_Y + game.FACE]],
+                          game.BONE, game.CONE_LOCK_ALPHA), cone[0])
+        game.done = True  # tapped: no longer on time
+        self.assertEqual(game.CONE_ALPHA, [p for p in Drawn(game, game.paint).polys if p[2] < 255][0][2])
+        game = now_playing(-0.8)
+        self.assertEqual([], [p for p in Drawn(game, game.paint).polys if p[2] < 255])
+        self.assertGreater(game.CONE_LOCK_ALPHA, 2 * game.CONE_ALPHA)
+
+    def test_the_faces_that_face_you_are_filled_lit_side_lighter_and_the_top_lightest(self):
+        game = now_playing(CubeTiming.TARGET)
+        solid = [p for p in Drawn(game, game.paint).polys if p[2] == 255]
+        self.assertEqual(3, len(solid))  # the top and the two sides round the lens
+        self.assertEqual({game.SHADES[0], game.SHADES[1], game.SHADES[2]}, {p[1] for p in solid})
+
+    def test_a_smile_on_time_flashes_the_monitor_one_frame_then_stamps_it_compliant_with_a_forced_smile(self):
+        game = at_err(0.0)
+        game.last = 10000
+        game.play(True, True)
+        self.assertEqual((Verdict.OK, 10000), (game.verdict.kind, game.verdict.at))
+        self.assertEqual(FRAME_MS, Verdict.FLASH_MS)  # one frame of white
+        for ms, white, face in ((0, True, None), (40, False, space3d.FACES[1]), (Verdict.SHOW_MS - 1, False,
+                                                                                  space3d.FACES[1]),
+                                (Verdict.SHOW_MS, False, space3d.FACES[0])):
+            game.last = 10000 + ms
+            drawn = Drawn(game, game.paint)
+            with self.subTest(ms=ms):
+                whites = [f for f in drawn.fills if f[:4] == (game.FACE_X, game.FACE_Y, game.FACE, game.FACE)]
+                self.assertEqual(white, bool(whites))
+                self.assertEqual([] if face is None else [face], [c[0] for c in drawn.named("cube_face_")])
+                stamps = [c[0] for c in drawn.named("cube_stamp_")]
+                self.assertEqual(["cube_stamp_ok"] if ms < Verdict.SHOW_MS else [], stamps)
+                flares = [c[0] for c in drawn.named("cube_flare_")]
+                self.assertEqual([space3d.FLARES[ms * 2 // Verdict.SLAM_MS]] if ms < Verdict.SLAM_MS else [],
+                                 flares)
+
+    def test_a_flag_freezes_the_face_and_every_walker_turns_to_look_at_you(self):
+        game = at_err(1.0)
+        game.last = 10000
+        drawn = Drawn(game, game.paint)
+        self.assertEqual(16, len(drawn.named("cube_walker_")))
+        backs = len(drawn.named("cube_walker_back_"))
+        self.assertTrue(4 <= backs <= 12)  # before: the near half shows its backs
+        game.play(True, True)  # too late: FLAGGED
+        drawn = Drawn(game, game.paint)
+        self.assertEqual(16, len(drawn.named("cube_walker_face_")))
+        self.assertEqual([space3d.FACES[2]], [c[0] for c in drawn.named("cube_face_")])
+        self.assertEqual(["cube_stamp_flag"], [c[0] for c in drawn.named("cube_stamp_")])
+        game.last += Verdict.SHOW_MS
+        drawn = Drawn(game, game.paint)
+        self.assertEqual(backs, len(drawn.named("cube_walker_back_")))  # they turn back
+        self.assertEqual([space3d.FACES[0]], [c[0] for c in drawn.named("cube_face_")])
+
+    def test_the_lives_are_marks_in_the_accent_and_a_lost_one_an_empty_box(self):
+        game = now_playing(1.0)
+        game.lives = 2
+        drawn = Drawn(game, game.paint)
+        marks = [f for f in drawn.fills if f[4] == gfx.ACCENT]
+        self.assertEqual(2, len(marks))
+        self.assertEqual(1, len([b for b in drawn.boxes if b[1] == game.LIVES_TOP]))
+
+    def test_a_speed_up_kicks_the_cables_into_a_visible_sway_that_settles(self):
+        sway = Sway()
+        sway.kick()
+        xs = []
+        for _ in range(100):  # 4 s
+            sway.update(FRAME_MS / 1000)
+            xs.append(sway.x)
+        self.assertGreater(max(xs), 4.0)  # px: it shows
+        self.assertLess(min(xs), -1.0)  # and swings back past the middle
+        self.assertLess(abs(xs[-1]), 0.5)
+        game = at_err(0.0)
+        game.play(True, True)
+        self.assertGreater(game.sway.v, 0)  # the good tap kicked it
+
+    def test_over_the_zoom_pixelates_inside_the_over_window_then_the_card(self):
+        g = CubeTiming
+        self.assertLess(3 * g.ZOOM_MS, g.CARD_MS)
+        self.assertLess(g.CARD_MS, g.OVER_MS)  # the card is up before a tap can restart
+        game = now_playing(1.0)
+        game.state, game.since = gfx.OVER, 10000
+        for ms, zoom, card in ((0, 0, False), (149, 0, False), (150, 1, False), (300, 2, False), (499, 2, False),
+                               (500, 2, True)):
+            game.last = game.age = 10000 + ms
+            game.age = ms
+            drawn = Drawn(game, game.draw_over)
+            with self.subTest(ms=ms):
+                self.assertEqual(space3d.ZOOMS[zoom], drawn.calls[0][0])
+                self.assertEqual(card, "cube_over" in [c[0] for c in drawn.calls])
+
+    def test_the_title_opens_the_great_lens_and_its_light_comes_on(self):
+        game = CubeTiming()
+        for age, iris, light in ((0, 0, False), (199, 0, False), (200, 1, False), (400, 2, False), (899, 2, False),
+                                 (900, 2, True)):
+            game.age = age
+            drawn = Drawn(game, game.draw_title)
+            names = [c[0] for c in drawn.calls]
+            with self.subTest(age=age):
+                self.assertEqual(space3d.IRISES[iris], names[1])
+                self.assertEqual(light, any(n.startswith("cube_light_") for n in names))
+
+    def test_the_score_bar_is_the_cameras_overlay(self):
+        game = now_playing(1.0)
+        game.score = 7
+        drawn = Drawn(game, game.draw_hud)
+        self.assertIn("REC", drawn.texts)
+        self.assertIn("7", drawn.texts)
+        self.assertEqual((0, 0, gfx.WIDTH, 16, game.INK), drawn.fills[0])
 
 
 class Heard:
