@@ -26,7 +26,7 @@ PICS = {}  # name: (w, h, memoryview into the block) of the loaded set
 SETS = {}  # game name: its layers, each [name, top, w, h, speed, keyed, memoryview], back to front
 ready = False
 loaded = None  # (set, only) that PICS holds, or None
-load_ms = 0  # how long the last load read, in ms; 0 after free(): App.switch prints it
+load_ms = 0  # how long the last load read, in ms; 0 after free(): App.build prints it
 
 
 def free():
