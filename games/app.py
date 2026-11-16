@@ -3,7 +3,8 @@ The game box: the marshmallow roast on the fire effect (P773, P595), the ball pi
 engine's bodies (P773, once the rain demo of P593) and ten one-button games on the GDI display.
 The box plays a lineup (P817): the ordered names of the games it holds, from the board's lineup.py (LINEUP), or every
 game of catalog.CATALOG when the board has none. A game's module is imported only when the box builds that game, so
-the boot imports no game. A game whose module is missing is refused aloud, and the box moves to the next one.
+the boot imports no game. A game that fails to build (its module missing or of another build, a MemoryError in its
+load) is refused aloud, and the box moves to the next one (P817, P823).
 tools/box.py deploy writes lineup.py and copies every game's code but only the packs of the lineup's games; packs an
 earlier deploy copied stay on the board.
 The BOOT button plays. The board's own button (D14) picks the next game of the lineup from any state (P818): the last
@@ -199,14 +200,18 @@ class App:
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
 
     def new_game(self):
-        """The game at index, built. One whose module is missing (an ImportError: a copy by hand left it out) is
-        refused aloud and the next one is built; when every game fails, the last error is raised (P817)."""
+        """The game at index, built. One that fails, in its import (a module a copy by hand left out, an .mpy of
+        another build, a wrong class name) or in its setup (a MemoryError in its load), is refused aloud, its memory
+        goes, and the next one is built; when every game fails, the last error is raised (P817, P823). Ctrl-C still
+        stops the box: KeyboardInterrupt is no Exception."""
         for _ in range(len(self.games)):
             try:
                 return self.games.game(self.index)
-            except ImportError as e:
-                print("game %s refused: %s" % (self.games.names[self.index], e))
+            except Exception as e:
                 error = e
+                pictures.free()  # a half-loaded set goes
+                gc.collect()  # and the half-built game (run() may have turned the collector off), before the line
+                print("game %s refused: %r" % (self.games.names[self.index], e))  # is built on a heap with room
                 self.index = (self.index + 1) % len(self.games)
         raise error
 
