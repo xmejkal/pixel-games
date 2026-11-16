@@ -2,7 +2,7 @@
 
 Spike P831 ([#1192](https://github.com/xmejkal/spark/issues/1192)). Written 2026-11-16 from sources only. Nothing was run on a board and no model was downloaded.
 
-> **TL;DR.** The box already has the camera hardware: the DFR0975 carries an OV2640 on a DVP connector, and the ESP32-S3 can run small int8 vision models in the 50 to 130 ms range. It is feasible, but it is a firmware project first (the image has no camera driver and no inference engine) and a pin project second (the camera takes 5 pads the box uses today). The smallest thing that works is no AI at all: a motion or "where is the bright blob" reading from a 96x96 grey picture, computed in C, that moves a paddle.
+> **TL;DR.** The box already has the camera hardware: the DFR0975 carries an OV2640 on a DVP connector, and the ESP32-S3 can run small int8 vision models in the 50 to 130 ms range. It is feasible, but it is a firmware project first (the image has no camera driver and no inference engine) and a pin project second (the camera takes 5 pads that `docs/wiring.html` reserves for the joystick and the amplifier; one of them is in use today). The smallest thing that works is no AI at all: a motion or "where is the bright blob" reading from a 96x96 grey picture, computed in C, that moves a paddle.
 
 In three sentences. The camera could give the games a body-as-controller (a face or hand position, motion), a selfie in a game picture, or a "somebody is there" wake-up. Capture runs on the chip's own DMA in a background task and inference runs in C on the chip's vector unit, so the game's 40 ms frame only needs to read the newest result. The cost is a rebuilt firmware (the camera driver, then an inference engine), a new C module, and giving up the joystick, the amplifier shutdown and the microphone clock pads, which the camera uses.
 
@@ -21,7 +21,7 @@ Smallest that works: motion as controller. Next: face position as controller, be
 ## 2. The hardware (sourced)
 
 - The board's page says "Onboard OV2640 (2MP, 68 degrees FOV)", the interface "CAM" is DVP, "compatible with OV2640 and OV7725" ([DFRobot wiki, DFR0975](https://wiki.dfrobot.com/SKU_DFR0975_FireBeetle_2_Board_ESP32_S3), read 2026-11-16). The drawer lists the DFR0975 as "with Camera", count 3, all used; it does not say how many of the three have the camera fitted. That needs a look at each board. The drawer also holds two FIT0672 camera extension cables (for Raspberry Pi cameras; not checked if they fit this connector).
-- The camera's AVDD, DVDD and DOVDD come from an AXP313A power chip that the firmware must enable first, over I2C on GPIO 1 and 2 (same wiki page). The chip's I2C address and register were not sourced.
+- The camera's power depends on the board revision. Before V1.2, its AVDD, DVDD and DOVDD come from an AXP313A power chip that the firmware must enable first, over I2C on GPIO 1 and 2; V1.2 and later have three independent supply circuits and no AXP313A (same wiki page; spark's board record, `hardware_revisions`). bench.md:1072 found an I2C device at 0x36 on the box. Which revision each board is needs a look.
 - Camera pins (same wiki): SDA 1, SCL 2, VSYNC 6, HREF 42, PCLK 5, XMCLK 45, D2 39, D3 40, D4 41, D5 4, D6 7, D7 8, D8 46, D9 48.
 
 ### Pin clash with the box (read from games/pins.py)
@@ -77,7 +77,7 @@ The box builds MicroPython v1.29.0, BOARD=ESP32_GENERIC_S3, BOARD_VARIANT=SPIRAM
 1. Add the esp32-camera component (an `idf_component.yml` entry, as the cnadler86 README says) and its `micropython.cmake` to `USER_C_MODULES`; `CONFIG_CAMERA_PSRAM_DMA` for the S3 (named on the esp32-camera page). The default build has no camera.
 2. For inference, add esp-tflite-micro (ESP-NN on by default on the S3), then our own binding.
 3. A rebuild, a new image and a deploy, with the engine and s3lcd as today. The image grows by the driver and the kernels. Its size was not measured.
-4. A camera init that first enables the AXP313A over I2C, then starts the driver with the pins of section 2.
+4. A camera init that first enables the AXP313A over I2C on a board before V1.2, then starts the driver with the pins of section 2.
 
 ESP-IDF 5.5.2 is inside the support list of ESP-WHO (5.4 to 6.1) and of esp-tflite-micro (5.1 to 6.0), so no IDF change is needed. The one-tool-per-job rule fits: one camera driver, one inference engine.
 

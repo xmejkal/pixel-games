@@ -187,7 +187,7 @@ What it needs:
 - **Wiring:** none for step 1 and idea A; a USB cable to the Mac. A joystick on it (later) goes on ADC1 pins (GPIO32 to
   GPIO39): on the classic ESP32, "ADC2 pins cannot be used when Wi-Fi is used" [14]. Which of those pins the T-Display's
   header brings out was not checked in this spike.
-- Spark has no board record for the T-Display (spark's `boards/` holds `firebeetle2-esp32s3.json` only). That matters
+- Spark has no board record for the T-Display (spark's `boards/` holds `firebeetle2-esp32s3.json` and `xiao-esp32-c6.json`). That matters
   only when the second board gets wires (question 7).
 
 ## 5. The first experiment
@@ -334,7 +334,8 @@ it waits for his play.
   buffers in internal RAM: `SPIRAM_TRY_ALLOCATE_WIFI_LWIP` defaults to n in ESP-IDF 5.5.2, and MicroPython's
   `sdkconfig.spiram_oct` sets only the PSRAM mode [15][8]. So the radio starts after the display, and the box must stay
   a one-board box when the radio cannot start (catch the error, as the speaker's "sound off" does). If the radio
-  started first, s3lcd could fall back to `"strips"`, which sent a frame in 71.9 ms instead of 31.0 ms (bench.md, P533).
+  started first, s3lcd could fall back to `"strips"`, which sends a frame in 33.5 ms instead of 31.0 ms
+  (bench.md:186, P533; the 71.9 ms reading at bench.md:102 was void).
 - **Radio power.** With ESP-NOW on, the receiver stays on all the time by default [2]. The ESP32-S3 datasheet gives 88 mA
   for receive and 340 mA peak for transmit at 1 Mbps, 21 dBm [16]. The transmit peak lasts only while a short packet is on
   the air. On USB this does not matter; on a battery it shortens the play. `sta.config(txpower=...)` can lower the
@@ -386,8 +387,8 @@ later: the remote board can carry the second stick.
    shows what the box sends.
 7. **Does the second board enter spark?** Recommended: not yet. A spark card for a T-Display board record when it gets
    its first wire (a joystick).
-8. **And the joystick and C effects?** Recommended: ESP-NOW step 1 now; the joystick next, since it serves both the box
-   and the remote; C effects after that.
+8. **And the joystick and C effects?** Superseded by the options page ([finding.md](finding.md)): the joystick first,
+   then ESP-NOW step 1, then the synthesizer; C effects when a game needs one.
 
 ## What this spike could not source
 

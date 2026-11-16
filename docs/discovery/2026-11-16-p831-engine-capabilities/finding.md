@@ -31,8 +31,8 @@ in the firmware. The camera needs a firmware rebuild and five of the box's pins.
 | Joystick | A direction and a strength, not only one button | No | In the drawer, with its pads A0, A1 and D5 set aside | A stick class: two ADC reads a frame, a dead zone, its button | Each game that uses it is its own feel slice |
 | ESP-NOW | Two boards that talk: a remote control, then two-player games | No (`espnow` is in the build) | The free LilyGO T-Display as the second board | A 60 s ping-pong at 25 Hz: loss, round trip, the cost of a send and a poll | Internal RAM: the display's DMA buffer and Wi-Fi share it |
 | Effects in C | One more visual effect in the pixel engine | Yes, per effect | None | One `fx_<name>.c` with its Mac tests, a build and a flash | The rebuild and the flash each time |
-| Synthesizer | A playable voice: oscillator, envelope, filter, echo | Yes (a C voice; esp-dsp optional) | The joystick; the speaker is there | A C voice per 256-sample block: microseconds per block, press-to-sound delay | esp-dsp has filters and FFT, not a synth, so the voice is ours |
-| Camera and edge AI | A camera image, motion, later a face or a person | Yes (a camera driver, later an inference engine) | The OV2640 on the FireBeetle 2 (check which boards have it fitted) | Grey frames beside a game; a frame difference moves a paddle | Its connector uses GPIO 4, 5 and 7 (the joystick), GPIO 6 (the amplifier) and GPIO 8 (the microphone) |
+| Synthesizer | A playable voice: oscillator, envelope, filter, echo | Yes (a C voice; esp-dsp optional) | The joystick; the speaker is there | A C voice per 256-sample block: microseconds per block, press-to-sound delay | The voice is ours in C; Espressif's `esp_audio_effects` (delay, reverb, EQ) is for Espressif chips only |
+| Camera and edge AI | A camera image, motion, later a face or a person | Yes (a camera driver, later an inference engine) | The OV2640 on the FireBeetle 2 (check which boards have it fitted) | Grey frames beside a game; a frame difference moves a paddle | Its connector uses GPIO 4, 5 and 7 (reserved for the joystick), GPIO 6 (the amplifier) and GPIO 8 (the microphone) |
 
 ## What generalizes for the games
 
@@ -49,7 +49,8 @@ reads, the same shape as the link to a second board.
 
 ## The order recommended
 
-1. **The joystick:** cheapest and surest, and the synthesizer and a remote board both want it.
+1. **The joystick:** cheapest and surest, and the synthesizer needs it as its input. A remote board works without it
+   (the T-Display's own two buttons), and a second stick can go on it later.
 2. **ESP-NOW, step 1 (the ping-pong)**, then the input layer with a remote button (a feel slice).
 3. **The synthesizer:** a C voice first, esp-dsp's filter after.
 4. **More effects in C:** when a game needs one.
@@ -62,4 +63,5 @@ reads, the same shape as the link to a second board.
    Recommended: yes, when ESP-NOW starts, because it is the only free board with a screen.
 3. Does the camera stay on the list, given that it takes the joystick's pins? Recommended: yes, but last. A camera
    box can be a second board without the joystick.
-4. The other open questions are in each note's last section, each with a recommended answer.
+4. The other open questions are in each note's last section, each with a recommended answer. Where a note's order
+   differs, this page holds.

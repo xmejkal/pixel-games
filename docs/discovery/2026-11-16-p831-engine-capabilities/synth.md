@@ -15,7 +15,9 @@ marks what nobody read or ran.
 Summary. A monophonic subtractive synth (one oscillator, an ADSR envelope, a low-pass filter, an echo) fits the existing
 16 kHz mixer path and is best written as one small C voice in the engine, as the crackle and the noise already are.
 esp-dsp adds a tested biquad filter with its coefficient maker, and a very fast 16-bit FFT for a spectrum on the
-screen. Its filters are not faster than plain C on the S3, so the library is a convenience here, not a speed-up. The
+screen. Its biquad is about 1.5 times faster than plain C on the S3 (17552 against 26651 cycles per 1024 samples), but no
+faster than on the original ESP32. Espressif also ships `esp_audio_effects`, with delay, reverb, EQ, a mixer and
+DRC; see "Espressif's audio effects" below. The
 smallest first step is one probe that renders one voice into the I2S and measures the time per block and the delay.
 
 ## The instrument with the box's controls
@@ -24,13 +26,13 @@ smallest first step is one probe that renders one voice into the I2S and measure
 |---|---|---|
 | Joystick up/down | Pitch, snapped to a scale (for example a pentatonic scale, so no note sounds wrong) | One hand can hit notes with a stick only if the steps are wide [inference] |
 | Joystick left/right | Filter cutoff (the "wah"), and the knob-picked patch fixes how far it goes | The classic one-hand gesture |
-| Button D14 | The gate: down = note on, up = note off (the envelope's release) | One bit, no timing skill needed |
+| The stick's button (JOY_SW, pad D5) | The gate: down = note on, up = note off (the envelope's release) | One bit, no timing skill needed |
 | Knob | The patch: waveform, envelope, echo on or off. The volume pane shows its name | The PO's "knob for the sound" |
 | Screen | A spectrum or the note and cutoff as a bar | Cheap, see "what esp-dsp gives" |
 
 [repo] The joystick pads A0, A1 and D5 (GPIO 4, 5, 7) are kept free in `docs/wiring.html`; the drawer holds two
 PS2-style analog sticks, one in the box project. The knob is the volume today (P764), so the instrument mode must take
-it over or leave the volume where it is (decision 3). BOOT stays untouched.
+it over or leave the volume where it is (decision 3). D14 keeps switching games and BOOT keeps playing.
 
 ## The signal chain (industry names)
 
@@ -83,13 +85,24 @@ docs/en/esp-dsp-benchmarks.rst on master, read 2026-11-16) lists these on ESP32-
   all-pass: `dsps_biquad_gen_*_f32`); FIR; FFT, with a real S3 speed-up only in the 16-bit version; vector add, multiply
   and dot product in 16-bit (P767 already looked at these); windows; a tone generator (`dsps_tone_gen`, a sine test
   tone, not an instrument oscillator). [source: the same repository, `modules/`.]
-- Does not give: an oscillator bank, an envelope, a synth voice, a delay or reverb, a mixer. "Effects library" in the PO's
-  words is a fair guess at the idea, but the library holds no effects [source: its API list].
-- The honest surprise: the biquad is not faster on the S3 than on the original ESP32 (17552 against 17442 cycles). It
+- Does not give: an oscillator bank, an envelope, a synth voice, a delay or reverb, a mixer [source: its API list].
+  Those effects are in a second Espressif library (below).
+- The biquad is about 1.5 times faster than plain C on the S3 (17552 against 26651 cycles), but not faster than on
+  the original ESP32 (17442 cycles). It
   is a chain where each sample needs the last, so SIMD does not help [inference]. A 20-line fixed-point biquad in C
   would cost about the same. The S3's SIMD pays off in the FFT, the FIR and the vector math. So the first real use for
   the instrument is the filter's tested coefficients (cutoff and Q to numbers) and a spectrum on the screen.
 - [source] The biquad is float only (`f32`), so the C voice converts int16 to float and back, which adds a little [inference].
+
+
+## Espressif's audio effects
+
+Found by the review, 2026-11-16: Espressif ships `esp_audio_effects` (version 1.4.5, from the esp-adf-libs
+repository, https://components.espressif.com/components/espressif/esp_audio_effects), with delay, reverb, EQ, a mixer
+and DRC. This is likely the "built in optimized effects library" in the PO's words. Its license is the "Espressif
+Modified MIT License": use only with Espressif chips, which the box is. Not checked: whether it ships as source or as a
+prebuilt library, its cost per block on the S3, and how it links into the MicroPython build. Its source or binary is a
+vendor file, so it never enters the public repository; the firmware build fetches it with the component manager.
 
 ## How it gets into the firmware
 
@@ -121,7 +134,7 @@ Recommendation: reuse none as code. Write the voice from the textbook design (ab
 
 1. A probe on the box, no game: a C function `render(buf, note, cutoff_q, gate)` with a saw oscillator, an ADSR and a
    one-pole low-pass (own code, no esp-dsp yet). The `CallbackRefill` calls it per 256-sample block.
-2. Joystick on A0 and A1 through `machine.ADC`, the button D14. Hear it: this is the PO's ear test.
+2. Joystick on A0 and A1 through `machine.ADC`, its button JOY_SW on D5 as the gate. Hear it: this is the PO's ear test.
 3. Measure: us per block for the voice, with and without the screen running (the PSRAM copy for the display competes
    for the bus [repo, bench.md: about 32 ms of CPU copy per frame]); late refills (P767 counts them).
 4. Measure the delay from the button press to the first non-zero sample queued, and add the ring's queued samples
