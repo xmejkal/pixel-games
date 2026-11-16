@@ -1723,3 +1723,28 @@ than the control.
 - So the plan's sound gate `late 0` cannot hold for this run as it stands. Until the sound's margin is fixed (P858),
   a stage's Fire gate compares its count with this spread: at most 9 in 45 s over two runs, and the crackle plays with
   `dropped 0`.
+
+## P849 (#1213), 2026-11-16: the package on the board
+
+- The box: the `_engine` firmware, branch p849-package deployed with `box.py deploy --all` (the package in `:engine/`).
+  The boot (`logs/run-p849-boot.log`): `import 1671 ms`, `ready`, `switch marshmallow 592 ms`, marshmallow at 23 and
+  24 fps. The log saw marshmallow only, the first game: no other game was picked in it. Today's earlier boots imported
+  in 1379 to 1703 ms.
+- `probe844_import.py --rounds 3` (`logs/run-p849-import.log`): the same ten modules imported flat and from a package
+  folder, after hard resets, median of three rounds.
+
+| | flat, ms | package, ms |
+|---|---|---|
+| the package's empty `__init__` | 0 | 54.5 |
+| each module | 42.1 to 150.6 | 5.4 to 6.4 more than flat |
+| total | 822.5 | 934.7 (+13.6 %) |
+
+- Over the plan's 10 % gate: a module in a package folder costs about 5.5 ms more, and the package's `__init__` about
+  54 ms once. Today's package holds two modules, so the boot pays about 65 ms: an estimate from the probe's numbers
+  (54.5 + 2 × 5.5 ms), not a measured difference between two boots. The plan's answer is a card to freeze
+  the engine into the firmware with `manifest.py` (P861).
+- The heap (`heap` lines): free 8,053,120 B at boot, 8,051,936 B after the package, 7,930,544 B after every game
+  module, 7,928,752 B after the viper modules. The executable heap (`HEAP_EXEC`): 207,276 B free, the largest block
+  172,032 B, and 206,288 B free after the viper modules: the 0b-2 baseline.
+- The collector's idle time: 0.3 ms at boot and after the package, 37.6 ms after every game module is imported. A
+  lead for flappy's lower fps with all 15 games loaded (P856 above) and for the late sound refills (P858).

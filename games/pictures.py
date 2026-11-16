@@ -11,8 +11,9 @@ draw() for a picture and draw_layer() for a window of a scrolling strip; both an
 Mac, with the st7789 backend, or at ORIENTATION 180), and the game then draws its old shapes.
 """
 
-import time
 from binascii import hexlify
+
+from engine.clock import since, ticks_diff, ticks_us  # noqa: F401  since: app.py reads pictures.since until stage 4
 
 try:
     import art_index
@@ -133,21 +134,6 @@ def view(buf, parts, offset, n):
         if start <= offset and offset + n <= start + length:
             return buf[at + offset - start:at + offset - start + n]
     return None
-
-
-def since(start):
-    """The ms from start (time.ticks_ms()) to now; 0 on the Mac, where CPython's time has no ticks."""
-    return time.ticks_diff(time.ticks_ms(), start) if hasattr(time, "ticks_diff") else 0
-
-
-def ticks_us():
-    """time.ticks_us(), or 0 on the Mac, where CPython's time has no ticks."""
-    return time.ticks_us() if hasattr(time, "ticks_us") else 0
-
-
-def ticks_diff(a, b):
-    """time.ticks_diff(a, b), or 0 on the Mac."""
-    return time.ticks_diff(a, b) if hasattr(time, "ticks_diff") else 0
 
 
 def refuse(message):

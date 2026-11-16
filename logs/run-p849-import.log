@@ -1,0 +1,86 @@
+import flat catalog 50280
+import flat fast 48626
+import flat volume 96721
+import flat sound 133643
+import flat cues 42862
+import flat gfx 151038
+import flat motion 42058
+import flat pictures 79556
+import flat track 93667
+import flat overlay 86629
+done
+import package __init__ 54503
+import package catalog 56406
+import package fast 53847
+import package volume 101374
+import package sound 138882
+import package cues 48418
+import package gfx 156797
+import package motion 47943
+import package pictures 85707
+import package track 98749
+import package overlay 92706
+done
+import flat catalog 50134
+import flat fast 47943
+import flat volume 96432
+import flat sound 133242
+import flat cues 42715
+import flat gfx 150582
+import flat motion 42488
+import flat pictures 79319
+import flat track 93393
+import flat overlay 86382
+done
+import package __init__ 54497
+import package catalog 56416
+import package fast 53833
+import package volume 101357
+import package sound 138869
+import package cues 48416
+import package gfx 156492
+import package motion 47948
+import package pictures 85713
+import package track 98744
+import package overlay 92399
+done
+import flat catalog 50128
+import flat fast 47935
+import flat volume 96413
+import flat sound 133244
+import flat cues 42715
+import flat gfx 150565
+import flat motion 41924
+import flat pictures 79309
+import flat track 93398
+import flat overlay 86964
+done
+import package __init__ 54502
+import package catalog 56399
+import package fast 53846
+import package volume 101357
+import package sound 138875
+import package cues 48418
+import package gfx 156491
+import package motion 47952
+import package pictures 85715
+import package track 98743
+import package overlay 92395
+done
+heap boot free 8053120 gc_idle_us 307 exec_free 207276 exec_largest 172032
+heap package free 8051936 gc_idle_us 334 exec_free 207276 exec_largest 172032
+heap games free 7930544 gc_idle_us 37586 exec_free 207276 exec_largest 172032
+heap viper free 7928752 gc_idle_us 37737 exec_free 206288 exec_largest 172032
+done
+median __init__ flat 0 package 54502
+median catalog flat 50134 package 56406
+median fast flat 47943 package 53846
+median volume flat 96432 package 101357
+median sound flat 133244 package 138875
+median cues flat 42715 package 48418
+median gfx flat 150582 package 156492
+median motion flat 42058 package 47948
+median pictures flat 79319 package 85713
+median track flat 93398 package 98744
+median overlay flat 86629 package 92399
+median total flat 822454 package 934700 (+13.6 %)

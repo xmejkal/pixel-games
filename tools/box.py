@@ -17,14 +17,18 @@ engine beside _engine, one that lacks a name the games need of _engine (Bodies, 
 HeatField.cool) and an answer it does not know; a firmware with no C module deploys, as the stock image.
 Then it makes :packs when the board has none, compiles games/*.py but main.py with mpy-cross into .mpy files (they import in
 about half the time of a .py), copies them with games/main.py and games/box_bank.raw (the sound bank) to : and removes
-each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). It copies the crackle,
+each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). The package games/engine/
+goes the same way into the folder :engine/ (P849), made when the board has none, each traceback naming
+engine/<module>.py, and each .py or .mpy in that folder that is not the package's goes. Then the .py and .mpy of each
+flat module that moved into the package (MOVED) go from the root, after the package is copied, so a failed copy leaves
+the old module; any other file at the root stays, the board's boot.py among them. It copies the crackle,
 engine/natmod/crackle/_crackle.mpy (tools/crackle.sh builds it), to :_crackle.mpy, or says none is copied when it is
 not built; the board's crackle_c.mpy stays, for a flash of the rollback image. It copies each pack the
 lineup needs to :packs (mpremote skips a file whose sha256 is the same), writes :lineup.py and hard-resets the board
-(the picture pool is sized at boot). --py copies games/*.py instead and removes the board's .mpy files of those
-modules (_crackle.mpy and crackle_c.mpy stay). deploy --all copies every game and pack and removes :lineup.py when the board has one.
---dry-run prints each command and runs none, mpy-cross included, as for a board with no :packs, no :lineup.py and no
-old .py or .mpy files, and never refuses the firmware. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
+(the picture pool is sized at boot). --py copies games/*.py and games/engine/*.py instead and removes the board's .mpy
+files of those modules (_crackle.mpy and crackle_c.mpy stay). deploy --all copies every game and pack and removes :lineup.py when the board has one.
+--dry-run prints each command and runs none, mpy-cross included, as for a board with no :packs, no :engine, no
+:lineup.py and no old .py or .mpy files, and never refuses the firmware. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
 again (or with --py). mpy-cross: pip install mpy-cross==1.29.0.post2.
 log: resets the board itself (a hard reset, trying again while the board still reboots from a deploy), then prints
 its console for N seconds (20 by default), opening the port again while USB comes back: the `lineup`, `import`,
@@ -58,6 +62,8 @@ FLASH = "flash the image of ./build.sh engine first (README, Build and run)"
 NO_ANSWER = "the board did not answer: close any mpremote or log session, press reset, and deploy again"
 ENGINE_LINES = (["engine", "ImportError"], ["engine", "Bodies", "no"], ["engine", "Bodies", "yes"])
 CRACKLE = "engine/natmod/crackle/_crackle.mpy"  # the crackle's native module, as tools/crackle.sh builds it (P848)
+PACKAGES = ("engine",)  # the folders of games/ that go to the board as folders of the same name (P849)
+MOVED = ("signals",)  # flat modules that moved into a package: the deploy removes their .py and .mpy at the root (P849)
 
 
 class Refused(Exception):
@@ -138,13 +144,14 @@ class Compiler:
             raise Refused("mpy-cross emits %s, the board needs mpy v%s: %s" % (
                 found.group(0) if found else repr(said.strip()), MPY, MPY_CROSS_PIP))
 
-    def compile(self, sources, folder):
-        """Each source (games/<name>.py) compiled to folder/<name>.mpy; answers the .mpy paths."""
+    def compile(self, sources, folder, package=""):
+        """Each source (games/<name>.py, or games/<package>/<name>.py) compiled to folder/<name>.mpy, its traceback
+        name <name>.py, or <package>/<name>.py; answers the .mpy paths."""
         out = []
         for source in sources:
             name = os.path.basename(source)
             out.append(os.path.join(folder, name[:-3] + ".mpy"))
-            self.tool.run(["-march=xtensawin", "-s", name, "-o", out[-1], source])
+            self.tool.run(["-march=xtensawin", "-s", package + "/" + name if package else name, "-o", out[-1], source])
         return out
 
 
@@ -172,6 +179,9 @@ class Deploy:
         if "packs/" not in on_board:
             self.runner.run(["mkdir", ":packs"])
         self.copy_code(on_board)
+        for package in PACKAGES:
+            self.copy_package(package, package + "/" in on_board)
+        self.remove([":%s%s" % (m, kind) for m in MOVED for kind in (".py", ".mpy") if m + kind in on_board])
         self.copy_crackle()
         for s in sets_for(catalog.NAMES if names is None else names):
             path = art_index.PACKS[s][0]
@@ -184,7 +194,8 @@ class Deploy:
 
     def copy_code(self, on_board):
         """The modules as .mpy files, then the board's .py of each goes; or (no compiler) as .py files, then the
-        board's .mpy of each goes. main.py and the sound bank go as they are."""
+        board's .mpy of each goes. main.py and the sound bank go as they are. Any other file at the root stays (the
+        board's boot.py, which MicroPython wrote); run removes the modules of MOVED once their package is copied."""
         sources = sorted(n for n in os.listdir(self.games) if n.endswith(".py"))
         modules = [n[:-3] for n in sources if n != "main.py"]
         if self.compiler is None:
@@ -195,15 +206,45 @@ class Deploy:
                 compiled = self.compiler.compile(["games/%s.py" % m for m in modules], tmp)
                 self.runner.run(["cp"] + compiled + ["games/main.py", "games/box_bank.raw", ":"])
             stale = [m + ".py" for m in modules]
-        stale = [":" + n for n in stale if n in on_board]
-        if stale:
-            try:
-                self.runner.run(["rm"] + stale)
-            except subprocess.CalledProcessError as e:
-                if self.compiler:  # the board runs a .py before an .mpy of the same name
-                    e.stderr = "%s; deploy again: until then the board runs the old .py of some modules" % (
-                        (e.stderr or "").strip())
-                raise
+        self.remove([":" + n for n in stale if n in on_board])
+
+    def copy_package(self, package, has_folder):
+        """games/<package>/*.py into the folder :<package>/, made when the board has none (has_folder False): as .mpy
+        files, or (no compiler) as .py files. Then each .py or .mpy in the folder that is not one of these goes: a .py
+        that now has an .mpy (the board runs the .py first), an .mpy after a deploy with --py, and a module whose
+        source is gone."""
+        folder = os.path.join(self.games, package)
+        sources = sorted(n for n in os.listdir(folder) if n.endswith(".py"))
+        if self.compiler is None:
+            self.make_folder(package, has_folder)
+            self.runner.run(["cp"] + ["games/%s/%s" % (package, n) for n in sources] + [":%s/" % package])
+            kept = sources
+        else:
+            with tempfile.TemporaryDirectory() as tmp:
+                compiled = self.compiler.compile(["games/%s/%s" % (package, n) for n in sources], tmp, package)
+                self.make_folder(package, has_folder)
+                self.runner.run(["cp"] + compiled + [":%s/" % package])
+            kept = [n[:-3] + ".mpy" for n in sources]
+        if has_folder:
+            there = board_names(self.runner.run(["ls", ":" + package]))
+            self.remove(sorted(":%s/%s" % (package, n) for n in there
+                               if n.endswith((".py", ".mpy")) and n not in kept))
+
+    def make_folder(self, package, has_folder):
+        if not has_folder:
+            self.runner.run(["mkdir", ":" + package])
+
+    def remove(self, paths):
+        """The board's files at paths, if any."""
+        if not paths:
+            return
+        try:
+            self.runner.run(["rm"] + paths)
+        except subprocess.CalledProcessError as e:
+            if self.compiler:  # the board runs a .py before an .mpy of the same name
+                e.stderr = "%s; deploy again: until then the board runs the old .py of some modules" % (
+                    (e.stderr or "").strip())
+            raise
 
     def check_firmware(self):
         """Refuses the board's firmware by firmware_fault, before any other board command, after PROBE_TRIES tries

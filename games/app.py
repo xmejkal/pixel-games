@@ -49,10 +49,10 @@ from bank import Bank
 from box_bank import BOX_BANK_INDEX
 from catalog import NAMES, ROWS, lineup_fault
 from cues import SoundCues
+from engine.signals import Signals
 from lcd import open_tft
 from overlay import Overlay, VolumePane
 from render import StOut
-from signals import Signals
 from speaker import Speaker
 from volume import MasterVolume, VolumeKnob
 

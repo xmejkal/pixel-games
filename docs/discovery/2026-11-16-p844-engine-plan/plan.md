@@ -220,8 +220,9 @@ tests/                     one suite against both versions
 
 On the board, the package is the folder `:engine/` and the drivers are `:drivers/`. Until stage 9, pixel-games has
 two folders named `engine`: the submodule at the root and the package in `games/`. On the Mac, the tests put `games/`
-on the path (`tests/test_app_knob.py:13`). A regular package wins there over the submodule, which has no
-`__init__.py` and so is a namespace package. Two tests of 0b-1 hold this: `engine.__file__` is
+on the path (`tests/test_app_knob.py:13`). On CPython a regular package wins there over the submodule, which has no
+`__init__.py` and so is a namespace package. MicroPython takes the first folder on the path instead, but on the board
+`games/` is the root, so no second `engine` folder exists there. Two tests of 0b-1 hold this: `engine.__file__` is
 `games/engine/__init__.py`, and the root `engine/` has no `__init__.py`.
 
 ## The order

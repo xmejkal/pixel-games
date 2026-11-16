@@ -9,6 +9,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | path | what it holds |
 | --- | --- |
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
+| `games/engine/` | the engine package that the games import, `:engine/` on the board (P849, stage 0b-1 of the [engine plan](docs/discovery/2026-11-16-p844-engine-plan/plan.md)): `signals.py` and `clock.py` so far, behind a boundary test (`tests/test_engine_boundary.py`). Its [README](games/engine/README.md) says what it holds. Not the submodule `engine/` below, whose C module the games import as `_engine` |
 | `art/` | the painted art: one set per game, the brush and the export |
 | `art/mocap.py` | turns CMU motion capture into the side-view poses that Rescue's fireman, the people he saves and Meteors' walker are painted from. It reads the CMU files from `~/.cache/pixel-games/cmu` and writes nothing. The terms are below the table |
 | `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
@@ -130,15 +131,19 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    beside `_engine`, or one that lacks a name the games need (`Bodies`, `HeatField`, `Balls`, `SoundBank`,
    `HeatField.cool`): flash the image of step 2 first. A firmware with no C module deploys, and the games play
    without it. The deploy copies `engine/natmod/crackle/_crackle.mpy` when `tools/crackle.sh` has built it, and keeps
-   the board's old `crackle_c.mpy`.
+   the board's old `crackle_c.mpy`. The package `games/engine/` goes the same way into the folder `:engine/` (P849),
+   made when the board has none. The deploy then removes each `.py` or `.mpy` in that folder that is not the
+   package's, and the `.py` and `.mpy` of each module that moved from the root into the package (`MOVED` in
+   `tools/box.py`: `signals`). Any other file at the root stays, MicroPython's `boot.py` among them.
    - After the first deploy onto `_engine` (stage 0a, P848), keep the new firmware's answer the same way:
      `mpremote run tools/firmware_probe.py > tests/fixtures/firmware/new.txt`. It is owed after the flash, and the card
      is done only with it: `tests/test_box.py` reports it skipped until then.
-   `--py` copies `games/*.py` instead and removes those modules' `.mpy` files: for debugging on the board, where a
+   `--py` copies `games/*.py` and `games/engine/*.py` instead and removes those modules' `.mpy` files: for debugging on the board, where a
    traceback shows the source line. The names are `games/catalog.py`'s, and `python3 tools/box.py list` shows each
    with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so step 6 is
    done; `--dry-run` prints the commands. `tools/crackle.sh` copies `.py` files, which run instead of their `.mpy`
-   files until the next deploy. By hand: `mpremote cp games/*.py games/box_bank.raw :`, `mpremote cp -r games/packs :`
+   files until the next deploy. By hand: `mpremote cp games/*.py games/box_bank.raw :`, `mpremote mkdir :engine` (once),
+   `mpremote cp games/engine/*.py :engine/`, `mpremote cp -r games/packs :`
    and, when the board has one, `mpremote rm :lineup.py`, or the box keeps the old lineup. To pick a lineup, Claude
    runs `box.py list`, then `box.py deploy NAME...`, then `box.py log --seconds 20`, which prints the console's
    `lineup`, `import` and `switch` lines after the boot, each after the seconds since the log started

@@ -17,7 +17,7 @@ import fire  # noqa: E402
 import gfx  # noqa: E402
 import lcd  # noqa: E402
 import marshmallow as mm  # noqa: E402
-import signals  # noqa: E402
+from engine import signals  # noqa: E402
 from marshmallow import BURN, DARK, GOLDEN, LATE, SERVE, WHITE, Roast  # noqa: E402
 
 FLAME_TOP = gfx.HEIGHT - mm.BOTTOM_Y  # a flame whose top is the marshmallow's bottom edge at depth 0: under is 0 there

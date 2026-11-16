@@ -76,7 +76,7 @@ def modules():
     import lcd
     import pictures
     import plugins
-    import signals
+    from engine import signals
     import sound
     import volume
     import world_lib
