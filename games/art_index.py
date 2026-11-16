@@ -1040,5 +1040,5 @@ PACKS = {
     "bucket": ("packs/bucket.pak", 173944, "4917ce82c170fef3"),
     "gravpong": ("packs/gravpong.pak", 630776, "28ba9df83b8e0530"),
     "snake": ("packs/snake.pak", 421776, "fe6d88f2bf268399"),
-    "cube": ("packs/cube.pak", 532260, "3a8f5d071e451797"),
+    "cube": ("packs/cube.pak", 532260, "2c2bd498c4a295cb"),
 }

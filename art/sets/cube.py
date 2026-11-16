@@ -500,25 +500,31 @@ def walker(kind, step):
 
 
 def flare(k):
-    """The camera's flash at the lens when it takes you, 40 x 40 keyed: a bone star, long rays (k 0) or short (k 1)."""
-    e = Etch(FLARE, FLARE)
+    """The camera's flash at the lens when it takes you, 40 x 40 keyed: a bone sparkle edged in ink, so it reads on
+    the moon's light as on the night: four long rays and four short ones round a white core; k 1 is it fading."""
+    e = Etch(FLARE, FLARE, (0, 0, 0))
     c = FLARE / 2
-    reach = (19, 11)[k]
-    for a in range(8):
-        ang = a * pi / 4
-        long = reach if a % 2 == 0 else reach * 0.5
-        e.poly([(c + cos(ang) * long, c + sin(ang) * long), (c + cos(ang + 1.57) * 1.6, c + sin(ang + 1.57) * 1.6),
-                (c - cos(ang + 1.57) * 1.6, c - sin(ang + 1.57) * 1.6)])
-    e.ellipse(c, c, (6, 4)[k], (6, 4)[k])
-    return e.keyed()
+    long, short, core, base = ((19, 11, 8, 4.5), (13, 7, 5, 3.0))[k]
+    for colour, grow in ((INK, 1.3), (BONE, 0.0)):
+        for a in range(8):
+            ang = a * pi / 4
+            reach, half = (long, base) if a % 2 == 0 else (short, base * 0.7)
+            reach, half = reach + grow, half + grow
+            e.poly([(c + cos(ang) * reach, c + sin(ang) * reach),
+                    (c + cos(ang + pi / 2) * half, c + sin(ang + pi / 2) * half),
+                    (c - cos(ang) * 2, c - sin(ang) * 2),
+                    (c - cos(ang + pi / 2) * half, c - sin(ang + pi / 2) * half)], colour)
+        e.ellipse(c, c, core + grow, core + grow, colour)
+    return e.keyed((0, 0, 0))
 
 
 # --- the face in the monitor, and the zoom -----------------------------------------------------------------------
 
-def paint_face(e, n, pose, x0=0.0, y0=0.0):
+def paint_face(e, n, pose, x0=0.0, y0=0.0, flash=False):
     """A face n px tall in e from (x0, y0), in stencil, as a poster prints one: bone where the camera's light falls
-    (from the left), ink in the shadow, the hair a dark mass. pose: neutral, smile (forced: a wide grin with teeth,
-    the brows still worried) or frozen (the eye wide, the mouth open)."""
+    (from the left), ink in the shadow, the hair a dark mass; with flash, the camera's flash full on it, no shade.
+    pose: neutral, smile (forced: a wide grin with teeth, the brows still worried) or frozen (the eyes wide, the
+    mouth open)."""
     def p(x, y):
         return x0 + x * n, y0 + y * n
 
@@ -530,27 +536,34 @@ def paint_face(e, n, pose, x0=0.0, y0=0.0):
         e.ellipse(x, y, rx * n, ry * n, colour)
 
     poly([(0.02, 1.02), (0.1, 0.86), (0.32, 0.79), (0.68, 0.79), (0.9, 0.86), (0.98, 1.02)])  # the shoulders
-    poly([(0.56, 0.79), (0.68, 0.79), (0.9, 0.86), (0.98, 1.02), (0.6, 1.02)], INK)  # their shade
+    if not flash:
+        poly([(0.56, 0.79), (0.68, 0.79), (0.9, 0.86), (0.98, 1.02), (0.6, 1.02)], INK)  # their shade
     poly([(0.4, 0.79), (0.5, 0.94), (0.6, 0.79)], INK)  # the collar's V
     poly([(0.4, 0.62), (0.6, 0.62), (0.6, 0.82), (0.5, 0.9), (0.4, 0.82)])  # the neck
-    poly([(0.52, 0.66), (0.6, 0.62), (0.6, 0.82), (0.52, 0.86)], INK)
+    poly([(0.52, 0.66), (0.6, 0.62), (0.6, 0.82), (0.52, 0.86)] if not flash else
+         [(0.4, 0.62), (0.6, 0.62), (0.6, 0.68), (0.4, 0.68)], INK)  # under the jaw
     oval(0.5, 0.43, 0.25, 0.31)  # the face
-    poly([(0.6, 0.2), (0.78, 0.3), (0.78, 0.55), (0.62, 0.76), (0.53, 0.75), (0.6, 0.66), (0.58, 0.6),
-          (0.6, 0.52), (0.57, 0.44), (0.62, 0.38)], INK)  # the shade, along the nose
+    if not flash:
+        poly([(0.6, 0.2), (0.78, 0.3), (0.78, 0.55), (0.62, 0.76), (0.53, 0.75), (0.6, 0.66), (0.58, 0.6),
+              (0.6, 0.52), (0.57, 0.44), (0.62, 0.38)], INK)  # the shade, along the nose
     poly([(0.23, 0.46), (0.21, 0.26), (0.3, 0.12), (0.46, 0.05), (0.64, 0.07), (0.78, 0.18), (0.8, 0.36),
           (0.76, 0.5), (0.72, 0.28), (0.58, 0.2), (0.44, 0.21), (0.33, 0.26), (0.28, 0.46)], INK)  # the hair
     e.line([p(0.3, 0.2), p(0.42, 0.12), p(0.56, 0.11)], max(1.0, n * 0.022))  # its lit strand
     wide = pose == "frozen"
-    oval(0.385, 0.42, 0.085, 0.05 if not wide else 0.07, INK)  # the lit eye
-    if wide:
-        oval(0.385, 0.42, 0.06, 0.05)
-        oval(0.385, 0.42, 0.018, 0.018, INK)
-    else:
-        oval(0.405, 0.415, 0.02, 0.016)
-    oval(0.63, 0.43, 0.022, 0.016)  # the shaded eye: its glint
+    for cx in (0.385, 0.615) if flash else (0.385,):  # the lit eye, or both in the flash
+        oval(cx, 0.42, 0.085, 0.05 if not wide else 0.07, INK)
+        if wide:
+            oval(cx, 0.42, 0.06, 0.05)
+            oval(cx, 0.42, 0.018, 0.018, INK)
+        else:
+            oval(cx + 0.02, 0.415, 0.02, 0.016)
+    if not flash:
+        oval(0.63, 0.43, 0.022, 0.016)  # the shaded eye: its glint
     brow = 0.335 if wide else 0.35
     lift = 0.04 if pose == "smile" else 0.0  # forced: the brows go up in the middle
     e.line([p(0.3, brow + 0.01), p(0.46, brow - lift)], max(1.2, n * 0.04), INK)
+    if flash:
+        e.line([p(0.7, brow + 0.01), p(0.54, brow - lift)], max(1.2, n * 0.04), INK)
     poly([(0.47, 0.55), (0.58, 0.54), (0.58, 0.6), (0.5, 0.6)], INK)  # under the nose
     if pose == "neutral":
         e.line([p(0.39, 0.675), p(0.58, 0.675)], max(1.2, n * 0.04), INK)
@@ -585,12 +598,12 @@ def viewfinder(e, n):
 
 
 def zoom(k):
-    """The camera zoomed into the face, 128 x 128: k 0 sharp, k 1 in 8 px blocks, k 2 in 16 px blocks, each block
-    bone or ink by the share of bone in it, under the viewfinder's marks."""
+    """The camera zoomed into the face in its flash, 128 x 128: k 0 sharp, k 1 in 8 px blocks, k 2 in 16 px blocks,
+    each block bone or ink by the share of bone in it, under the viewfinder's marks."""
     n = ZOOM
     e = Etch(n, n)
     big = n * 1.12
-    paint_face(e, big, "frozen", n / 2 - big * 0.5, n * 0.5 - big * 0.46)
+    paint_face(e, big, "frozen", n / 2 - big * 0.5, n * 0.5 - big * 0.46, flash=True)
     if k:
         block = 8 * k
         src = e.img.copy()
