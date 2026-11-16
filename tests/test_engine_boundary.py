@@ -26,6 +26,7 @@ DIRECTION = {"__init__": (), "signals": (), "clock": ()}
 BUILT_IN = ("array", "binascii", "builtins", "collections", "errno", "esp", "esp32", "framebuf", "gc", "io", "machine",
             "math", "micropython", "os", "random", "select", "struct", "sys", "time", "uctypes")
 NEVER = ("engine_config", "importlib")  # whatever a row says
+FIXTURE_ROW = ("signals",)  # each fixture's row: a bare `import signals` is caught though the row names signals
 
 
 def package_modules():
@@ -90,11 +91,11 @@ class Boundary(unittest.TestCase):
 
     def test_each_fixture_is_caught(self):
         names = sorted(n for n in os.listdir(FIXTURES) if n.endswith(".py"))
-        self.assertLessEqual(10, len(names))
+        self.assertLessEqual(13, len(names))
         for name in names:
             with self.subTest(name):
                 self.assertFalse(name.startswith("test"), "discovery would run it")
-                self.assertEqual(1, len(faults(read(os.path.join(FIXTURES, name)), (), name)))
+                self.assertEqual(1, len(faults(read(os.path.join(FIXTURES, name)), FIXTURE_ROW, name)))
 
     def test_a_fixture_s_import_passes_when_its_row_names_it(self):
         """The C module is allowed by a row (accel's, from 0b-2), engine_config and importlib by none."""
@@ -102,6 +103,8 @@ class Boundary(unittest.TestCase):
         self.assertEqual([], faults("from . import signals\nfrom .signals import Signals\nimport time\n", ("signals",)))
         self.assertEqual(1, len(faults("import engine_config\n", ("engine_config",))))
         self.assertEqual(1, len(faults("import importlib\n", ("importlib",))))
+        self.assertEqual(1, len(faults("import signals\n", ("signals",))))  # a sibling only as engine.signals
+        self.assertEqual(1, len(faults("import gfx\n", ("gfx",))))  # a row names no game
 
     def test_the_imports_follow_the_direction_table(self):
         modules = package_modules()

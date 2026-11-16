@@ -358,9 +358,19 @@ class PackageTest(unittest.TestCase):
             with self.subTest(compiler=compiler):
                 commands, _ = self.deploy(listing, compiler=compiler)
                 rm = [c for c in commands if c[0] == "rm"]
-                self.assertEqual(1, len(rm))
-                self.assertEqual({":signals.mpy", ":signals.py"}, set(rm[0][1:]) - {":app.py"})
-                self.assertLess(commands.index(rm[0]), commands.index(["mkdir", ":engine"]))
+                self.assertEqual([":signals.mpy", ":signals.py"], sorted(rm[-1][1:]))
+                self.assertEqual(1, len([c for c in rm if ":signals.py" in c or ":signals.mpy" in c]))
+
+    def test_a_moved_module_goes_only_after_the_package_is_copied(self):
+        """A copy that fails before the folder is full leaves the old flat module, which the old app still imports:
+        the board's app.mpy never finds signals nowhere."""
+        listing = "ls :\n           0 packs/\n        1200 signals.mpy\n"
+        for compiler in (True, False):
+            with self.subTest(compiler=compiler):
+                commands, _ = self.deploy(listing, compiler=compiler)
+                copied = [i for i, c in enumerate(commands) if c[0] == "cp" and c[-1] == ":engine/"]
+                self.assertEqual(1, len(copied))
+                self.assertLess(copied[0], commands.index(["rm", ":signals.mpy"]))
 
     def test_boot_py_stays(self):
         listing = "ls :\n         139 boot.py\n           0 packs/\n         300 notes.mpy\n        1200 signals.mpy\n"
@@ -486,6 +496,22 @@ class FirmwareTest(unittest.TestCase):
                 runner = DryRun(firmware=answer)
                 deploy(runner).run(["snake"])
                 self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_a_broken_package_folder_never_answers_for_the_firmware(self):
+        """The box's own :engine/ folder (stage 0b-1): a half-copied __init__.mpy raises ValueError on the board. The
+        probe asks for built-in modules only, with an empty sys.path, so the folder never answers."""
+        with open(os.path.join(box.ROOT, box.PROBE)) as f:
+            source = f.read()
+        with tempfile.TemporaryDirectory() as tmp:
+            os.mkdir(os.path.join(tmp, "engine"))
+            with open(os.path.join(tmp, "engine", "__init__.py"), "w") as f:
+                f.write("raise ValueError('incompatible .mpy file')\n")
+            with mock.patch.dict(sys.modules, {"_engine": stand_in()}), mock.patch.object(sys, "path", [tmp]), \
+                    contextlib.redirect_stdout(io.StringIO()) as said:
+                sys.modules.pop("engine", None)
+                exec(compile(source, box.PROBE, "exec"), {"__name__": "__main__"})
+                self.assertEqual([tmp], sys.path)  # restored
+        self.assertEqual(NEW, said.getvalue())
 
     def test_the_probe_asks_for_the_names_the_check_reads(self):
         self.assertEqual(["_engine %s yes" % name for name in box.FIRMWARE_NAMES] + ["engine ImportError"],
