@@ -85,6 +85,12 @@ class ChooserTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             accel.Chooser().choose("sum", failing, Plain, "viper")
 
+    def test_the_line_names_the_label_of_each_fast_version(self):
+        chooser = accel.Chooser()
+        chooser.choose("bodies", fast, Plain, "c")
+        chooser.choose("sum", fast, Plain, "viper")
+        self.assertEqual("engine bodies=c sum=viper native=none", chooser.line())
+
     def test_the_line_names_the_parts_in_call_order(self):
         chooser = accel.Chooser()
         for part in ("volume", "sum", "bodies"):

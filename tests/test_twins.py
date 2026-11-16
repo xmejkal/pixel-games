@@ -35,6 +35,10 @@ class TwinTest(unittest.TestCase):
         self.assertEqual(["sum", "volume"], chosen_parts(source))
         self.assertEqual([], without_twin(source))
 
+    def test_a_choose_call_whose_part_is_not_a_string_literal_fails(self):
+        with self.assertRaisesRegex(ValueError, "line 2: choose's part is not a string literal"):
+            chosen_parts('chooser.choose("sum", a, b, "viper")\nchooser.choose(name, c, d, "c")\n')
+
     def test_a_part_without_a_row_fails(self):
         source = 'chooser.choose("sum", a, b, "viper")\nchooser.choose("bodies", c, d, "c")\n'
         self.assertEqual(["bodies"], without_twin(source))

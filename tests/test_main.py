@@ -104,6 +104,14 @@ class ComposeTest(NoNative):
         self.assertEqual("engine sum=viper volume=reference(forced) native=none\n", composed(("volume",))[2])
         self.assertEqual("engine sum=reference(forced) volume=reference(forced) native=none\n", composed("all")[2])
 
+    def test_the_line_is_printed_before_the_knob_opens(self):
+        """The engine line comes first even when the encoder fails: an error from Encoder.on_board stops the boot."""
+        said = io.StringIO()
+        with mock.patch.object(app, "open_knob", side_effect=OSError("no counter unit")), \
+                contextlib.redirect_stdout(said), self.assertRaises(OSError):
+            main.compose(Chooser())
+        self.assertEqual("engine sum=viper volume=viper native=none\n", said.getvalue())
+
     def test_the_twins_of_the_choose_calls_are_the_classes_the_twin_tests_compare(self):
         self.assertIs(ViperVoiceSum, main.viper_sum())
         self.assertIs(ViperMasterVolume, main.viper_volume())
@@ -124,6 +132,19 @@ class ConfigTest(unittest.TestCase):
         with config("REFERENCE = (\n"), contextlib.redirect_stdout(io.StringIO()) as said:
             self.assertEqual((), main.read_reference())
         self.assertTrue(said.getvalue().startswith("engine_config refused: SyntaxError("), said.getvalue())
+
+    def test_a_list_of_names_is_read_as_a_tuple(self):
+        with config('REFERENCE = ["volume"]\n'):
+            self.assertEqual(("volume",), main.read_reference())
+
+    def test_a_malformed_reference_is_refused_aloud_and_the_box_boots(self):
+        for value in ("None", "5", "[1]", '("sum", 3)', '"volume"', "{'sum'}"):
+            with self.subTest(value), config("REFERENCE = %s\n" % value), \
+                    contextlib.redirect_stdout(io.StringIO()) as said:
+                self.assertEqual((), main.read_reference())
+                self.assertEqual("engine_config refused: REFERENCE = %r\n" % (eval(value),), said.getvalue())
+                knob, speaker = main.compose()  # the box boots with every fast version
+                self.assertIs(ViperVoiceSum, type(speaker.mixer.sum))
 
     def test_a_config_with_no_reference_forces_nothing(self):
         with config("X = 1\n"):

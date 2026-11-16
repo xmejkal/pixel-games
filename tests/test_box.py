@@ -454,7 +454,8 @@ class EngineTest(unittest.TestCase):
 
     def test_a_malformed_engine_value_is_refused_before_any_board_command(self):
         for value in ("fast", "reference=", "reference=,volume", "reference=sum,,volume", "reference=Volume",
-                      "reference=vol ume", "reference=volume;import os", "reference=volume,volume", "reference=all"):
+                      "reference=vol ume", "reference=volume;import os", "reference=volume,volume", "reference=all",
+                      "reference\n", "reference=sum\n"):
             with self.subTest(value):
                 with mock.patch.object(box.subprocess, "run") as run, \
                         contextlib.redirect_stdout(io.StringIO()) as said:
@@ -532,6 +533,29 @@ class FirmwareTest(unittest.TestCase):
         self.assertEqual([PROBE, PROBE, ["ls", ":"]], runner.commands[:3])
         self.assertEqual([box.RESET_PAUSE_S], pauses)
         self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_a_port_that_the_last_log_still_holds_is_tried_again(self):
+        """mpremote 1.29 exits 1 when it cannot open the port at all, as right after a `box.py log` (P850, the board
+        check): `failed to access` for the port, `no device found` for auto when every port is busy. The probe's retry
+        covers both, through box.main and the real Mpremote runner."""
+        for said in ("mpremote: failed to access /dev/cu.usbmodem1101 (it may be in use by another program)\n",
+                     "mpremote: no device found\n"):
+            with self.subTest(said):
+                calls = []
+
+                def run(args, **kw):
+                    calls.append(args)
+                    if args[:2] == ["mpremote", "run"] and len(calls) == 1:
+                        raise subprocess.CalledProcessError(1, args, stderr=said)
+                    return types.SimpleNamespace(stdout=NEW if args[:2] == ["mpremote", "run"] else
+                                                 "ls :\n" + EMPTY if args[1:] == ["ls", ":"] else "")
+
+                with mock.patch.object(box.subprocess, "run", run), mock.patch.object(box.time, "sleep") as sleep, \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    self.assertEqual(0, box.main(["deploy", "--py", "snake"]))
+                self.assertEqual([["mpremote"] + PROBE] * 2 + [["mpremote", "ls", ":"]], calls[:3])
+                sleep.assert_called_once_with(box.RESET_PAUSE_S)
+                self.assertEqual(["mpremote", "reset"], calls[-1])
 
     def test_a_board_that_never_answers_says_what_to_do(self):
         runner, pauses = FailingRunner(99), []
