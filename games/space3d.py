@@ -519,7 +519,8 @@ class CubeTiming(Game):
     def paint_flat(self, cv):
         """The look before SMILE, where there is no art: a wire cube over a ring of dots, a box where the mark must
         be, a full-screen flash at each tap. It stays for the st7789 backend, ORIENTATION 180 and a board without the
-        cube pack, where pictures.draw answers False."""
+        cube pack, where pictures.draw answers False; lcd.TftOut clears the frame under it each time, as it does for
+        a canvas without pictures however covers stands."""
         if self.flash > 0:
             cv.fill(0, 16, W, H, c565(0, 70, 20) if self.good else c565(90, 10, 10))
         for i in range(16):  # a ring of dots turns under the cube

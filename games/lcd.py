@@ -202,8 +202,8 @@ class TftOut:
         t1, cv, tft = time.ticks_us(), self.canvas, self.tft
         tft.track(self.fresh)  # untracked, the background fill and the still picture mark nothing; fresh, fill marks all
         self.fresh = False
-        if not game.covers:  # a game whose still picture covers the whole screen needs no fill under it
-            tft.fill(game.bg)
+        if not (game.covers and cv.pictures):  # a still picture that covers the screen needs no fill under it; a
+            tft.fill(game.bg)  # game with art on a canvas without pictures (ORIENTATION 180) paints flat: clear it
         game.paint_static(cv)
         gfx.slowest(0, t1)  # the background fill and the still picture: no phase in Game.draw times them here (bg_ok)
         tft.track(True)

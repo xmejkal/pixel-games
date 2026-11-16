@@ -229,6 +229,37 @@ class LineTest(unittest.TestCase):
         self.assertEqual([], self.lit(tft))
 
 
+class ClearTest(unittest.TestCase):
+    """lcd.TftOut.draw with a painted game whose pictures cannot be drawn (ORIENTATION 180: the canvas has no
+    pictures, so the game paints its flat look) clears the frame each time, as for a game without art (P573's
+    review: FEED, BUBBLE and SMILE kept their covers and the flat look smeared over the last frame)."""
+
+    class Painted:
+        covers = True
+        bg = gfx.c565(20, 30, 40)
+
+        def paint_static(self, cv):
+            pass  # pictures.draw answers False on this canvas: nothing drawn
+
+        def draw(self, cv):
+            pass
+
+    def frame_is_bg(self, pictures):
+        tft = DrawingTft()
+        tft.fill_rect(0, 0, lcd.PANEL_W, lcd.PANEL_H, gfx.WHITE)  # the last frame
+        out = lcd.TftOut(tft)
+        out.canvas.pictures = pictures
+        game = self.Painted()
+        out.draw(game, [0, 0, 0, 0])
+        return set(memoryview(tft.frame).cast("H")) == {game.bg}
+
+    def test_a_covering_game_on_a_canvas_without_pictures_is_cleared(self):
+        self.assertTrue(self.frame_is_bg(False))
+
+    def test_a_covering_game_with_pictures_is_not(self):
+        self.assertFalse(self.frame_is_bg(True))  # its still picture covers the screen: no fill under it
+
+
 class PolygonTest(unittest.TestCase):
     """fill_polygon on the stand-in as the driver's PolygonFill (s3lcd.c, probe635's notes), and poly on the two
     canvases (P573: SMILE's housing and the lens's light)."""
