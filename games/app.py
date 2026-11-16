@@ -185,7 +185,11 @@ class App:
         self.build()
 
     def leave(self):
-        """The current game goes: its art set, its sounds and its listeners. The music plays on."""
+        """The current game goes, or the build behind the card stops: its art set, its sounds and its listeners. The music
+        plays on."""
+        if self.steps is not None:  # --- MVP (P822) --- a build stopped (a pick, switch() or build()): its pack file closes
+            self.steps.close()
+            self.steps = None
         self.game = None
         pictures.free()  # the last game's art set goes: the next game loads its own (P773)
         if self.cues:
@@ -197,9 +201,6 @@ class App:
         """A D14 press: the next name of the lineup, on a NameCard. The game goes, and nothing is imported or loaded:
         the picked game is built when the pick settles (frame())."""
         self.index = (self.index + 1) % len(self.games)
-        if self.steps is not None:  # a build stopped (P822): its pack file closes, and leave() frees its half-read set
-            self.steps.close()
-            self.steps = None
         self.leave()
         self.game = NameCard(self.games.names[self.index], self.index + 1, len(self.games), now)
         self.out.reset()

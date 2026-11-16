@@ -441,9 +441,27 @@ class BuildTest(unittest.TestCase):
         box.frame(app.SETTLE_MS)
         box.frame(app.SETTLE_MS + app.FRAME_MS)
         self.assertFalse(files[0].closed)
+        steps = box.app.steps  # held: only close() can close the pack, not CPython's refcount
         box.frame(app.SETTLE_MS + 2 * app.FRAME_MS, d14=True)
         self.assertTrue(files[0].closed)
+        self.assertIsNotNone(steps)
         self.assertEqual(({}, None), (pictures.PICS, pictures.loaded))
+
+    def test_switch_and_build_during_a_build_close_its_steps(self):
+        for move in ("switch", "build"):
+            with self.subTest(move):
+                BUILT.clear()
+                box = self.box(Stepped(GAMES, 10 * app.BUILD_CHUNKS))
+                box.frame(0, d14=True)
+                box.frame(app.SETTLE_MS)
+                box.frame(app.SETTLE_MS + app.FRAME_MS)
+                steps = box.app.steps
+                with contextlib.redirect_stdout(box.said):
+                    getattr(box.app, move)()
+                game = box.app.game
+                self.assertEqual((1, None), (steps.closed, box.app.steps))
+                for k in range(2, 20):  # the stopped build never ends and replaces the game
+                    self.assertIs(game, box.frame(app.SETTLE_MS + k * app.FRAME_MS))
 
     def test_boot_during_a_build_does_not_reach_the_game(self):
         box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS))
