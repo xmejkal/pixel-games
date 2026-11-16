@@ -110,9 +110,10 @@ class Probe:
 
 def main():
     import app
+    import main
 
-    knob = app.open_knob()  # as main.py: the knob's volume is the Speaker's master volume
-    speaker = app.open_speaker(knob) if SOUND else None
+    knob, speaker = main.compose()  # as main.py: the chosen versions, and the knob's volume is the Speaker's (P850)
+    speaker = speaker if SOUND else None
     probe = Probe(speaker)
     frame = app.App.frame
 

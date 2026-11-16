@@ -195,7 +195,7 @@ def frame(self):
 app.App.frame = frame
 print("probe p635 n %d way %d burn %d" % (N, WAY, BURN))
 try:
-    app.run(games=(Probe,))
+    app.run(games=(Probe,), knob=__import__("main").compose()[0])  # the box's knob, as main.py builds it (P850)
 except Done:
     pass
 if GAME and GAME[0].figure_us[1]:

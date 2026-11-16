@@ -194,17 +194,18 @@ def cue_table(cues):
 class CueSound:
     """A cue table played as the box plays it: SoundCues on a four-voice Mixer with the reference VoiceSum, the box
     bank's sounds and its music; each block of REFILL_SAMPLES then through the reference MasterVolume. digest() is
-    the sha256 of every block's samples."""
+    the sha256 of every block's samples. voice_sum and master: other classes for the two, such as the versions
+    main.py chooses (P850)."""
 
-    def __init__(self, table):
+    def __init__(self, table, voice_sum=None, master=None):
         m = modules()
-        self.m, self.mixer = m, m.sound.Mixer(4, m.sound.VoiceSum())
+        self.m, self.mixer = m, m.sound.Mixer(4, (voice_sum or m.sound.VoiceSum)())
         sounds = m.bank.Bank(os.path.join(ROOT, "games", "box_bank.raw"), m.box_bank.BOX_BANK_INDEX)
         player, self.said = m.cues.SoundCues(self.mixer, sounds), m.signals.Signals()
         cues = {name: m.cues.Cue(*row) for name, row in table.items()}
         player.follow(types.SimpleNamespace(cues=cues), self.said)
         player.music()
-        self.master, self.samples = m.volume.MasterVolume(), hashlib.sha256()
+        self.master, self.samples = (master or m.volume.MasterVolume)(), hashlib.sha256()
 
     def emit(self, name, value=None):
         self.said.emit(name, value)
@@ -332,12 +333,13 @@ MIXER_CUES = ((0, "jump", None), (2, "hose", 256), (6, "land", None), (9, "picku
 MIXER_STEPS = {0: 8, 18: 12, 33: 16, 41: 5}
 
 
-def record_mixer():
-    """MIXER_CUES through CueSound, with the volume's step set at MIXER_STEPS: the samples' sha256."""
+def record_mixer(voice_sum=None, master=None):
+    """MIXER_CUES through CueSound, with the volume's step set at MIXER_STEPS: the samples' sha256. voice_sum and
+    master: CueSound's, the reference classes when None."""
     full = modules().volume.FULL
     table = {name: [name, full, name == "hose", "sfx"] for _, name, _ in MIXER_CUES}
     table["land"][1] = full // 2  # one cue at half its gain
-    out = CueSound(table)
+    out = CueSound(table, voice_sum, master)
     for block in range(MIXER_BLOCKS):
         if block in MIXER_STEPS:
             out.master.set(MIXER_STEPS[block])
