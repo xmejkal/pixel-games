@@ -64,7 +64,7 @@ def spans(game, only=None):
     return sorted(out.items())
 
 
-class Progress:
+class Reading:
     """What a load has read (P822): its bytes, of all the bytes it reads after the packs' headers, and the
     microseconds its reads took, counted over the chunks alone, so a frame drawn between two of them is not in it."""
 
@@ -81,21 +81,21 @@ class Progress:
         return n
 
 
-def read_chunks(f, view, progress):
+def read_chunks(f, view, reading):
     """Fill view from f, CHUNK_SIZE bytes a read into a slice of the block (no copy: each chunk is a small memoryview
     of the block), yielding the fraction of the load read after each chunk (P822), so the sound's callback runs
     between two reads and the box can draw a frame. Returns the bytes read: fewer than len(view) at the file's end."""
     got = 0
     while got < len(view):
-        n = progress.read(f, view[got:got + CHUNK_SIZE])
+        n = reading.read(f, view[got:got + CHUNK_SIZE])
         if not n:
             break
         got += n
-        yield progress.done / progress.total
+        yield reading.done / reading.total
     return got
 
 
-def read_pack(game, parts, buf, at, progress):
+def read_pack(game, parts, buf, at, reading):
     """Read the game's pack into buf from at: its header, checked against PACKS, then each of parts, yielding after
     each chunk. Returns each part read as (offset in the pack, length, place in buf), or None when the pack's size or
     header is not this build's. A close() halfway closes the file (its with)."""
@@ -112,7 +112,7 @@ def read_pack(game, parts, buf, at, progress):
         at += HEADER
         for offset, n in parts:
             f.seek(offset)
-            if (yield from read_chunks(f, buf[at:at + n], progress)) != n:
+            if (yield from read_chunks(f, buf[at:at + n], reading)) != n:
                 return None
             out.append((offset, n, at))
             at += n
@@ -197,17 +197,17 @@ def load_steps(game=None, only=None):
     total = sum(n for _, parts in reads for _, n in parts)
     if not total:
         return False
-    buf, at, progress = block(HEADER * len(reads) + total), 0, Progress(total)
+    buf, at, reading = block(HEADER * len(reads) + total), 0, Reading(total)
     for g, parts in reads:
         try:
-            got = yield from read_pack(g, parts, buf, at, progress)
+            got = yield from read_pack(g, parts, buf, at, reading)
         except OSError:  # no pack there
             return refuse("art: %s has no pack: copy games/packs to the board" % g)
         if got is None:
             return refuse("art: %s pack is not this build: copy games/*.py and games/packs, then hard reset" % g)
         place(g, got, buf, only)
         at += HEADER + sum(n for _, n in parts)
-    ready, load_ms = True, progress.us // 1000
+    ready, load_ms = True, reading.us // 1000
     return True
 
 

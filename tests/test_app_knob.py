@@ -116,6 +116,9 @@ class TestAppKnob(unittest.TestCase):
                 box.frame()
         self.assertNotIsInstance(box.game, app.NameCard)
         self.assertIsInstance(box.game, Other)
+        self.assertEqual(["other"] * len(names), names)  # the card of the picked game, then the game
+        self.assertLess(2, len(games))  # the pick's frame, the settle's and the build's
+        self.assertTrue(all(isinstance(game, app.NameCard) for game in games[:-1]), games)
         self.assertIs(box.game, games[-1])  # the pane saw the built game in the frame it was built
 
     def test_open_knob_is_none_without_machine_encoder(self):

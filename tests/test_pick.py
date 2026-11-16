@@ -82,8 +82,9 @@ class Box:
             self.app.frame()
         return self.app.game
 
-    def settle(self, limit=1000):
-        """Frames FRAME_MS apart until the build behind the card ends: the game it built (P822)."""
+    def run_build(self, limit=1000):
+        """Frames FRAME_MS apart until the build behind the card ends: the game it built (P822). The settle that
+        starts the build is the frame before."""
         for _ in range(limit):
             game = self.frame(self.ms + app.FRAME_MS)
             if not isinstance(game, app.NameCard):
@@ -109,7 +110,7 @@ class PickTest(unittest.TestCase):
             box.frame(100 * k, d14=True)
         self.assertEqual(["a"], BUILT)  # the first game, built by start(); nothing for the four picks
         box.frame(300 + app.SETTLE_MS)
-        game = box.settle()
+        game = box.run_build()
         self.assertNotIsInstance(game, app.NameCard)
         self.assertEqual(["a", "e"], BUILT)
         self.assertEqual("e", game.name)
@@ -126,7 +127,7 @@ class PickTest(unittest.TestCase):
         self.assertEqual(("b", gfx.TITLE), (card.name, card.state))
         box.frame(1000 + app.SETTLE_MS)
         self.assertEqual(["a"], BUILT)  # settled in this frame, not before: its build has not run yet
-        game = box.settle()
+        game = box.run_build()
         self.assertNotIsInstance(game, app.NameCard)
         self.assertEqual("b", game.name)
         self.assertEqual(["a", "b"], BUILT)
@@ -138,7 +139,7 @@ class PickTest(unittest.TestCase):
         self.assertIsInstance(box.frame(app.SETTLE_MS + 10), app.NameCard)
         box.frame(2 * app.SETTLE_MS - 1)
         self.assertEqual(["a"], BUILT)  # settled in this frame, not at the first press's SETTLE_MS
-        game = box.settle()
+        game = box.run_build()
         self.assertNotIsInstance(game, app.NameCard)
         self.assertEqual("c", game.name)
 
@@ -146,7 +147,7 @@ class PickTest(unittest.TestCase):
         box = self.box
         box.frame(0, d14=True)
         box.frame(10, boot=True)
-        game = box.settle()
+        game = box.run_build()
         self.assertNotIsInstance(game, app.NameCard)
         self.assertEqual("b", game.name)
         self.assertEqual([], game.presses)  # the build frames do not step the game
@@ -181,7 +182,7 @@ class ReviewTest(unittest.TestCase):
         box = self.box()
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
-        game = box.settle()
+        game = box.run_build()
         self.assertNotIsInstance(game, app.NameCard)
         for _ in range(3):
             self.assertIs(game, box.frame(box.ms + app.FRAME_MS))
@@ -193,7 +194,7 @@ class ReviewTest(unittest.TestCase):
         box.frame(0, d14=True)
         before = box.app.out.resets
         box.frame(app.SETTLE_MS)
-        self.assertNotIsInstance(box.settle(), app.NameCard)
+        self.assertNotIsInstance(box.run_build(), app.NameCard)
         self.assertEqual(before + 1, box.app.out.resets)  # the card's frame used up the last reset
 
     def test_the_build_collects(self):
@@ -269,7 +270,7 @@ class ReviewTest(unittest.TestCase):
         box = self.box((GAMES[0], Slow))
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
-        self.assertNotIsInstance(box.settle(), app.NameCard)
+        self.assertNotIsInstance(box.run_build(), app.NameCard)
         self.assertLess(box.app.slow[0], 40000)  # us: the 50 ms setup is not in it
 
     def test_no_collect_on_the_card_frame(self):
@@ -370,12 +371,12 @@ class BuildTest(unittest.TestCase):
             box.frame(0, d14=True)
             card = box.frame(app.SETTLE_MS)
             self.assertIsInstance(card, app.NameCard)
-            self.assertEqual(app.NameCard.LOADING, card.stage)
+            self.assertEqual((app.NameCard.LOADING, None), (card.caption, card.progress))
             self.assertEqual([("cave",)], imports)  # start's alone
             cv = gfx.Canvas()
             card.draw_title(cv)
             self.assertIn("loading", [op[5] for op in cv.ops if op[4] == 3])
-            self.assertEqual("road", box.settle().name)
+            self.assertEqual("road", box.run_build().name)
         self.assertEqual([("cave",), ("road",)], imports)
 
     def test_a_card_frame_during_a_build_never_settles_again(self):
@@ -392,8 +393,8 @@ class BuildTest(unittest.TestCase):
         box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS))
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
-        stages = [box.frame(app.SETTLE_MS + k * app.FRAME_MS).stage for k in (1, 2, 3)]
-        self.assertEqual([k * app.BUILD_CHUNKS / (3 * app.BUILD_CHUNKS) for k in (1, 2, 3)], stages)
+        shown = [box.frame(app.SETTLE_MS + k * app.FRAME_MS).progress for k in (1, 2, 3)]
+        self.assertEqual([k * app.BUILD_CHUNKS / (3 * app.BUILD_CHUNKS) for k in (1, 2, 3)], shown)
         self.assertEqual(["a"], BUILT)
         game = box.frame(app.SETTLE_MS + 4 * app.FRAME_MS)
         self.assertEqual("b", game.name)
@@ -404,18 +405,18 @@ class BuildTest(unittest.TestCase):
         box = self.box((GAMES[0], Painted))
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
-        stages, game = [], box.app.game
+        shown, game = [], box.app.game
         while isinstance(game, app.NameCard):
             game = box.frame(box.ms + app.FRAME_MS)
             if isinstance(game, app.NameCard):
-                stages.append(game.stage)
-        self.assertLess(3, len(stages))  # the bucket's set takes several frames
-        self.assertEqual(stages, sorted(stages))
+                shown.append(game.progress)
+        self.assertLess(3, len(shown))  # the bucket's set takes several frames
+        self.assertEqual(shown, sorted(shown))
         self.assertEqual(1, len(files))  # setup found the set loaded
         self.assertTrue(files[0].closed)
         self.assertIn("bucket_scene", pictures.PICS)
         frames = int(box.lines("switch")[-1].split("frames ")[1].split(",")[0])
-        self.assertEqual(len(stages), frames)
+        self.assertEqual(len(shown), frames)
 
     def test_d14_during_a_build_closes_its_steps_frees_the_set_and_picks_the_next(self):
         box = self.box(Stepped(GAMES, 10 * app.BUILD_CHUNKS))
@@ -427,11 +428,11 @@ class BuildTest(unittest.TestCase):
             card = box.frame(app.SETTLE_MS + 2 * app.FRAME_MS, d14=True)
         self.assertEqual(1, steps.closed)
         free.assert_called()
-        self.assertEqual(("c", app.NameCard.WAITING), (card.name, card.stage))
+        self.assertEqual(("c", app.NameCard.WAITING, None), (card.name, card.caption, card.progress))
         self.assertEqual(["pick b", "pick c"], box.lines("pick"))
         self.assertEqual(["game a"], box.lines("game"))
         box.frame(box.ms + app.SETTLE_MS)
-        self.assertEqual("c", box.settle().name)
+        self.assertEqual("c", box.run_build().name)
         self.assertEqual(["a", "c"], BUILT)
 
     def test_d14_during_a_painted_build_closes_the_pack_and_keeps_no_set(self):
@@ -463,6 +464,24 @@ class BuildTest(unittest.TestCase):
                 for k in range(2, 20):  # the stopped build never ends and replaces the game
                     self.assertIs(game, box.frame(app.SETTLE_MS + k * app.FRAME_MS))
 
+    def test_each_settle_counts_its_own_refusals(self):
+        X, Y = flaky("x"), flaky("y")
+        box = self.box((X, Y))
+        Y.fails.append(ValueError)  # y always fails, x never: each build refuses y once and builds x
+        for k in range(3):
+            box.frame(box.ms + app.FRAME_MS, d14=True)
+            box.frame(box.ms + app.SETTLE_MS)
+            self.assertEqual("x", box.run_build().name)
+        self.assertEqual(3, box.said.getvalue().count("game y refused"))
+
+    def test_a_build_s_frames_keep_no_slowest(self):
+        box = self.box(Stepped(GAMES, 10 * app.BUILD_CHUNKS, pause=0.001))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        for k in (1, 2, 3):
+            box.frame(app.SETTLE_MS + k * app.FRAME_MS)
+        self.assertEqual([0] * 5, box.app.slow)
+
     def test_boot_during_a_build_does_not_reach_the_game(self):
         box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS))
         box.frame(0, d14=True)
@@ -479,14 +498,14 @@ class BuildTest(unittest.TestCase):
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
         with mock.patch.object(box.app, "collect") as collect:
-            self.assertEqual("b", box.settle().name)
+            self.assertEqual("b", box.run_build().name)
         collect.assert_not_called()
 
     def test_the_switch_line_counts_the_build_s_frames_worst_and_longest(self):
         box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS, pause=0.003))
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
-        box.settle()
+        box.run_build()
         line = box.lines("switch")[-1]
         found = re.match(r"^switch b (\d+) ms, load 0 ms, import 0 ms, frames (\d+), worst (\d+) ms, longest (\d+) ms$",
                          line)
@@ -505,10 +524,11 @@ class BuildTest(unittest.TestCase):
         box.frame(app.SETTLE_MS)
         card = box.frame(app.SETTLE_MS + app.FRAME_MS)
         self.assertIsInstance(card, app.NameCard)
-        self.assertEqual(("b", 3, 3, app.NameCard.LOADING), (card.name, card.n, card.count, card.stage))
+        self.assertEqual(("b", 3, 3, app.NameCard.LOADING, None),
+                         (card.name, card.n, card.count, card.caption, card.progress))
         self.assertEqual(["game broken refused: ValueError('broken')"],
                          [line for line in box.said.getvalue().splitlines() if "refused" in line])
-        self.assertEqual("b", box.settle().name)
+        self.assertEqual("b", box.run_build().name)
         self.assertEqual(["a", "b"], BUILT)
 
     def test_when_every_game_fails_during_a_build_the_last_error_is_raised(self):
@@ -528,7 +548,7 @@ class BuildTest(unittest.TestCase):
         box = self.box(Stepped(GAMES, app.BUILD_CHUNKS * (2 * app.FPS_EVERY_MS // app.FRAME_MS)))
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
-        self.assertEqual("b", box.settle(limit=10 ** 4).name)
+        self.assertEqual("b", box.run_build(limit=10 ** 4).name)
         self.assertLess(2 * app.FPS_EVERY_MS, box.ms)
         self.assertEqual([], box.lines("fps"))
 
@@ -550,9 +570,9 @@ class CardTest(unittest.TestCase):
         self.assertIn("BOOT loads", [op[5] for op in cv.ops if op[4] == 3])
 
 
-    def ops(self, stage):
+    def ops(self, caption=app.NameCard.WAITING, progress=None):
         card = app.NameCard("snake", 3, 5)
-        card.stage = stage
+        card.caption, card.progress = caption, progress
         cv = gfx.Canvas()
         card.draw_title(cv)
         return cv.ops
@@ -574,7 +594,7 @@ class CardTest(unittest.TestCase):
         place = gfx.HEIGHT // 2 + 6 + 2 * 8  # where "3 / 5" ends: drawn big at scale 2 from the middle's y + 6
         widths = []
         for progress in (0.0, 0.25, 0.75, 1.0):
-            ops = self.ops(progress)
+            ops = self.ops(app.NameCard.LOADING, progress)
             outline, fills = self.bar(ops)
             self.assertEqual([], [op for op in ops if op[4] == 3])
             self.assertLess(place, outline[1])
@@ -583,7 +603,7 @@ class CardTest(unittest.TestCase):
         self.assertEqual([0, inside // 4, inside * 3 // 4, inside], widths)
 
     def test_only_the_bar_changes_between_two_progresses(self):
-        a, b = self.ops(0.25), self.ops(0.5)
+        a, b = self.ops(progress=0.25), self.ops(progress=0.5)
         changed = [op for op in a if op not in b] + [op for op in b if op not in a]
         self.assertTrue(self.bar(a)[1] and self.bar(b)[1])
         self.assertEqual(self.bar(a)[1] + self.bar(b)[1], changed)
@@ -598,7 +618,7 @@ class NothingImportedTest(unittest.TestCase):
             self.assertEqual("ghost", box.frame(0, d14=True).name)  # the card: no import yet
             self.assertNotIn("refused", box.said.getvalue())
             box.frame(app.SETTLE_MS)
-            game = box.settle()
+            game = box.run_build()
             self.assertNotIsInstance(game, app.NameCard)
             self.assertEqual("cave", game.name)
         self.assertIn("game ghost refused", box.said.getvalue())

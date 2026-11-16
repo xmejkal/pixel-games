@@ -12,8 +12,8 @@ game goes, a NameCard shows the picked name, and nothing is imported or loaded y
 for SETTLE_MS, or at a BOOT press (which then does not reach the game): only then is the game built. So pressing
 through four games to the fifth loads only the fifth. The music plays on over a pick.
 The build after a settle runs behind the card (P822): the settle's frame draws "loading", the next imports the game's
-module (it cannot be split), and each later frame reads BUILD_CHUNKS chunks of its art set (Lineup.game_steps,
-pictures.load_steps) while the card shows a bar, until the game plays. A D14 press during it stops it and picks the
+module (it cannot be split) and reads the first BUILD_CHUNKS chunks of its art set, and each later frame reads
+BUILD_CHUNKS more (Lineup.game_steps, pictures.load_steps) while the card shows a bar, until the game plays. A D14 press during it stops it and picks the
 next game; a BOOT press goes nowhere. start() and switch() still build at once.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
 The step is not saved. App(knob=None) has no volume pane.
@@ -157,7 +157,11 @@ def say_lineup(games):
 class App:
     """Owns the display, the two buttons and the current game. frame() is one pass of the loop."""
 
-    steps = None  # --- MVP (P822) --- the build behind the card (Lineup.game_steps) from a settle until its game plays
+    # --- MVP (P822) --- the build behind the card, from a settle until its game plays
+    steps = None  # its steps (Lineup.game_steps), or None when no build runs
+    settled_at = 0  # time.ticks_ms() of the settle
+    failures = 0  # the games refused since the settle, in a row
+    longest = 0  # us: the build's longest share of one frame
 
     def __init__(self, display, read_fire, read_boot, games, full=False, gc_floor=0, out=None, knob=None,
                  cues=None):
@@ -227,26 +231,26 @@ class App:
             self.cues.music()
         self.out.reset()
         self.new_interval()
-        self.fire.forget()  # --- MVP (P818) --- a press during the import and the load was for the frozen screen
+        self.fire.forget()  # --- MVP (P818) --- a press during start()'s or switch()'s build was for a frozen screen
         self.boot.forget()
         print("game", game.name)
 
     # --- MVP (P822) ---
     def settle(self):
-        """The pick settled: its build starts behind the card. Nothing is imported in this frame, so the card is drawn
-        saying "loading" before the import freezes the next one."""
+        """The pick settled: the last game's garbage is collected and the build starts behind the card. Nothing is
+        imported in this frame, so the card is drawn saying "loading" before the import freezes the next one."""
         gc.collect()
         self.settled_at, self.failures, self.longest = time.ticks_ms(), 0, 0
         self.steps = self.games.game_steps(self.index)
-        self.game.stage = NameCard.LOADING
+        self.game.caption = NameCard.LOADING
 
-    def build_step(self):
+    def build_frame(self):
         """BUILD_CHUNKS steps of the build behind the card; the card shows the progress. When the steps end, the game
         plays and the switch line says the build's frames, worst and longest. Answers whether the game plays."""
         t, k, game = time.ticks_us(), 0, None
         try:
             while k < BUILD_CHUNKS:
-                self.game.stage = next(self.steps)
+                self.game.progress = next(self.steps)
                 k += 1
         except StopIteration as built:
             game = built.value
@@ -257,7 +261,7 @@ class App:
             if self.failures >= len(self.games):
                 raise e
             self.game = NameCard(self.games.names[self.index], self.index + 1, len(self.games), self.game.at)
-            self.game.stage = NameCard.LOADING
+            self.game.caption = NameCard.LOADING
             self.steps = self.games.game_steps(self.index)
         self.longest = max(self.longest, time.ticks_diff(time.ticks_us(), t))
         if game is None:
@@ -319,7 +323,7 @@ class App:
         elif settled:
             self.settle()  # a BOOT press that settles a pick is used up here (P822: the build runs in later frames)
         elif self.steps is not None:
-            built = self.build_step()  # --- MVP (P822) --- in place of the game's step; a BOOT press goes nowhere
+            built = self.build_frame()  # --- MVP (P822) --- in place of the game's step; a BOOT press goes nowhere
         else:
             self.game.step(now, pressed, self.fire.held)  # FixedUpdate, Update, LateUpdate
         if switched or settled or built:  # the new interval's stages: a build's time is not this frame's
@@ -333,13 +337,13 @@ class App:
         us[0] += time.ticks_diff(time.ticks_us(), t0)
         self.out.draw(game, us, self.overlay)  # Render, then Present: one show()
         self.frames += 1
+        if self.steps is not None:  # --- MVP (P822) --- a build behind the card: no slowest, no timed collect and no
+            if settled:  # fps lines, and its frames and worst count from the end of the settle's frame
+                self.new_interval()
+            return
         took = time.ticks_diff(time.ticks_us(), t0)
         if took > self.slow[0]:  # the slowest frame of the interval, and where its time went
             self.slow = [took] + [a - b for a, b in zip(us, before)]
-        if self.steps is not None:  # --- MVP (P822) --- a build behind the card: no timed collect and no fps lines,
-            if settled:  # and its frames and worst count from the end of the settle's frame
-                self.new_interval()
-            return
         if self.gc_floor and self.frames % GC_FRAMES == 0:  # no gc.mem_free(): it costs about 20 ms per MB allocated
             self.collect()
         elapsed = time.ticks_diff(now, self.mark)
@@ -362,15 +366,16 @@ class App:
 # --- MVP (P818) ---
 class NameCard(gfx.Game):
     """The picked game's name from the pick until the game plays: the name big in the middle, "n / N" under it, and
-    under that its stage (P822): "BOOT loads" while the pick waits to settle, "loading" during the import, then a bar
-    of the load's progress, on the plain background. It stays in TITLE, loads nothing and has no cues. at: the pick's
+    under that its caption (P822): "BOOT loads" while the pick waits to settle, "loading" during the import, or, once
+    the load reads, a bar of its progress, on the plain background. It stays in TITLE, loads nothing and has no cues. at: the pick's
     time.ticks_ms(), from which the pick settles."""
 
-    WAITING, LOADING = "BOOT loads", "loading"  # --- MVP (P822) --- the stages it says: waiting to settle, the import
+    WAITING, LOADING = "BOOT loads", "loading"  # --- MVP (P822) --- its captions: waiting to settle, the import
     BAR_W, BAR_H = 160, 8  # the progress bar's outline: only its fill changes between two frames
 
     def __init__(self, name, n, count, at=0):
-        self.name, self.n, self.count, self.at, self.stage = name, n, count, at, self.WAITING
+        self.name, self.n, self.count, self.at = name, n, count, at
+        self.caption, self.progress = self.WAITING, None  # the load's progress 0 to 1 once it reads: then the bar
         self.place = "%d / %d" % (n, count)  # made once: the card's frames format nothing
         super().__init__()
 
@@ -381,12 +386,12 @@ class NameCard(gfx.Game):
         cx, cy = gfx.WIDTH // 2, gfx.HEIGHT // 2
         cv.big(self.name, cx - 12 * len(self.name), cy - 30, gfx.WHITE, 3)
         cv.big(self.place, cx - 8 * len(self.place), cy + 6, gfx.GREY, 2)
-        if isinstance(self.stage, str):
-            cv.text(self.stage, cx - 4 * len(self.stage), cy + 34, gfx.YELLOW)
+        if self.progress is None:
+            cv.text(self.caption, cx - 4 * len(self.caption), cy + 34, gfx.YELLOW)
             return
-        x, y = cx - self.BAR_W // 2, cy + 34  # a progress 0 to 1: the bar
+        x, y = cx - self.BAR_W // 2, cy + 34
         cv.box(x, y, self.BAR_W, self.BAR_H, gfx.GREY)
-        cv.fill(x + 1, y + 1, int((self.BAR_W - 2) * self.stage), self.BAR_H - 2, gfx.YELLOW)
+        cv.fill(x + 1, y + 1, int((self.BAR_W - 2) * self.progress), self.BAR_H - 2, gfx.YELLOW)
 
 
 def open_st7789():
