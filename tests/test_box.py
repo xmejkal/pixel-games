@@ -1,12 +1,16 @@
 """tools/box.py (P817) with a fake runner, so no board: the exact mpremote commands of a deploy with and without
 :packs and :lineup.py on the board, --all, --dry-run, each refusal with no command run, list, and the console's read
-across a reset. Run from the repository root: python3 -B -m unittest tests.test_box. --- MVP (P817) ---"""
+across a reset. The firmware check (P848) reads the answers tools/firmware_probe.py prints, run here on the Mac with
+stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. Run from the repository root:
+python3 -B -m unittest tests.test_box. --- MVP (P817) ---"""
 
 import contextlib
 import io
 import os
+import re
 import subprocess
 import sys
+import tempfile
 import types
 import unittest
 from unittest import mock
@@ -20,62 +24,126 @@ PY = sorted("games/" + n for n in os.listdir(box.GAMES) if n.endswith(".py"))
 COPY = ["cp"] + PY + ["games/box_bank.raw", ":"]
 EMPTY = "         139 boot.py\n"
 FULL = "ls :\n         139 boot.py\n           0 packs/\n          31 lineup.py\n"
+PROBE = ["run", "tools/firmware_probe.py"]
+FIXTURES = os.path.join(HERE, "fixtures", "firmware")
+CRACKLE = box.CRACKLE  # before setUpModule's patch
+NOT_BUILT = os.path.join(HERE, "fixtures", "no-such-folder", "_crackle.mpy")
+FLASH = ": flash the image of ./build.sh engine first (README, Build and run)"
+PROBE_LINE = "run `mpremote run tools/firmware_probe.py` and read it"
+NO_ANSWER = "the board did not answer: close any mpremote or log session, press reset, and deploy again"
+RAW_REPL = """Traceback (most recent call last):
+  File "/usr/local/bin/mpremote", line 8, in <module>
+    sys.exit(main())
+  File "/usr/local/lib/python3.10/site-packages/mpremote/main.py", line 634, in main
+    handler_func(state, args)
+  File "/usr/local/lib/python3.10/site-packages/mpremote/commands.py", line 510, in do_run
+    state.ensure_raw_repl()
+  File "/usr/local/lib/python3.10/site-packages/mpremote/main.py", line 552, in ensure_raw_repl
+    self.transport.enter_raw_repl(soft_reset=soft_reset)
+  File "/usr/local/lib/python3.10/site-packages/mpremote/transport_serial.py", line 210, in enter_raw_repl
+    raise TransportError("could not enter raw repl")
+mpremote.transport.TransportError: could not enter raw repl
+"""  # mpremote 1.29.0's answer while a game runs: its main() catches no TransportError
+
+
+def stand_in(*without):
+    """A firmware's _engine with the classes the games need, but the names in without (HeatField.cool: a HeatField
+    with no cool)."""
+    heat = type("HeatField", (), {} if "HeatField.cool" in without else {"cool": lambda self: None})
+    module = types.ModuleType("_engine")
+    for name, value in (("Bodies", object), ("HeatField", heat), ("Balls", object), ("SoundBank", object)):
+        if name not in without:
+            setattr(module, name, value)
+    return module
+
+
+def probe_answer(underscore, old=None):
+    """What tools/firmware_probe.py prints when _engine is underscore and engine is old (None: an ImportError)."""
+    with open(os.path.join(box.ROOT, box.PROBE)) as f:
+        source = f.read()
+    with mock.patch.dict(sys.modules, {"_engine": underscore, "engine": old}), \
+            contextlib.redirect_stdout(io.StringIO()) as said:
+        exec(compile(source, box.PROBE, "exec"), {"__name__": "__main__"})
+    return said.getvalue()
+
+
+OLD_ENGINE = types.ModuleType("engine")
+OLD_ENGINE.Bodies = object
+NEW = probe_answer(stand_in())  # every name: the image of ./build.sh engine from pixel-engine 1005249 on
+BOTH = probe_answer(stand_in(), OLD_ENGINE)  # an image that registers _engine and engine: a stale build-engine
+OLD = probe_answer(None, OLD_ENGINE)  # the image built before: its C module is engine
+NO_C = probe_answer(None)  # the stock image
+
+
+def setUpModule():
+    patch = mock.patch.object(box, "CRACKLE", NOT_BUILT)  # box.main's deploys: as for a tree with no _crackle.mpy
+    patch.start()
+    unittest.addModuleCleanup(patch.stop)
+
+
+def deploy(runner, compiler=None, crackle=NOT_BUILT, said=None, pauses=None):
+    """A Deploy that tells said (a list), or no one, what it says, and keeps its pauses in pauses."""
+    return box.Deploy(runner, compiler, crackle=crackle, say=(said if said is not None else []).append,
+                      sleep=(pauses if pauses is not None else []).append)
 
 
 class FakeRunner:
-    """Answers `ls :` with listing, records each command, and keeps what a copy of lineup.py held."""
+    """Answers `ls :` with listing and the firmware probe with firmware, records each command, and keeps what a copy
+    of lineup.py held."""
 
-    def __init__(self, listing=EMPTY):
-        self.listing, self.commands, self.lineup = listing, [], None
+    dry_run = False
+
+    def __init__(self, listing=EMPTY, firmware=NEW):
+        self.listing, self.firmware, self.commands, self.lineup = listing, firmware, [], None
 
     def run(self, args):
         self.commands.append(args)
         if args[-1] == ":lineup.py" and args[0] == "cp":
             with open(args[1]) as f:
                 self.lineup = f.read()
-        return self.listing if args == ["ls", ":"] else ""
+        return self.listing if args == ["ls", ":"] else self.firmware if args == PROBE else ""
 
 
 class DeployTest(unittest.TestCase):
     def test_a_lineup_on_a_board_with_neither_packs_nor_lineup(self):
         runner = FakeRunner()
-        box.Deploy(runner).run(["runner", "snake", "flappy", "marshmallow"])
-        self.assertEqual([["ls", ":"], ["mkdir", ":packs"], COPY,
+        deploy(runner).run(["runner", "snake", "flappy", "marshmallow"])
+        self.assertEqual([PROBE, ["ls", ":"], ["mkdir", ":packs"], COPY,
                           ["cp", "games/packs/runner.pak", ":packs/runner.pak"],
                           ["cp", "games/packs/snake.pak", ":packs/snake.pak"],
-                          ["cp", "games/packs/flappy.pak", ":packs/flappy.pak"]], runner.commands[:6])
-        self.assertEqual(":lineup.py", runner.commands[6][-1])
-        self.assertEqual([["reset"]], runner.commands[7:])
+                          ["cp", "games/packs/flappy.pak", ":packs/flappy.pak"]], runner.commands[:7])
+        self.assertEqual(":lineup.py", runner.commands[7][-1])
+        self.assertEqual([["reset"]], runner.commands[8:])
         self.assertEqual("LINEUP = ('runner', 'snake', 'flappy', 'marshmallow')  # tools/box.py deploy (P817)\n",
                          runner.lineup)
 
     def test_a_lineup_on_a_board_with_packs_makes_no_folder(self):
         runner = FakeRunner(FULL)
-        box.Deploy(runner).run(["cave"])
-        self.assertEqual([["ls", ":"], COPY], runner.commands[:2])
+        deploy(runner).run(["cave"])
+        self.assertEqual([PROBE, ["ls", ":"], COPY], runner.commands[:3])
         self.assertEqual(["reset"], runner.commands[-1])
-        self.assertEqual(4, len(runner.commands))
+        self.assertEqual(5, len(runner.commands))
         self.assertEqual("LINEUP = ('cave',)  # tools/box.py deploy (P817)\n", runner.lineup)
 
     def test_all_copies_every_pack_and_removes_the_board_s_lineup(self):
         runner = FakeRunner(FULL)
-        box.Deploy(runner).run(None)
+        deploy(runner).run(None)
         packs = [["cp", "games/packs/%s.pak" % s, ":packs/%s.pak" % s]
                  for s in ("runner", "meteors", "bucket", "rescue", "flappy", "snake", "stack", "cube", "gravpong")]
-        self.assertEqual([["ls", ":"], COPY] + packs + [["rm", ":lineup.py"], ["reset"]], runner.commands)
+        self.assertEqual([PROBE, ["ls", ":"], COPY] + packs + [["rm", ":lineup.py"], ["reset"]], runner.commands)
 
     def test_all_on_a_board_with_no_lineup_removes_nothing(self):
         runner = FakeRunner()
-        box.Deploy(runner).run(None)
+        deploy(runner).run(None)
         self.assertNotIn("rm", [c[0] for c in runner.commands])
-        self.assertEqual(["mkdir", ":packs"], runner.commands[1])
+        self.assertEqual(["mkdir", ":packs"], runner.commands[2])
 
     def test_each_refusal_runs_no_command(self):
         for names, why in ((["nope"], "no game nope"), (["snake", "snake"], "twice"), ([], "empty")):
             with self.subTest(names):
                 runner = FakeRunner()
                 with self.assertRaisesRegex(box.Refused, why):
-                    box.Deploy(runner).run(names)
+                    deploy(runner).run(names)
                 self.assertEqual([], runner.commands)
 
     def test_main_refuses_aloud_and_runs_nothing(self):
@@ -89,10 +157,11 @@ class DeployTest(unittest.TestCase):
             self.assertEqual(0, box.main(["deploy", "--py", "--dry-run", "snake"]))
         run.assert_not_called()
         lines = said.getvalue().splitlines()
-        self.assertEqual(["mpremote ls :", "mpremote mkdir :packs", "mpremote " + " ".join(COPY)], lines[:3])
-        self.assertEqual("mpremote cp games/packs/snake.pak :packs/snake.pak", lines[3])
-        self.assertRegex(lines[4], r"^mpremote cp \S+lineup\.py :lineup\.py$")
-        self.assertEqual(["mpremote reset"], lines[5:])
+        self.assertEqual(["mpremote run tools/firmware_probe.py", "mpremote ls :", "mpremote mkdir :packs",
+                          "mpremote " + " ".join(COPY), "no _crackle.mpy built, so none is copied: tools/crackle.sh builds it"], lines[:5])
+        self.assertEqual("mpremote cp games/packs/snake.pak :packs/snake.pak", lines[5])
+        self.assertRegex(lines[6], r"^mpremote cp \S+lineup\.py :lineup\.py$")
+        self.assertEqual(["mpremote reset"], lines[7:])
 
     def test_the_runner_runs_mpremote_from_the_repository_root(self):
         with mock.patch.object(box.subprocess, "run") as run:
@@ -141,7 +210,7 @@ class MpyTest(unittest.TestCase):
 
     def deploy(self, listing, version=VERSION):
         runner, mpy_cross = FakeRunner(listing), FakeMpyCross(version)
-        box.Deploy(runner, box.Compiler(mpy_cross)).run(["snake"])
+        deploy(runner, box.Compiler(mpy_cross)).run(["snake"])
         return runner.commands, mpy_cross.calls
 
     def test_it_compiles_each_module_but_main_for_the_chip_naming_its_source(self):
@@ -155,31 +224,31 @@ class MpyTest(unittest.TestCase):
 
     def test_the_mpy_files_go_with_main_py_and_no_rm_on_a_clean_board(self):
         commands, calls = self.deploy(EMPTY)
-        self.assertEqual([["ls", ":"], ["mkdir", ":packs"]], commands[:2])
-        copy = commands[2]
+        self.assertEqual([PROBE, ["ls", ":"], ["mkdir", ":packs"]], commands[:3])
+        copy = commands[3]
         self.assertEqual([m + ".mpy" for m in MODULES], [os.path.basename(f) for f in copy[1:-3]])
         self.assertEqual(["games/main.py", "games/box_bank.raw", ":"], copy[-3:])
-        self.assertEqual(["cp", "games/packs/snake.pak", ":packs/snake.pak"], commands[3])
+        self.assertEqual(["cp", "games/packs/snake.pak", ":packs/snake.pak"], commands[4])
         self.assertNotIn("rm", [c[0] for c in commands])
         self.assertEqual(["reset"], commands[-1])
 
     def test_the_board_s_old_py_files_go_after_the_mpy_files_and_main_py_stays(self):
         commands, calls = self.deploy(OLD_PY)
-        self.assertEqual("cp", commands[1][0])
-        self.assertEqual(["rm", ":app.py", ":arcade.py"], commands[2])
+        self.assertEqual("cp", commands[2][0])
+        self.assertEqual(["rm", ":app.py", ":arcade.py"], commands[3])
 
     def test_py_copies_the_sources_and_removes_only_their_mpy_files(self):
         runner = FakeRunner(OLD_MPY)
-        box.Deploy(runner).run(["snake"])
-        self.assertEqual(COPY, runner.commands[1])
-        self.assertEqual(["rm", ":app.mpy", ":gfx.mpy"], runner.commands[2])  # crackle_c.mpy stays
+        deploy(runner).run(["snake"])
+        self.assertEqual(COPY, runner.commands[2])
+        self.assertEqual(["rm", ":app.mpy", ":gfx.mpy"], runner.commands[3])  # crackle_c.mpy stays (P848: until stage 9)
 
     def test_an_mpy_cross_of_another_version_is_refused_before_any_board_command(self):
         for version in ("MicroPython v1.22.0; mpy-cross emitting mpy v6.2\n", "mpy-cross 1.0\n"):
             with self.subTest(version):
                 runner = FakeRunner()
                 with self.assertRaisesRegex(box.Refused, "the board needs mpy v6.3"):
-                    box.Deploy(runner, box.Compiler(FakeMpyCross(version))).run(["snake"])
+                    deploy(runner, box.Compiler(FakeMpyCross(version))).run(["snake"])
                 self.assertEqual([], runner.commands)
 
     def test_no_mpy_cross_says_so_and_exits_1(self):
@@ -201,7 +270,7 @@ class MpyTest(unittest.TestCase):
             self.assertEqual(1, box.main(["deploy", "snake"]))
         self.assertRegex(said.getvalue(), r"^mpy-cross -march=xtensawin -s gfx\.py -o \S+gfx\.mpy games/gfx\.py failed: "
                                           r"SyntaxError: invalid syntax\n$")
-        self.assertEqual([["ls", ":"], ["mkdir", ":packs"]], runner.commands)  # no cp, no rm
+        self.assertEqual([PROBE, ["ls", ":"], ["mkdir", ":packs"]], runner.commands)  # no cp, no rm
 
     def test_a_failed_rm_of_the_old_py_says_deploy_again(self):
         class RmFails(FakeRunner):
@@ -210,7 +279,7 @@ class MpyTest(unittest.TestCase):
                     raise subprocess.CalledProcessError(1, ["mpremote"] + args, stderr="rm: busy\n")
                 return super().run(args)
         with self.assertRaises(subprocess.CalledProcessError) as failed:
-            box.Deploy(RmFails(OLD_PY), box.Compiler(FakeMpyCross())).run(["snake"])
+            deploy(RmFails(OLD_PY), box.Compiler(FakeMpyCross())).run(["snake"])
         self.assertEqual("rm: busy; deploy again: until then the board runs the old .py of some modules",
                          failed.exception.stderr)
 
@@ -223,9 +292,163 @@ class MpyTest(unittest.TestCase):
             self.assertEqual(0, box.main(["deploy", "--dry-run", "snake"]))
         run.assert_not_called()
         lines = said.getvalue().splitlines()
-        self.assertEqual(["mpy-cross --version", "mpremote ls :", "mpremote mkdir :packs"], lines[:3])
-        self.assertRegex(lines[3], r"^mpy-cross -march=xtensawin -s app\.py -o \S+app\.mpy games/app\.py$")
-        self.assertTrue(lines[3 + len(MODULES)].endswith(" games/main.py games/box_bank.raw :"))
+        self.assertEqual(["mpy-cross --version", "mpremote run tools/firmware_probe.py", "mpremote ls :",
+                          "mpremote mkdir :packs"], lines[:4])
+        self.assertRegex(lines[4], r"^mpy-cross -march=xtensawin -s app\.py -o \S+app\.mpy games/app\.py$")
+        self.assertTrue(lines[4 + len(MODULES)].endswith(" games/main.py games/box_bank.raw :"))
+
+
+class FirmwareTest(unittest.TestCase):
+    """The firmware check (P848, stage 0a): the probe runs before ls, and the deploy refuses a firmware whose C module
+    the games cannot import."""
+
+    def refused(self, answer):
+        runner = FakeRunner(firmware=answer)
+        with self.assertRaises(box.Refused) as refusal:
+            deploy(runner).run(["snake"])
+        self.assertEqual([PROBE], runner.commands)  # nothing after the probe
+        return str(refusal.exception)
+
+    def test_the_old_firmware_is_refused_before_ls(self):
+        self.assertEqual("the board's C module is still named engine" + FLASH, self.refused(OLD))
+        runner = FakeRunner(firmware=OLD)
+        with mock.patch.object(box, "Mpremote", lambda dry_run=False: runner), \
+                contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual(1, box.main(["deploy", "--py", "snake"]))
+        self.assertEqual("refused: the board's C module is still named engine" + FLASH + "\n", said.getvalue())
+        self.assertEqual([PROBE], runner.commands)
+
+    def test_a_missing_name_is_refused(self):
+        for name in box.FIRMWARE_NAMES:
+            with self.subTest(name):
+                self.assertRegex(self.refused(probe_answer(stand_in(name))),
+                                 r"^the firmware lacks (\S+, )*%s(, \S+)*%s$" % (re.escape(name), re.escape(FLASH)))
+        self.assertEqual("the firmware lacks SoundBank" + FLASH, self.refused(probe_answer(stand_in("SoundBank"))))
+
+    def test_an_unknown_answer_is_refused(self):
+        lines = NEW.splitlines()
+        for answer in ("", "Traceback (most recent call last):\n", NEW.replace("yes", "maybe", 1),
+                       "\n".join(lines[:-1]), "\n".join(lines + lines[-1:]), OLD + "engine Bodies yes\n",
+                       NEW.replace("_engine", "engine"), NEW.replace("Balls yes", "Balls"),
+                       NEW.replace("Balls yes", "Bodies yes"), NEW.replace("Balls yes", "Rocks yes"), "\n".join(lines[:-1] + ["engine Balls yes"]),
+                       "\n".join(lines[:-1] + lines[:1]), "_engine ImportError\nengine Bodies yes\n" + lines[0],
+                       "_engine ImportError\n_engine Bodies yes"):
+            with self.subTest(answer):
+                self.assertEqual("unknown firmware answer: %r: flash the image of ./build.sh engine (README, Build and "
+                                 "run), or %s" % (answer.strip(), PROBE_LINE), self.refused(answer))
+
+    def test_a_firmware_without_our_c_deploys_as_today(self):
+        package = types.ModuleType("engine")  # a package engine on a stock image (stage 0b-1): no Bodies
+        for answer in (NO_C, probe_answer(None, package), NEW, NEW.replace("\n", "\r\n")):
+            with self.subTest(answer):
+                runner = FakeRunner(firmware=answer)
+                deploy(runner).run(["snake"])
+                self.assertEqual([PROBE, ["ls", ":"], ["mkdir", ":packs"], COPY], runner.commands[:4])
+                self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_an_image_that_also_registers_the_old_name_is_refused(self):
+        self.assertEqual(["_engine %s yes" % name for name in box.FIRMWARE_NAMES] + ["engine Bodies yes"],
+                         BOTH.splitlines())
+        self.assertEqual("the firmware registers engine beside _engine, so a package engine cannot load: flash the "
+                         "image of a clean ./build.sh engine first (README, Build and run)", self.refused(BOTH))
+
+    def test_the_probe_is_tried_again_while_a_game_holds_the_board(self):
+        runner, pauses = FailingRunner(1), []
+        deploy(runner, pauses=pauses).run(["snake"])
+        self.assertEqual([PROBE, PROBE, ["ls", ":"]], runner.commands[:3])
+        self.assertEqual([box.RESET_PAUSE_S], pauses)
+        self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_a_board_that_never_answers_says_what_to_do(self):
+        runner, pauses = FailingRunner(99), []
+        with self.assertRaises(subprocess.CalledProcessError) as failed:
+            deploy(runner, pauses=pauses).run(["snake"])
+        self.assertEqual("mpremote.transport.TransportError: could not enter raw repl; " + NO_ANSWER,
+                         failed.exception.stderr)
+        self.assertEqual([PROBE] * box.PROBE_TRIES, runner.commands)
+        self.assertEqual([box.RESET_PAUSE_S] * (box.PROBE_TRIES - 1), pauses)
+
+    def test_spaces_around_the_words_change_nothing(self):
+        spaced = "".join("  %s  \r\n" % "   ".join(line.split()) for line in NEW.splitlines())
+        self.assertIsNone(box.firmware_fault(spaced))
+        self.assertEqual("the firmware lacks Balls" + FLASH,
+                         box.firmware_fault(" " + probe_answer(stand_in("Balls")).replace("\n", " \n ")))
+
+    def test_the_order_of_the_names_does_not_matter(self):
+        lines = probe_answer(stand_in("Bodies")).splitlines()
+        self.assertEqual("the firmware lacks Bodies" + FLASH,
+                         box.firmware_fault("\n".join(lines[-2::-1] + lines[-1:])))
+
+    def test_a_dry_run_never_refuses(self):
+        class DryRun(FakeRunner):
+            dry_run = True
+        for answer in ("", OLD, probe_answer(stand_in("Balls"))):
+            with self.subTest(answer):
+                runner = DryRun(firmware=answer)
+                deploy(runner).run(["snake"])
+                self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_the_probe_asks_for_the_names_the_check_reads(self):
+        self.assertEqual(["_engine %s yes" % name for name in box.FIRMWARE_NAMES] + ["engine ImportError"],
+                         NEW.splitlines())
+        self.assertEqual(["_engine ImportError", "engine Bodies yes"], OLD.splitlines())
+        self.assertEqual(["_engine ImportError", "engine ImportError"], NO_C.splitlines())
+
+    def test_the_answers_a_board_gave(self):
+        """The kept answers of tests/fixtures/firmware/: stock.txt written by hand from the probe's text (no stock
+        image is flashed for it), old.txt captured before the flash of stage 0a, new.txt after it."""
+        for name, fault in (("stock.txt", None), ("old.txt", "the board's C module is still named engine" + FLASH),
+                            ("new.txt", None)):
+            with self.subTest(name):
+                path = os.path.join(FIXTURES, name)
+                if not os.path.exists(path):
+                    self.skipTest("not captured yet: mpremote run tools/firmware_probe.py > tests/fixtures/firmware/"
+                                  + name)
+                with open(path, newline="") as f:
+                    self.assertEqual(fault, box.firmware_fault(f.read()))
+
+
+class CrackleTest(unittest.TestCase):
+    """The crackle's native module (P848): the deploy copies _crackle.mpy when it is built and keeps the board's
+    crackle_c.mpy, so a flash of the rollback image still finds its crackle (until stage 9)."""
+
+    def test_the_crackle_goes_as_underscore_crackle_and_the_old_one_stays(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            built = os.path.join(tmp, "_crackle.mpy")
+            open(built, "wb").close()
+            for compiler in (None, box.Compiler(FakeMpyCross())):
+                with self.subTest(compiler=compiler):
+                    runner, said = FakeRunner(OLD_MPY), []
+                    deploy(runner, compiler, crackle=built, said=said).run(["snake"])
+                    at = runner.commands.index(["cp", built, ":_crackle.mpy"])
+                    self.assertEqual(["cp", "games/packs/snake.pak", ":packs/snake.pak"], runner.commands[at + 1])
+                    self.assertFalse([c for c in runner.commands if ":crackle_c.mpy" in c])
+                    self.assertEqual([], said)
+
+    def test_no_crackle_built_says_so_and_deploys_the_rest(self):
+        runner, said = FakeRunner(), []
+        deploy(runner, said=said).run(["snake"])
+        self.assertEqual(["no _crackle.mpy built, so none is copied: tools/crackle.sh builds it"], said)
+        self.assertFalse([c for c in runner.commands if ":_crackle.mpy" in c])
+        self.assertIn(["cp", "games/packs/snake.pak", ":packs/snake.pak"], runner.commands)
+        self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_a_crackle_path_is_read_from_the_repository_root(self):
+        with tempfile.NamedTemporaryFile(dir=HERE, suffix=".mpy") as built, tempfile.TemporaryDirectory() as away:
+            named = os.path.relpath(built.name, box.ROOT)  # tests/tmpXXXX.mpy
+            cwd = os.getcwd()
+            os.chdir(away)  # box.py's commands run from the root, wherever the deploy was started
+            try:
+                runner = FakeRunner()
+                deploy(runner, crackle=named).run(["snake"])
+            finally:
+                os.chdir(cwd)
+        self.assertIn(["cp", named, ":_crackle.mpy"], runner.commands)
+
+    def test_the_crackle_is_the_one_crackle_sh_builds(self):
+        self.assertEqual("engine/natmod/crackle/_crackle.mpy", CRACKLE)
+        with open(os.path.join(box.ROOT, "tools", "crackle.sh")) as f:
+            self.assertIn('"$ROOT/%s"' % CRACKLE, f.read())
 
 
 class ListTest(unittest.TestCase):
@@ -253,11 +476,11 @@ class FailingRunner(FakeRunner):
         self.fails = fails
 
     def run(self, args):
+        if not self.fails:
+            return super().run(args)
         self.commands.append(args)
-        if self.fails:
-            self.fails -= 1
-            raise subprocess.CalledProcessError(1, ["mpremote"] + args, stderr="could not enter raw repl\n")
-        return ""
+        self.fails -= 1
+        raise subprocess.CalledProcessError(1, ["mpremote"] + args, stderr=RAW_REPL)
 
 
 class ResetTest(unittest.TestCase):
@@ -302,8 +525,11 @@ class MainTest(unittest.TestCase):
         self.assertRegex(said, r"^\d+\.\d{3} lineup 3: bucket rescue snake\n$")  # after its seconds (P822)
 
     def test_a_failed_mpremote_prints_its_error_and_exits_1(self):
-        code, said = self.main(["deploy", "--py", "snake"], FailingRunner(99))
-        self.assertEqual((1, "mpremote ls : failed: could not enter raw repl\n"), (code, said))
+        with mock.patch.object(box.time, "sleep") as pause:
+            code, said = self.main(["deploy", "--py", "snake"], FailingRunner(99))
+        self.assertEqual((1, "mpremote run tools/firmware_probe.py failed: mpremote.transport.TransportError: could not "
+                             "enter raw repl; " + NO_ANSWER + "\n"), (code, said))
+        self.assertEqual(box.PROBE_TRIES - 1, pause.call_count)
 
     def test_no_mpremote_exits_1(self):
         with mock.patch.object(box.subprocess, "run", side_effect=FileNotFoundError("mpremote")), \

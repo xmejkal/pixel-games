@@ -95,18 +95,18 @@ class StagesTest(unittest.TestCase):
 
 class EngineGuardTest(unittest.TestCase):
     def test_a_module_without_bodies_is_no_engine(self):
-        """The Mac imports the repository's engine/ folder as an empty package: no Bodies, so Python's twin steps."""
-        saved = sys.modules.get("engine")
-        sys.modules["engine"] = types.ModuleType("engine")
+        """A firmware's _engine without Bodies is no engine, so Python's twin steps; with Bodies it is the C (P848)."""
+        saved = sys.modules.get("_engine")
+        sys.modules["_engine"] = types.ModuleType("_engine")
         try:
             self.assertIsNone(self.fresh_plugins().engine)
-            sys.modules["engine"].Bodies = object
-            self.assertIs(sys.modules["engine"], self.fresh_plugins().engine)
+            sys.modules["_engine"].Bodies = object
+            self.assertIs(sys.modules["_engine"], self.fresh_plugins().engine)
         finally:
             if saved is None:
-                del sys.modules["engine"]
+                del sys.modules["_engine"]
             else:
-                sys.modules["engine"] = saved
+                sys.modules["_engine"] = saved
 
     def fresh_plugins(self):
         """A new copy of games/plugins.py, so the plugins module the other tests use keeps its classes."""

@@ -1,8 +1,9 @@
 #!/bin/bash
 # The crackle's try loop (P747): one command from a saved engine/core/fx_crackle.c to the sound on the board.
-# It builds crackle_c.mpy, copies it with games/crackle.py, games/fire.py and games/sound.py, and runs
-# probe733_games.py on Fire with CallbackRefill for SECONDS (10 by default). The board needs firmware with
-# HeatField.take_births (P747; P751: with rises and engine.SoundBank, else GrainCrackle falls back to a bytearray;
+# It builds _crackle.mpy (crackle_c.mpy before P848), copies it with games/crackle.py, games/fire.py and games/sound.py,
+# and runs probe733_games.py on Fire with CallbackRefill for SECONDS (10 by default). The board needs firmware whose C
+# module is _engine (P848: the image of ./build.sh engine from pixel-engine 1005249 on) with HeatField.take_births
+# (P747; P751: with rises and _engine.SoundBank, else GrainCrackle falls back to a bytearray;
 # P753: with HeatField.stats, else FireSound is a GrainCrackle), and the amplifier wired as in P733. Its last line
 # gives the seconds from the start of this script to the first pop.
 #
@@ -67,8 +68,8 @@ if [ -n "$LOOK" ]; then
 else
     cp "$ROOT/games/crackle.py" "$CRACKLE_PY"
 fi
-echo "crackle_c.mpy sha256 $(shasum -a 256 "$ROOT/engine/natmod/crackle/crackle_c.mpy" | cut -d' ' -f1), engine $(git -C "$ROOT/engine" rev-parse --short HEAD)"
-mpremote cp "$ROOT/engine/natmod/crackle/crackle_c.mpy" :crackle_c.mpy + cp "$CRACKLE_PY" :crackle.py \
+echo "_crackle.mpy sha256 $(shasum -a 256 "$ROOT/engine/natmod/crackle/_crackle.mpy" | cut -d' ' -f1), engine $(git -C "$ROOT/engine" rev-parse --short HEAD)"
+mpremote cp "$ROOT/engine/natmod/crackle/_crackle.mpy" :_crackle.mpy + cp "$CRACKLE_PY" :crackle.py \
     + cp "$ROOT/games/fire.py" :fire.py + cp "$ROOT/games/sound.py" :sound.py
 # The game box's own files, always: app.py imports each of them (the knob and the overlay, P764; the catalog, P817)
 mpremote cp "$ROOT/games/app.py" :app.py + cp "$ROOT/games/catalog.py" :catalog.py + cp "$ROOT/games/overlay.py" :overlay.py \

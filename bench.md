@@ -1678,3 +1678,23 @@ than the control.
 - Open: the baseline with all 15 games (P846 above) had flappy at 13 to 16 fps on the same screen, gc 7.4 to 7.5 ms on
   its idle lines, against 5.5 ms before and 6.4 ms after here with flappy alone (the kept strip adds about 0.9 ms of gc
   and about 39 KB of heap). More loaded games make the frame slower; not explained yet.
+
+## P848 (#1212), 2026-11-16: the firmware with `_engine`, flashed
+
+- Before the flash, read-only: the box's image at 0x10000, read back with esptool, has the rollback set's sha256
+  (`21b8ba91…d773`, `~/esp/rollback/engine-2026-11-13/`), so the way back is the image the box ran. The old firmware's
+  answer to `tools/firmware_probe.py`: `_engine ImportError`, `engine Bodies yes` (`tests/fixtures/firmware/old.txt`).
+- The flash, on the PO's yes: `esptool write_flash 0x10000` of the clean `./build.sh engine` image (1,821,872 B,
+  sha256 `2a02654d…f942`, pixel-engine 1005249); "Hash of data verified". `mpremote bootloader` answered "could not
+  enter raw repl", but esptool reached the board in download mode and wrote it.
+- The new answer: `_engine` yes for Bodies, HeatField, Balls, SoundBank and HeatField.cool, and `engine ImportError`
+  (`tests/fixtures/firmware/new.txt`).
+- The boot (`logs/run-p848-boot.log`): `import 1379 ms`, `ready`, `switch marshmallow 549 ms`, marshmallow at 23 and
+  24 fps with its C heat field (step 6.7 to 9.1 ms).
+- The Fire run, `VOLUME=ViperMasterVolume KNOB=1 tools/crackle.sh 45 FireSound`, twice
+  (`logs/run-p848-fire-a.log`, `-b.log`): the crackle plays (pops, `dropped 0`), fire at 22 fps, but the late refills
+  count up to 5 and to 6 in 45 s. The stage's gate asked for `late 0`.
+- That gate was stricter than the box has been: the same run ended at 3 late refills in run189 (P764 above), and at 0
+  and 1 in runs 181b and 182c ("One run each gives no verdict"). The new build's sdkconfig is identical to the old
+  incremental build's, and the C code differs only in its names. Not shown: whether the old firmware with today's
+  games gives the same count. That needs a control run on the rollback image (P857, spark #1223).

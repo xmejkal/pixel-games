@@ -21,11 +21,10 @@ from gfx import BLACK, DARK, LABEL_RECT, WHITE, WIDTH, Game, c565
 from motion import MAX_EVENTS, StepClock
 
 try:
-    import engine
-except ImportError:  # the image with s3lcd only
+    import _engine as engine  # the firmware's C module (P848: _engine, so a package engine can load beside it)
+except ImportError:  # the image with s3lcd only, and the Mac
     engine = None
-# the import above succeeds on the Mac too: it finds the repository's engine/ folder, an empty package (P602). Only the
-# C engine has Balls
+# Only the C engine has Balls: an older firmware may lack it
 if not hasattr(engine, "Balls"):
     engine = None
 

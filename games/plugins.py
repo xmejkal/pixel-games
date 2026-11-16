@@ -20,11 +20,10 @@ from array import array
 from motion import MAX_EVENTS, Bodies, StepClock
 
 try:
-    import engine
-except ImportError:  # an image without the engine module: Python only
+    import _engine as engine  # the firmware's C module (P848: _engine, so a package engine can load beside it)
+except ImportError:  # an image without the engine module, and the Mac: Python only
     engine = None
-# The import above succeeds on the Mac too: it finds the repository's engine/ folder, an empty package. Only the C
-# engine has Bodies
+# Only the C engine has Bodies: an older firmware may lack it
 if not hasattr(engine, "Bodies"):
     engine = None
 

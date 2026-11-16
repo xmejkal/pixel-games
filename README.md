@@ -13,7 +13,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `art/mocap.py` | turns CMU motion capture into the side-view poses that Rescue's fireman, the people he saves and Meteors' walker are painted from. It reads the CMU files from `~/.cache/pixel-games/cmu` and writes nothing. The terms are below the table |
 | `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
 | `tests/` | the tests that run on a computer, with no board: `python3 -B -m unittest discover tests` from the repository root (the C ones need clang). The engine's own tests run with the same command in `engine/`. `tests.test_golden` is the net (P846): every game's frames (pinned frames, one hash chained over the whole run, each kind of game-over card), its cue table, cues and their sound, the box's game and switch lines and the mixer's samples pinned by hashes in `tests/golden/`, one process per subject, 8 at a time; `NET_TIER=fast python3 -B -m unittest tests.test_golden` (the story run) compares frames 1 to 5 only, and `python3 -B -m unittest tests.test_golden tests.test_golden_negative` is the full tier with the negative tests, which prove the net catches a change. It needs clang and the MicroPython clone, and fails without them. `tools/render_scene.py --golden tests/golden` writes the hashes, only on the baseline commit |
-| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py SUBJECT out.png FRAMES...` draws a game, a scene or the overlay on the Mac, the board's way, to a PNG sheet, and with `--gif OUT.gif --every K` to a GIF. `--list` names the subjects, and `--all docs/screenshots` writes every picture below from the tool's own table. It needs clang, Pillow and the MicroPython clone under `~/esp` for the letters. `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `crackle_c.mpy`, copies it to the board and plays it on Fire |
+| `tools/` | `render_scene.py`: `python3 -B tools/render_scene.py SUBJECT out.png FRAMES...` draws a game, a scene or the overlay on the Mac, the board's way, to a PNG sheet, and with `--gif OUT.gif --every K` to a GIF. `--list` names the subjects, and `--all docs/screenshots` writes every picture below from the tool's own table. It needs clang, Pillow and the MicroPython clone under `~/esp` for the letters. `crackle_wav.py out.wav [seconds]` renders the fire's crackle to a WAV on the Mac (needs clang). `crackle.sh [seconds] [voice] [look]` builds the C crackle as `_crackle.mpy`, copies it to the board and plays it on Fire |
 | `build.sh` | builds the MicroPython firmware, with or without the driver |
 | `bench.md` | the bench log: each run, its numbers and what it taught |
 | `logs/` | the kept logs of some runs in `bench.md`, named by run number |
@@ -92,9 +92,31 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
 
 1. Clone with the submodules: `git clone --recurse-submodules https://github.com/xmejkal/pixel-games.git`. If you cloned
    without them, `build.sh` fetches them.
-2. Build the firmware with the driver and the engine: `./build.sh engine`.
+2. Build the firmware with the driver and the engine: `./build.sh engine`. The build is clean, so every engine build
+   is a full one (about 75 s on this Mac, from the files' times on 2026-11-16): it removes
+   `~/esp/micropython-v1.29.0/ports/esp32/build-engine` first, because every worktree builds into that folder and an
+   incremental build kept another tree's module list, so one image registered both `engine` and `_engine` (P848). It
+   then checks that the image registers the C module as `_engine` alone (`tools/check_moduledefs.sh`), and prints the
+   image's path, bytes and sha256. The image is `~/esp/micropython-v1.29.0/ports/esp32/build-engine/micropython.bin`.
+   A failed build leaves no image there: the last one that worked before `_engine` is kept in
+   `~/esp/rollback/engine-2026-11-13/` (the undo, step 4). Its C module is `_engine` from pixel-engine 1005249 on
+   (P848), so a package `engine` can load beside it.
+   - Before the first flash of `_engine` (stage 0a of the engine plan, P848), while the old firmware still runs, keep
+     its answer to the deploy's probe, read-only: `mpremote run tools/firmware_probe.py > tests/fixtures/firmware/old.txt`
+     (kept on 2026-11-16; the first try failed with `could not enter raw repl` while a game ran, the second answered).
+     Step 3 stops the firmware, so the probe cannot reach it after that.
 3. Put the board in download mode: `mpremote bootloader`.
-4. Write the image: `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
+4. Write the image, after its sha256 matches the one step 2 printed:
+   `esptool --before no_reset --after watchdog_reset write_flash 0x10000 ~/esp/micropython-v1.29.0/ports/esp32/build-engine/micropython.bin`.
+   Deploy at once (step 5): until then the games on the board find no C module and play without it.
+   - The undo: the image built before `_engine` is kept with its bootloader, partition table, `flash_args` and
+     `SHA256SUMS` in `~/esp/rollback/engine-2026-11-13/`. In that folder run `shasum -a 256 -c SHA256SUMS`, then
+     `mpremote bootloader` and `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
+     A full write takes the offsets of `flash_args`: `esptool --before no_reset --after watchdog_reset write_flash
+     --flash_mode dio --flash_freq 80m --flash_size 4MB 0x0 bootloader/bootloader.bin 0x8000
+     partition_table/partition-table.bin 0x10000 micropython.bin`. Then check out the pixel-games commit before stage
+     0a with its submodule (`git checkout <commit> && git submodule update`) and deploy again. The board's
+     `crackle_c.mpy` is still there, so Fire keeps its crackle.
 5. Copy the games and their art with `python3 tools/box.py deploy --all`, or only some games with
    `python3 tools/box.py deploy NAME...` (P817): the box then plays only these, in this order. The deploy copies the
    code of every game and `games/box_bank.raw` (the sound), but only the packs of the named games; packs an earlier
@@ -103,6 +125,15 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    (`pip install mpy-cross==1.29.0.post2`, which must say `mpy v6.3`), compiles every module but `main.py`, which goes
    as itself, and the deploy removes the board's `.py` of each module, because the board runs a `.py` before an `.mpy`
    of the same name. The `.mpy` files fit MicroPython v1.29: after a flash of another MicroPython, deploy again.
+   Before any copy, the deploy runs `tools/firmware_probe.py` on the board (P848), up to three tries while a running
+   game keeps mpremote out, and refuses a firmware whose C module is still named `engine`, one that registers `engine`
+   beside `_engine`, or one that lacks a name the games need (`Bodies`, `HeatField`, `Balls`, `SoundBank`,
+   `HeatField.cool`): flash the image of step 2 first. A firmware with no C module deploys, and the games play
+   without it. The deploy copies `engine/natmod/crackle/_crackle.mpy` when `tools/crackle.sh` has built it, and keeps
+   the board's old `crackle_c.mpy`.
+   - After the first deploy onto `_engine` (stage 0a, P848), keep the new firmware's answer the same way:
+     `mpremote run tools/firmware_probe.py > tests/fixtures/firmware/new.txt`. It is owed after the flash, and the card
+     is done only with it: `tests/test_box.py` reports it skipped until then.
    `--py` copies `games/*.py` instead and removes those modules' `.mpy` files: for debugging on the board, where a
    traceback shows the source line. The names are `games/catalog.py`'s, and `python3 tools/box.py list` shows each
    with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so step 6 is
@@ -247,7 +278,7 @@ Runs now:
   feeds them to the amplifier through stock `machine.I2S`: `FrameRefill` once per frame, or `CallbackRefill` from the
   I2S callback. The fire's crackle is a soft, deep roar and one pop per ember birth (`HeatField.take_births()`), so
   the pops come with the sparks. `NativeCrackle` renders it in C (`engine/core/fx_crackle.c`), loaded from
-  `crackle_c.mpy` with no firmware rebuild: at most 0.41 ms per 16 ms block, and Fire keeps 24 fps (bench.md, P747).
+  `_crackle.mpy` (`crackle_c.mpy` before P848) with no firmware rebuild: at most 0.41 ms per 16 ms block, and Fire keeps 24 fps (bench.md, P747).
   `SampledCrackle` is the plain Python path: four pre-rendered pops through the `Mixer`. Since P751, `GrainCrackle` plays
   one woody pop per ember, in sync with the sparks, over a low flame roar, from a bank rendered on the Mac
   (`tools/fire_bank.py`), kept in `engine.SoundBank` outside the GC heap. The fastest embers (rise 4 and 5) get larger pops. The fire's sound plays only in the bench probe
