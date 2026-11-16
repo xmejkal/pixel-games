@@ -210,7 +210,7 @@ class Verdict:
     NONE, OK, FLAG = 0, 1, 2
     SHOW_MS = 700  # the stamp and the face's pose hold this long
     SLAM_MS = 80  # the stamp lands: its first 2 frames drawn off its place, the flash at the lens
-    FLASH_MS = 40  # COMPLIANT: one white frame in the monitor
+    FLASH_MS = 40  # COMPLIANT: the monitor white this long, one frame at the box's 40 ms pace
 
     def __init__(self):
         self.kind, self.at = self.NONE, 0
@@ -271,7 +271,7 @@ class CubeTiming(Game):
     TITLE_IRIS, TITLE_IRIS_X, TITLE_IRIS_Y = 72, 124, 74
     TITLE_BEST_RIGHT, TITLE_BEST_TOP = 207, 203
     IRIS_MS, LIGHT_ON_MS = 200, 900  # the title's iris opens a pose each IRIS_MS; its light comes on at LIGHT_ON_MS
-    BLINK_MS = 300
+    BLINK_MS = 300  # the recording light's blink, on the game's clock (age: ms since play or the title began)
 
     def setup(self):
         self.yaw, self.w, self.lives, self.done, self.flash, self.rev = 0.0, 2.2, 3, False, 0.0, 0
@@ -406,7 +406,7 @@ class CubeTiming(Game):
         tx, ty = h.x[h.CENTRE], h.y[h.CENTRE]
         cv.line(jx, self.JOINT[1], tx, ty, self.BONE)  # the stub
         cv.line(jx + 1, self.JOINT[1], tx + 1, ty, self.INK)
-        pictures.draw(cv, LIGHTS[self.last // self.BLINK_MS % 2], int(h.x[h.LIGHT]) - 3, int(h.y[h.LIGHT]) - 3)
+        pictures.draw(cv, LIGHTS[self.age // self.BLINK_MS % 2], int(h.x[h.LIGHT]) - 3, int(h.y[h.LIGHT]) - 3)
         if seen:
             k = self.lens_size(mz)
             half = LENS_SIZES[k] // 2
