@@ -92,19 +92,23 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
 
 1. Clone with the submodules: `git clone --recurse-submodules https://github.com/xmejkal/pixel-games.git`. If you cloned
    without them, `build.sh` fetches them.
-2. Build the firmware with the driver and the engine: `./build.sh engine`. The build is clean: it removes
+2. Build the firmware with the driver and the engine: `./build.sh engine`. The build is clean, so every engine build
+   is a full one (about 75 s on this Mac, from the files' times on 2026-11-16): it removes
    `~/esp/micropython-v1.29.0/ports/esp32/build-engine` first, because every worktree builds into that folder and an
    incremental build kept another tree's module list, so one image registered both `engine` and `_engine` (P848). It
-   then checks that the image registers the C module as `_engine` alone, and prints the image's path, bytes and
-   sha256. The image is `~/esp/micropython-v1.29.0/ports/esp32/build-engine/micropython.bin`. Its C module is
-   `_engine` from pixel-engine 1005249 on (P848), so a package `engine` can load beside it.
+   then checks that the image registers the C module as `_engine` alone (`tools/check_moduledefs.sh`), and prints the
+   image's path, bytes and sha256. The image is `~/esp/micropython-v1.29.0/ports/esp32/build-engine/micropython.bin`.
+   A failed build leaves no image there: the last one that worked before `_engine` is kept in
+   `~/esp/rollback/engine-2026-11-13/` (the undo, step 4). Its C module is `_engine` from pixel-engine 1005249 on
+   (P848), so a package `engine` can load beside it.
+   - Before the first flash of `_engine` (stage 0a of the engine plan, P848), while the old firmware still runs, keep
+     its answer to the deploy's probe, read-only: `mpremote run tools/firmware_probe.py > tests/fixtures/firmware/old.txt`
+     (kept on 2026-11-16; the first try failed with `could not enter raw repl` while a game ran, the second answered).
+     Step 3 stops the firmware, so the probe cannot reach it after that.
 3. Put the board in download mode: `mpremote bootloader`.
 4. Write the image, after its sha256 matches the one step 2 printed:
    `esptool --before no_reset --after watchdog_reset write_flash 0x10000 ~/esp/micropython-v1.29.0/ports/esp32/build-engine/micropython.bin`.
    Deploy at once (step 5): until then the games on the board find no C module and play without it.
-   - Before the first flash of `_engine` (stage 0a of the engine plan, P848), keep the old firmware's answer to the
-     deploy's probe, read-only: `mpremote run tools/firmware_probe.py > tests/fixtures/firmware/old.txt`. After the
-     flash, keep the new one the same way in `new.txt`. `tests/test_box.py` reads both.
    - The undo: the image built before `_engine` is kept with its bootloader, partition table, `flash_args` and
      `SHA256SUMS` in `~/esp/rollback/engine-2026-11-13/`. In that folder run `shasum -a 256 -c SHA256SUMS`, then
      `mpremote bootloader` and `esptool --before no_reset --after watchdog_reset write_flash 0x10000 micropython.bin`.
@@ -121,11 +125,15 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    (`pip install mpy-cross==1.29.0.post2`, which must say `mpy v6.3`), compiles every module but `main.py`, which goes
    as itself, and the deploy removes the board's `.py` of each module, because the board runs a `.py` before an `.mpy`
    of the same name. The `.mpy` files fit MicroPython v1.29: after a flash of another MicroPython, deploy again.
-   Before any copy, the deploy runs `tools/firmware_probe.py` on the board (P848) and refuses a firmware whose C module
-   is still named `engine` or lacks a name the games need (`Bodies`, `HeatField`, `Balls`, `SoundBank`,
+   Before any copy, the deploy runs `tools/firmware_probe.py` on the board (P848), up to three tries while a running
+   game keeps mpremote out, and refuses a firmware whose C module is still named `engine`, one that registers `engine`
+   beside `_engine`, or one that lacks a name the games need (`Bodies`, `HeatField`, `Balls`, `SoundBank`,
    `HeatField.cool`): flash the image of step 2 first. A firmware with no C module deploys, and the games play
    without it. The deploy copies `engine/natmod/crackle/_crackle.mpy` when `tools/crackle.sh` has built it, and keeps
    the board's old `crackle_c.mpy`.
+   - After the first deploy onto `_engine` (stage 0a, P848), keep the new firmware's answer the same way:
+     `mpremote run tools/firmware_probe.py > tests/fixtures/firmware/new.txt`. It is owed after the flash, and the card
+     is done only with it: `tests/test_box.py` reports it skipped until then.
    `--py` copies `games/*.py` instead and removes those modules' `.mpy` files: for debugging on the board, where a
    traceback shows the source line. The names are `games/catalog.py`'s, and `python3 tools/box.py list` shows each
    with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so step 6 is

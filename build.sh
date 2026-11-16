@@ -18,19 +18,15 @@ if [ "${1:-}" = s3lcd ]; then
 elif [ "${1:-}" = engine ]; then
   ARGS+=(USER_C_MODULES="$HERE/micropython.cmake" BUILD=build-engine)
   # Clean (P848): every worktree builds into this one folder, and genhdr/module keeps each tree's binding.c.module, so
-  # an incremental build registered another tree's engine beside this tree's _engine
+  # an incremental build registered another tree's engine beside this tree's _engine. So every engine build is a full
+  # one: about 75 s on this Mac (2026-11-16, the folder made at 16:20:39 and the image at 16:21:50 Prague time).
+  # A failed build leaves no image here: the last image that worked is in ~/esp/rollback/ (README, Build and run)
   rm -rf "$MPY/ports/esp32/build-engine"
 fi
 make "${ARGS[@]}" submodules > /dev/null
 make "${ARGS[@]}" -j8
 if [ "${1:-}" = engine ]; then
-  # The image registers the C module as _engine and not as engine (P848)
-  DEFS="$MPY/ports/esp32/build-engine/genhdr/moduledefs.h"
-  if ! grep -q 'MP_QSTR__engine)' "$DEFS" || grep -q 'MP_QSTR_engine)' "$DEFS"; then
-    echo "build.sh: $DEFS does not register _engine alone:" >&2
-    grep -n 'engine' "$DEFS" >&2
-    exit 1
-  fi
+  "$HERE/tools/check_moduledefs.sh" "$MPY/ports/esp32/build-engine/genhdr/moduledefs.h"  # _engine alone (P848)
   IMAGE="$MPY/ports/esp32/build-engine/micropython.bin"
   echo "$IMAGE: $(wc -c < "$IMAGE" | tr -d ' ') B, sha256 $(shasum -a 256 "$IMAGE" | cut -d' ' -f1), engine $(git -C "$HERE" submodule status engine | cut -c2-8)"
 fi
