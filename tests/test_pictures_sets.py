@@ -16,6 +16,7 @@ import tempfile
 import time
 import types
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -159,13 +160,14 @@ class Recorded:
     """A pack file that records each read's size and the bytes it gave."""
 
     def __init__(self, f, log):
-        self.f, self.log = f, log
+        self.f, self.log, self.closed = f, log, False
 
     def __enter__(self):
         return self
 
     def __exit__(self, *exc):
         self.f.close()
+        self.closed = True
 
     def seek(self, *args):
         return self.f.seek(*args)
@@ -266,6 +268,106 @@ class PacksTest(unittest.TestCase):
                     self.assertFalse(pictures.load("bucket"))
                 self.assertIn("art: games/art_index.py is from before the packs", said.getvalue())
                 self.assertEqual([], self.opens)
+
+
+class StepsTest(unittest.TestCase):
+    """load_steps (P822): the load a few chunks at a time, so the box draws its card between them. Each step reads one
+    chunk and yields the fraction of the load's bytes read; when the steps end, the set is placed."""
+
+    def setUp(self):
+        self.root, self.reads, self.files = pictures.ROOT, [], []
+        pictures.ROOT = os.path.join(GAMES, "")
+        pictures.free()
+        pictures.open = self.open
+        self.addCleanup(self.restore)
+
+    def open(self, path, mode):
+        self.files.append(Recorded(open(path, mode), self.reads))
+        return self.files[-1]
+
+    def restore(self):
+        del pictures.open
+        pictures.free()
+        pictures.ROOT = self.root
+
+    def test_it_yields_after_each_chunk_and_its_progress_rises_to_exactly_one(self):
+        for game, only in (("runner", None), ("runner", ("sky",)), ("bucket", None)):
+            with self.subTest(game=game, only=only):
+                pictures.free()
+                self.reads.clear()
+                steps = pictures.load_steps(game, only)
+                progress = []
+                for value in steps:
+                    self.assertEqual({}, pictures.PICS)  # nothing placed before the steps end
+                    progress.append(value)
+                self.assertEqual(len(self.reads) - 1, len(progress))  # each chunk is a step; the header read is none
+                self.assertEqual(progress, sorted(progress))
+                self.assertLess(0, progress[0])
+                self.assertEqual(1.0, progress[-1])
+                self.assertTrue(pictures.ready)
+                self.assertEqual(set(n for n in art_index.PICTURE_SETS[game] if only is None or n in only),
+                                 set(pictures.PICS))
+
+    def test_load_is_load_steps_run_to_its_end(self):
+        real, calls = pictures.load_steps, []
+
+        def spy(game=None, only=None):
+            calls.append((game, only))
+            return real(game, only)
+        pictures.load_steps = spy
+        try:
+            self.assertTrue(pictures.load("bucket"))
+            self.assertTrue(pictures.load("bucket"))  # loaded: its steps end at once
+        finally:
+            pictures.load_steps = real
+        self.assertEqual([("bucket", None)] * 2, calls)
+        self.assertEqual(1, len(self.files))
+        self.assertIn("bucket_scene", pictures.PICS)
+
+    def test_steps_closed_halfway_close_the_pack_and_free_keeps_no_set(self):
+        steps = pictures.load_steps("runner")
+        for _ in range(3):
+            self.assertLess(next(steps), 1.0)
+        self.assertFalse(self.files[0].closed)
+        steps.close()
+        self.assertTrue(self.files[0].closed)
+        pictures.free()
+        self.assertEqual(({}, {}, None, False), (pictures.PICS, pictures.SETS, pictures.loaded, pictures.ready))
+        self.assertTrue(pictures.load("runner"))  # and the next load reads it again, whole
+
+    def test_a_stale_pack_is_refused_in_the_steps_too(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        shutil.copytree(os.path.join(GAMES, "packs"), os.path.join(tmp.name, "packs"))
+        path = os.path.join(tmp.name, "packs", "bucket.pak")
+        with open(path, "r+b") as f:
+            f.seek(8)
+            f.write(b"\xff" * 8)  # another build's id
+        pictures.ROOT = os.path.join(tmp.name, "")
+        with contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual([], list(pictures.load_steps("bucket")))
+        self.assertEqual("art: bucket pack is not this build: copy games/*.py and games/packs, then hard reset\n",
+                         said.getvalue())
+        self.assertEqual(({}, False), (pictures.PICS, pictures.ready))
+
+    def test_load_ms_is_the_reading_time_alone(self):
+        clock = [0]
+
+        def readinto(view, read=Recorded.readinto):
+            clock[0] += 2000  # each read: 2 ms
+            return read(recorded, view)
+        steps = pictures.load_steps("bucket")
+        with mock.patch.object(pictures.time, "ticks_us", lambda: clock[0], create=True), \
+                mock.patch.object(pictures.time, "ticks_diff", lambda a, b: a - b, create=True):
+            recorded = None
+            first = next(steps)
+            recorded = self.files[0]
+            recorded.readinto = readinto
+            for _ in steps:
+                clock[0] += 40000  # the box's frame between two steps: not the load's
+        chunks = len(self.reads) - 2  # the header and the first chunk were read on the real clock
+        self.assertLess(0, first)
+        self.assertEqual(chunks * 2, pictures.load_ms)
 
 
 class PackFilesTest(unittest.TestCase):
