@@ -28,6 +28,11 @@ from sound_viper import ViperVoiceSum  # noqa: E402
 from volume_viper import ViperMasterVolume  # noqa: E402
 
 
+def stand_in_pads(a, b):
+    """encoder.take_pads on the Mac, which has no machine.Pin: the boot takes the pads first (P850)."""
+    return a, b
+
+
 class FakeEncoder:
     pass
 
@@ -166,7 +171,7 @@ class BootTest(NoNative):
             runs.append((said.getvalue(), parts))
 
         with mock.patch.object(app, "run", run), mock.patch.dict(sys.modules, {"engine_config": None}), \
-                contextlib.redirect_stdout(said):
+                mock.patch.object(app.encoder, "take_pads", stand_in_pads), contextlib.redirect_stdout(said):
             runpy.run_path(os.path.join(GAMES, "main.py"), run_name="__main__")
         self.assertEqual(1, len(runs))
         printed, parts = runs[0]
@@ -209,7 +214,8 @@ class BootTest(NoNative):
         said = io.StringIO()
         runs = []
         with config('REFERENCE = ("sum", "heat")  # tools/box.py deploy --engine\n'), \
-                mock.patch.object(app, "run", lambda **parts: runs.append(parts)), contextlib.redirect_stdout(said):
+                mock.patch.object(app, "run", lambda **parts: runs.append(parts)), \
+                mock.patch.object(app.encoder, "take_pads", stand_in_pads), contextlib.redirect_stdout(said):
             runpy.run_path(os.path.join(GAMES, "main.py"), run_name="__main__")
         self.assertEqual("engine sum=reference(forced) volume=viper native=none unused=heat\n", said.getvalue())
         self.assertIs(sound.VoiceSum, type(runs[0]["speaker"].mixer.sum))

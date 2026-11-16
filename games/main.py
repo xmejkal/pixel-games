@@ -3,9 +3,10 @@ and builds the parts. The board runs it at boot. It reads the board's engine_con
 writes it, a deploy without --engine removes it), chooses the mixer's sum and the master volume through
 engine.accel's Chooser, prints the Chooser's `engine` line before the box's own lines, and hands the knob and the
 speaker to app.run. A probe imports it and calls compose() for the same parts: importing it starts nothing.
+At boot it first takes the knob's pads, the console's RX and TX, before app's imports of some seconds: until then a
+turn of the knob types into the console (P757; the PO's knob turn on the board found it, P850).
 --- MVP (P850) ---"""
 
-import app
 import sound
 import volume
 from engine.accel import Chooser
@@ -54,6 +55,8 @@ def choose(chooser):
 def compose(chooser=None):
     """The knob (None when this image has no encoder) and the Speaker, not yet open, built from the chosen classes,
     after the Chooser's line is printed. chooser: the board's, from engine_config, when None."""
+    import app
+
     chooser = chooser or Chooser(read_reference())
     voice_sum, master = choose(chooser)
     print(chooser.line())
@@ -62,5 +65,11 @@ def compose(chooser=None):
 
 
 if __name__ == "__main__":
+    import encoder
+    import pins
+
+    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first, before app's imports and the knob (P757, P850)
     knob, speaker = compose()
+    import app
+
     app.run(knob=knob, speaker=speaker)

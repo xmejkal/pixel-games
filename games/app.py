@@ -434,6 +434,17 @@ def open_knob(volume):
     return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), volume())
 
 
+def read_console(console, stdin):
+    """One waiting character of the console, read and dropped, so mpremote can reach the board while the box runs
+    (commands/build.md, "The console read"). A knob turn on the RX pad can type a byte that is no UTF-8: it is dropped
+    too, never raised (P850: the PO's knob turn on the board stopped the box with a UnicodeError here)."""
+    if console.poll(0):
+        try:
+            stdin.read(1)
+        except UnicodeError:
+            pass
+
+
 def run(games=None, knob=None, speaker=None):
     """The loop main.py starts. games: a Lineup, a tuple of classes (a probe's), or None for the board's lineup
     (read_lineup). knob: the VolumeKnob main.compose() built (P850), or None for a box with no knob: run opens none of
@@ -444,7 +455,8 @@ def run(games=None, knob=None, speaker=None):
 
     from machine import Pin
 
-    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first: until here a turn of the knob can type into the console (P757)
+    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first: until here a turn of the knob can type into the console (P757).
+    # main.py took them at boot already (P850); a probe's run may come without; a second take sets the same pull-ups
     out = open_tft(SPI_HZ) if BACKEND == "s3lcd" else None  # None: no s3lcd in this image
     display, full = None, False
     if out:
@@ -488,8 +500,7 @@ def run(games=None, knob=None, speaker=None):
         due = time.ticks_ms()
         while True:  # the s3lcd port may lose USB at init; the lines still print in case it stays
             app.frame()
-            if console.poll(0):
-                sys.stdin.read(1)
+            read_console(console, sys.stdin)
             due = time.ticks_add(due, FRAME_MS)
             wait = time.ticks_diff(due, time.ticks_ms())
             if wait > 0:
