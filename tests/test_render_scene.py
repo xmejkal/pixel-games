@@ -306,6 +306,32 @@ class PolygonTest(unittest.TestCase):
         self.assertEqual([], cv.ops)
 
 
+class CanvasLineTest(unittest.TestCase):
+    """lcd.TftCanvas.line: game points to the panel, clamped to +-2000 and clipped (P573's review wrote its clamps
+    out)."""
+
+    def lit(self, tft):
+        return {(k % lcd.PANEL_W, k // lcd.PANEL_W) for k, v in enumerate(memoryview(tft.frame).cast("H")) if v}
+
+    def test_a_game_line_lands_on_the_panel_turned(self):
+        tft = DrawingTft()
+        lcd.TftCanvas(tft).line(5, 7, 9, 7, 1)
+        self.assertEqual({(7, lcd.PANEL_H - 1 - x) for x in range(5, 10)}, self.lit(tft))
+
+    def test_a_far_end_is_clamped_and_a_line_outside_the_clip_is_left_out(self):
+        tft = DrawingTft()
+        lcd.TftCanvas(tft).line(5, 7, 1e9, 7, 1)  # clamped to 2000, then the driver drops what is off the panel
+        self.assertEqual({(7, lcd.PANEL_H - 1 - x) for x in range(5, 320)}, self.lit(tft))
+        tft = DrawingTft()
+        cv = lcd.TftCanvas(tft)
+        cv.clip = (100, 100, 200, 200)
+        cv.line(5, 7, 90, 7, 1)
+        cv.line(150, 250, 150, 300, 1)
+        self.assertEqual(set(), self.lit(tft))
+        cv.line(50, 150, 120, 150, 1)  # crosses into the clip: drawn whole, as before
+        self.assertEqual(71, len(self.lit(tft)))
+
+
 class PicturesRootTest(unittest.TestCase):
     def setUp(self):
         self.saved = pictures.ROOT, pictures.ready, pictures.loaded, dict(pictures.PICS), dict(pictures.SETS)

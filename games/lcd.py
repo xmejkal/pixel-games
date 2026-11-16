@@ -27,7 +27,7 @@ import framebuf
 
 import gdi
 import gfx
-from gfx import FULL, Canvas, clamp
+from gfx import FULL, Canvas
 
 ORIENTATION = 0  # 0: upright in the PO's playing hold, the panel's row 0 along the right edge (bench.md); 180: turned
 PANEL_W, PANEL_H = 240, 320  # the panel's own width and height at rotation 0
@@ -155,9 +155,31 @@ class TftCanvas(Canvas):
         self.tft.fill_polygon(out, 0, 0, c, alpha)
 
     def line(self, x0, y0, x1, y1, c):
-        x0, y0, x1, y1 = [clamp(int(v), -2000, 2000) for v in (x0, y0, x1, y1)]
-        cx0, cy0, cx1, cy1 = self.clip
-        if max(x0, x1) >= cx0 and min(x0, x1) < cx1 and max(y0, y1) >= cy0 and min(y0, y1) < cy1:
+        # The four clamps to +-2000 written out, as fill writes its clip: a list and a tuple a call were made here,
+        # and SMILE draws about 27 lines a frame (P573's review)
+        x0 = int(x0)
+        if x0 < -2000:
+            x0 = -2000
+        elif x0 > 2000:
+            x0 = 2000
+        y0 = int(y0)
+        if y0 < -2000:
+            y0 = -2000
+        elif y0 > 2000:
+            y0 = 2000
+        x1 = int(x1)
+        if x1 < -2000:
+            x1 = -2000
+        elif x1 > 2000:
+            x1 = 2000
+        y1 = int(y1)
+        if y1 < -2000:
+            y1 = -2000
+        elif y1 > 2000:
+            y1 = 2000
+        clip = self.clip
+        if (x0 >= clip[0] or x1 >= clip[0]) and (x0 < clip[2] or x1 < clip[2]) and \
+                (y0 >= clip[1] or y1 >= clip[1]) and (y0 < clip[3] or y1 < clip[3]):
             if self.turned:  # the same map as fill, for two points; the driver drops the pixels off the panel
                 self.tft.line(PANEL_W - 1 - y0, x0, PANEL_W - 1 - y1, x1, c)
             else:
