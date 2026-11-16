@@ -7,7 +7,11 @@ then, in both cases, one more line:
     engine Bodies yes|no       an engine imports: the old C module with Bodies (built before 1005249, or a stale
                                build-engine that registers both names), or a package engine without it
     engine ImportError         no engine
-Stage 9 of the plan removes it. --- MVP (P848) ---"""
+It asks for built-in modules only: sys.path is empty while it imports, so the box's own package folder :engine/ (stage
+0b-1, P849) never answers, not even a half-copied one that raises ValueError. Stage 9 of the plan removes it.
+--- MVP (P848) ---"""
+
+import sys
 
 NAMES = ("Bodies", "HeatField", "Balls", "SoundBank", "HeatField.cool")  # tools/box.py's FIRMWARE_NAMES
 
@@ -20,16 +24,21 @@ def has(module, name):
     return True
 
 
+path = list(sys.path)
+sys.path.clear()  # a built-in module only: no folder on the board answers
 try:
-    import _engine
-except ImportError:
-    print("_engine ImportError")
-else:
-    for name in NAMES:
-        print("_engine", name, "yes" if has(_engine, name) else "no")
-try:
-    import engine
-except ImportError:
-    print("engine ImportError")
-else:
-    print("engine Bodies", "yes" if hasattr(engine, "Bodies") else "no")
+    try:
+        import _engine
+    except ImportError:
+        print("_engine ImportError")
+    else:
+        for name in NAMES:
+            print("_engine", name, "yes" if has(_engine, name) else "no")
+    try:
+        import engine
+    except ImportError:
+        print("engine ImportError")
+    else:
+        print("engine Bodies", "yes" if hasattr(engine, "Bodies") else "no")
+finally:
+    sys.path.extend(path)

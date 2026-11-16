@@ -14,7 +14,7 @@
  {
   "file": "tools/box.py",
   "name": "a moved module stays at the root",
-  "find": "        stale += [m + kind for m in MOVED for kind in (\".py\", \".mpy\")]\n",
+  "find": "        self.remove([\":%s%s\" % (m, kind) for m in MOVED for kind in (\".py\", \".mpy\") if m + kind in on_board])\n",
   "replace": ""
  },
  {
@@ -34,5 +34,11 @@
   "name": "the package's tracebacks name the flat module",
   "find": "\"-s\", package + \"/\" + name if package else name,",
   "replace": "\"-s\", name,"
+ },
+ {
+  "file": "tools/firmware_probe.py",
+  "name": "the probe asks the package folder too",
+  "find": "sys.path.clear()  # a built-in module only",
+  "replace": "pass  # a built-in module only"
  }
 ]

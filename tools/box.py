@@ -17,10 +17,11 @@ engine beside _engine, one that lacks a name the games need of _engine (Bodies, 
 HeatField.cool) and an answer it does not know; a firmware with no C module deploys, as the stock image.
 Then it makes :packs when the board has none, compiles games/*.py but main.py with mpy-cross into .mpy files (they import in
 about half the time of a .py), copies them with games/main.py and games/box_bank.raw (the sound bank) to : and removes
-each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name), and the .py and .mpy of
-each flat module that moved into the package (MOVED); any other file at the root stays, the board's boot.py among them.
-The package games/engine/ goes the same way into the folder :engine/ (P849), made when the board has none, each
-traceback naming engine/<module>.py, and each .py or .mpy in that folder that is not the package's goes. It copies the crackle,
+each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). The package games/engine/
+goes the same way into the folder :engine/ (P849), made when the board has none, each traceback naming
+engine/<module>.py, and each .py or .mpy in that folder that is not the package's goes. Then the .py and .mpy of each
+flat module that moved into the package (MOVED) go from the root, after the package is copied, so a failed copy leaves
+the old module; any other file at the root stays, the board's boot.py among them. It copies the crackle,
 engine/natmod/crackle/_crackle.mpy (tools/crackle.sh builds it), to :_crackle.mpy, or says none is copied when it is
 not built; the board's crackle_c.mpy stays, for a flash of the rollback image. It copies each pack the
 lineup needs to :packs (mpremote skips a file whose sha256 is the same), writes :lineup.py and hard-resets the board
@@ -180,6 +181,7 @@ class Deploy:
         self.copy_code(on_board)
         for package in PACKAGES:
             self.copy_package(package, package + "/" in on_board)
+        self.remove([":%s%s" % (m, kind) for m in MOVED for kind in (".py", ".mpy") if m + kind in on_board])
         self.copy_crackle()
         for s in sets_for(catalog.NAMES if names is None else names):
             path = art_index.PACKS[s][0]
@@ -192,8 +194,8 @@ class Deploy:
 
     def copy_code(self, on_board):
         """The modules as .mpy files, then the board's .py of each goes; or (no compiler) as .py files, then the
-        board's .mpy of each goes. main.py and the sound bank go as they are. The .py and .mpy of each module of
-        MOVED go from the root; any other file there stays (the board's boot.py, which MicroPython wrote)."""
+        board's .mpy of each goes. main.py and the sound bank go as they are. Any other file at the root stays (the
+        board's boot.py, which MicroPython wrote); run removes the modules of MOVED once their package is copied."""
         sources = sorted(n for n in os.listdir(self.games) if n.endswith(".py"))
         modules = [n[:-3] for n in sources if n != "main.py"]
         if self.compiler is None:
@@ -204,7 +206,6 @@ class Deploy:
                 compiled = self.compiler.compile(["games/%s.py" % m for m in modules], tmp)
                 self.runner.run(["cp"] + compiled + ["games/main.py", "games/box_bank.raw", ":"])
             stale = [m + ".py" for m in modules]
-        stale += [m + kind for m in MOVED for kind in (".py", ".mpy")]
         self.remove([":" + n for n in stale if n in on_board])
 
     def copy_package(self, package, has_folder):

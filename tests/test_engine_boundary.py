@@ -4,7 +4,8 @@ names it, the C module _engine. It never imports a game's module, engine_config 
 importlib or __import__, which an ast walk cannot read. The walk reads every Import and ImportFrom at any depth.
 tests/boundary_fixtures/ holds one module per kind of fault; its names do not start with test, so discovery skips it.
 Two folders are named engine until stage 9: the package in games/ and the pixel-engine submodule at the root, which
-must stay a namespace package (no __init__.py), so the package wins on the Mac. Run from the repository root:
+must stay a namespace package (no __init__.py), so the package wins on the Mac, under CPython. On the board games/ is
+the root, so no second engine folder exists there. Run from the repository root:
 python3 -B -m unittest tests.test_engine_boundary. --- MVP (P849) ---"""
 
 import ast
@@ -25,7 +26,6 @@ DIRECTION = {"__init__": (), "signals": (), "clock": ()}
 # MicroPython v1.29's built-in modules that the engine may use on the ESP32-S3; a new one enters when a module needs it
 BUILT_IN = ("array", "binascii", "builtins", "collections", "errno", "esp", "esp32", "framebuf", "gc", "io", "machine",
             "math", "micropython", "os", "random", "select", "struct", "sys", "time", "uctypes")
-NEVER = ("engine_config", "importlib")  # whatever a row says
 FIXTURE_ROW = ("signals",)  # each fixture's row: a bare `import signals` is caught though the row names signals
 
 
@@ -49,13 +49,11 @@ def faults(source, row, name="<module>"):
 
     def allow(node, module):
         top, _, inner = module.partition(".")
-        if module in NEVER or top in NEVER:
-            refuse(node, "imports %s" % module)
-        elif top == "engine":
+        if top == "engine":
             if inner and inner.split(".")[0] not in row:
                 refuse(node, "imports engine.%s, which its row in DIRECTION does not name" % inner)
-        elif top not in BUILT_IN and top not in row:
-            refuse(node, "imports %s, which is neither the engine's nor a built-in module" % module)
+        elif top not in BUILT_IN and not (top == C_MODULE and top in row):
+            refuse(node, "imports %s: neither engine.<module>, a built-in module nor the C module its row names" % module)
 
     for node in ast.walk(ast.parse(source, name)):
         if isinstance(node, ast.Import):
@@ -72,7 +70,8 @@ def faults(source, row, name="<module>"):
                     allow(node, "engine." + alias.name)
             else:
                 allow(node, node.module)
-        elif isinstance(node, ast.Name) and node.id == "__import__":
+        elif isinstance(node, ast.Name) and node.id == "__import__" or \
+                isinstance(node, ast.Attribute) and node.attr == "__import__":
             refuse(node, "imports through __import__")
     return out
 
@@ -117,7 +116,8 @@ class Boundary(unittest.TestCase):
 
 class TwoEngines(unittest.TestCase):
     """The package in games/ against the submodule at the root, which has no __init__.py and so is a namespace
-    package: a regular package wins over it wherever each stands on sys.path."""
+    package: on CPython a regular package wins over it wherever each stands on sys.path. MicroPython takes the first
+    folder on the path, but on the board games/ is the root, so the board has no second engine folder."""
 
     def test_engine_is_the_package_in_games(self):
         for path in ([GAMES], [ROOT, GAMES], [GAMES, ROOT]):

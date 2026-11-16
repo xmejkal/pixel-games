@@ -12,7 +12,8 @@ pixel-engine submodule.
 
 - `__init__.py` is empty, so each module imports alone: a later board takes only the modules it needs.
 - A module imports only the modules of the package that its row of `DIRECTION` names, and MicroPython's built-in
-  modules (`tests/test_engine_boundary.py`). It never imports a game's module or `engine_config`.
+  modules (`tests/test_engine_boundary.py`). It never imports a game's module or `engine_config`. The test fences
+  this package only: the games get their own rule in a later stage of the plan.
 - The C module of the firmware is `_engine`. The games import it as `import _engine as engine` until stage 5b, so in
   a game's module the name `engine` is the C module, not this package.
 
