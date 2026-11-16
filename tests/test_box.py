@@ -299,7 +299,7 @@ class MainTest(unittest.TestCase):
         code, said = self.main(["log", "--seconds", "0.3"], runner, open_port)
         self.assertEqual(0, code)
         self.assertEqual([["reset"]], events[0])  # the reset ran before the port opened
-        self.assertEqual("lineup 3: bucket rescue snake\n", said)
+        self.assertRegex(said, r"^\d+\.\d{3} lineup 3: bucket rescue snake\n$")  # after its seconds (P822)
 
     def test_a_failed_mpremote_prints_its_error_and_exits_1(self):
         code, said = self.main(["deploy", "--py", "snake"], FailingRunner(99))
@@ -368,6 +368,11 @@ class ConsoleTest(unittest.TestCase):
 
         lines = list(box.Console(open_port, clock=clock, sleep=lambda s: None).lines(12))
         self.assertEqual(["before", "lineup 1: cave", "ready"], lines)
+
+    def test_log_puts_the_seconds_since_it_started_before_each_line(self):
+        clock = iter([100.0, 100.5, 112.3456]).__next__
+        self.assertEqual(["0.500 lineup 1: cave", "12.346 ready"],
+                         list(box.stamped(iter(["lineup 1: cave", "ready"]), clock)))
 
 
 if __name__ == "__main__":
