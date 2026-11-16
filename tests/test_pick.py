@@ -567,6 +567,26 @@ class BuildTest(unittest.TestCase):
         self.assertEqual("b", box.run_build().name)
         self.assertEqual(["a", "b"], BUILT)
 
+    def test_a_painted_game_refused_after_its_load_leaves_no_set(self):
+        class BrokenPainted(Painted):
+            name = "brokenpainted"
+
+            def setup(self):
+                raise MemoryError("in the setup, after the load")
+
+        files = self.painted()
+        box = self.box((GAMES[0], BrokenPainted, GAMES[1]))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        card, k = box.app.game, 1
+        while card.name == "brokenpainted":
+            card = box.frame(app.SETTLE_MS + k * app.FRAME_MS)
+            k += 1
+        self.assertEqual(("b", app.NameCard.LOADING), (card.name, card.caption))
+        self.assertTrue(files[0].closed)
+        self.assertEqual(({}, {}, None), (pictures.PICS, pictures.SETS, pictures.loaded))
+        self.assertIn("game brokenpainted refused: MemoryError('in the setup, after the load')", box.said.getvalue())
+
     def test_when_every_game_fails_during_a_build_the_last_error_is_raised(self):
         X, Y = flaky("x"), flaky("y")
         box = self.box((X, Y))

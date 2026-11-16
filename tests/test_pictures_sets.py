@@ -308,6 +308,16 @@ class StepsTest(unittest.TestCase):
                 self.assertEqual(set(n for n in art_index.PICTURE_SETS[game] if only is None or n in only),
                                  set(pictures.PICS))
 
+    def test_the_progress_rises_over_several_parts_and_packs(self):
+        three = tuple(art_index.PICTURE_SETS["runner"][:3])
+        self.assertEqual(3, len(pictures.spans("runner", three)))  # three parts of one pack
+        for game, only in (("runner", three), (None, None)):  # None: every pack
+            with self.subTest(game=game, only=only):
+                pictures.free()
+                progress = list(pictures.load_steps(game, only))
+                self.assertTrue(all(a < b for a, b in zip(progress, progress[1:])))
+                self.assertEqual(1.0, progress[-1])
+
     def test_load_is_load_steps_run_to_its_end(self):
         real, calls = pictures.load_steps, []
 
