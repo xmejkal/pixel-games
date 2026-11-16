@@ -38,6 +38,20 @@ class CatalogTest(unittest.TestCase):
         self.assertEqual([], missing, "a game of catalog.py with no row in render_scene.SUBJECTS")
 
 
+class GoldenFlagTest(unittest.TestCase):
+    def test_golden_refuses_the_other_flags_and_writes_nothing(self):
+        import subprocess
+        with tempfile.TemporaryDirectory() as tmp:
+            out = os.path.join(tmp, "golden")
+            for flags in (("--tap", "3"), ("--no-text",), ("--font", "x.h"), ("snake",)):
+                with self.subTest(flags):
+                    run = subprocess.run([sys.executable, "-B", render_scene.__file__, "--golden", out, *flags],
+                                         capture_output=True, text=True)
+                    self.assertEqual(2, run.returncode)
+                    self.assertIn(flags[0], run.stderr)
+                    self.assertFalse(os.path.exists(out))
+
+
 class FilesTest(unittest.TestCase):
     """What tests/golden holds, read without a render."""
 
