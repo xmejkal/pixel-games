@@ -325,6 +325,8 @@ class Game:
     accent = GREEN
     HUD_SCORE, HUD_BEST = WHITE, YELLOW  # the score bar's colours; a restyled game sets its own
     covers = False  # True: paint_static covers the whole screen, so no background fill goes under it (TftOut)
+    ART = None  # (set, only): the art set the game loads (pictures.load), and of it only these pictures, or None for all;
+    # None: no art. The box loads it before it builds the game (P822)
     plugins = ()  # the engine's layers the game turns on (plugins.Plugin), in their stage order; setup lists them
     signals = None  # --- MVP (P768) --- the game box's signals.Signals; a class attribute, as setup runs in __init__
     cues = {}  # --- MVP (P768) --- signal name -> cues.Cue: the sounds this game asks for

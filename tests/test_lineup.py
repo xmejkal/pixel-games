@@ -54,6 +54,22 @@ class CatalogTest(unittest.TestCase):
         finally:
             pictures.load = load
 
+    def test_each_game_s_art_is_its_catalog_sets_and_its_setup_loads_only_that(self):
+        """ART (P822): the set the box loads before the game is built, so setup's own load reads nothing."""
+        seen = []
+        load = pictures.load
+        pictures.load = lambda game=None, only=None: seen.append((game, only)) or False
+        try:
+            for name, cls in zip(catalog.NAMES, app.games_for(catalog.NAMES)):
+                with self.subTest(name), contextlib.redirect_stdout(io.StringIO()):
+                    seen.clear()
+                    cls()
+                    sets = catalog.ROWS[name][3]
+                    self.assertEqual(sets, (cls.ART[0],) if cls.ART else ())
+                    self.assertEqual({cls.ART} if cls.ART else set(), set(seen))
+        finally:
+            pictures.load = load
+
     def test_each_set_has_a_pack(self):
         for name, module, class_name, sets in catalog.CATALOG:
             for s in sets:

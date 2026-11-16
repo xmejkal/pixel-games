@@ -234,6 +234,7 @@ class CubeTiming(Game):
     ink, bone and one accent, the recording light's."""
 
     name = "cube"
+    ART = ("cube", None)  # its own art set, all of it (P822)
     hint = "tap when the lens faces you"
     bg = c565(8, 8, 24)
     accent = c565(230, 60, 220)
@@ -276,7 +277,7 @@ class CubeTiming(Game):
     def setup(self):
         self.yaw, self.w, self.lives, self.done, self.flash, self.rev = 0.0, 2.2, 3, False, 0.0, 0
         self.good = False
-        self.covers = pictures.load(self.name)  # the painted square covers the screen, so no fill goes under it
+        self.covers = pictures.load(*self.ART)  # the painted square covers the screen, so no fill goes under it
         self.housing = Housing(self)
         self.sway, self.verdict = Sway(), Verdict()
         self.dice = Dice(5733)  # the effects' own random stream: the rules' draws stay as they are
