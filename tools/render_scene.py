@@ -130,8 +130,9 @@ class Font:
 
 def play(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, hold_ms=0, signals=None):
     """The row's subject played on a MacHost, FRAME_MS apart, as lcd.TftOut.draw draws it on the board: the host after
-    each frame. The flags override the row's presses and seed; hold_ms keeps the volume pane shown that long (the GIF's
-    length); signals, a mac_host.CueRecorder, is handed to the game as App hands its Signals over (P846)."""
+    each frame, its game in host.game. The flags override the row's presses and seed; hold_ms keeps the volume pane
+    shown that long (the GIF's length); signals, a mac_host.CueRecorder, is handed to the game as App hands its
+    Signals over (P846)."""
     host = MacHost().start()
     random.seed(row.seed if seed is None else seed)
     tap, hold, presses = (row.tap, row.hold, row.presses) if tap is None and hold is None else (tap, hold, None)
@@ -147,6 +148,7 @@ def play(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, hold
             game.fire_plugin.set_filter(mag_filter)
     if signals is not None:
         game.signals = signals
+    host.game = game
     us = [0, 0, 0, 0]
     out = lcd.TftOut(host.tft)  # one per subject: its kept strips live on its canvas
     for k in itertools.count():
@@ -226,9 +228,10 @@ def main():
         except net.NetError as e:
             parser.error(str(e))
         golden.write(args.golden)
-        print("%s: %d subjects, %d frame hashes, %d cues, %d App frames, the mixer" % (
-            args.golden, len(golden.frames), sum(map(len, golden.frames.values())),
-            sum(map(len, golden.cues.values())), len(golden.app["frames"])))
+        subjects = golden.subjects.values()
+        print("%s: %d subjects, %d frame hashes, %d runs, %d cue tables, %d cues, %d App frames, the mixer" % (
+            args.golden, len(golden.subjects), sum(len(r["frames"]) for r in subjects), len(golden.subjects),
+            sum(1 for r in subjects if r["table"]), sum(len(r["cues"]) for r in subjects), len(golden.app["frames"])))
         return
     if not args.no_text:
         try:

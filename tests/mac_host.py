@@ -7,6 +7,7 @@ import hashlib
 import os
 import sys
 import time
+import types
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
@@ -15,14 +16,6 @@ sys.path.insert(0, os.path.join(ROOT, "engine", "tests"))  # pixel-engine: clang
 from drawing_tft import DrawingTft  # noqa: E402  first: it puts games/ and the stubs on the path
 from clang_lib import S3LCD_SRC, build, core  # noqa: E402
 from test_fire import Engine  # noqa: E402
-
-import balls  # noqa: E402
-import balls_lib  # noqa: E402
-import fire  # noqa: E402
-import pictures  # noqa: E402
-import plugins  # noqa: E402
-import world_lib  # noqa: E402
-from signals import Signals  # noqa: E402
 
 FRAME_MS = 40  # app.py's FRAME_MS
 
@@ -65,24 +58,59 @@ def buttons(frame, tap=None, hold=None, title=False, presses=None):
     return frame == 0, frame == 0
 
 
+def modules():
+    """The game box's modules that the host and the net use, by their role, imported here and nowhere else in the
+    net: a stage that moves a module edits this one function. The games' modules are among them, for the negative
+    tests' patches."""
+    import app
+    import arcade
+    import arcade2
+    import balls
+    import balls_lib
+    import bank
+    import box_bank
+    import catalog
+    import cues
+    import fire
+    import gfx
+    import lcd
+    import pictures
+    import plugins
+    import signals
+    import sound
+    import volume
+    import world_lib
+
+    return types.SimpleNamespace(app=app, arcade=arcade, arcade2=arcade2, balls=balls, balls_lib=balls_lib, bank=bank,
+                                 box_bank=box_bank, catalog=catalog, cues=cues, fire=fire, gfx=gfx, lcd=lcd,
+                                 pictures=pictures, plugins=plugins, signals=signals, sound=sound, volume=volume,
+                                 world_lib=world_lib)
+
+
 def engines():
     """The C engines the board has, through ctypes: the heat field, the balls and the bodies."""
-    fire.engine = Engine(build(core("fx_fire"), ("-I", S3LCD_SRC)))
-    balls.engine, plugins.engine = balls_lib.engine(), world_lib.engine()
-    pictures.ROOT = os.path.join(ROOT, "games", "")  # the board's /packs/... is games/packs/... here
+    m = modules()
+    m.fire.engine = Engine(build(core("fx_fire"), ("-I", S3LCD_SRC)))
+    m.balls.engine, m.plugins.engine = m.balls_lib.engine(), m.world_lib.engine()
+    m.pictures.ROOT = os.path.join(ROOT, "games", "")  # the board's /packs/... is games/packs/... here
 
 
-class CueRecorder(Signals):
+class CueRecorder:
     """A fresh Signals, as App hands one to a game (app.py's play), that keeps (frame, name, value) of every emit.
     frame is the host's frame number, 1 for the first."""
 
     def __init__(self):
-        super().__init__()
-        self.frame, self.heard = 0, []
+        self.signals, self.frame, self.heard = modules().signals.Signals(), 0, []
+
+    def listen(self, name, listener):
+        self.signals.listen(name, listener)
+
+    def clear(self):
+        self.signals.clear()
 
     def emit(self, name, value=None):
         self.heard.append((self.frame, name, value))
-        super().emit(name, value)
+        self.signals.emit(name, value)
 
 
 class MacHost:

@@ -15,7 +15,9 @@
   "12 starfire": "128b2938c483d2301d200be89b5cd4f6435f27ec11a13c703ae93b80844ff562",
   "13 cube": "51a5025e1893cb50adf0e8c0151d04c200c03f76c4dc536e57afbd2d183dda6e",
   "14 gravpong": "d61fb82e2be92af88ee10a9e065b0b9eb5f455977e48502fb81c02ba8f455d9a",
-  "15 marshmallow": "2184fe37ae509f418d1ff8f8916be3f7c0be4ab2a54adb3509c7525b4cc4d3c9"
+  "15 marshmallow": "2184fe37ae509f418d1ff8f8916be3f7c0be4ab2a54adb3509c7525b4cc4d3c9",
+  "16 cave over": "b8ed50fdb9b4af77ddd397452e7cc98d9015f091df1924c8abe8d685875b235a",
+  "17 cave restart": "23295e16795c17c62ab55d51f498616670d30dd86bb66517a837a351a5cdfc03"
  },
  "lines": [
   "game marshmallow",
@@ -64,6 +66,17 @@
   "switch gravpong 1040 ms, load 0 ms, import 0 ms, setup 0 ms, frames 25, worst 40 ms, longest 0 ms, card 39 ms",
   "pick marshmallow",
   "game marshmallow",
-  "switch marshmallow 280 ms, load 0 ms, import 0 ms, setup 0 ms, frames 6, worst 40 ms, longest 0 ms, card 39 ms"
+  "switch marshmallow 280 ms, load 0 ms, import 0 ms, setup 0 ms, frames 6, worst 40 ms, longest 0 ms, card 39 ms",
+  "pick balls",
+  "pick meteors",
+  "pick bucket",
+  "pick rescue",
+  "pick flappy",
+  "pick runner",
+  "pick snake",
+  "pick stack",
+  "pick cave",
+  "game cave",
+  "switch cave 40 ms, load 0 ms, import 0 ms, setup 0 ms, frames 0, worst 39 ms, longest 0 ms, card 39 ms"
  ]
 }
