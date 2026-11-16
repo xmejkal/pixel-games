@@ -7,6 +7,7 @@ repository root:
                                      [--font PATH | --no-text] [--gif OUT.gif --every K] SUBJECT out.png FRAMES...
     python3 -B tools/render_scene.py --list
     python3 -B tools/render_scene.py --all DIR
+    python3 -B tools/render_scene.py --golden tests/golden
 SUBJECT is one of SUBJECTS: fire, rain, the fifteen games by their lower-case class names, and overlay (the ball pit
 with the volume pane over it, the one subject that blends). The sheet holds the frame after each count of FRAMES, side
 by side; the GIF holds the frames from the first count to the last, every K-th, at K * 40 ms a frame. The button:
@@ -15,6 +16,8 @@ presses, so the picture starts in play, unless --title keeps the title. --filter
 setup, so nearest shows the 2 x 2 px blocks and linear the bilinear filtering. --all DIR writes every subject's PNG and
 GIF from its SUBJECTS row, which --list prints, the subjects one after the other in one process (the files are the
 same as from single runs), and refuses the flags above: the rows are the source of the README's pictures.
+--golden DIR writes the net's hashes (tests/net.py, P846) from the same rows: run it only on the baseline commit, and
+a hash change is its own PR with the old and new pictures side by side. The frames run on tests/mac_host.MacHost.
 --- MVP (P795) ---"""
 
 import argparse
@@ -25,26 +28,18 @@ import os
 import random
 import re
 import sys
-import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "tests"))
-sys.path.insert(0, os.path.join(ROOT, "engine", "tests"))  # pixel-engine: clang_lib, balls_lib, world_lib
-from drawing_tft import DrawingTft  # noqa: E402  first: it puts games/ and the stubs on the path
-from clang_lib import S3LCD_SRC, build, core  # noqa: E402
-from test_fire import Engine  # noqa: E402
+from mac_host import FRAME_MS, MacHost, buttons  # noqa: E402  first: it puts games/ and the stubs on the path
 
 import balls  # noqa: E402
-import balls_lib  # noqa: E402
 import fire  # noqa: E402
 import framebuf  # noqa: E402
 import lcd  # noqa: E402
 import overlay  # noqa: E402
-import pictures  # noqa: E402
-import plugins  # noqa: E402
 import rain  # noqa: E402
 import volume  # noqa: E402
-import world_lib  # noqa: E402
 from arcade import Flappy, Runner, Snake  # noqa: E402
 from arcade2 import Cave, GravityPong, Stack  # noqa: E402
 from bucket import Bucket  # noqa: E402
@@ -56,7 +51,6 @@ from rescue import Rescue  # noqa: E402
 from space3d import CubeTiming, Starfire  # noqa: E402
 from world3d import Road, Tunnel  # noqa: E402
 
-FRAME_MS = 40  # app.py's FRAME_MS
 FILTERS = {"nearest": fire.NEAREST, "linear": fire.LINEAR}  # --- MVP (P608) ---
 FONT_PATH = os.path.expanduser("~/esp/micropython-v1.29.0/extmod/font_petme128_8x8.h")  # build.sh's clone
 FONT_BYTES = 96 * 8  # the characters 32 to 127, eight column bytes each
@@ -134,57 +128,12 @@ class Font:
         framebuf.FONT = self.bytes
 
 
-class FrameClock:
-    """time's ticks on the frame clock: ticks_ms reads the frame's time, and ticks_us counts one microsecond per call
-    from it, so a step takes time (Marshmallow's Campfire reads the flame only after a step that took time) and the
-    fps labels say the frame rate, not the Mac's speed."""
-
-    def __init__(self):
-        self.ms, self.calls = 0, 0
-
-    def frame(self, ms):
-        self.ms, self.calls = ms, 0
-
-    def ticks_us(self):
-        self.calls += 1
-        return self.ms * 1000 + self.calls
-
-    def install(self):
-        time.ticks_ms, time.ticks_us = lambda: self.ms, self.ticks_us
-        time.ticks_diff, time.ticks_add = lambda a, b: a - b, lambda a, b: a + b
-
-
-def buttons(frame, tap=None, hold=None, title=False, presses=None):
-    """The button on frame k: (pressed, held). tap N: a press (pressed and held) on one frame in every N, N the
-    period. hold N: held N frames, then released N, and so on, N the half period; 0 holds every frame. presses: each
-    (first frame, frames held). Without any, frame 0 presses, so the picture starts in play. title keeps frame 0
-    unpressed, so the title shows."""
-    if title and frame == 0:
-        return False, False
-    if presses:
-        return any(frame == a for a, _ in presses), any(a <= frame < a + n for a, n in presses)
-    if tap:
-        on = frame % tap == 0
-        return on, on
-    if hold is not None:
-        held = hold == 0 or (frame // hold) % 2 == 0
-        return held and (frame == 0 if hold == 0 else frame % hold == 0), held
-    return frame == 0, frame == 0
-
-
-def engines():
-    """The C engines the board has, through ctypes: the heat field, the balls and the bodies."""
-    fire.engine = Engine(build(core("fx_fire"), ("-I", S3LCD_SRC)))
-    balls.engine, plugins.engine = balls_lib.engine(), world_lib.engine()
-    pictures.ROOT = os.path.join(ROOT, "games", "")  # the board's /packs/... is games/packs/... here
-
-
-def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, hold_ms=0):
-    """Each frame's image of the row's subject, FRAME_MS apart, as lcd.TftOut.draw draws it on the board. The flags
-    override the row's presses and seed; hold_ms keeps the volume pane shown that long (the GIF's length)."""
-    clock = FrameClock()
-    clock.install()
-    engines()
+def play(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, hold_ms=0, signals=None):
+    """The row's subject played on a MacHost, FRAME_MS apart, as lcd.TftOut.draw draws it on the board: the host after
+    each frame, its game in host.game. The flags override the row's presses and seed; hold_ms keeps the volume pane
+    shown that long (the GIF's length); signals, a mac_host.CueRecorder, is handed to the game as App hands its
+    Signals over (P846)."""
+    host = MacHost().start()
     random.seed(row.seed if seed is None else seed)
     tap, hold, presses = (row.tap, row.hold, row.presses) if tap is None and hold is None else (tap, hold, None)
     ov = pane = None
@@ -197,11 +146,15 @@ def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, ho
         game = row.game()
         if mag_filter is not None:
             game.fire_plugin.set_filter(mag_filter)
-    tft, us = DrawingTft(), [0, 0, 0, 0]
-    out = lcd.TftOut(tft)  # one per subject: its kept strips live on its canvas
+    if signals is not None:
+        game.signals = signals
+    host.game = game
+    us = [0, 0, 0, 0]
+    out = lcd.TftOut(host.tft)  # one per subject: its kept strips live on its canvas
     for k in itertools.count():
-        now = FRAME_MS * (k + 1)
-        clock.frame(now)
+        now = host.frame(k)
+        if signals is not None:
+            signals.frame = k + 1
         pressed, held = buttons(k, tap, hold, title, presses)
         with quiet:
             game.step(now, pressed, held)
@@ -210,7 +163,13 @@ def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, ho
                     pane.show(now)
                 ov.update(now)
             out.draw(game, us, ov)
-        yield tft.image()
+        yield host
+
+
+def frames(row, tap=None, hold=None, title=False, seed=None, mag_filter=None, hold_ms=0):
+    """Each frame's image of the row's subject (play's frames as Pillow images)."""
+    for host in play(row, tap, hold, title, seed, mag_filter, hold_ms):
+        yield host.tft.image()
 
 
 def write_sheet(images, path):
@@ -238,6 +197,8 @@ def main():
     parser = argparse.ArgumentParser(description="Draw a game, a scene or the overlay on the Mac, the board's way.")
     parser.add_argument("--list", action="store_true", help="print each subject's row and stop")
     parser.add_argument("--all", metavar="DIR", help="write every subject's PNG and GIF into DIR from its row")
+    parser.add_argument("--golden", metavar="DIR", help="write the net's hashes into DIR (tests/golden), a process per "
+                        "subject, NET_WORKERS (8) at a time; only on the baseline commit (P846)")
     parser.add_argument("--filter", choices=sorted(FILTERS), help="a heat field's filter (P608)")
     press = parser.add_mutually_exclusive_group()
     press.add_argument("--tap", type=int, metavar="N", help="press on one frame in every N")
@@ -256,6 +217,21 @@ def main():
     if args.list:
         for name, row in SUBJECTS.items():
             print("%-14s %-24s %s" % (name, row.hint, row))
+        return
+    if args.golden:  # --- MVP (P846) --- the net's files, made by tests/net.py from the rows alone
+        others = [a for a in sys.argv[1:] if a.startswith("-") and a != "--golden" and not a.startswith("--golden=")]
+        if others or args.subject:
+            parser.error("--golden takes every setting from the SUBJECTS rows, not %s" % " ".join(others or [args.subject]))
+        import net
+        try:
+            golden = net.make()
+        except net.NetError as e:
+            parser.error(str(e))
+        golden.write(args.golden)
+        subjects = golden.subjects.values()
+        print("%s: %d subjects, %d frame hashes, %d runs, %d cue tables, %d cues, %d App frames, the mixer" % (
+            args.golden, len(golden.subjects), sum(len(r["frames"]) for r in subjects), len(golden.subjects),
+            sum(1 for r in subjects if r["table"]), sum(len(r["cues"]) for r in subjects), len(golden.app["frames"])))
         return
     if not args.no_text:
         try:

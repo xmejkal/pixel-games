@@ -1,0 +1,132 @@
+3.100 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+3.127 backend s3lcd
+3.127 mem 7954816
+3.127 frame tft
+3.599 lineup 15: marshmallow balls meteors bucket rescue flappy runner snake stack cave tunnel road starfire cube gravpong
+3.599 import 1703 ms
+3.604 ready
+4.249 marshmallow internal largest 31744
+4.253 marshmallow field internal
+4.256 game marshmallow
+4.259 switch marshmallow 651 ms, load 149 ms, import 462 ms
+9.335 fps marshmallow 23
+9.337 time marshmallow step 6.5 paint 15.0 send 3.8 gc 4.5 fps 23 worst 57 slowest 55 = step 0 paint 27 send 26 gc 0
+9.346 phases marshmallow static 5 paint 10 fx 0 hud 32 over 0 title 41
+9.353 avg marshmallow static 1.5 paint 5.8 fx 0.1 hud 1.0 over 0.0 title 6.4
+9.353 heap marshmallow alloc 206944 glyphs 13
+14.354 fps marshmallow 24
+14.355 time marshmallow step 9.1 paint 10.0 send 3.5 gc 4.5 fps 24 worst 68 slowest 41 = step 9 paint 28 send 3 gc 0
+14.368 phases marshmallow static 0 paint 10 fx 2 hud 17 over 0 title 0
+14.375 avg marshmallow static 0.1 paint 8.1 fx 0.2 hud 1.2 over 0.0 title 0.0
+14.375 heap marshmallow alloc 209504 glyphs 13
+19.172 pick balls
+20.158 game balls
+20.159 switch balls 283 ms, load 0 ms, import 198 ms, setup 6 ms, frames 0, worst 1 ms, longest 197 ms, card 54 ms
+25.212 balls n 30 fps 22 step 3.27 draw 4.40 hits 163
+25.219 fps balls 23
+25.221 time balls step 4.5 paint 9.7 send 5.6 gc 6.4 fps 23 worst 76 slowest 74 = step 7 paint 63 send 3 gc 0
+25.227 phases balls static 4 paint 10 fx 1 hud 57 over 0 title 43
+25.237 avg balls static 0.8 paint 13.0 fx 0.4 hud 5.3 over 0.0 title 3.6
+25.238 heap balls alloc 292208 glyphs 31
+30.242 balls n 60 fps 22 step 8.06 draw 4.71 hits 204
+30.249 fps balls 22
+30.250 time balls step 9.5 paint 10.4 send 4.6 gc 6.4 fps 22 worst 89 slowest 80 = step 13 paint 63 send 3 gc 0
+30.257 phases balls static 1 paint 7 fx 0 hud 55 over 0 title 0
+30.267 avg balls static 0.1 paint 5.4 fx 0.2 hud 4.5 over 0.0 title 0.0
+30.268 heap balls alloc 293168 glyphs 33
+34.528 pick meteors
+36.301 meteors internal largest 31744
+36.305 meteors field internal
+36.311 game meteors
+36.311 switch meteors 1029 ms, load 286 ms, import 410 ms, setup 10 ms, frames 12, worst 484 ms, longest 465 ms, card 62 ms
+41.401 fps meteors 21
+41.404 time meteors step 7.9 paint 27.4 send 3.3 gc 6.0 fps 21 worst 77 slowest 62 = step 0 paint 58 send 3 gc 0
+41.418 phases meteors static 14 paint 15 fx 0 hud 53 over 0 title 52
+41.419 avg meteors static 11.3 paint 13.8 fx 0.3 hud 5.2 over 0.0 title 12.3
+41.419 heap meteors alloc 252224 glyphs 35
+42.914 meteors picture fps 20 step 6.76 draw 11.48
+46.411 fps meteors 16
+46.412 time meteors step 2.4 paint 47.2 send 3.2 gc 6.3 fps 16 worst 137 slowest 135 = step 42 paint 89 send 3 gc 30
+46.426 phases meteors static 10 paint 20 fx 5 hud 28 over 60 title 0
+46.437 avg meteors static 8.3 paint 14.4 fx 0.6 hud 1.6 over 22.1 title 0.0
+46.438 heap meteors alloc 252400 glyphs 37
+47.924 meteors picture fps 17 step 3.96 draw 11.81
+47.973 pick bucket
+49.314 game bucket
+49.316 switch bucket 604 ms, load 173 ms, import 138 ms, setup 1 ms, frames 7, worst 213 ms, longest 194 ms, card 69 ms
+54.339 fps bucket 23
+54.340 time bucket step 2.6 paint 18.1 send 3.4 gc 6.1 fps 23 worst 75 slowest 53 = step 1 paint 49 send 3 gc 0
+54.351 phases bucket static 9 paint 13 fx 1 hud 23 over 0 title 59
+54.361 avg bucket static 11.7 paint 6.8 fx 0.1 hud 1.2 over 0.0 title 10.3
+54.362 heap bucket alloc 259296 glyphs 38
+59.354 fps bucket 23
+59.356 time bucket step 3.1 paint 14.7 send 3.3 gc 6.0 fps 23 worst 56 slowest 27 = step 3 paint 20 send 3 gc 0
+59.366 phases bucket static 9 paint 9 fx 3 hud 1 over 0 title 0
+59.376 avg bucket static 8.3 paint 5.0 fx 0.3 hud 0.9 over 0.0 title 0.0
+59.376 heap bucket alloc 267488 glyphs 38
+64.387 fps bucket 22
+64.389 time bucket step 3.1 paint 17.1 send 3.5 gc 6.4 fps 22 worst 93 slowest 91 = step 34 paint 54 send 3 gc 30
+64.392 phases bucket static 9 paint 14 fx 1 hud 38 over 34 title 0
+64.413 avg bucket static 8.3 paint 4.5 fx 0.1 hud 1.3 over 2.5 title 0.0
+64.413 heap bucket alloc 255728 glyphs 38
+69.391 fps bucket 23
+69.392 time bucket step 3.1 paint 15.2 send 3.4 gc 6.0 fps 23 worst 80 slowest 31 = step 4 paint 24 send 3 gc 0
+69.405 phases bucket static 8 paint 8 fx 3 hud 9 over 0 title 0
+69.414 avg bucket static 8.2 paint 5.3 fx 0.4 hud 0.9 over 0.0 title 0.0
+69.414 heap bucket alloc 265152 glyphs 38
+74.418 fps bucket 23
+74.420 time bucket step 3.1 paint 15.3 send 3.4 gc 6.0 fps 23 worst 55 slowest 29 = step 5 paint 21 send 3 gc 0
+74.430 phases bucket static 9 paint 10 fx 2 hud 2 over 0 title 0
+74.440 avg bucket static 8.2 paint 5.5 fx 0.4 hud 0.9 over 0.0 title 0.0
+74.441 heap bucket alloc 265264 glyphs 38
+77.118 pick rescue
+79.254 game rescue
+79.256 switch rescue 1428 ms, load 638 ms, import 185 ms, setup 4 ms, frames 27, worst 259 ms, longest 241 ms, card 69 ms
+84.295 fps rescue 18
+84.296 time rescue step 5.9 paint 33.0 send 4.0 gc 7.2 fps 18 worst 150 slowest 146 = step 0 paint 142 send 3 gc 0
+84.302 phases rescue static 10 paint 23 fx 3 hud 10 over 0 title 133
+84.322 avg rescue static 16.4 paint 14.5 fx 0.7 hud 1.5 over 0.0 title 18.4
+84.322 heap rescue alloc 323584 glyphs 39
+89.386 fps rescue 19
+89.387 time rescue step 8.4 paint 26.8 send 3.7 gc 7.5 fps 19 worst 84 slowest 62 = step 11 paint 45 send 3 gc 0
+89.404 phases rescue static 10 paint 40 fx 2 hud 1 over 0 title 0
+89.414 avg rescue static 8.5 paint 16.4 fx 0.9 hud 0.8 over 0.0 title 0.0
+89.415 heap rescue alloc 318928 glyphs 40
+94.409 fps rescue 20
+94.411 time rescue step 9.4 paint 25.7 send 3.6 gc 7.7 fps 20 worst 86 slowest 57 = step 11 paint 42 send 3 gc 0
+94.415 phases rescue static 10 paint 30 fx 3 hud 1 over 0 title 0
+94.432 avg rescue static 8.5 paint 15.1 fx 1.0 hud 0.8 over 0.0 title 0.0
+94.432 heap rescue alloc 313424 glyphs 40
+98.440 pick flappy
+100.591 game flappy
+100.593 switch flappy 1398 ms, load 483 ms, import 372 ms, setup 0 ms, frames 22, worst 448 ms, longest 430 ms, card 86 ms
+105.741 fps flappy 16
+105.743 time flappy step 1.7 paint 45.8 send 3.7 gc 8.2 fps 16 worst 146 slowest 144 = step 43 paint 97 send 3 gc 39
+105.753 phases flappy static 10 paint 28 fx 6 hud 26 over 77 title 76
+105.763 avg flappy static 18.3 paint 25.5 fx 1.4 hud 1.8 over 15.4 title 20.0
+105.763 heap flappy alloc 331616 glyphs 40
+110.765 fps flappy 13
+110.767 time flappy step 0.8 paint 59.8 send 3.2 gc 7.5 fps 13 worst 120 slowest 118 = step 0 paint 112 send 3 gc 0
+110.773 phases flappy static 9 paint 20 fx 0 hud 2 over 83 title 0
+110.788 avg flappy static 8.0 paint 15.8 fx 0.2 hud 1.0 over 34.7 title 0.0
+110.788 heap flappy alloc 332480 glyphs 40
+115.793 fps flappy 13
+115.794 time flappy step 0.9 paint 59.9 send 3.2 gc 7.5 fps 13 worst 121 slowest 119 = step 0 paint 113 send 3 gc 0
+115.802 phases flappy static 9 paint 22 fx 0 hud 1 over 83 title 0
+115.811 avg flappy static 7.9 paint 15.8 fx 0.2 hud 0.9 over 34.9 title 0.0
+115.812 heap flappy alloc 332640 glyphs 40
+120.832 fps flappy 13
+120.834 time flappy step 0.8 paint 59.1 send 3.2 gc 7.4 fps 13 worst 119 slowest 117 = step 0 paint 112 send 3 gc 0
+120.842 phases flappy static 9 paint 20 fx 0 hud 1 over 82 title 0
+120.860 avg flappy static 7.9 paint 15.8 fx 0.2 hud 0.9 over 34.0 title 0.0
+120.860 heap flappy alloc 333264 glyphs 40
+125.884 fps flappy 13
+125.885 time flappy step 0.9 paint 60.1 send 3.2 gc 7.5 fps 13 worst 123 slowest 121 = step 0 paint 116 send 3 gc 0
+125.894 phases flappy static 9 paint 20 fx 0 hud 2 over 86 title 0
+125.901 avg flappy static 8.0 paint 15.8 fx 0.2 hud 0.9 over 35.0 title 0.0
+125.902 heap flappy alloc 332480 glyphs 40
+130.901 fps flappy 13
+130.902 time flappy step 0.9 paint 58.8 send 3.2 gc 7.4 fps 13 worst 117 slowest 115 = step 0 paint 111 send 3 gc 0
+130.907 phases flappy static 9 paint 20 fx 0 hud 1 over 81 title 0
+130.929 avg flappy static 7.9 paint 15.9 fx 0.2 hud 0.9 over 33.6 title 0.0
+130.929 heap flappy alloc 333264 glyphs 40
