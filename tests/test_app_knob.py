@@ -121,28 +121,33 @@ class TestAppKnob(unittest.TestCase):
         self.assertTrue(all(isinstance(game, app.NameCard) for game in games[:-1]), games)
         self.assertIs(box.game, games[-1])  # the pane saw the built game in the frame it was built
 
-    def test_a_byte_that_is_no_utf8_is_dropped_and_the_loop_goes_on(self):
-        """A knob turn on the RX pad can type noise into the console, and the text read of run's loop raised
-        UnicodeError and stopped the box (P850, found on the board by the PO's knob turn)."""
+    def test_a_byte_that_is_no_utf8_is_read_as_a_byte_and_the_loop_goes_on(self):
+        """A knob turn on the RX pad types noise into the console (P850, found on the board by the PO's knob turn).
+        MicroPython's text stdin takes 0xFF or 0x80 as the start of a 5-byte character and waits for 4 more bytes,
+        then raises UnicodeError: the loop reads one byte from stdin.buffer, which never decodes nor waits."""
 
         class Console:
             def poll(self, timeout):
                 return True
 
-        class Noise:
+        class Bytes:
             def __init__(self, *reads):
                 self.reads = list(reads)
 
             def read(self, n):
-                got = self.reads.pop(0)
-                if isinstance(got, Exception):
-                    raise got
-                return got
+                return self.reads.pop(0)[:n]
 
-        stdin = Noise(UnicodeError("invalid utf-8"), b"\xff".decode("utf-8", "replace"), "a")
+        class TextStdin:
+            def __init__(self, *reads):
+                self.buffer = Bytes(*reads)
+
+            def read(self, n):
+                raise AssertionError("the text read waits for the rest of a character that never comes")
+
+        stdin = TextStdin(b"\xff", b"\x80", b"a")
         for _ in range(3):
             app.read_console(Console(), stdin)
-        self.assertEqual([], stdin.reads)
+        self.assertEqual([], stdin.buffer.reads)
 
     def test_nothing_is_read_when_the_console_is_quiet(self):
         class Quiet:
