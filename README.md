@@ -117,13 +117,18 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    enough after art that makes a pack bigger, as the first copy of the packs does: each pack is 16 bytes bigger than
    the set it replaces (the runner's is 739,216 bytes), and a soft reset keeps the smaller picture pool. The pictures then go quietly into a 739 KB block of the heap, which slows every
    garbage collection. `main.py` starts the games. The console shows `lineup <n>: <names>`, `import <ms> ms`
-   (how long `app.py`'s own imports took), then `game <name>`, then `switch <name> N ms, load N ms` at each switch:
-   how long the switch took and the art's load in it.
+   (how long `app.py`'s own imports took), then `game <name>`, then `switch <name> N ms, load N ms, import N ms` each
+   time a game is built: how long the build took, the art's load in it and the import of the game's module in it.
+   Each D14 press prints `pick <name>` (P818).
 7. An older board also holds the `/art` folder of picture files. Both folders fit: with `/art` the board had 4.98 MB
    of flash free, and `/packs` takes 2.9 MB. The games no longer read `/art`. Once they show their pictures, remove it
    with `mpremote rm -r :art` (mpremote 1.29.0 here, see `mpremote --version`; an mpremote whose `rm` has no `-r`
    cannot remove the folder).
 
+A short press of the board's D14 button picks the next game (P818): a card shows its name and its place in the
+lineup, and the game loads only when no press came for 0.7 s, or at once on a BOOT press. So pressing through four
+games to the fifth loads only the fifth. The console says `pick <name>` at each press and `switch <name> N ms, load
+N ms, import N ms` when the game is built.
 If the board stays dark after a long press of its D14 button, hold D14 for 1 to 2 seconds. That button also switches the board's power off.
 
 ## Status
@@ -282,7 +287,7 @@ Runs now:
   `loop=True` is one voice: its signal carries a level from 0 to 256 (`self.emit("fire", self.fire_k)`), and 0 ends
   it. To add a sound, add it to `tools/sound_bank.py`, run the tool, and name the cue in the game's `cues`.
   `games/box_bank.SOURCES.md` gives each sound's source and license. Since PR 3 a small music loop
-  plays in every game: `App.switch` starts it once, as a protected voice of the group `music`, and the tune is a
+  plays in every game: `App.build` starts it once, as a protected voice of the group `music`, and the tune is a
   note list in `tools/sound_bank.py`. `docs/sound.md` says how a game gets a sound. All 14 games keep their fps
   with the music, within 1 fps (bench.md, P768). The box
   does not save the step. The sound probe passes its own knob to the box, so only one

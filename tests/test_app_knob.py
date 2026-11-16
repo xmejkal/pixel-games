@@ -6,6 +6,7 @@ import os
 import sys
 import time
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "stubs"))
@@ -101,9 +102,15 @@ class TestAppKnob(unittest.TestCase):
         box = app.App(None, lambda: 99, lambda: 99, games=(Game, Other), out=Out())
         box.start()
         box.overlay.add(Watch())
-        box.boot.update = lambda now: True  # a D14 press in this frame
+        box.boot.update = lambda now: True  # a D14 press in this frame: a pick (P818)
         box.frame()
-        self.assertEqual(names, ["other"])
+        self.assertEqual(names, ["other"])  # the NameCard of the picked game
+        self.assertIsInstance(box.game, app.NameCard)
+        box.boot.update = lambda now: False
+        with mock.patch.object(app, "SETTLE_MS", 0):  # the pick settles in the next frame
+            box.frame()
+        self.assertEqual(names, ["other", "other"])
+        self.assertIsInstance(box.game, Other)
 
     def test_open_knob_is_none_without_machine_encoder(self):
         self.assertIsNone(app.open_knob())  # the Mac has no machine module

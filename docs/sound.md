@@ -6,7 +6,7 @@ The short version: a game says what happened, and the box plays the sound. The m
 flowchart LR
   G[game: self.emit 'jump'] --> S[Signals]
   S --> C[SoundCues: the game's cues]
-  A[App.switch] -- "cues.music()" --> C
+  A[App.build] -- "cues.music()" --> C
   B[Bank: box_bank.raw] --> C
   C --> M[Mixer: 4 voices, groups music and sfx]
   M --> V[MasterVolume: the knob] --> R[CallbackRefill] --> I[I2S, MAX98357]
@@ -48,8 +48,8 @@ faster by `tools/sound_bank.py`. The game emits `hose` with 0 at each restart an
 
 ## The music
 
-`App.switch` calls `cues.music()`. It starts the bank's sound `music` once, as a protected loop in the group
-`music`, and the loop plays on over a switch of the game. `mixer.group_gain["music"]` is its gain (Q15), apart from
+`App.build` calls `cues.music()`. It starts the bank's sound `music` once, as a protected loop in the group
+`music`, and the loop plays on over a pick and a switch of the game. `mixer.group_gain["music"]` is its gain (Q15), apart from
 the game sounds' `mixer.group_gain["sfx"]`. A bank with no `music` gives a box with no music.
 
 The music is a note list in `tools/sound_bank.py`: `THEMES` holds two candidates, and `MUSIC` names the one in the
