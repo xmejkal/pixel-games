@@ -1675,5 +1675,6 @@ than the control.
 
 - The kept box is a 200 x 100 strip (40 KB), copied every frame; the remaining 6.5 ms is that copy and the blinking
   retry. The net's hashes are unchanged (the pixels are the same).
-- Open: the baseline with all 15 games (P846 above) had flappy at 13 to 16 fps on the same screen, gc 8.2 ms against
-  5.5 ms here with flappy alone. More loaded games make the frame slower; not explained yet.
+- Open: the baseline with all 15 games (P846 above) had flappy at 13 to 16 fps on the same screen, gc 7.4 to 7.5 ms on
+  its idle lines, against 5.5 ms before and 6.4 ms after here with flappy alone (the kept strip adds about 0.9 ms of gc
+  and about 39 KB of heap). More loaded games make the frame slower; not explained yet.

@@ -192,10 +192,6 @@ class RecordingTest(unittest.TestCase):
         self.assertNotEqual(first, cv.ops)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 def old_draw_over(game, cv):
     """Game.draw_over before P856, drawn straight onto the panel each frame: the kept box must give its pixels."""
     x, y = gfx.WIDTH // 2 - 100, gfx.HEIGHT // 2 - 50
@@ -248,6 +244,11 @@ class OverBoxTest(unittest.TestCase):
         game.draw_over(cv)
         gfx.BEST[game.name] = 6
         game.draw_over(cv)
+        gfx.BEST["probe2"] = 6  # the same score and best, so only the name tells the two games apart
         game.name = "probe2"
         game.draw_over(cv)
         self.assertEqual(4, len(drawn))
+
+
+if __name__ == "__main__":
+    unittest.main()
