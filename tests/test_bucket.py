@@ -28,8 +28,8 @@ import catalog  # noqa: E402
 import gfx  # noqa: E402
 import lcd  # noqa: E402
 import plugins  # noqa: E402
-import signals  # noqa: E402
 import world_lib  # noqa: E402
+from engine import signals  # noqa: E402
 from bucket import FALL, FREE, LAND, Bucket, Rules  # noqa: E402
 
 FRAME_MS = 42  # app.py's FRAME_MS is 40, and the board's frames run 42 to 60 ms

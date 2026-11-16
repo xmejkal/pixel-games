@@ -26,8 +26,8 @@ import box_bank  # noqa: E402
 import catalog  # noqa: E402
 import cues  # noqa: E402
 import gfx  # noqa: E402
-import signals  # noqa: E402
 import sound  # noqa: E402
+from engine import signals  # noqa: E402
 
 GAMES = os.path.join(os.path.dirname(HERE), "games")
 

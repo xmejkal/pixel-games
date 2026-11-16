@@ -377,8 +377,8 @@ class StepsTest(unittest.TestCase):
             f.readinto = readinto
             return f
         pictures.open = slow_open
-        with mock.patch.object(pictures.time, "ticks_us", lambda: clock[0], create=True), \
-                mock.patch.object(pictures.time, "ticks_diff", lambda a, b: a - b, create=True):
+        with mock.patch.object(time, "ticks_us", lambda: clock[0], create=True), \
+                mock.patch.object(time, "ticks_diff", lambda a, b: a - b, create=True):
             for _ in pictures.load_steps("bucket"):
                 clock[0] += 40000  # the box's frame between two steps: not the load's
         self.assertLess(2, len(self.reads))

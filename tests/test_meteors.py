@@ -34,8 +34,8 @@ import lcd  # noqa: E402
 import meteors as mt  # noqa: E402
 import motion  # noqa: E402
 import plugins  # noqa: E402
-import signals  # noqa: E402
 import world_lib  # noqa: E402
+from engine import signals  # noqa: E402
 from meteors import COAL, FALL, PARKED, Meteors, Rules  # noqa: E402
 
 COALS = [0] * 8  # the ms of eight meteors that are coals: they block always
