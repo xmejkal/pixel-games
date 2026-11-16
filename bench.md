@@ -1634,7 +1634,7 @@ than the control.
   0.6 s. Runner in play has a worst gap of 82 ms in its first interval.
 - Over the plan's line: `longest` 58 ms against at most 22 ms, and `worst` 81 ms against the card's 62 ms + 2. Not
   changed yet: the 58 ms is likely the last frame, which places the whole set at once, and fewer chunks per frame do
-  not shorten that. Measured on a card of its own (P834).
+  not shorten that. Measured on a card of its own (P837, spark #1200).
 - Not done on the board: a D14 press while runner's bar was filling, and a rescue build. The Mac tests cover the
   close of a stopped load.
 - The PO's words after the play: "yeah, the bar is great, I like it".
