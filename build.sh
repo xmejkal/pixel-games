@@ -32,5 +32,5 @@ if [ "${1:-}" = engine ]; then
     exit 1
   fi
   IMAGE="$MPY/ports/esp32/build-engine/micropython.bin"
-  echo "$IMAGE: $(wc -c < "$IMAGE" | tr -d ' ') B, sha256 $(shasum -a 256 "$IMAGE" | cut -d' ' -f1), engine $(git -C "$HERE/engine" rev-parse --short HEAD)"
+  echo "$IMAGE: $(wc -c < "$IMAGE" | tr -d ' ') B, sha256 $(shasum -a 256 "$IMAGE" | cut -d' ' -f1), engine $(git -C "$HERE" submodule status engine | cut -c2-8)"
 fi
