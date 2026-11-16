@@ -23,12 +23,12 @@ GOLDEN = os.path.join(HERE, "golden")
 TIER = net.tier()
 TWICE = "cave"  # the subject rendered twice in one run
 # Each negative test: a short subject, full tier, with one patch made in its process before the render
-COLOUR = "import arcade2\narcade2.Cave.bg = arcade2.c565(15, 10, 21)"  # its background, one step bluer
+COLOUR = "import arcade2\narcade2.Cave.bg = arcade2.c565(15, 10, 28)"  # its background, one step of blue more
 MOVED = "import arcade\narcade.Flappy.X = 81"  # the bird one px to the right
 PRESS = "import render_scene\nrender_scene.SUBJECTS['flappy'].tap = 13"  # a tap every 13 frames, not 12
-CUE = ("import arcade2\nemit = arcade2.Stack.emit\n"
-       "arcade2.Stack.emit = lambda self, name, value=None: emit(self, 'drop' if name == 'catch' else name, value)")
-NEGATIVE = {"colour": ("cave", COLOUR), "moved": ("flappy", MOVED), "press": ("flappy", PRESS), "cue": ("stack", CUE)}
+CUE = ("import arcade\nemit = arcade.Runner.emit\n"  # the jump says hop: a cue no table plays
+       "arcade.Runner.emit = lambda self, name, value=None: emit(self, 'hop' if name == 'jump' else name, value)")
+NEGATIVE = {"colour": ("cave", COLOUR), "moved": ("flappy", MOVED), "press": ("flappy", PRESS), "cue": ("runner", CUE)}
 
 
 class CatalogTest(unittest.TestCase):
