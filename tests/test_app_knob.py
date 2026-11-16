@@ -121,6 +121,45 @@ class TestAppKnob(unittest.TestCase):
         self.assertTrue(all(isinstance(game, app.NameCard) for game in games[:-1]), games)
         self.assertIs(box.game, games[-1])  # the pane saw the built game in the frame it was built
 
+    def test_a_byte_that_is_no_utf8_is_dropped_and_the_loop_goes_on(self):
+        """A knob turn on the RX pad can type noise into the console, and the text read of run's loop raised
+        UnicodeError and stopped the box (P850, found on the board by the PO's knob turn)."""
+
+        class Console:
+            def poll(self, timeout):
+                return True
+
+        class Noise:
+            def __init__(self, *reads):
+                self.reads = list(reads)
+
+            def read(self, n):
+                got = self.reads.pop(0)
+                if isinstance(got, Exception):
+                    raise got
+                return got
+
+        stdin = Noise(UnicodeError("invalid utf-8"), b"\xff".decode("utf-8", "replace"), "a")
+        for _ in range(3):
+            app.read_console(Console(), stdin)
+        self.assertEqual([], stdin.reads)
+
+    def test_nothing_is_read_when_the_console_is_quiet(self):
+        class Quiet:
+            def poll(self, timeout):
+                return False
+
+        app.read_console(Quiet(), None)  # no read: stdin is not touched
+
+    def test_run_s_loop_reads_the_console_through_read_console(self):
+        import ast
+        import inspect
+
+        calls = [n.func.id for n in ast.walk(ast.parse(inspect.getsource(app.run)))
+                 if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)]
+        self.assertIn("read_console", calls)
+        self.assertNotIn("sys.stdin.read(", inspect.getsource(app.run))
+
     def test_open_knob_is_none_without_machine_encoder(self):
         self.assertIsNone(app.open_knob(volume.MasterVolume))  # the Mac has no machine module
 

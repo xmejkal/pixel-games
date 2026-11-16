@@ -175,6 +175,36 @@ class BootTest(NoNative):
         self.assertIsNone(parts["knob"])
         self.assertIs(ViperVoiceSum, type(parts["speaker"].mixer.sum))
 
+    def test_the_boot_takes_the_knob_s_pads_before_anything_else(self):
+        """The knob's pads are the console's RX and TX: until they are taken, a turn types into the console (P757).
+        The PO's turn on the board found it (P850): the boot takes them before app's imports and the knob."""
+        said, events = io.StringIO(), []
+
+        class Counter:
+            def __init__(self, *args, **kw):
+                events.append("Encoder")
+
+        machine = types.ModuleType("machine")
+        machine.Encoder = Counter
+        with mock.patch.dict(sys.modules, {"machine": machine, "engine_config": None, "app": None}), \
+                mock.patch.object(app.encoder, "take_pads",
+                                  lambda a, b: events.append(("take_pads", a, b, said.getvalue())) or (a, b)), \
+                contextlib.redirect_stdout(said):
+            del sys.modules["app"]  # main imports app after the pads are taken
+            real_import = __import__
+
+            def importing(name, *args, **kw):
+                if name == "app" and "app" not in sys.modules:
+                    events.append("import app")
+                    sys.modules["app"] = app
+                return real_import(name, *args, **kw)
+
+            with mock.patch("builtins.__import__", importing), \
+                    mock.patch.object(app, "run", lambda **parts: events.append("run")):
+                runpy.run_path(os.path.join(GAMES, "main.py"), run_name="__main__")
+        pads = ("take_pads", app.pins.ENC_A, app.pins.ENC_B, "")
+        self.assertEqual([pads, "import app", pads[:3] + (said.getvalue(),), "Encoder", "run"], events)
+
     def test_the_boot_reads_the_board_s_engine_config(self):
         said = io.StringIO()
         runs = []
