@@ -54,6 +54,22 @@ class CatalogTest(unittest.TestCase):
         finally:
             pictures.load = load
 
+    def test_each_game_s_art_is_its_catalog_sets_and_its_setup_loads_only_that(self):
+        """ART (P822): the set the box loads before the game is built, so setup's own load reads nothing."""
+        seen = []
+        load = pictures.load
+        pictures.load = lambda game=None, only=None: seen.append((game, only)) or False
+        try:
+            for name, cls in zip(catalog.NAMES, app.games_for(catalog.NAMES)):
+                with self.subTest(name), contextlib.redirect_stdout(io.StringIO()):
+                    seen.clear()
+                    cls()
+                    sets = catalog.ROWS[name][3]
+                    self.assertEqual(sets, (cls.ART[0],) if cls.ART else ())
+                    self.assertEqual({cls.ART} if cls.ART else set(), set(seen))
+        finally:
+            pictures.load = load
+
     def test_each_set_has_a_pack(self):
         for name, module, class_name, sets in catalog.CATALOG:
             for s in sets:
@@ -93,6 +109,44 @@ class LineupTest(unittest.TestCase):
         self.assertEqual(("fake",), lineup.names)
         self.assertIsInstance(lineup.game(0), Game)
 
+    def test_game_steps_imports_then_loads_then_builds_and_setup_reads_nothing(self):
+        """game_steps (P822): the import in the first step, then a step per chunk of the game's set, then the game,
+        whose setup finds its set loaded."""
+        events, opened, games_for, root = [], [], app.games_for, pictures.ROOT
+        pictures.ROOT = os.path.join(GAMES, "")
+        pictures.free()
+        pictures.open = lambda path, mode: opened.append(path) or open(path, mode)
+
+        def restore():
+            del pictures.open
+            pictures.free()
+            pictures.ROOT = root
+        self.addCleanup(restore)
+        with mock.patch.object(app, "games_for", lambda names: events.append("import") or games_for(names)):
+            steps = app.Lineup(("bucket",)).game_steps(0)
+            self.assertEqual([], events)  # nothing runs before the first step
+            values = [next(steps)]
+            self.assertEqual(["import"], events)
+            self.assertEqual({}, pictures.PICS)
+            game = run_to_end(steps, values)
+        self.assertEqual("bucket", game.name)
+        self.assertLess(0, values[0])
+        self.assertEqual(1.0, values[-1])
+        self.assertEqual(values, sorted(values))
+        self.assertEqual(["packs/bucket.pak"], [os.path.relpath(p, GAMES) for p in opened])  # setup read nothing
+        self.assertIn("bucket_scene", pictures.PICS)
+
+    def test_a_game_without_art_has_no_load_steps(self):
+        values = []
+        self.assertEqual("cave", run_to_end(app.Lineup(("cave",)).game_steps(0), values).name)
+        self.assertEqual([], values)
+
+    def test_game_is_game_steps_run_to_its_end(self):
+        lineup, real = app.Lineup(("cave", "road")), app.Lineup.game_steps
+        with mock.patch.object(app.Lineup, "game_steps", autospec=True, side_effect=real) as steps:
+            self.assertEqual("road", lineup.game(1).name)
+        steps.assert_called_once_with(lineup, 1)
+
     def test_the_box_takes_classes_or_a_lineup(self):
         class Out:
             def clear(self):
@@ -105,6 +159,15 @@ class LineupTest(unittest.TestCase):
             box.start()
         self.assertEqual("cave", box.game.name)
         self.assertEqual(2, len(box.games))
+
+
+def run_to_end(steps, values):
+    """What a generator of steps returns, each value it yields put in values."""
+    while True:
+        try:
+            values.append(next(steps))
+        except StopIteration as done:
+            return done.value
 
 
 class Out:

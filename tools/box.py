@@ -22,7 +22,8 @@ old .py or .mpy files. The .mpy files fit MicroPython v1.29's mpy v6.3: after a 
 again (or with --py). mpy-cross: pip install mpy-cross==1.29.0.post2.
 log: resets the board itself (a hard reset, trying again while the board still reboots from a deploy), then prints
 its console for N seconds (20 by default), opening the port again while USB comes back: the `lineup`, `import`,
-`game` and `switch` lines. The port is the one mpremote's auto picks: the first USB serial port, sorted.
+`pick`, `game` and `switch` lines, each after the seconds since the log started, on the Mac's clock
+(`12.345 pick runner`; logs from before P822 have none). The port is the one mpremote's auto picks: the first USB serial port, sorted.
 A failed mpremote command prints its error and box.py exits with 1. Claude picks a lineup with list, then deploy NAME..., then log.
 --- MVP (P817) ---"""
 
@@ -231,6 +232,13 @@ class Console:
         return None
 
 
+def stamped(lines, clock=time.monotonic):
+    """Each of lines after the seconds since the log started, on the Mac's clock: `12.345 pick runner` (P822)."""
+    start = clock()
+    for line in lines:
+        yield "%.3f %s" % (clock() - start, line)
+
+
 def serial_port(name=None):
     """A function that opens the board's port: name, or the first USB serial port mpremote would pick."""
     import serial
@@ -259,7 +267,8 @@ def main(argv=None):
                                                          "to debug on the board, where a traceback then shows the "
                                                          "source line and a file can be edited in place")
     deploy.add_argument("--dry-run", action="store_true", help="print each command, run none")
-    log = sub.add_parser("log", help="reset the board (a hard reset), then print its console")
+    log = sub.add_parser("log", help="reset the board (a hard reset), then print its console, each line after the "
+                                     "seconds since the log started")
     log.add_argument("--seconds", type=float, default=SECONDS)
     log.add_argument("--port", help="the serial port (default: the first USB one)")
     args = parser.parse_args(argv)
@@ -275,7 +284,7 @@ def main(argv=None):
                 None if args.all else args.names)
         else:
             reset(Mpremote())
-            for line in Console(serial_port(args.port)).lines(args.seconds):
+            for line in stamped(Console(serial_port(args.port)).lines(args.seconds)):
                 print(line)
     except Refused as e:
         print("refused:", e)

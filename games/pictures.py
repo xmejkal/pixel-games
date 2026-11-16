@@ -5,7 +5,8 @@ art/paint.py makes them on the Mac, already in the panel's layout and byte order
 loads only its own art set (art_index.PICTURE_SETS) when the box switches to it, so the box starts its first game
 without reading every set first: 2.9 MB took 15 to 20 s on the board (P773). A set is one pack file (P814): one open,
 where a folder of 681 picture files cost up to 88 ms an open and 22 s for Rescue's set, then reads of CHUNK_SIZE
-bytes, each short enough that the sound's callback runs between two of them and the music stays fed. A game asks
+bytes, each short enough that the sound's callback runs between two of them and the music stays fed. load_steps reads
+it as a generator, a chunk a step, so the box draws its card between steps (P822); load runs it to its end. A game asks
 draw() for a picture and draw_layer() for a window of a scrolling strip; both answer False when there is no art (on the
 Mac, with the st7789 backend, or at ORIENTATION 180), and the game then draws its old shapes.
 """
@@ -26,7 +27,7 @@ PICS = {}  # name: (w, h, memoryview into the block) of the loaded set
 SETS = {}  # game name: its layers, each [name, top, w, h, speed, keyed, memoryview], back to front
 ready = False
 loaded = None  # (set, only) that PICS holds, or None
-load_ms = 0  # how long the last load read, in ms; 0 after free(): App.build prints it
+load_ms = 0  # the ms of the last load's own work, summed between its steps (P822); 0 after free(): App prints it
 
 
 def free():
@@ -63,23 +64,49 @@ def spans(game, only=None):
     return sorted(out.items())
 
 
-def read_chunks(f, view):
-    """Fill view from f, CHUNK_SIZE bytes a call into a slice of the block (no copy: each chunk is a small memoryview
-    of the block), so the sound's callback runs between two calls. Returns the bytes read: fewer than len(view) at
-    the file's end."""
+class Reading:
+    """A load's reading (P822): its bytes read, of all the bytes it reads after the packs' headers, and the microseconds
+    of its own work (the opens, the headers, the reads, the placing), counted between its steps, so a frame the box
+    draws between two of them is not in it. It starts counting when it is made."""
+
+    def __init__(self, total):
+        self.done, self.total, self.us, self.since = 0, total, 0, ticks_us()
+
+    def step(self, n):
+        """n more bytes read, and a step ends: its time counts. Answers the fraction of the load read."""
+        self.done += n
+        self.us += ticks_diff(ticks_us(), self.since)
+        return self.done / self.total
+
+    def resume(self):
+        """The next step starts."""
+        self.since = ticks_us()
+
+    def end(self):
+        """The load is placed: the last step's time counts. Answers the load's ms."""
+        self.us += ticks_diff(ticks_us(), self.since)
+        return self.us // 1000
+
+
+def read_chunks(f, view, reading):
+    """Fill view from f, CHUNK_SIZE bytes a read into a slice of the block (no copy: each chunk is a small memoryview
+    of the block), yielding the fraction of the load read after each chunk (P822), so the sound's callback runs
+    between two reads and the box can draw a frame. Returns the bytes read: fewer than len(view) at the file's end."""
     got = 0
     while got < len(view):
         n = f.readinto(view[got:got + CHUNK_SIZE])
         if not n:
             break
         got += n
+        yield reading.step(n)
+        reading.resume()
     return got
 
 
-def read_pack(game, parts, buf, at):
-    """Read the game's pack into buf from at: its header, checked against PACKS, then each of parts. Returns each
-    part read as (offset in the pack, length, place in buf), or None when the pack's size or header is not this
-    build's."""
+def read_pack(game, parts, buf, at, reading):
+    """Read the game's pack into buf from at: its header, checked against PACKS, then each of parts, yielding after
+    each chunk. Returns each part read as (offset in the pack, length, place in buf), or None when the pack's size or
+    header is not this build's. A close() halfway closes the file (its with)."""
     path, total, build_id = art_index.PACKS[game]
     out = []
     with open(ROOT + path, "rb") as f:
@@ -87,13 +114,13 @@ def read_pack(game, parts, buf, at):
             return None
         f.seek(0)
         head = buf[at:at + HEADER]
-        if read_chunks(f, head) != HEADER or bytes(head[:len(MAGIC)]) != MAGIC or \
+        if f.readinto(head) != HEADER or bytes(head[:len(MAGIC)]) != MAGIC or \
                 hexlify(head[len(MAGIC):]).decode() != build_id:
             return None
         at += HEADER
         for offset, n in parts:
             f.seek(offset)
-            if read_chunks(f, buf[at:at + n]) != n:
+            if (yield from read_chunks(f, buf[at:at + n], reading)) != n:
                 return None
             out.append((offset, n, at))
             at += n
@@ -111,6 +138,16 @@ def view(buf, parts, offset, n):
 def since(start):
     """The ms from start (time.ticks_ms()) to now; 0 on the Mac, where CPython's time has no ticks."""
     return time.ticks_diff(time.ticks_ms(), start) if hasattr(time, "ticks_diff") else 0
+
+
+def ticks_us():
+    """time.ticks_us(), or 0 on the Mac, where CPython's time has no ticks."""
+    return time.ticks_us() if hasattr(time, "ticks_us") else 0
+
+
+def ticks_diff(a, b):
+    """time.ticks_diff(a, b), or 0 on the Mac."""
+    return time.ticks_diff(a, b) if hasattr(time, "ticks_diff") else 0
 
 
 def refuse(message):
@@ -134,10 +171,20 @@ def place(game, parts, buf, only):
 
 def load(game=None, only=None):
     """Read one game's art set once (game: its name in art_index.PICTURE_SETS; only: just these of its pictures), and
-    free the set loaded before. game None reads every pack, for the tools on the Mac. A missing pack, or one whose size
-    or header is not this build's, is refused aloud, naming the game: no art, rather than another build's. A refused
-    load is kept like a loaded one, so asked again it answers False with no read and no message; free() forgets it.
+    free the set loaded before: load_steps run to its end. game None reads every pack, for the tools on the Mac.
     Answers whether art is there."""
+    for _ in load_steps(game, only):
+        pass
+    return ready
+
+
+def load_steps(game=None, only=None):
+    """load() a chunk at a time (P822): a generator that yields the fraction 0 to 1 of the load's bytes read after
+    each chunk, so the box draws its card between two steps; when it ends, the set is placed and ready is set.
+    load_ms is the time of its own work, summed between its steps. A missing pack, or one whose size or header is not
+    this build's, is refused aloud, naming the game: no art, rather than another build's. A refused load is kept like
+    a loaded one, so asked again it answers False with no read and no message; free() forgets it. Closed halfway
+    (close()), it closes the pack file; the caller then calls free(), and no half-read set stays."""
     global ready, loaded, load_ms
     if art_index is None:
         return False
@@ -145,7 +192,6 @@ def load(game=None, only=None):
         return ready
     free()
     loaded = (game, only)
-    start = time.ticks_ms() if hasattr(time, "ticks_ms") else 0  # the Mac's CPython has no ticks
     if not hasattr(art_index, "PACKS") or any(len(row) != 4 for row in art_index.ART.values()):
         return refuse("art: games/art_index.py is from before the packs: copy games/*.py and games/packs, "
                       "then hard reset")
@@ -156,19 +202,21 @@ def load(game=None, only=None):
     else:
         sets = ()
     reads = [(g, spans(g, only)) for g in sets]
-    if not any(n for _, parts in reads for _, n in parts):
+    total = sum(n for _, parts in reads for _, n in parts)
+    if not total:
         return False
-    buf, at = block(sum(HEADER + sum(n for _, n in parts) for _, parts in reads)), 0
+    reading = Reading(total)
+    buf, at = block(HEADER * len(reads) + total), 0
     for g, parts in reads:
         try:
-            got = read_pack(g, parts, buf, at)
+            got = yield from read_pack(g, parts, buf, at, reading)
         except OSError:  # no pack there
             return refuse("art: %s has no pack: copy games/packs to the board" % g)
         if got is None:
             return refuse("art: %s pack is not this build: copy games/*.py and games/packs, then hard reset" % g)
         place(g, got, buf, only)
         at += HEADER + sum(n for _, n in parts)
-    ready, load_ms = True, since(start)
+    ready, load_ms = True, reading.end()
     return True
 
 

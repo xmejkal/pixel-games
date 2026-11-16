@@ -97,8 +97,9 @@ class TestAppKnob(unittest.TestCase):
         class Watch(overlay.Pane):
             def update(self, now_ms):
                 names.append(box.game.name)
+                games.append(box.game)
 
-        names = []
+        names, games = [], []
         box = app.App(None, lambda: 99, lambda: 99, games=(Game, Other), out=Out())
         box.start()
         box.overlay.add(Watch())
@@ -109,8 +110,16 @@ class TestAppKnob(unittest.TestCase):
         box.boot.update = lambda now: False
         with mock.patch.object(app, "SETTLE_MS", 0):  # the pick settles in the next frame
             box.frame()
-        self.assertEqual(names, ["other", "other"])
+            for _ in range(10):  # and the build ends behind the card (P822)
+                if not isinstance(box.game, app.NameCard):
+                    break
+                box.frame()
+        self.assertNotIsInstance(box.game, app.NameCard)
         self.assertIsInstance(box.game, Other)
+        self.assertEqual(["other"] * len(names), names)  # the card of the picked game, then the game
+        self.assertLess(2, len(games))  # the pick's frame, the settle's and the build's
+        self.assertTrue(all(isinstance(game, app.NameCard) for game in games[:-1]), games)
+        self.assertIs(box.game, games[-1])  # the pane saw the built game in the frame it was built
 
     def test_open_knob_is_none_without_machine_encoder(self):
         self.assertIsNone(app.open_knob())  # the Mac has no machine module

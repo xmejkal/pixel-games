@@ -57,6 +57,7 @@ FIRE_SOUND_GAIN = 32768  # Q15: the fire loop's gain at the full flame, a choice
 
 class Flappy(Game):
     name = "flappy"
+    ART = ("flappy", None)  # its own art set, all of it (P822)
     hint = "tap to flap"
     bg = c565(70, 170, 230)
     accent = YELLOW
@@ -66,7 +67,7 @@ class Flappy(Game):
     BIRDS = tuple(tuple("flappy_bird%d%d" % (tilt, wing) for wing in range(2)) for tilt in range(3))
 
     def setup(self):
-        self.covers = pictures.load("flappy")  # the painted morning covers the screen, so no fill goes under it
+        self.covers = pictures.load(*self.ART)  # the painted morning covers the screen, so no fill goes under it
         self.flapped = -1.0  # when the last tap came (self.t), for the bird's wing
         self.y, self.vy, self.dist = 110.0, 0.0, 0.0
         self.pipes = [[W + 20 + i * self.SPACE, self.gap_y(), False] for i in range(3)]
@@ -152,6 +153,7 @@ class Flappy(Game):
 
 class Runner(Game):
     name = "runner"
+    ART = ("runner", None)  # its own art set, all of it (P822)
     hint = "tap jump, hold higher"
     bg = c565(250, 190, 120)
     accent = ORANGE
@@ -181,7 +183,7 @@ class Runner(Game):
         self.beat = 0  # the run cycle's frame at the last footstep check (P768)
         self.emit("fire", 0)  # a new round: the last round's fire is silent (P768)
         self.jumped, self.landed = -1.0, -1.0  # when the last jump and the last landing began (self.t), for the pose
-        self.covers = pictures.load("runner")  # painted art on the board: its sky covers the screen, so no fill under it
+        self.covers = pictures.load(*self.ART)  # painted art on the board: its sky covers the screen, so no fill under it
 
     def grow_fire(self, speed, force=False):
         """The flame at base speed px/s: none below FIRE_START_SPEED, then DECAY and the burns' heat climb evenly to
@@ -503,6 +505,7 @@ class Snake(Game):
     10:00: the street mirrored in the glass, six hues for the feed, and one accent, the dot."""
 
     name = "snake"
+    ART = ("snake", None)  # its own art set, all of it (P822)
     hint = "tap turns right"
     bg = c565(14, 34, 22)
     accent = GREEN
@@ -531,7 +534,7 @@ class Snake(Game):
         self.body = [(12, 9), (11, 9), (10, 9)]
         self.d, self.acc = 0, 0.0
         self.food = self.spot()
-        self.covers = pictures.load(self.name)  # the painted glass covers the screen, so no fill goes under it
+        self.covers = pictures.load(*self.ART)  # the painted glass covers the screen, so no fill goes under it
         self.made = 3  # tiles made so far: tile i of the body is number made - i, so its kind stays as it crawls
         self.steps = 0  # the steps taken
         self.ate_step = -9  # the step of the last meal, for the gulp and the chew

@@ -19,6 +19,7 @@ class Stack(Game):
 
     INK, BONE = c565(24, 20, 30), c565(236, 230, 214)  # art/sets/stack.py's pair
     name = "stack"
+    ART = ("stack", None)  # its own art set, all of it (P822)
     hint = "tap to drop"
     bg = c565(196, 192, 208)
     accent = HUD_BEST = ACCENT
@@ -43,7 +44,7 @@ class Stack(Game):
     CONCRETE = tuple(c565(v, v, v + 8) for v in (172, 160, 180, 150, 168, 186, 156, 166))  # the Mac's flat floors
 
     def setup(self):
-        self.covers = pictures.load("stack")  # the painted noon covers the screen, so no fill goes under it
+        self.covers = pictures.load(*self.ART)  # the painted noon covers the screen, so no fill goes under it
         self.floors = [(90, 140)]  # (x, width) of each placed floor, x without the sway
         self.x, self.w, self.dir, self.speed = 0.0, 140, 1, 120.0
         self.sway, self.sway_v = 0.0, 0.0  # the tower top's offset and speed
@@ -405,6 +406,7 @@ class GravityPong(Game):
     card says IT WAS NEVER REAL. Watercolour noir at midnight: ink, bone, the film's cool tone and one accent."""
 
     name = "gravpong"
+    ART = ("gravpong", None)  # its own art set, all of it (P822)
     hint = "tap turns the net"
     bg = c565(10, 30, 40)
     accent = c565(40, 220, 230)
@@ -447,7 +449,7 @@ class GravityPong(Game):
     def setup(self):
         self.px, self.pdir = 125.0, 1
         self.bx, self.by, self.vx, self.vy = 160.0, 60.0, 70.0, 0.0
-        self.covers = pictures.load(self.name)  # the painted midnight covers the screen, so no fill goes under it
+        self.covers = pictures.load(*self.ART)  # the painted midnight covers the screen, so no fill goes under it
         self.trail = []  # the flat look's fading tail, where there is no art
         self.fx = Sparks()
         self.dice = Dice(5732)  # the effects' own random stream: the rules' draws stay as they are

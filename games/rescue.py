@@ -500,6 +500,7 @@ class Puffs(Particles):
 
 class Rescue(Game):
     name = "rescue"
+    ART = ("rescue", None)  # its own art set, all of it (P822)
     hint = "tap turns, hold sprays, carry people to the station"
     bg = c565(14, 12, 26)
     accent = ORANGE
@@ -515,7 +516,7 @@ class Rescue(Game):
         self.decay = FIRE_LOOK[0]  # the look's decay now, set again only when it changes
         self.rules = Rules()
         self.water, self.puffs = Spray(), Puffs()
-        self.covers = pictures.load("rescue")  # the painted street covers the screen, so no fill goes under it
+        self.covers = pictures.load(*self.ART)  # the painted street covers the screen, so no fill goes under it
         self.smokes = []  # [x, ms since] of each puff of smoke where a person was lost
         self.shake_k = len(SHAKE)  # frames into the shake; len(SHAKE) when still
         self.flash_k, self.flash_x = len(FLASH) + 1, 0  # frames into the impact's flash (none past len(FLASH)), x
