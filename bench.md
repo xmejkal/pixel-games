@@ -1603,3 +1603,8 @@ than the control.
   at most 33 blits, 13 blended. The build before the review drew at most 26 blits, 3 blended (the halo, the ping and
   the ripple, now opaque, as are the bite and the bulge). Not measured on the board: the after run shows what the
   glows cost against the 24 fps line.
+
+## P573 (#778), 2026-11-16: cube as SMILE, the PO's play test
+
+- Written before the play (the plan's target, as for BUBBLE and FEED above): the system the theme aims at is "mass
+  surveillance and scoring". The PO is not told this; his own words are matched against it afterwards.
