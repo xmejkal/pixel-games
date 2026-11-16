@@ -17,7 +17,7 @@ CATALOG = (
     ("tunnel", "world3d", "Tunnel", ()),
     ("road", "world3d", "Road", ()),
     ("starfire", "space3d", "Starfire", ()),
-    ("cube", "space3d", "CubeTiming", ()),
+    ("cube", "space3d", "CubeTiming", ("cube",)),
     ("gravpong", "arcade2", "GravityPong", ("gravpong",)),
 )
 NAMES = tuple(row[0] for row in CATALOG)

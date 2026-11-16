@@ -4,8 +4,9 @@ Stack's noon came from art/sets/stack.py unchanged; P576 fills in the hours no g
 
 MORNING = ((112, 138, 184), (176, 192, 214), (232, 228, 214))  # snake (FEED): a clear cool sky, a pale warm haze
 NOON = ((128, 120, 150), (196, 192, 208), (238, 234, 226))  # stack (RENT): bleached, a grey-violet haze
+NIGHT = ((10, 10, 24), (22, 20, 44), (64, 40, 60))  # cube (SMILE): night ink's dark, a dull plum haze over the square
 MIDNIGHT = ((6, 8, 20), (16, 18, 40), (52, 36, 58))  # gravpong (BUBBLE): deep indigo, a mauve haze over the city
-HOURS = {10: MORNING, 12: NOON, 24: MIDNIGHT}
+HOURS = {10: MORNING, 12: NOON, 22: NIGHT, 24: MIDNIGHT}
 SODIUM = (120, 70, 40)  # the street lamps' glow low on the city at night, under the haze
 
 

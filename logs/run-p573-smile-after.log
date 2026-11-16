@@ -1,0 +1,189 @@
+1794819952.34 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+1794819952.37 backend s3lcd
+1794819952.37 mem 7956832
+1794819952.37 frame tft
+1794819952.83 lineup 15: marshmallow balls meteors bucket rescue flappy runner snake stack cave tunnel road starfire cube gravpong
+1794819952.83 import 1574 ms
+1794819952.83 ready
+1794819953.43 marshmallow internal largest 31744
+1794819953.43 marshmallow field internal
+1794819953.43 game marshmallow
+1794819953.44 switch marshmallow 600 ms, load 156 ms, import 418 ms
+1794819958.49 fps marshmallow 24
+1794819958.49 time marshmallow step 7.6 paint 12.4 send 3.8 gc 4.5 fps 24 worst 71 slowest 54 = step 0 paint 27 send 26 gc 0
+1794819958.50 phases marshmallow static 5 paint 10 fx 0 hud 20 over 0 title 37
+1794819958.50 avg marshmallow static 0.9 paint 6.9 fx 0.1 hud 1.0 over 0.0 title 3.3
+1794819958.51 heap marshmallow alloc 205328 glyphs 13
+1794819963.49 fps marshmallow 24
+1794819963.50 time marshmallow step 9.0 paint 10.0 send 3.8 gc 4.5 fps 24 worst 50 slowest 48 = step 11 paint 33 send 3 gc 0
+1794819963.51 phases marshmallow static 1 paint 10 fx 1 hud 22 over 0 title 0
+1794819963.51 avg marshmallow static 0.1 paint 8.0 fx 0.2 hud 1.3 over 0.0 title 0.0
+1794819963.52 heap marshmallow alloc 205808 glyphs 15
+1794819968.51 fps marshmallow 24
+1794819968.51 time marshmallow step 9.0 paint 10.0 send 3.6 gc 4.5 fps 24 worst 54 slowest 51 = step 12 paint 35 send 3 gc 0
+1794819968.52 phases marshmallow static 0 paint 10 fx 3 hud 23 over 0 title 0
+1794819968.52 avg marshmallow static 0.1 paint 8.2 fx 0.2 hud 1.2 over 0.0 title 0.0
+1794819968.52 heap marshmallow alloc 206144 glyphs 16
+1794819973.53 fps marshmallow 24
+1794819973.53 time marshmallow step 9.0 paint 10.1 send 3.6 gc 4.5 fps 24 worst 58 slowest 39 = step 9 paint 26 send 3 gc 0
+1794819973.54 phases marshmallow static 1 paint 10 fx 2 hud 16 over 0 title 0
+1794819973.54 avg marshmallow static 0.1 paint 8.1 fx 0.2 hud 1.3 over 0.0 title 0.0
+1794819973.55 heap marshmallow alloc 206880 glyphs 18
+1794819977.99 pick balls
+1794819978.90 game balls
+1794819978.90 switch balls 218 ms, load 0 ms, import 185 ms
+1794819980.19 pick meteors
+1794819981.59 meteors internal largest 31744
+1794819981.59 meteors field internal
+1794819981.60 game meteors
+1794819981.60 switch meteors 707 ms, load 292 ms, import 377 ms
+1794819983.48 pick bucket
+1794819984.57 game bucket
+1794819984.57 switch bucket 356 ms, load 177 ms, import 146 ms
+1794819985.60 pick rescue
+1794819986.17 pick flappy
+1794819986.53 pick runner
+1794819986.79 pick snake
+1794819987.00 pick stack
+1794819987.30 pick cave
+1794819987.57 pick tunnel
+1794819987.88 pick road
+1794819988.23 pick starfire
+1794819988.80 pick cube
+1794819990.25 game cube
+1794819990.25 switch cube 712 ms, load 503 ms, import 174 ms
+1794819995.34 fps cube 22
+1794819995.34 time cube step 1.2 paint 21.5 send 3.5 gc 6.5 fps 22 worst 65 slowest 45 = step 0 paint 40 send 3 gc 0
+1794819995.36 phases cube static 14 paint 17 fx 2 hud 41 over 0 title 57
+1794819995.37 avg cube static 19.0 paint 21.5 fx 0.4 hud 4.0 over 0.0 title 32.3
+1794819995.37 heap cube alloc 281280 glyphs 43
+1794820000.39 fps cube 21
+1794820000.39 time cube step 1.7 paint 26.0 send 3.3 gc 6.9 fps 21 worst 88 slowest 85 = step 39 paint 43 send 3 gc 33
+1794820000.39 phases cube static 13 paint 17 fx 9 hud 1 over 15 title 0
+1794820000.42 avg cube static 8.2 paint 14.1 fx 0.5 hud 0.9 over 2.0 title 0.0
+1794820000.42 heap cube alloc 272560 glyphs 43
+1794820005.40 fps cube 21
+1794820005.40 time cube step 1.3 paint 24.4 send 3.4 gc 6.5 fps 21 worst 104 slowest 54 = step 0 paint 50 send 3 gc 0
+1794820005.40 phases cube static 9 paint 20 fx 2 hud 18 over 27 title 0
+1794820005.41 avg cube static 8.1 paint 13.9 fx 0.2 hud 1.2 over 0.7 title 0.0
+1794820005.41 heap cube alloc 282064 glyphs 43
+1794820010.43 fps cube 22
+1794820010.43 time cube step 1.4 paint 23.4 send 3.4 gc 6.4 fps 22 worst 68 slowest 49 = step 5 paint 41 send 3 gc 0
+1794820010.44 phases cube static 9 paint 16 fx 2 hud 16 over 0 title 0
+1794820010.45 avg cube static 8.1 paint 13.7 fx 0.2 hud 1.2 over 0.0 title 0.0
+1794820010.45 heap cube alloc 299872 glyphs 43
+1794820015.46 fps cube 22
+1794820015.46 time cube step 1.4 paint 23.8 send 3.4 gc 6.5 fps 22 worst 69 slowest 50 = step 3 paint 43 send 3 gc 0
+1794820015.47 phases cube static 8 paint 21 fx 2 hud 18 over 0 title 0
+1794820015.48 avg cube static 8.1 paint 13.7 fx 0.3 hud 1.4 over 0.0 title 0.0
+1794820015.48 heap cube alloc 296752 glyphs 43
+1794820020.47 fps cube 22
+1794820020.47 time cube step 1.4 paint 23.9 send 3.5 gc 6.5 fps 22 worst 70 slowest 47 = step 4 paint 40 send 3 gc 0
+1794820020.48 phases cube static 9 paint 20 fx 3 hud 15 over 0 title 0
+1794820020.50 avg cube static 8.2 paint 13.9 fx 0.3 hud 1.2 over 0.0 title 0.0
+1794820020.50 heap cube alloc 296832 glyphs 43
+1794820025.47 fps cube 22
+1794820025.47 time cube step 1.4 paint 24.1 send 3.3 gc 6.6 fps 22 worst 84 slowest 50 = step 5 paint 42 send 3 gc 0
+1794820025.48 phases cube static 9 paint 16 fx 3 hud 17 over 0 title 0
+1794820025.49 avg cube static 8.1 paint 14.1 fx 0.3 hud 1.2 over 0.0 title 0.0
+1794820025.49 heap cube alloc 281328 glyphs 43
+1794820030.51 fps cube 22
+1794820030.51 time cube step 1.5 paint 24.9 send 3.4 gc 6.6 fps 22 worst 69 slowest 59 = step 5 paint 51 send 3 gc 0
+1794820030.52 phases cube static 9 paint 18 fx 2 hud 24 over 0 title 0
+1794820030.53 avg cube static 8.1 paint 14.3 fx 0.4 hud 1.7 over 0.0 title 0.0
+1794820030.53 heap cube alloc 285216 glyphs 43
+1794820035.50 fps cube 21
+1794820035.50 time cube step 1.7 paint 25.7 send 3.4 gc 6.7 fps 21 worst 111 slowest 108 = step 37 paint 67 send 3 gc 33
+1794820035.51 phases cube static 10 paint 23 fx 6 hud 24 over 18 title 0
+1794820035.52 avg cube static 8.1 paint 14.1 fx 0.5 hud 1.3 over 1.5 title 0.0
+1794820035.52 heap cube alloc 308448 glyphs 43
+1794820040.52 fps cube 21
+1794820040.52 time cube step 2.3 paint 26.0 send 3.4 gc 7.0 fps 21 worst 123 slowest 87 = step 39 paint 44 send 3 gc 33
+1794820040.52 phases cube static 13 paint 18 fx 9 hud 2 over 10 title 0
+1794820040.55 avg cube static 8.2 paint 14.4 fx 1.0 hud 0.9 over 1.2 title 0.0
+1794820040.55 heap cube alloc 322672 glyphs 43
+1794820045.56 fps cube 21
+1794820045.57 time cube step 1.2 paint 26.5 send 3.4 gc 6.5 fps 21 worst 73 slowest 48 = step 1 paint 43 send 3 gc 0
+1794820045.58 phases cube static 10 paint 20 fx 2 hud 15 over 15 title 0
+1794820045.59 avg cube static 8.1 paint 14.3 fx 0.2 hud 1.1 over 2.6 title 0.0
+1794820045.59 heap cube alloc 282176 glyphs 43
+1794820050.59 fps cube 22
+1794820050.59 time cube step 1.3 paint 23.5 send 3.4 gc 6.4 fps 22 worst 66 slowest 37 = step 1 paint 32 send 3 gc 0
+1794820050.60 phases cube static 9 paint 22 fx 3 hud 1 over 0 title 0
+1794820050.61 avg cube static 8.2 paint 13.8 fx 0.2 hud 0.9 over 0.0 title 0.0
+1794820050.61 heap cube alloc 298480 glyphs 43
+1794820055.61 fps cube 21
+1794820055.61 time cube step 2.2 paint 26.0 send 3.4 gc 7.0 fps 21 worst 88 slowest 86 = step 39 paint 43 send 3 gc 33
+1794820055.62 phases cube static 12 paint 19 fx 9 hud 15 over 13 title 0
+1794820055.63 avg cube static 8.2 paint 14.1 fx 0.8 hud 1.1 over 1.5 title 0.0
+1794820055.63 heap cube alloc 315472 glyphs 43
+1794820060.65 fps cube 20
+1794820060.65 time cube step 1.1 paint 32.5 send 3.3 gc 6.6 fps 20 worst 73 slowest 70 = step 1 paint 65 send 3 gc 0
+1794820060.66 phases cube static 10 paint 23 fx 5 hud 1 over 32 title 0
+1794820060.68 avg cube static 8.1 paint 14.9 fx 0.4 hud 1.0 over 7.8 title 0.0
+1794820060.68 heap cube alloc 272672 glyphs 43
+1794820065.64 fps cube 20
+1794820065.64 time cube step 0.9 paint 32.6 send 3.3 gc 6.3 fps 20 worst 98 slowest 63 = step 1 paint 59 send 3 gc 0
+1794820065.64 phases cube static 10 paint 24 fx 0 hud 2 over 26 title 0
+1794820065.65 avg cube static 8.2 paint 14.8 fx 0.1 hud 1.0 over 8.3 title 0.0
+1794820065.65 heap cube alloc 309792 glyphs 43
+1794820070.63 fps cube 20
+1794820070.63 time cube step 0.9 paint 32.9 send 3.3 gc 6.3 fps 20 worst 72 slowest 61 = step 1 paint 57 send 3 gc 0
+1794820070.65 phases cube static 9 paint 24 fx 0 hud 2 over 23 title 0
+1794820070.66 avg cube static 8.2 paint 15.0 fx 0.1 hud 1.0 over 8.3 title 0.0
+1794820070.66 heap cube alloc 309792 glyphs 43
+1794820075.70 fps cube 20
+1794820075.70 time cube step 0.9 paint 33.0 send 3.3 gc 6.6 fps 20 worst 73 slowest 68 = step 1 paint 63 send 3 gc 0
+1794820075.71 phases cube static 10 paint 24 fx 0 hud 2 over 30 title 0
+1794820075.73 avg cube static 8.3 paint 14.9 fx 0.1 hud 1.0 over 8.5 title 0.0
+1794820075.73 heap cube alloc 272560 glyphs 43
+1794820080.69 fps cube 20
+1794820080.69 time cube step 0.9 paint 33.3 send 3.2 gc 6.4 fps 20 worst 100 slowest 60 = step 1 paint 56 send 3 gc 0
+1794820080.70 phases cube static 9 paint 25 fx 0 hud 2 over 27 title 0
+1794820080.72 avg cube static 8.2 paint 14.9 fx 0.1 hud 1.0 over 8.8 title 0.0
+1794820080.72 heap cube alloc 300544 glyphs 43
+1794820085.69 fps cube 20
+1794820085.69 time cube step 0.9 paint 33.1 send 3.3 gc 6.4 fps 20 worst 73 slowest 70 = step 1 paint 65 send 3 gc 0
+1794820085.71 phases cube static 10 paint 24 fx 0 hud 1 over 32 title 0
+1794820085.72 avg cube static 8.1 paint 15.1 fx 0.1 hud 1.0 over 8.6 title 0.0
+1794820085.72 heap cube alloc 300656 glyphs 43
+1794820090.70 fps cube 20
+1794820090.70 time cube step 0.9 paint 32.9 send 3.2 gc 6.3 fps 20 worst 72 slowest 67 = step 1 paint 62 send 3 gc 0
+1794820090.71 phases cube static 10 paint 24 fx 0 hud 1 over 29 title 0
+1794820090.72 avg cube static 8.3 paint 15.0 fx 0.1 hud 1.0 over 8.3 title 0.0
+1794820090.72 heap cube alloc 309872 glyphs 43
+1794820095.76 fps cube 20
+1794820095.77 time cube step 0.9 paint 32.9 send 3.3 gc 6.6 fps 20 worst 73 slowest 70 = step 1 paint 65 send 3 gc 0
+1794820095.77 phases cube static 10 paint 23 fx 0 hud 1 over 32 title 0
+1794820095.79 avg cube static 8.1 paint 15.1 fx 0.1 hud 1.0 over 8.4 title 0.0
+1794820095.79 heap cube alloc 272576 glyphs 43
+1794820100.74 fps cube 20
+1794820100.74 time cube step 0.9 paint 32.7 send 3.3 gc 6.3 fps 20 worst 96 slowest 67 = step 1 paint 62 send 3 gc 0
+1794820100.75 phases cube static 10 paint 23 fx 0 hud 2 over 29 title 0
+1794820100.76 avg cube static 8.3 paint 14.8 fx 0.1 hud 1.0 over 8.3 title 0.0
+1794820100.76 heap cube alloc 309888 glyphs 43
+1794820105.80 fps cube 20
+1794820105.81 time cube step 0.9 paint 32.6 send 3.3 gc 6.6 fps 20 worst 73 slowest 63 = step 1 paint 58 send 3 gc 0
+1794820105.81 phases cube static 10 paint 23 fx 0 hud 2 over 26 title 0
+1794820105.84 avg cube static 8.2 paint 15.0 fx 0.1 hud 1.0 over 8.1 title 0.0
+1794820105.84 heap cube alloc 272576 glyphs 43
+1794820110.80 fps cube 21
+1794820110.80 time cube step 0.9 paint 31.6 send 3.2 gc 6.5 fps 21 worst 100 slowest 70 = step 1 paint 65 send 3 gc 0
+1794820110.82 phases cube static 9 paint 22 fx 0 hud 2 over 32 title 0
+1794820110.83 avg cube static 8.2 paint 13.8 fx 0.1 hud 1.0 over 8.2 title 0.0
+1794820110.83 heap cube alloc 282064 glyphs 43
+1794820115.80 fps cube 20
+1794820115.80 time cube step 0.9 paint 33.0 send 3.3 gc 6.3 fps 20 worst 80 slowest 63 = step 1 paint 59 send 3 gc 0
+1794820115.82 phases cube static 10 paint 23 fx 0 hud 2 over 26 title 0
+1794820115.83 avg cube static 8.2 paint 15.0 fx 0.1 hud 1.0 over 8.4 title 0.0
+1794820115.83 heap cube alloc 309888 glyphs 43
+1794820120.80 fps cube 20
+1794820120.80 time cube step 0.9 paint 32.9 send 3.2 gc 6.3 fps 20 worst 72 slowest 63 = step 1 paint 58 send 3 gc 0
+1794820120.82 phases cube static 10 paint 23 fx 0 hud 1 over 25 title 0
+1794820120.83 avg cube static 8.3 paint 14.9 fx 0.1 hud 1.0 over 8.4 title 0.0
+1794820120.83 heap cube alloc 309888 glyphs 43
+1794820125.87 fps cube 20
+1794820125.88 time cube step 0.9 paint 32.7 send 3.3 gc 6.6 fps 20 worst 72 slowest 61 = step 1 paint 56 send 3 gc 0
+1794820125.88 phases cube static 10 paint 23 fx 0 hud 2 over 22 title 0
+1794820125.90 avg cube static 8.2 paint 15.0 fx 0.1 hud 1.0 over 8.1 title 0.0
+1794820125.90 heap cube alloc 272576 glyphs 43

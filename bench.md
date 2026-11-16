@@ -1603,3 +1603,22 @@ than the control.
   at most 33 blits, 13 blended. The build before the review drew at most 26 blits, 3 blended (the halo, the ping and
   the ripple, now opaque, as are the bite and the bulge). Not measured on the board: the after run shows what the
   glows cost against the 24 fps line.
+
+## P573 (#778), 2026-11-16: cube as SMILE, the PO's play test
+
+- Written before the play (the plan's target, as for BUBBLE and FEED above): the system the theme aims at is "mass
+  surveillance and scoring". The PO is not told this; his own words are matched against it afterwards.
+- Before and after (2026-11-16, the same evening, `tools/box.py log` with a time on each line, all 15 games, .mpy):
+  the "before" run is the PO's play of master's CubeTiming (b8a5410), the "after" run his play of this branch
+  (28bf2a4, the review's fixes in). A pure-play interval is a 5 s fps line whose `avg` line has `over 0.0 title 0.0`.
+
+| Run | Log | What | Pure-play intervals | fps in pure play | fps on the game-over screen |
+|---|---|---|---|---|---|
+| before | `logs/run-p573-cube-before.log` | master's cube, the PO's play | 17 | 23.0 (all 23) | 20 to 22 |
+| after | `logs/run-p573-smile-after.log` | SMILE, the PO's play | 6 | 22.0 (all 22) | 20 to 21 |
+
+- The fps line passes: 22.0 is 1 below 23.0, with at least 6 pure-play intervals in each run. SMILE's switch:
+  `switch cube 712 ms, load 503 ms, import 174 ms`.
+- The PO's words, after the play: "No the game is not exciting, its still just  not much fun. But its us experimenting
+  and testing spark, so its ok." The verdict line ("exciting" or stronger) is not met. The PO accepts the slice as it
+  is, so it merges and does not go back as a feel slice. His words do not name the target system.

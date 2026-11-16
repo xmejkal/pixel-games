@@ -31,7 +31,7 @@ def blend(fg, bg, alpha):
 
 
 class DrawingTft(Tft):
-    """test_fire's Tft with the calls lcd.TftOut.draw makes: fill, line, blit_buffer, track and show."""
+    """test_fire's Tft with the calls lcd.TftOut.draw makes: fill, line, fill_polygon, blit_buffer, track and show."""
 
     def fill(self, c):
         self.fill_rect(0, 0, W, H, c)
@@ -70,6 +70,39 @@ class DrawingTft(Tft):
             if err < 0:
                 err += dx
                 y0 += ystep
+
+    def hline(self, x, y, w, c, alpha=255):
+        """s3lcd.c's fast_hline: the row clipped to the panel, each pixel blended under alpha 255."""
+        if not 0 <= y < H:
+            return
+        x0, x1 = max(x, 0), min(x + w, W)
+        if alpha == 255:
+            return self.fill_rect(x0, y, x1 - x0, 1, c)
+        dst = memoryview(self.frame).cast("H")
+        for xx in range(x0, x1):
+            dst[y * W + xx] = blend(c, dst[y * W + xx], alpha)
+
+    def fill_polygon(self, polygon, x, y, c, alpha=255):
+        """s3lcd.c's fill_polygon (PolygonFill, Darel Rex Finley's scanlines): each row from the topmost point to the
+        one before the bottommost, the edges' crossings sorted and filled in pairs, each span with both its ends,
+        clipped to the points' extent. The points are whole numbers, as mp_obj_get_int takes them."""
+        pts = [(float(int(p[0])), float(int(p[1]))) for p in polygon]
+        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+        min_x, max_x, min_y, max_y = int(min(xs)), int(max(xs)), int(min(ys)), int(max(ys))
+        for row in range(min_y, max_y):
+            nodes, j = [], len(pts) - 1
+            for i in range(len(pts)):
+                (xi, yi), (xj, yj) = pts[i], pts[j]
+                if (yi < row <= yj) or (yj < row <= yi):
+                    nodes.append(int(xi + (row - yi) / (yj - yi) * (xj - xi)))
+                j = i
+            nodes.sort()
+            for i in range(0, len(nodes) - 1, 2):
+                if nodes[i] >= max_x:
+                    break
+                if nodes[i + 1] > min_x:
+                    a, b = max(nodes[i], min_x), min(nodes[i + 1], max_x)
+                    self.hline(x + a, y + row, b - a + 1, c, alpha & 255)
 
     def blit_buffer(self, buf, x, y, w, h, alpha=255, key=-1):
         """s3lcd.c's blit_buffer: buf holds w * h uint16 pixels, row by row, in the frame's own byte order. Wholly on

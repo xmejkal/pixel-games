@@ -61,7 +61,7 @@ class DeployTest(unittest.TestCase):
         runner = FakeRunner(FULL)
         box.Deploy(runner).run(None)
         packs = [["cp", "games/packs/%s.pak" % s, ":packs/%s.pak" % s]
-                 for s in ("runner", "meteors", "bucket", "rescue", "flappy", "snake", "stack", "gravpong")]
+                 for s in ("runner", "meteors", "bucket", "rescue", "flappy", "snake", "stack", "cube", "gravpong")]
         self.assertEqual([["ls", ":"], COPY] + packs + [["rm", ":lineup.py"], ["reset"]], runner.commands)
 
     def test_all_on_a_board_with_no_lineup_removes_nothing(self):

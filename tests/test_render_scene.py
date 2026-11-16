@@ -1,5 +1,5 @@
 """tools/render_scene.py and tests/drawing_tft.py on the Mac (P795): the font's parse into the framebuf stub, the
-stand-in display's blit, blend and line against the driver's, pictures.ROOT, the button patterns, the font refusal,
+stand-in display's blit, blend, line and polygon fill against the driver's, pictures.ROOT, the button patterns, the font refusal,
 and a smoke run of every subject as a subprocess of the tool. framebuf comes from tests/stubs and time gets the
 MicroPython ticks functions, as in test_fire. Run from the repository root: python3 -B -m unittest tests.test_render_scene.
 --- MVP (P795) ---"""
@@ -227,6 +227,120 @@ class LineTest(unittest.TestCase):
         tft = DrawingTft()
         tft.line(0, 400, 0, 500, 1)
         self.assertEqual([], self.lit(tft))
+
+
+class ClearTest(unittest.TestCase):
+    """lcd.TftOut.draw with a painted game whose pictures cannot be drawn (ORIENTATION 180: the canvas has no
+    pictures, so the game paints its flat look) clears the frame each time, as for a game without art (P573's
+    review: FEED, BUBBLE and SMILE kept their covers and the flat look smeared over the last frame)."""
+
+    class Painted:
+        covers = True
+        bg = gfx.c565(20, 30, 40)
+
+        def paint_static(self, cv):
+            pass  # pictures.draw answers False on this canvas: nothing drawn
+
+        def draw(self, cv):
+            pass
+
+    def frame_is_bg(self, pictures):
+        tft = DrawingTft()
+        tft.fill_rect(0, 0, lcd.PANEL_W, lcd.PANEL_H, gfx.WHITE)  # the last frame
+        out = lcd.TftOut(tft)
+        out.canvas.pictures = pictures
+        game = self.Painted()
+        out.draw(game, [0, 0, 0, 0])
+        return set(memoryview(tft.frame).cast("H")) == {game.bg}
+
+    def test_a_covering_game_on_a_canvas_without_pictures_is_cleared(self):
+        self.assertTrue(self.frame_is_bg(False))
+
+    def test_a_covering_game_with_pictures_is_not(self):
+        self.assertFalse(self.frame_is_bg(True))  # its still picture covers the screen: no fill under it
+
+
+class PolygonTest(unittest.TestCase):
+    """fill_polygon on the stand-in as the driver's PolygonFill (s3lcd.c, probe635's notes), and lcd.TftCanvas.poly
+    (P573: SMILE's housing and the lens's light)."""
+
+    def lit(self, tft):
+        return {(k % lcd.PANEL_W, k // lcd.PANEL_W) for k, v in enumerate(memoryview(tft.frame).cast("H")) if v}
+
+    def test_a_quad_fills_the_rows_strictly_between_its_top_and_bottom_each_span_with_both_ends(self):
+        tft = DrawingTft()
+        tft.fill_polygon([[10, 10], [20, 10], [20, 15], [10, 15]], 0, 0, 1)
+        self.assertEqual({(x, y) for y in range(11, 15) for x in range(10, 21)}, self.lit(tft))
+        tft = DrawingTft()
+        tft.fill_polygon([[10, 10], [20, 10], [20, 15], [10, 15]], 5, 7, 1)  # moved by its x and y
+        self.assertEqual({(x + 5, y + 7) for y in range(11, 15) for x in range(10, 21)}, self.lit(tft))
+
+    def test_a_see_through_polygon_blends_each_pixel(self):
+        tft = DrawingTft()
+        tft.fill_rect(0, 0, 40, 40, gfx.BLUE)
+        tft.fill_polygon([[0, 0], [30, 0], [0, 30]], 0, 0, gfx.RED, 128)
+        px = memoryview(tft.frame).cast("H")
+        self.assertEqual(blend(gfx.RED, gfx.BLUE, 128), px[5 * lcd.PANEL_W + 5])
+        self.assertEqual(gfx.BLUE, px[35 * lcd.PANEL_W + 35])
+
+    def test_the_canvas_fills_to_its_edges_and_not_a_pixel_past_them(self):
+        tft = DrawingTft()
+        lcd.TftCanvas(tft).poly([[100, 50], [140, 50], [140, 80], [100, 80]], gfx.WHITE)
+        img, on, off = tft.image(), (255, 255, 255), (0, 0, 0)
+        for (x, y), colour in (((101, 65), on), ((99, 65), off), ((139, 65), on), ((141, 65), off), ((120, 51), on),
+                               ((120, 49), off), ((120, 79), on), ((120, 81), off)):
+            self.assertEqual(colour, img.getpixel((x, y)), (x, y))
+
+    def test_smiles_cone_blends_bone_over_the_frame(self):
+        import space3d
+        tft = DrawingTft()
+        tft.fill(gfx.BLUE)
+        game = space3d.CubeTiming()
+        game.draw_cone(lcd.TftCanvas(tft), 160, 190, True)
+        px = memoryview(tft.frame).cast("H")
+        x, y = 230, 205  # game px inside the triangle from (160, 190) to the monitor face's left edge
+        self.assertEqual(blend(game.BONE, gfx.BLUE, game.CONE_LOCK_ALPHA), px[y + (lcd.PANEL_H - 1 - x) * lcd.PANEL_W])
+        x, y = 230, 170  # above it
+        self.assertEqual(gfx.BLUE, px[y + (lcd.PANEL_H - 1 - x) * lcd.PANEL_W])
+
+    def test_the_canvas_turns_the_game_points_and_keeps_one_list_for_each_count(self):
+        tft = DrawingTft()
+        cv = lcd.TftCanvas(tft)
+        quad = [[100, 50], [140, 50], [140, 80], [100, 80]]
+        cv.poly(quad, gfx.WHITE)
+        made = cv.polys[4]
+        cv.poly(quad, gfx.WHITE)
+        self.assertIs(made, cv.polys[4])  # no list a call
+        img = tft.image()
+        self.assertEqual((255, 255, 255), img.getpixel((120, 65)))
+        for x, y in ((98, 65), (142, 65), (120, 48), (120, 82)):
+            self.assertEqual((0, 0, 0), img.getpixel((x, y)), (x, y))
+
+
+class CanvasLineTest(unittest.TestCase):
+    """lcd.TftCanvas.line: game points to the panel, clamped to +-2000 and clipped (P573's review wrote its clamps
+    out)."""
+
+    def lit(self, tft):
+        return {(k % lcd.PANEL_W, k // lcd.PANEL_W) for k, v in enumerate(memoryview(tft.frame).cast("H")) if v}
+
+    def test_a_game_line_lands_on_the_panel_turned(self):
+        tft = DrawingTft()
+        lcd.TftCanvas(tft).line(5, 7, 9, 7, 1)
+        self.assertEqual({(7, lcd.PANEL_H - 1 - x) for x in range(5, 10)}, self.lit(tft))
+
+    def test_a_far_end_is_clamped_and_a_line_outside_the_clip_is_left_out(self):
+        tft = DrawingTft()
+        lcd.TftCanvas(tft).line(5, 7, 1e9, 7, 1)  # clamped to 2000, then the driver drops what is off the panel
+        self.assertEqual({(7, lcd.PANEL_H - 1 - x) for x in range(5, 320)}, self.lit(tft))
+        tft = DrawingTft()
+        cv = lcd.TftCanvas(tft)
+        cv.clip = (100, 100, 200, 200)
+        cv.line(5, 7, 90, 7, 1)
+        cv.line(150, 250, 150, 300, 1)
+        self.assertEqual(set(), self.lit(tft))
+        cv.line(50, 150, 120, 150, 1)  # crosses into the clip: drawn whole, as before
+        self.assertEqual(71, len(self.lit(tft)))
 
 
 class PicturesRootTest(unittest.TestCase):

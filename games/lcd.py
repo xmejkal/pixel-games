@@ -27,7 +27,7 @@ import framebuf
 
 import gdi
 import gfx
-from gfx import FULL, Canvas, clamp
+from gfx import FULL, Canvas
 
 ORIENTATION = 0  # 0: upright in the PO's playing hold, the panel's row 0 along the right edge (bench.md); 180: turned
 PANEL_W, PANEL_H = 240, 320  # the panel's own width and height at rotation 0
@@ -66,6 +66,7 @@ class Strip:
 class TftCanvas(Canvas):
     def __init__(self, tft):  # no big buffers: the driver owns the framebuffer; bg_ok, because TftOut paints the still picture
         self.tft, self.full, self.bg_ok, self.clip, self.ops, self.cache, self.kept = tft, False, True, FULL, (), {}, {}
+        self.polys = {}  # a count of points: the panel's points for poly, made once
         self.mono = framebuf.FrameBuffer(bytearray(16 * 8), 16 * 8, 8, framebuf.MONO_HLSB)
         if ORIENTATION not in (0, 180):
             raise ValueError("ORIENTATION must be 0 or 180, not %r" % ORIENTATION)
@@ -133,10 +134,50 @@ class TftCanvas(Canvas):
         under 255 it blends each pixel with the frame (P762)."""
         self.tft.blit_buffer(buf, y, PANEL_H - x - w, h, w, alpha, key)
 
+    def poly(self, points, c, alpha=255):
+        """A filled polygon, points a list of [x, y] in game px, by the driver's fill_polygon: rows of hlines, each
+        blended when alpha is under 255, its tiles marked (P573). The panel's points go into a list made once for
+        each count of points, so a frame makes no list. The driver fills the rows strictly between the topmost and
+        the bottommost point (a game column at each end is left out) and allocates its own points. Only a painted
+        look draws polygons (SMILE's housing and its lens's light), and pictures need ORIENTATION 0, so the map is
+        line's at 0 only."""
+        n = len(points)
+        out = self.polys.get(n)
+        if out is None:
+            out = self.polys[n] = [[0, 0] for _ in range(n)]
+        for i in range(n):
+            x, y = points[i]
+            q = out[i]
+            q[0] = int(y)
+            q[1] = PANEL_H - 1 - int(x)
+        self.tft.fill_polygon(out, 0, 0, c, alpha)
+
     def line(self, x0, y0, x1, y1, c):
-        x0, y0, x1, y1 = [clamp(int(v), -2000, 2000) for v in (x0, y0, x1, y1)]
-        cx0, cy0, cx1, cy1 = self.clip
-        if max(x0, x1) >= cx0 and min(x0, x1) < cx1 and max(y0, y1) >= cy0 and min(y0, y1) < cy1:
+        # The four clamps to +-2000 written out, as fill writes its clip: a list and a tuple a call were made here,
+        # and SMILE draws about 27 lines a frame (P573's review)
+        x0 = int(x0)
+        if x0 < -2000:
+            x0 = -2000
+        elif x0 > 2000:
+            x0 = 2000
+        y0 = int(y0)
+        if y0 < -2000:
+            y0 = -2000
+        elif y0 > 2000:
+            y0 = 2000
+        x1 = int(x1)
+        if x1 < -2000:
+            x1 = -2000
+        elif x1 > 2000:
+            x1 = 2000
+        y1 = int(y1)
+        if y1 < -2000:
+            y1 = -2000
+        elif y1 > 2000:
+            y1 = 2000
+        clip = self.clip
+        if (x0 >= clip[0] or x1 >= clip[0]) and (x0 < clip[2] or x1 < clip[2]) and \
+                (y0 >= clip[1] or y1 >= clip[1]) and (y0 < clip[3] or y1 < clip[3]):
             if self.turned:  # the same map as fill, for two points; the driver drops the pixels off the panel
                 self.tft.line(PANEL_W - 1 - y0, x0, PANEL_W - 1 - y1, x1, c)
             else:
@@ -181,8 +222,8 @@ class TftOut:
         t1, cv, tft = time.ticks_us(), self.canvas, self.tft
         tft.track(self.fresh)  # untracked, the background fill and the still picture mark nothing; fresh, fill marks all
         self.fresh = False
-        if not game.covers:  # a game whose still picture covers the whole screen needs no fill under it
-            tft.fill(game.bg)
+        if not (game.covers and cv.pictures):  # a still picture that covers the screen needs no fill under it; a
+            tft.fill(game.bg)  # game with art on a canvas without pictures (ORIENTATION 180) paints flat: clear it
         game.paint_static(cv)
         gfx.slowest(0, t1)  # the background fill and the still picture: no phase in Game.draw times them here (bg_ok)
         tft.track(True)

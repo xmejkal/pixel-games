@@ -46,6 +46,7 @@ MODULES = {
     "bucket.py": (("bucket", None),),
     "meteors.py": (("meteors", None),),
     "rescue.py": (("rescue", None),),
+    "space3d.py": (("cube", None),),
 }
 
 
