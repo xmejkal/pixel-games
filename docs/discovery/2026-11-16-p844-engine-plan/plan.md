@@ -22,7 +22,7 @@ makes.
 >   (P843). A spike decides whether a reset between games pays.
 > - **What you see:** the box plays the same through the package stages, with one new line at boot. You play at the
 >   input, the switch, the audio and each game's stage. Each board run needs the box on the USB cable.
-> - **Ready now:** the net (N), the new names (0a) and the package (0b-1).
+> - **Ready now:** the net (N), the new names in two PRs (0a-1, 0a-2) and the package (0b-1).
 
 ## Council
 
@@ -122,6 +122,33 @@ line per change:
     stays engine-agnostic. A contract test reads spark's fixture records. The engine's tool gets `--help` and
     `--json`. The engine ships its own docs and Claude Code skills.
 
+Round 2 ran on 2026-11-16: the refuter on Opus checked `64948db`, with a peer council's extra checks. One line per
+item:
+
+1. R2: spark's `assign_pins.py` refuses a signal on a strap pin and exits 1, so `GDI_DC` cannot go into
+   `requirements.json`. Stage 7b keeps `DC` in a hand-written `connector_pins.py` with `gdi.py`'s source, and its card
+   is Needed by P527 (spark #726, open). No new card.
+2. R2: the saved image is the full set `~/esp/rollback/engine-2026-11-13/` with its `SHA256SUMS`, and a copy at
+   `~/esp/p844-pre0a-micropython.bin`. Step zero is done. The undo flashes that set.
+3. R2: 0b-2 lists every caller it changes: `tests/test_app_knob.py:125`, `tests/test_signals.py:194-196`,
+   `probe768_box.py:115`, `probe768_sum.py:44`, `probe733_games.py:634`, beside the four probes of round 1.
+4. R2: `mutate.py` builds a dotted name only under `scripts/` (`tools/mutate.py:264-270`). 0b-1 files a spark card
+   for package support. The package's rows are proven with `--anchors` until then.
+5. R2: `accel` no longer imports `engine_config`, which the boundary forbids. `main.py` reads it and passes
+   `reference=` to the `Chooser`.
+6. R2: the module is `engine/signals.py`, not `events.py`, because `signals.py:3-4` keeps "event" for a C physics
+   event.
+7. R2: the old firmware's answer is captured before the flash and the new one after. The "no C" answer is written by
+   hand, with no stock-image flash.
+8. R2: the `.engine` lines are 28 in the tests, `tests/test_bucket.py:497` and `tools/render_scene.py:177-178`. 5b
+   moves the last into `tests/mac_host.py`. 5a's `Audio` record names its pins by signal name and holds no numbers.
+9. R2: 0a is two PRs, pixel-engine first (0a-1), then pixel-games (0a-2), and two cards.
+10. R2: the net's game level took 42 s on 8 workers and 104 s in series (snake alone 33 s), so "under 90 s" holds only
+    in parallel. The page says so.
+11. R2, not applied: `ports/esp32/modesp32.c:366` stays. Line 365 is `HEAP_DATA`, and `HEAP_EXEC` is at 366.
+12. R2, rejected by the refuter, no change: `help('modules')` as the firmware probe (a built-in import takes no
+    executable memory, and `help` cannot see `HeatField.cool`), and `engine_config` taking executable memory.
+
 ## Words on this page
 
 | Word | Means here |
@@ -169,7 +196,7 @@ In pixel-games, stages 0b-1 to 8:
 
 ```text
 games/                     the board's root, as today: box.py deploy copies it
-  engine/                  the package (0b-1 on): events, clock (0b-1), accel (0b-2), input (1), scenes (3a),
+  engine/                  the package (0b-1 on): signals, clock (0b-1), accel (0b-2), input (1), scenes (3a),
                            display, effects (3c), assets (4), audio, ui (5a), physics (5b), loop (6)
   drivers/                 input/buttons.py, input/encoder.py (1), audio/i2s_amp.py (5a), display/st7789.py (6)
   kit.py                   (3c) ArcadeGame, Dice, the HUD, hint_lines
@@ -293,7 +320,8 @@ or the Python differs from the record, the net fails with `toolchain changed: re
    `test_a_changed_cue_is_caught`: each renders one subject with one patch and expects a failure.
 5. `test_two_runs_give_the_same_hashes`.
 
-**The budget.** The full tier runs in under 90 s. The fast tier (frames 1 and 5, the App level, the mixer) runs in
+**The budget.** The full tier runs in under 90 s only in parallel. Round 2 timed the game level on the Mac: 42 s
+on 8 workers, 104 s in series, and snake alone 33 s. So `test_golden` runs one process per subject in a pool. The fast tier (frames 1 and 5, the App level, the mixer) runs in
 every story run. The full tier runs at the full-suite stages.
 
 **What it needs.** clang and MicroPython's font from the clone `build.sh` makes. When either is missing, the net
@@ -306,7 +334,7 @@ fills the board gates' empty cells.
 
 **What the PO sees:** nothing on the box. The PR shows the subjects and their hashes.
 
-**Done when** `python3 -m unittest tests.test_golden` passes twice in a row in under 90 s, each negative test fails
+**Done when** `python3 -m unittest tests.test_golden` passes twice in a row in under 90 s on 8 workers, each negative test fails
 the net as expected, and bench.md has the baseline's numbers.
 
 ## Stage 0a: the C module's new names
@@ -315,11 +343,14 @@ the net as expected, and bench.md has the baseline's numbers.
 `engine` can load on the board → `_engine` in a flashed firmware, `_crackle.mpy` on the board, and a deploy that
 refuses the old firmware.
 
-**Step zero, before any build.** The rebuild overwrites the image, and builds are not reproducible (bench.md). So the
-PR first copies `~/esp/micropython-v1.29.0/ports/esp32/build-engine/micropython.bin` (1,821,872 B on 2026-11-13) to a
-kept file outside the repository, `~/esp/images/engine-pre-0a.bin`, and writes its sha256 in the PR.
+**Step zero is done.** The rebuild overwrites the image, and builds are not reproducible (bench.md). So the full set
+of today's build is kept outside the repository in `~/esp/rollback/engine-2026-11-13/`: `firmware.bin`,
+`micropython.bin`, `bootloader/`, `partition_table/`, `flash_args` (the offsets 0x0, 0x8000 and 0x10000) and
+`SHA256SUMS`. `micropython.bin` is 1,821,872 B with the sha256
+`21b8ba912924981459d5b3b1b13c8a1db8d699f25ab7f2931bcd2ebb1584d773`. A second copy is
+`~/esp/p844-pre0a-micropython.bin`. The PR quotes `SHA256SUMS`.
 
-**The pixel-engine PR:**
+**0a-1, the pixel-engine PR** (first, alone: the C's new names):
 
 - `engine/binding.c:683` and `:701`: `MP_QSTR_engine` becomes `MP_QSTR__engine`. The CMake name `usermod_engine`
   (`engine/micropython.cmake:4`) stays: no module sees it.
@@ -328,12 +359,13 @@ kept file outside the repository, `~/esp/images/engine-pre-0a.bin`, and writes i
   starts with `_`.
 - `engine/README.md` names the two modules.
 
-**The pixel-games PR** (it bumps the submodule):
+**0a-2, the pixel-games PR** (it bumps the submodule to 0a-1's merge):
 
 - The games import the C under its new name and keep their attribute: `import _engine as engine` at `balls.py:24`,
   `fire.py:40`, `plugins.py:23`, `bank.py:37` and `crackle.py:188`, `:275`. The crackle: `import _crackle as
-  crackle_c` at `crackle.py:141`, and `import _crackle as native` at `:185` and `:271`. So the 30 test lines that set
-  `fire.engine`, `plugins.engine` and `balls.engine` stay as they are.
+  crackle_c` at `crackle.py:141`, and `import _crackle as native` at `:185` and `:271`. So the lines that set
+  `fire.engine`, `plugins.engine` and `balls.engine` stay as they are: 28 in the tests, `tests/test_bucket.py:497`'s
+  `setattr`, and `tools/render_scene.py:177-178`.
 - `tests/test_plugins.py:99-109` sets `sys.modules["_engine"]`, not `sys.modules["engine"]`.
   `tests/test_fire.py:209-215`'s docstring says why `fire.engine` is `None` on the Mac.
 - `tools/box.py` gets two jobs:
@@ -346,8 +378,9 @@ kept file outside the repository, `~/esp/images/engine-pre-0a.bin`, and writes i
     - no C at all: the deploy goes on, as for the stock image.
     - any other answer: `refused: unknown firmware answer: <answer>`.
 
-    A dry run never refuses. The three real answers (old, new, no C) are kept in `tests/fixtures/firmware/` from 0a's
-    first board run. Until then the tests use the strings the probe prints. Stage 9 removes the check.
+    A dry run never refuses. The answers are kept in `tests/fixtures/firmware/`. The old firmware's answer is
+    captured before the flash, and the new one after it. The "no C" answer is written by hand from the probe's
+    text, because no stock image is flashed for it. Stage 9 removes the check.
   - `copy_crackle()`: if `engine/natmod/crackle/_crackle.mpy` is built, it copies it. If not, it prints
     `no _crackle.mpy: Fire plays without its crackle` and goes on. It keeps `:crackle_c.mpy` until stage 9, so a
     rollback keeps the crackle.
@@ -374,7 +407,8 @@ hash checked. Between the flash and the deploy, the games on the board import `e
 So the deploy follows at once. Then the check: `import _engine` has the five names, and `import engine` raises
 `ImportError`.
 
-**The undo.** Flash `~/esp/images/engine-pre-0a.bin` the same way. Check out the commit before 0a and its submodule
+**The undo.** Flash `~/esp/rollback/engine-2026-11-13/micropython.bin` at 0x10000 the same way, after
+`shasum -a 256 -c SHA256SUMS` in that folder. `flash_args` holds the offsets for a full write. Check out the commit before 0a and its submodule
 commit. Deploy again. The board's `:crackle_c.mpy` is still there.
 
 **Mutation rows** (`tests/mutations/p8xx-stage0a.json`): the `ImportError` branch of `check_firmware` passes the old
@@ -395,10 +429,10 @@ copies and cleans, behind a boundary test.
 
 - `games/engine/__init__.py`: empty, so each module imports alone (the T-Display later takes only `input` and the
   link).
-- `games/engine/events.py`: `Signals`, moved from `games/signals.py` with no change. The five importers change their
+- `games/engine/signals.py`: `Signals`, moved from `games/signals.py` with no change. The name stays `signals`,
+  because the module's docstring keeps "event" for a C physics event (`signals.py:3-4`). The five importers change their
   line: `app.py:55`, `tests/test_signals.py:29`, `tests/test_bucket.py:31`, `tests/test_meteors.py:37`,
-  `tests/test_marshmallow.py:20`. They write `from engine import events`, so `mutate.py` finds them by the dotted
-  name. No shim: no tool or probe names `signals.py`.
+  `tests/test_marshmallow.py:20`. They write `from engine import signals`. No shim: no tool or probe names `signals.py`.
 - `games/engine/clock.py`: `since`, `ticks_us` and `ticks_diff`, moved from `pictures.py:138-150`. `pictures.py`
   imports them, so `pictures.since` (`app.py:59`) still works until stage 4.
 - `games/engine/README.md`: what the package is, and the rule of two versions.
@@ -411,13 +445,14 @@ modules that moved into the package (here `signals`). The deploy removes their `
 "every root module that `games/` lacks" also deletes the board's `boot.py`, which MicroPython writes
 (`ports/esp32/modules/inisetup.py:47`). `--py` copies the sources and removes their `.mpy` files. MicroPython runs a
 package's `__init__.mpy` (`py/builtinimport.c:504-508`). `tools/crackle.sh:74` copies `app.py`, which now imports
-`engine.events`, so `crackle.sh` copies the `engine` folder too.
+`engine.signals`, so `crackle.sh` copies the `engine` folder too.
 
 **The boundary.** `tests/test_engine_boundary.py` walks every `Import` and `ImportFrom` of the package at any depth
-with `ast`. A package module imports only `engine.*` and MicroPython's built-in modules (a list in the test).
+with `ast`. A package module imports only `engine.*` and MicroPython's built-in modules (a list in the test). Only
+`accel` imports `_engine`, from 0b-2 on. No package module imports `engine_config`: `main.py` reads it.
 `importlib` and `__import__` are refused. `tests/boundary_fixtures/` holds one file per kind of violation. Its names
 do not start with `test`, so discovery skips them. The direction table names each module's allowed imports. It starts
-as `{"events": (), "clock": ()}` and grows with each stage.
+as `{"signals": (), "clock": (), "accel": ("_engine",)}` and grows with each stage.
 
 **The tests that fail first:**
 
@@ -444,9 +479,12 @@ as `{"events": (), "clock": ()}` and grows with each stage.
 If the package imports more than 10 % slower than flat files, the PR says so, and a card to freeze the package with
 `manifest.py` is filed.
 
-**`mutate.py` and the package.** The PR reads how spark's `tools/mutate.py` finds the tests of a module by its dotted
-name (its docstring, "near_tests"). If it cannot find `tests/test_engine_boundary.py` for `games/engine/events.py`, a
-spark card is filed, and the rows of 0b-2 wait for it.
+**`mutate.py` and the package.** spark's `tools/mutate.py` builds a dotted name only for a path under `scripts/`
+(`tools/mutate.py:264-270`). Any other file is imported by its stem from its own folder. So it cannot import
+`games/engine/signals.py` as `engine.signals`, and its run cannot find the tests that import the package. `--anchors`
+still works, because it only checks the rows' anchors and syntax. 0b-1 files a spark card: package support in
+`mutate.py` for a root other than `scripts/`. The package's rows are proven with `--anchors`, and their runs wait for
+that card.
 
 **Gates:** the story run, the full suite, a deploy and the board log.
 
@@ -466,13 +504,9 @@ lines with every game playing from the package, the deploy tests pass, and bench
 
 **Files and classes:**
 
-- `games/engine/accel.py` imports only `engine_config` and `os`:
+- `games/engine/accel.py` imports only `os` and `_engine`:
 
   ```python
-  def reference_parts():
-      """engine_config.REFERENCE: "all", or the names of the parts forced to their reference version. () without
-      the file."""
-
   class Chooser:
       """Chooses each part's version once and remembers why, for the boot line."""
       def __init__(self, reference=()): ...
@@ -487,12 +521,18 @@ lines with every game playing from the package, the deploy tests pass, and bench
   `_crackle.mpy` if `os.stat` finds the file. `accel` never imports `_crackle`. Native code takes executable memory
   that stays taken until the next soft reset (`ports/esp32/main.c:301-316`, `:219`), so the crackle loads when Fire
   builds, as today. A forced name that no `choose` call used shows at the end of the line as `unused=<name>`.
-- `games/main.py` becomes the composition root. Its `compose()` builds the knob and the speaker from the chosen
+- `games/main.py` becomes the composition root. It reads `engine_config.REFERENCE` (`"all"`, a tuple of part names,
+  or `()` when the file is absent) and passes it as `Chooser(reference=...)`. Its `compose()` builds the knob and the speaker from the chosen
   classes and prints `chooser.line()`. `if __name__ == "__main__":` runs it, so a test imports it. `Speaker` takes its
   `VoiceSum` in its constructor (`speaker.py:27`), and `speaker.voice_sum()` goes. `open_knob(volume)` takes the
   chosen volume, and its `try` import (`app.py:433-436`) goes. `run` loses its fallback `knob or open_knob()`
-  (`app.py:457`). The four probes that relied on it build their knob through `main.compose()`:
-  `probe768_box.py:114`, `probe764_box.py:71`, `probe550.py:68` and `tools/probe635.py:198`.
+  (`app.py:457`). The callers that change with it:
+  - the four probes that relied on the fallback build their knob through `main.compose()`: `probe768_box.py:114`,
+    `probe764_box.py:71`, `probe550.py:68` and `tools/probe635.py:198`.
+  - `tests/test_app_knob.py:125` calls `app.open_knob()` with no volume.
+  - `tests/test_signals.py:194-196` and `probe768_box.py:115` call `app.open_speaker`.
+  - `probe768_sum.py:44` calls `voice_sum()`.
+  - `probe733_games.py:634` passes `knob=None` when `KNOB` is off, which the fallback filled.
 - `engine_config.py` on the board: `REFERENCE = ("volume",)  # tools/box.py deploy --engine`.
   `box.py deploy --engine reference` writes `REFERENCE = "all"`, and `--engine reference=volume` writes the named
   parts. A deploy without `--engine` removes `:engine_config.py`, so a forced setting lasts one deploy and the boot
@@ -618,16 +658,19 @@ prints nothing).
 **7b, the panel as data.** The board folder gets `profile.py`, data only: which drivers, and a `Panel` record (the
 size, the offsets, the rotation, the SPI rate, the bus kind and the start-up list that `s3lcd` reads,
 `engine/driver/src/s3lcd.c:1389-1410`). The record holds no pin numbers. `pins.py` is spark's, moved from `games/`.
-`DC = 3` (`gdi.py:15`) goes to the pins: `requirements.json` gets a signal `GDI_DC`, so spark writes it. If spark
-cannot name GPIO3 (it is a strap pin, `gdi.py:15`), a hand-written `connector_pins.py` in the board folder holds it with
-`gdi.py`'s source, and a spark card is filed. `gdi.py` goes: its four other pins (`gdi.py:16-19`) are in
+`DC = 3` (`gdi.py:15`) goes into a hand-written `connector_pins.py` in the board folder, with `gdi.py`'s source. It
+cannot go into `requirements.json` now: spark's `assign_pins.py` refuses a signal on a strap pin and exits 1, so
+`pins.py` would stop regenerating. P527 (spark #726, open) lets a connector's pin through with the strap named. When it
+is merged, `GDI_DC` moves into `requirements.json`, so this card's "Needed by" names P527. `gdi.py` goes: its four other pins (`gdi.py:16-19`) are in
 `pins.py:19-22`. `main.py` builds the display with one `open_display(panel, pins)`. `box.py deploy --target
 firebeetle2-esp32s3` copies `profile.py` to `:board_profile.mpy` and `pins.py` to `:pins.mpy`. The one board is the
 default target. **What the PO sees:** the same screen. **Done when** a deploy with `--target` then `box.py log` plays
 every game with sound and the knob, and a contract test passes for every pin name the profile reads.
 
 **5a, audio.** `sound.py`, `sound_viper.py`, `volume.py`, `volume_viper.py`, `cues.py` and `overlay.py` go into the
-package. `speaker.py` becomes `drivers/audio/i2s_amp.py`, and an `Audio` record in the profile gives its pins. The
+package. `speaker.py` becomes `drivers/audio/i2s_amp.py`. An `Audio` record in the profile names its pins by spark's
+signal names (`I2S_BCLK`, `I2S_LRC`, `I2S_DIN`, `AUDIO_SHUTDOWN`, `pins.py:4`, `:24-26`), and `main.py` reads their
+numbers from `pins.py`. Like `Panel`, it holds no pin numbers. The
 crackle's classes move, and the bank's index `fire_bank.py` stays content. The `fps` line gets the refill's `late`
 count at its end, so `box.py log` shows it. Mutation rows: the refill's `late` count, the volume's scale. **What the PO
 sees:** the same sound. He plays Fire and turns the knob. **Done when** the twin tests and the mixer golden pass,
@@ -635,8 +678,9 @@ sees:** the same sound. He plays Fire and turns the knob. **Done when** the twin
 
 **5b, physics.** `plugins.py` and `motion.py` go into `engine/physics.py` with `FirePlugin`'s heat field. `main.py`
 builds the `Parts` record (`bodies`, `balls`, `heat`, `sum`, `volume`), and every scene gets it in its constructor.
-`Balls` and `HeatField` get Null Objects or `needs`. The canvas gets `blit_heat` and `blit_balls`. The 30 test lines
-that set `.engine` become `Parts` records, and the games' alias `engine` goes. The boot line gains `bodies=`, `balls=`
+`Balls` and `HeatField` get Null Objects or `needs`. The canvas gets `blit_heat` and `blit_balls`. The lines that set
+`.engine` become `Parts` records: 28 in the tests and `tests/test_bucket.py:497`. `tools/render_scene.py:177-178` (its
+`engines()`) moves into `tests/mac_host.py`, which builds the Mac's `Parts` record. The games' alias `engine` goes. The boot line gains `bodies=`, `balls=`
 and `heat=` at its end. Mutation rows: a game's plugin ignores the record, `needs` hides nothing. **What the PO sees:**
 the same physics. **Done when** a test shows that a game's plugin holds the chosen class, the net passes, and
 `box.py deploy --engine reference=bodies` then `box.py log` plays runner.
@@ -714,12 +758,13 @@ deploy from pixel-games then `box.py log` plays every game.
 ## The cards to file
 
 Each card is a sub-issue of P841 with "Needed by" and the pixel-games slice. Filing gives each card its P-number.
-**N, 0a and 0b-1 enter Ready now.** The others wait in the backlog in this order.
+**N, 0a-1, 0a-2 and 0b-1 enter Ready now.** The others wait in the backlog in this order.
 
 | Stage | Title | Done when |
 | --- | --- | --- |
-| N | a move can change a game's picture or sound and no test sees it → every game's frames, cues and switch lines are pinned by hashes on the Mac | `python3 -m unittest tests.test_golden` passes twice in under 90 s, each negative test fails the net, bench.md has the baseline |
-| 0a | the C module and the crackle are named `engine` and `crackle_c`, so no package `engine` can load → `_engine` in a flashed firmware, `_crackle.mpy` deployed, the old firmware refused | after the PO's yes, the flash and the deploy, `box.py log` prints `ready`, `game` and `switch`, the Fire run prints `late 0`, and the old firmware's answer is refused |
+| N | a move can change a game's picture or sound and no test sees it → every game's frames, cues and switch lines are pinned by hashes on the Mac | `python3 -m unittest tests.test_golden` passes twice in under 90 s on 8 workers, each negative test fails the net, bench.md has the baseline |
+| 0a-1 | pixel-engine's C module and crackle are named `engine` and `crackle_c` → `_engine` and `_crackle`, built and tested on the Mac | `./build.sh engine` builds, `make -C engine/natmod/crackle` writes `_crackle.mpy`, and pixel-engine's clang tests pass |
+| 0a-2 | the games and the deploy use the old C names, so no package `engine` can load → `_engine` in a flashed firmware, `_crackle.mpy` deployed, the old firmware refused | after the PO's yes, the flash and the deploy, `box.py log` prints `ready`, `game` and `switch`, the Fire run prints `late 0`, and the old firmware's answer is refused |
 | 0b-1 | the runtime is flat files → a package `engine` in a folder that the deploy copies and cleans, behind a boundary test | `box.py deploy --all` then `box.py log` plays every game from the package, bench.md has the import, heap and `HEAP_EXEC` numbers |
 | 0b-2 | the versions are chosen in two places → once in `main.py`, with an `engine` boot line and `deploy --engine` | `deploy --engine reference=volume` then `log` prints `volume=reference(forced)`, and the knob works |
 | 1 | the two buttons are fixed fields of `App` → an action map with `pressed`, `held` and the knob's `turn`, built in `main.py` | the characterization test and the App level pass before and after, the PO says yes to the feel |
@@ -729,7 +774,7 @@ Each card is a sub-issue of P841 with "Needed by" and the pixel-games slice. Fil
 | 3c | `gfx.py` mixes the canvas with the arcade style → `engine.display` and `engine.effects`, and `games/kit.py` for the arcade kit | the net passes unchanged, every game's tests pass |
 | 4 | the pictures are module state → one `Pictures` with a source and a format strategy | the net passes, runner's paint within 0.5 ms, `load` matches bench.md |
 | 7a | the board's build settings live in `build.sh` → a MicroPython board folder that `build.sh` builds | the build writes the same sdkconfig as before (`diff` prints nothing) |
-| 7b | the panel is fixed in `lcd.py` and `gdi.py` repeats pins → a `Panel` record in the board's profile and one `open_display` | `deploy --target` then `log` plays every game with sound and the knob, the pin contract test passes |
+| 7b | the panel is fixed in `lcd.py` and `gdi.py` repeats pins → a `Panel` record in the board's profile and one `open_display` | `DC` sits in `connector_pins.py` until P527, `deploy --target` then `log` plays every game with sound and the knob, the pin contract test passes |
 | 5a | the audio is flat files that read `pins` → engine audio with an I2S amplifier driver that takes its pins | the twin tests and the mixer golden pass, `log` shows `late 0` with `--engine reference=volume`, the PO says yes |
 | 5b | the games build their physics from module flags → from the `Parts` record `main.py` chose | a game's plugin holds the chosen class, the net passes, `--engine reference=bodies` plays runner |
 | 6 | the loop, the stats and the outputs live in `app.py` → `Loop`, `FrameStats`, `GcPolicy` and `FrameOutput` | the console lines keep their text, the net passes, fps within the board gates |
@@ -752,6 +797,8 @@ filed: each waits for its trigger.
 5. **No release number** for the engine's API until stage 9. The submodule's commit is the version.
 6. **A deploy without `--engine` removes `engine_config.py`**, so a forced reference never stays unseen.
 7. **`:crackle_c.mpy` stays on the board until stage 9**, for a rollback.
+8. **`DC` stays in the board folder's `connector_pins.py` until P527** (spark #726) lets `assign_pins.py` take a
+   connector's strap pin.
 
 ## Open questions for the PO
 
