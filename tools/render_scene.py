@@ -109,7 +109,7 @@ SUBJECTS = {  # the fire, the rain, games/catalog.py's games in their order, the
     "tunnel": Subject(Tunnel, Tunnel.hint, 5, 62, tap=25, shot=60),
     "road": Subject(Road, Road.hint, 5, 105),
     "starfire": Subject(Starfire, Starfire.hint, 5, 105, hold=3),
-    "cubetiming": Subject(CubeTiming, CubeTiming.hint, 497, 660, every=3, presses=tuple((k, 1) for k in SMILE_PRESSES),
+    "cubetiming": Subject(CubeTiming, CubeTiming.hint, 497, 660, every=2, presses=tuple((k, 1) for k in SMILE_PRESSES),
                           shot=589),
     "gravitypong": Subject(GravityPong, GravityPong.hint, 240, 432, presses=tuple((k, 1) for k in (
         0, 8, 14, 36, 42, 48, 52, 90, 94, 132, 170, 208, 210, 246, 250, 286, 308, 312)), shot=372),

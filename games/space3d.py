@@ -255,7 +255,7 @@ class CubeTiming(Game):
     ANCHORS = ((14, 52), (306, 52), (30, 112), (290, 112))
     SAG = 6  # px the cables hang at their middles
     DEPTHS = (0.6, 0.0)  # the lens is far beyond the first z, near under the second
-    LIGHT, TARGET_PX, FLARE, WALKER_W, WALKER_H = 7, 32, 40, 12, 22
+    LIGHT, TARGET_PX, FLARE, WALKER_W, WALKER_H = 7, 48, 40, 12, 22
     RING = (160, 212, 132, 8)  # the walkers' ring: its middle and radii
     FACE_BOX, FACE, FACE_X, FACE_Y = (256, 168, 316, 234), 48, 262, 180
     LIVES_RIGHT, LIVES_TOP = 311, 171
