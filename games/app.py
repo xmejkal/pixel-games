@@ -80,7 +80,8 @@ def games_for(names):
 
 class Lineup:
     """The games the box plays, in order: their names, and game(i), which builds the i-th, importing its module only
-    then. Lineup.of(classes) is one of classes already imported (a test's or a probe's)."""
+    then, or game_steps(i), which builds it in steps (P822). Lineup.of(classes) is one of classes already imported (a
+    test's or a probe's)."""
 
     def __init__(self, names, classes=None):
         self.names, self.classes = tuple(names), classes
@@ -92,13 +93,28 @@ class Lineup:
     def __len__(self):
         return len(self.names)
 
-    import_ms = 0  # how long the last game(i) took to import its module (P818)
+    import_ms = 0  # how long the last game_steps(i) took to import its module (P818)
 
     def game(self, i):
-        """The i-th game, built; import_ms is how long the import of its module took (0 for classes, P818)."""
+        """The i-th game, built at once: game_steps(i) run to its end."""
+        steps = self.game_steps(i)
+        while True:
+            try:
+                next(steps)
+            except StopIteration as built:
+                return built.value
+
+    def game_steps(self, i):
+        """The i-th game's build in steps (P822), a generator: its first step imports the game's module (timed into
+        import_ms, 0 for classes; an import cannot yield), then a step per chunk of its art set (pictures.load_steps of
+        its ART), each yielding the load's progress 0 to 1, then it returns the game, built: its setup finds its set
+        loaded and reads nothing. A game with no ART yields nothing."""
         start = time.ticks_ms()
         c = self.classes[i] if self.classes is not None else games_for((self.names[i],))[0]
         self.import_ms = time.ticks_diff(time.ticks_ms(), start)
+        art = getattr(c, "ART", None)  # a probe's or a test's class may be no gfx.Game
+        if art:
+            yield from pictures.load_steps(*art)
         return c()
 
 
