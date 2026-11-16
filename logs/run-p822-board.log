@@ -1,0 +1,109 @@
+3.103 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+3.129 backend s3lcd
+3.129 mem 7954816
+3.129 frame tft
+3.581 lineup 5: runner rescue balls marshmallow bucket
+3.581 import 1701 ms
+3.586 ready
+5.025 game runner
+5.026 switch runner 1438 ms, load 625 ms, import 768 ms
+5.475 pick rescue
+5.846 pick balls
+6.390 pick marshmallow
+6.911 pick bucket
+7.347 pick runner
+7.781 pick rescue
+8.332 pick balls
+8.765 pick marshmallow
+9.330 pick bucket
+10.126 pick runner
+11.279 pick rescue
+11.927 pick balls
+12.913 game balls
+12.914 switch balls 257 ms, load 0 ms, import 199 ms, setup 6 ms, frames 0, worst 1 ms, longest 199 ms, card 58 ms
+13.198 pick marshmallow
+13.656 pick bucket
+14.135 pick runner
+14.437 pick rescue
+14.695 pick balls
+15.480 game balls
+15.481 switch balls 80 ms, load 0 ms, import 0 ms, setup 7 ms, frames 0, worst 1 ms, longest 0 ms, card 60 ms
+17.170 pick marshmallow
+17.768 pick bucket
+18.288 pick runner
+19.450 pick rescue
+19.704 pick balls
+20.492 game balls
+20.494 switch balls 81 ms, load 0 ms, import 1 ms, setup 7 ms, frames 0, worst 1 ms, longest 0 ms, card 61 ms
+25.573 fps balls 22
+25.575 time balls step 3.1 paint 9.5 send 5.9 gc 7.0 fps 22 worst 86 slowest 59 = step 2 paint 53 send 3 gc 0
+25.578 phases balls static 8 paint 6 fx 0 hud 47 over 0 title 52
+25.599 avg balls static 12.7 paint 6.4 fx 0.2 hud 5.8 over 0.0 title 55.0
+25.599 heap balls alloc 309776 glyphs 36
+25.611 balls n 10 fps 22 step 1.99 draw 4.32 hits 50
+26.341 pick marshmallow
+26.736 pick bucket
+27.293 pick runner
+28.650 pick rescue
+28.906 pick balls
+29.690 game balls
+29.691 switch balls 83 ms, load 0 ms, import 0 ms, setup 7 ms, frames 0, worst 1 ms, longest 0 ms, card 60 ms
+29.728 pick marshmallow
+30.073 pick bucket
+30.514 pick runner
+32.205 pick rescue
+32.536 pick balls
+33.059 pick marshmallow
+33.279 pick bucket
+33.580 pick runner
+33.876 pick rescue
+34.216 pick balls
+34.431 pick marshmallow
+34.657 pick bucket
+35.148 pick runner
+35.598 pick rescue
+36.164 pick balls
+36.723 pick marshmallow
+36.994 pick bucket
+37.451 pick runner
+39.248 pick rescue
+39.618 pick balls
+40.275 pick marshmallow
+40.737 pick bucket
+41.040 pick runner
+43.100 game runner
+43.101 switch runner 1344 ms, load 692 ms, import 1 ms, setup 4 ms, frames 30, worst 81 ms, longest 58 ms, card 62 ms
+48.188 fps runner 19
+48.192 time runner step 4.6 paint 33.5 send 3.5 gc 6.2 fps 19 worst 82 slowest 60 = step 9 paint 46 send 3 gc 0
+48.195 phases runner static 8 paint 16 fx 2 hud 41 over 0 title 45
+48.219 avg runner static 25.9 paint 11.6 fx 0.4 hud 6.3 over 0.0 title 81.9
+48.220 heap runner alloc 258816 glyphs 38
+53.206 fps runner 17
+53.208 time runner step 7.9 paint 38.3 send 3.3 gc 6.3 fps 17 worst 116 slowest 62 = step 6 paint 50 send 3 gc 0
+53.221 phases runner static 9 paint 17 fx 6 hud 18 over 0 title 0
+53.231 avg runner static 7.9 paint 16.2 fx 2.2 hud 11.7 over 0.0 title 0.0
+53.232 heap runner alloc 266560 glyphs 38
+58.237 fps runner 17
+58.239 time runner step 7.3 paint 38.6 send 3.3 gc 6.1 fps 17 worst 88 slowest 59 = step 11 paint 44 send 3 gc 0
+58.251 phases runner static 8 paint 17 fx 2 hud 21 over 0 title 0
+58.261 avg runner static 7.7 paint 16.5 fx 1.0 hud 13.1 over 0.0 title 0.0
+58.262 heap runner alloc 264976 glyphs 38
+63.269 fps runner 17
+63.271 time runner step 7.8 paint 38.7 send 3.3 gc 6.2 fps 17 worst 93 slowest 90 = step 10 paint 76 send 3 gc 0
+63.281 phases runner static 8 paint 17 fx 3 hud 48 over 0 title 0
+63.290 avg runner static 7.8 paint 16.4 fx 1.5 hud 12.8 over 0.0 title 0.0
+63.291 heap runner alloc 267840 glyphs 38
+68.278 fps runner 16
+68.280 time runner step 4.3 paint 43.8 send 3.3 gc 6.4 fps 16 worst 121 slowest 119 = step 45 paint 70 send 3 gc 31
+68.291 phases runner static 11 paint 20 fx 6 hud 17 over 39 title 0
+68.302 avg runner static 7.6 paint 17.8 fx 1.1 hud 5.8 over 11.2 title 0.0
+68.302 heap runner alloc 263712 glyphs 39
+73.293 fps runner 16
+73.295 time runner step 0.8 paint 48.8 send 3.2 gc 6.1 fps 16 worst 81 slowest 73 = step 0 paint 67 send 3 gc 0
+73.311 phases runner static 8 paint 20 fx 0 hud 1 over 39 title 0
+73.322 avg runner static 7.6 paint 18.7 fx 0.1 hud 0.9 over 21.3 title 0.0
+73.322 heap runner alloc 261056 glyphs 39
+75.834 pick rescue
+76.126 pick balls
+76.916 game balls
+76.917 switch balls 88 ms, load 0 ms, import 0 ms, setup 7 ms, frames 0, worst 1 ms, longest 0 ms, card 62 ms

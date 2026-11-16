@@ -1622,3 +1622,19 @@ than the control.
 - The PO's words, after the play: "No the game is not exciting, its still just  not much fun. But its us experimenting
   and testing spark, so its ok." The verdict line ("exciting" or stronger) is not met. The PO accepts the slice as it
   is, so it merges and does not go back as a feel slice. His words do not name the target system.
+
+## P822 (#1175), 2026-11-16: the load behind a moving card, the PO's play and the board check
+
+- The board: branch p822-loader (6f1d3a0), .mpy, the lineup runner rescue balls marshmallow bucket, BUILD_CHUNKS = 3.
+  Log: `logs/run-p822-board.log` (`tools/box.py log`, seconds since the log started before each line).
+- About 50 D14 picks, most of them fast: only the game where the picks stopped was built, each 0.7 s after the last
+  press. No error, no refusal, no OSError.
+- Runner on a revisit: `switch runner 1344 ms, load 692 ms, import 1 ms, setup 4 ms, frames 30, worst 81 ms, longest
+  58 ms, card 62 ms`. The screen moved through the whole load (30 frames in 1.34 s); before P822 it froze for about
+  0.6 s. Runner in play has a worst gap of 82 ms in its first interval.
+- Over the plan's line: `longest` 58 ms against at most 22 ms, and `worst` 81 ms against the card's 62 ms + 2. Not
+  changed yet: the 58 ms is likely the last frame, which places the whole set at once, and fewer chunks per frame do
+  not shorten that. Measured on a card of its own (P834).
+- Not done on the board: a D14 press while runner's bar was filling, and a rescue build. The Mac tests cover the
+  close of a stopped load.
+- The PO's words after the play: "yeah, the bar is great, I like it".
