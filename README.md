@@ -138,6 +138,10 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    `--engine reference` forces the reference version (plain Python) of every part that `main.py` chooses, and
    `--engine reference=volume` (or `reference=sum,volume`) of the named parts (P850): the deploy writes them to
    `:engine_config.py`, and a deploy without `--engine` removes it, so a forced setting lasts one deploy.
+   To work without sound, `python3 tools/box.py volume 0` writes the start volume step to `:volume.txt` and resets
+   the board, which then starts silent (P866); `box.py volume 8` brings it back, `box.py volume` alone prints the
+   board's step, and `deploy --volume 0` writes it with a deploy. The steps go from 0 (silent) to 16 (full). The knob
+   still turns the step and saves it, so a turn overrides what the command wrote.
    - After the first deploy onto `_engine` (stage 0a, P848), keep the new firmware's answer the same way:
      `mpremote run tools/firmware_probe.py > tests/fixtures/firmware/new.txt`. It is owed after the flash, and the card
      is done only with it: `tests/test_box.py` reports it skipped until then.

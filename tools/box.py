@@ -55,6 +55,7 @@ GAMES = os.path.join(ROOT, "games")
 sys.path.insert(0, GAMES)
 import art_index  # noqa: E402  pure data
 import catalog  # noqa: E402  pure data
+import volume  # noqa: E402  its STEPS, DEFAULT_STEP and the store's file (P866)
 
 SECONDS = 20  # log's default
 MPY = "6.3"  # the board's sys.implementation._mpy: version 6, sub-version 3; mpy-cross must emit this (P821)
@@ -183,10 +184,11 @@ class Deploy:
     the pause between the probe's tries (time.sleep when None); reference: REFERENCE for :engine_config.py
     (engine_reference's), or None to remove the board's file (P850)."""
 
-    def __init__(self, runner, compiler=None, games=GAMES, crackle=None, say=print, sleep=None, reference=None):
+    def __init__(self, runner, compiler=None, games=GAMES, crackle=None, say=print, sleep=None, reference=None,
+                 volume=None):
         self.runner, self.compiler, self.games = runner, compiler, games  # games: the folder, named as games/<file>
         self.crackle, self.say = CRACKLE if crackle is None else crackle, say
-        self.sleep, self.reference = sleep or time.sleep, reference
+        self.sleep, self.reference, self.volume = sleep or time.sleep, reference, volume
 
     def run(self, names):
         if names is not None:
@@ -216,6 +218,8 @@ class Deploy:
             self.write_config(self.reference)
         elif "engine_config.py" in on_board:  # a forced setting lasts one deploy
             self.runner.run(["rm", ":engine_config.py"])
+        if self.volume is not None:  # the start step (P866); without --volume the board keeps its own
+            write_file(self.runner, VOLUME_FILE, str(self.volume))
         self.runner.run(["reset"])
 
     def copy_code(self, on_board):
@@ -304,11 +308,45 @@ class Deploy:
 
     def write(self, name, text):
         """A file of text at :<name>."""
-        with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, name)
-            with open(path, "w") as f:
-                f.write(text)
-            self.runner.run(["cp", path, ":" + name])
+        write_file(self.runner, name, text)
+
+
+def write_file(runner, name, text):
+    """A file of text at :<name>, through the runner."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, name)
+        with open(path, "w") as f:
+            f.write(text)
+        runner.run(["cp", path, ":" + name])
+
+
+VOLUME_FILE = volume.VolumeStore().path  # the step the box starts at: volume.VolumeStore reads it at boot
+
+
+def volume_step(text):
+    """The volume step in text: a whole number from 0 (silent) to volume.STEPS (full). Refused otherwise, before any
+    board command (P866)."""
+    if not re.fullmatch(r"[0-9]{1,2}", text) or int(text) > volume.STEPS:
+        raise Refused("volume is a step from 0 (silent) to %d (full), not %r" % (volume.STEPS, text))
+    return int(text)
+
+
+class Volume:
+    """The box's start volume from the Mac (P866): set writes the step that volume.VolumeStore reads at boot, then
+    resets the board, so it starts at that step; show reads it. 0 starts the box silent, for work without sound. The
+    knob still turns the step and saves it, so a turn overrides what this wrote."""
+
+    def __init__(self, runner):
+        self.runner = runner
+
+    def set(self, step):
+        write_file(self.runner, VOLUME_FILE, str(step))
+        self.runner.run(["reset"])
+
+    def show(self):
+        if VOLUME_FILE not in board_names(self.runner.run(["ls", ":"])):
+            return "board: no %s, so the box starts at step %d" % (VOLUME_FILE, volume.DEFAULT_STEP)
+        return "board: volume step " + self.runner.run(["cat", ":" + VOLUME_FILE]).strip()
 
 
 def catalog_lines():
@@ -412,6 +450,12 @@ def main(argv=None):
     deploy.add_argument("--engine", metavar="reference[=PART,...]",
                         help="force the reference version of every part (reference) or of the named parts "
                              "(reference=volume) in :engine_config.py; a deploy without it removes the file")
+    deploy.add_argument("--volume", metavar="STEP",
+                        help="the step the box starts at, 0 (silent) to %d (full), written to :%s; without it the "
+                             "board keeps its own" % (volume.STEPS, VOLUME_FILE))
+    loud = sub.add_parser("volume", help="the box's start volume: with STEP, write it and reset the board (0 is "
+                                         "silent, for work without sound); alone, print the board's step")
+    loud.add_argument("step", nargs="?", metavar="STEP")
     log = sub.add_parser("log", help="reset the board (a hard reset), then print its console, each line after the "
                                      "seconds since the log started")
     log.add_argument("--seconds", type=float, default=SECONDS)
@@ -426,8 +470,16 @@ def main(argv=None):
                 print(board_lineup(Mpremote()))
         elif args.command == "deploy":
             reference = None if args.engine is None else engine_reference(args.engine)  # before any command
+            step = None if args.volume is None else volume_step(args.volume)
             Deploy(Mpremote(args.dry_run), None if args.py else Compiler(MpyCross(args.dry_run)),
-                   reference=reference).run(None if args.all else args.names)
+                   reference=reference, volume=step).run(None if args.all else args.names)
+        elif args.command == "volume":
+            if args.step is None:
+                print(Volume(Mpremote()).show())
+            else:
+                step = volume_step(args.step)  # before any command
+                Volume(Mpremote()).set(step)
+                print("volume step %d written; the board resets and starts at it" % step)
         else:
             reset(Mpremote())
             for line in stamped(Console(serial_port(args.port)).lines(args.seconds)):

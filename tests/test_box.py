@@ -20,6 +20,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "tools"))
 
 import box  # noqa: E402
+import volume  # noqa: E402  games/ is on the path through box
 
 PY = sorted("games/" + n for n in os.listdir(box.GAMES) if n.endswith(".py"))
 COPY = ["cp"] + PY + ["games/box_bank.raw", ":"]
@@ -98,7 +99,7 @@ class FakeRunner:
 
     def __init__(self, listing=EMPTY, firmware=NEW, folders=None):
         self.listing, self.firmware, self.commands, self.lineup = listing, firmware, [], None
-        self.folders, self.config = folders or {}, None
+        self.folders, self.config, self.volume, self.cat = folders or {}, None, None, ""
 
     def run(self, args):
         self.commands.append(args)
@@ -108,6 +109,11 @@ class FakeRunner:
         if args[-1] == ":engine_config.py" and args[0] == "cp":
             with open(args[1]) as f:
                 self.config = f.read()
+        if args[-1] == ":volume.txt" and args[0] == "cp":
+            with open(args[1]) as f:
+                self.volume = f.read()
+        if args == ["cat", ":volume.txt"]:
+            return self.cat
         if args[0] == "ls" and args != ["ls", ":"]:
             return self.folders.get(args[1][1:], "")
         return self.listing if args == ["ls", ":"] else self.firmware if args == PROBE else ""
@@ -817,3 +823,53 @@ class ConsoleTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class VolumeTest(unittest.TestCase):
+    """The start volume from the Mac (P866): `box.py volume N` writes the step that volume.VolumeStore reads at boot,
+    then resets the board; `deploy --volume N` writes it with the deploy. 0 is silent, so a developer works without
+    sound; the knob still turns and saves it."""
+
+    def test_a_step_is_a_number_from_0_to_the_volume_s_steps(self):
+        self.assertEqual(0, box.volume_step("0"))
+        self.assertEqual(volume.STEPS, box.volume_step(str(volume.STEPS)))
+        for text in ("-1", str(volume.STEPS + 1), "x", "", "1.5", " 3"):
+            with self.subTest(text=text), self.assertRaises(box.Refused):
+                box.volume_step(text)
+
+    def test_volume_writes_the_step_then_resets(self):
+        runner = FakeRunner()
+        box.Volume(runner).set(0)
+        self.assertEqual(["cp", ":volume.txt"], [runner.commands[0][0], runner.commands[0][-1]])
+        self.assertEqual("0", runner.volume)
+        self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_volume_alone_reads_the_board_s_step(self):
+        runner = FakeRunner(listing="ls :\n           2 volume.txt\n")
+        runner.cat = "5"
+        self.assertEqual("board: volume step 5", box.Volume(runner).show())
+        empty = FakeRunner()
+        self.assertEqual("board: no volume.txt, so the box starts at step %d" % volume.DEFAULT_STEP,
+                         box.Volume(empty).show())
+
+    def test_deploy_with_volume_writes_it_before_the_reset(self):
+        runner = FakeRunner()
+        box.Deploy(runner, volume=0).run(["runner"])
+        self.assertEqual("0", runner.volume)
+        cps = [i for i, c in enumerate(runner.commands) if c[0] == "cp" and c[-1] == ":volume.txt"]
+        self.assertEqual(1, len(cps))
+        self.assertEqual(["reset"], runner.commands[-1])
+        self.assertLess(cps[0], len(runner.commands) - 1)
+
+    def test_a_deploy_without_volume_leaves_the_board_s_step(self):
+        runner = FakeRunner(listing="ls :\n           2 volume.txt\n")
+        box.Deploy(runner).run(["runner"])
+        self.assertFalse(any(c[-1] == ":volume.txt" for c in runner.commands))
+
+    def test_a_bad_step_is_refused_before_any_board_command(self):
+        for argv in (["volume", "17"], ["deploy", "runner", "--volume", "x"]):
+            with self.subTest(argv=argv), mock.patch.object(box, "Mpremote") as made:
+                with contextlib.redirect_stdout(io.StringIO()) as out:
+                    self.assertEqual(1, box.main(argv))
+                self.assertIn("refused:", out.getvalue())
+                made.return_value.run.assert_not_called()
