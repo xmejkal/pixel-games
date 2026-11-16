@@ -1,0 +1,45 @@
+3.136 size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+3.162 backend s3lcd
+3.162 mem 7954816
+3.163 frame tft
+3.613 lineup 1: flappy
+3.613 import 1732 ms
+3.618 ready
+4.882 game flappy
+4.883 switch flappy 1263 ms, load 445 ms, import 779 ms
+9.930 fps flappy 20
+9.933 time flappy step 1.2 paint 33.2 send 3.3 gc 5.8 fps 20 worst 94 slowest 92 = step 31 paint 57 send 3 gc 29
+9.940 phases flappy static 9 paint 15 fx 4 hud 12 over 28 title 22
+9.950 avg flappy static 7.7 paint 8.6 fx 0.4 hud 0.6 over 10.3 title 5.5
+9.951 heap flappy alloc 237472 glyphs 16
+14.941 fps flappy 18
+14.943 time flappy step 0.8 paint 41.7 send 3.2 gc 5.5 fps 18 worst 79 slowest 56 = step 1 paint 51 send 3 gc 0
+14.954 phases flappy static 8 paint 14 fx 0 hud 1 over 27 title 0
+14.964 avg flappy static 7.6 paint 13.3 fx 0.1 hud 0.8 over 19.7 title 0.0
+14.965 heap flappy alloc 238176 glyphs 16
+19.995 fps flappy 18
+19.997 time flappy step 0.8 paint 42.1 send 3.2 gc 5.5 fps 18 worst 79 slowest 55 = step 0 paint 50 send 3 gc 0
+20.003 phases flappy static 8 paint 14 fx 0 hud 1 over 27 title 0
+20.021 avg flappy static 7.6 paint 13.3 fx 0.1 hud 0.8 over 20.1 title 0.0
+20.022 heap flappy alloc 238336 glyphs 16
+24.990 fps flappy 18
+24.991 time flappy step 0.8 paint 42.0 send 3.2 gc 5.6 fps 18 worst 79 slowest 54 = step 0 paint 50 send 3 gc 0
+25.003 phases flappy static 8 paint 14 fx 0 hud 1 over 27 title 0
+25.014 avg flappy static 7.6 paint 13.2 fx 0.1 hud 0.8 over 20.0 title 0.0
+25.014 heap flappy alloc 237472 glyphs 16
+29.998 fps flappy 18
+29.999 time flappy step 0.8 paint 42.1 send 3.2 gc 5.6 fps 18 worst 79 slowest 56 = step 0 paint 52 send 3 gc 0
+30.013 phases flappy static 8 paint 14 fx 0 hud 0 over 29 title 0
+30.024 avg flappy static 7.6 paint 13.2 fx 0.1 hud 0.8 over 20.2 title 0.0
+30.024 heap flappy alloc 237472 glyphs 16
+35.050 fps flappy 18
+35.052 time flappy step 0.8 paint 42.1 send 3.2 gc 5.5 fps 18 worst 79 slowest 54 = step 0 paint 50 send 3 gc 0
+35.059 phases flappy static 8 paint 14 fx 0 hud 1 over 27 title 0
+35.069 avg flappy static 7.6 paint 13.4 fx 0.1 hud 0.8 over 20.1 title 0.0
+35.069 heap flappy alloc 238256 glyphs 16
+40.090 fps flappy 18
+40.092 time flappy step 0.8 paint 42.1 send 3.2 gc 5.5 fps 18 worst 79 slowest 59 = step 0 paint 55 send 3 gc 0
+40.098 phases flappy static 8 paint 14 fx 0 hud 0 over 32 title 0
+40.109 avg flappy static 7.6 paint 13.3 fx 0.1 hud 0.8 over 20.1 title 0.0
+40.109 heap flappy alloc 238336 glyphs 16
+45.097 fps flappy 18
