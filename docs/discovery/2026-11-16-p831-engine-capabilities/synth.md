@@ -104,7 +104,7 @@ Two ways, both not tried:
 2. Copy the few source files the engine needs into the engine. Apache-2.0 allows it with the notice, but spark's rule
    is to commit no vendor file, so this is the second choice.
 Not confirmed: that esp-dsp builds under IDF 5.5.2 inside the MicroPython build, its size, and whether it needs
-`-DCONFIG_DSP_OPTIMIZED` or a similar setting.
+a Kconfig setting.
 
 ## Existing projects (design only, none read in full)
 
@@ -114,6 +114,7 @@ Not confirmed: that esp-dsp builds under IDF 5.5.2 inside the MicroPython build,
 | marcel-licence/esp32_basic_synth | GPL-3.0 | ESP32 with I2S and MIDI; GPL does not fit MIT spark; read for the design only |
 | marcel-licence/ML_SynthTools | GPL-3.0 | Same |
 | roolin/micropython-microsynth | GPL-3.0 | A MicroPython synth; 0 stars, not read |
+
 Recommendation: reuse none as code. Write the voice from the textbook design (above), as the P767 note did for the mixer.
 
 ## The smallest first experiment (call it P831-S)
