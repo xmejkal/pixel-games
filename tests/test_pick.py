@@ -7,6 +7,7 @@ knob's pane works over a NameCard. Run from the repository root: python3 -B -m u
 import contextlib
 import io
 import os
+import re
 import sys
 import time
 import unittest
@@ -81,6 +82,14 @@ class Box:
             self.app.frame()
         return self.app.game
 
+    def settle(self, limit=1000):
+        """Frames FRAME_MS apart until the build behind the card ends: the game it built (P822)."""
+        for _ in range(limit):
+            game = self.frame(self.ms + app.FRAME_MS)
+            if not isinstance(game, app.NameCard):
+                return game
+        raise AssertionError("the build did not end in %d frames" % limit)
+
     def lines(self, word):
         return [line for line in self.said.getvalue().splitlines() if line.split()[0] == word]
 
@@ -99,12 +108,15 @@ class PickTest(unittest.TestCase):
         for k in range(4):
             box.frame(100 * k, d14=True)
         self.assertEqual(["a"], BUILT)  # the first game, built by start(); nothing for the four picks
-        game = box.frame(300 + app.SETTLE_MS)
+        box.frame(300 + app.SETTLE_MS)
+        game = box.settle()
+        self.assertNotIsInstance(game, app.NameCard)
         self.assertEqual(["a", "e"], BUILT)
         self.assertEqual("e", game.name)
         self.assertEqual(["pick b", "pick c", "pick d", "pick e"], box.lines("pick"))
         self.assertEqual(2, len(box.lines("switch")))  # start's and the settled pick's
-        self.assertRegex(box.lines("switch")[1], r"^switch e \d+ ms, load \d+ ms, import \d+ ms$")
+        self.assertRegex(box.lines("switch")[1],
+                         r"^switch e \d+ ms, load \d+ ms, import \d+ ms, frames \d+, worst \d+ ms, longest \d+ ms$")
 
     def test_the_pick_settles_at_settle_ms_not_before(self):
         box = self.box
@@ -112,7 +124,11 @@ class PickTest(unittest.TestCase):
         card = box.frame(1000 + app.SETTLE_MS - 1)
         self.assertIsInstance(card, app.NameCard)
         self.assertEqual(("b", gfx.TITLE), (card.name, card.state))
-        self.assertEqual("b", box.frame(1000 + app.SETTLE_MS).name)
+        box.frame(1000 + app.SETTLE_MS)
+        self.assertEqual(["a"], BUILT)  # settled in this frame, not before: its build has not run yet
+        game = box.settle()
+        self.assertNotIsInstance(game, app.NameCard)
+        self.assertEqual("b", game.name)
         self.assertEqual(["a", "b"], BUILT)
 
     def test_each_press_starts_the_wait_again(self):
@@ -120,15 +136,21 @@ class PickTest(unittest.TestCase):
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS - 1, d14=True)
         self.assertIsInstance(box.frame(app.SETTLE_MS + 10), app.NameCard)
-        self.assertEqual("c", box.frame(2 * app.SETTLE_MS - 1).name)
+        box.frame(2 * app.SETTLE_MS - 1)
+        self.assertEqual(["a"], BUILT)  # settled in this frame, not at the first press's SETTLE_MS
+        game = box.settle()
+        self.assertNotIsInstance(game, app.NameCard)
+        self.assertEqual("c", game.name)
 
     def test_boot_on_a_card_builds_at_once_and_the_press_does_not_reach_the_game(self):
         box = self.box
         box.frame(0, d14=True)
-        game = box.frame(10, boot=True)
+        box.frame(10, boot=True)
+        game = box.settle()
+        self.assertNotIsInstance(game, app.NameCard)
         self.assertEqual("b", game.name)
-        self.assertEqual([], game.presses)  # the build frame does not step the game
-        box.frame(50)
+        self.assertEqual([], game.presses)  # the build frames do not step the game
+        box.frame(box.ms + app.FRAME_MS)
         self.assertEqual([False], game.presses)
         self.assertEqual(gfx.TITLE, game.state)
 
@@ -158,9 +180,11 @@ class ReviewTest(unittest.TestCase):
     def test_later_frames_do_not_build_the_settled_game_again(self):
         box = self.box()
         box.frame(0, d14=True)
-        game = box.frame(app.SETTLE_MS)
-        for ms in (740, 780, 820):
-            self.assertIs(game, box.frame(ms))
+        box.frame(app.SETTLE_MS)
+        game = box.settle()
+        self.assertNotIsInstance(game, app.NameCard)
+        for _ in range(3):
+            self.assertIs(game, box.frame(box.ms + app.FRAME_MS))
         self.assertEqual(["a", "b"], BUILT)
         self.assertEqual(2, len(box.lines("switch")))
 
@@ -169,6 +193,7 @@ class ReviewTest(unittest.TestCase):
         box.frame(0, d14=True)
         before = box.app.out.resets
         box.frame(app.SETTLE_MS)
+        self.assertNotIsInstance(box.settle(), app.NameCard)
         self.assertEqual(before + 1, box.app.out.resets)  # the card's frame used up the last reset
 
     def test_the_build_collects(self):
@@ -244,6 +269,7 @@ class ReviewTest(unittest.TestCase):
         box = self.box((GAMES[0], Slow))
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
+        self.assertNotIsInstance(box.settle(), app.NameCard)
         self.assertLess(box.app.slow[0], 40000)  # us: the 50 ms setup is not in it
 
     def test_no_collect_on_the_card_frame(self):
@@ -253,6 +279,240 @@ class ReviewTest(unittest.TestCase):
         with mock.patch.object(box.app, "collect") as collect:
             box.frame(10, d14=True)
         collect.assert_not_called()
+
+
+class Steps:
+    """A build's steps as Lineup.game_steps makes them: each of values, then the game built (StopIteration's value).
+    Each step sleeps pause seconds; close() is counted."""
+
+    def __init__(self, values, cls, pause=0):
+        self.values, self.cls, self.pause, self.closed = list(values), cls, pause, 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        time.sleep(self.pause)
+        if self.values:
+            return self.values.pop(0)
+        raise StopIteration(self.cls())
+
+    def close(self):
+        self.closed += 1
+
+
+class Stepped(app.Lineup):
+    """A lineup of classes whose builds take n steps each, a progress of k / n each; made keeps each build's Steps."""
+
+    def __init__(self, classes, n, pause=0):
+        super().__init__([c.name for c in classes], tuple(classes))
+        self.n, self.pause, self.made = n, pause, []
+
+    def game_steps(self, i):
+        self.made.append(Steps([k / self.n for k in range(1, self.n + 1)], self.classes[i], self.pause))
+        return self.made[-1]
+
+
+def flaky(name):
+    class Flaky(gfx.Game):
+        fails = []  # while it holds an error, every Flaky's setup raises it named
+
+        def setup(self):
+            if self.fails:
+                raise self.fails[0](self.name)
+
+    Flaky.name = name
+    return Flaky
+
+
+class Painted(gfx.Game):
+    name = "painted"
+    ART = ("bucket", None)
+
+    def setup(self):
+        self.covers = pictures.load(*self.ART)
+
+
+class BuildTest(unittest.TestCase):
+    """The build behind the card (P822): a settled pick starts it, and each later frame runs BUILD_CHUNKS of its
+    steps under the card, until the game starts."""
+
+    def setUp(self):
+        BUILT.clear()
+
+    def box(self, games=GAMES, **kw):
+        box = Box(games, **kw)
+        self.addCleanup(box.close)
+        return box
+
+    def painted(self):
+        """The real packs, each file the box opens kept."""
+        root, files = pictures.ROOT, []
+
+        def opened(path, mode):
+            files.append(open(path, mode))
+            return files[-1]
+
+        def restore():
+            del pictures.open
+            pictures.free()
+            pictures.ROOT = root
+        pictures.ROOT = os.path.join(os.path.dirname(HERE), "games", "")
+        pictures.free()
+        pictures.open = opened
+        self.addCleanup(restore)
+        return files
+
+    def test_the_settle_frame_draws_loading_and_imports_nothing(self):
+        imports, games_for = [], app.games_for
+        with mock.patch.object(app, "games_for", lambda names: imports.append(names) or games_for(names)):
+            box = self.box(app.Lineup(("cave", "road")))
+            box.frame(0, d14=True)
+            card = box.frame(app.SETTLE_MS)
+            self.assertIsInstance(card, app.NameCard)
+            self.assertEqual(app.NameCard.LOADING, card.stage)
+            self.assertEqual([("cave",)], imports)  # start's alone
+            cv = gfx.Canvas()
+            card.draw_title(cv)
+            self.assertIn("loading", [op[5] for op in cv.ops if op[4] == 3])
+            self.assertEqual("road", box.settle().name)
+        self.assertEqual([("cave",), ("road",)], imports)
+
+    def test_a_card_frame_during_a_build_never_settles_again(self):
+        box = self.box(Stepped(GAMES, 10 * app.BUILD_CHUNKS))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        for k in range(1, 5):
+            card = box.frame(app.SETTLE_MS + k * app.FRAME_MS, boot=True)  # BOOT would settle a waiting card
+            self.assertIsInstance(card, app.NameCard)
+        self.assertEqual(2, len(box.app.games.made))  # start's build and the settled pick's, once
+        self.assertEqual(["a"], BUILT)
+
+    def test_the_bar_grows_and_the_game_starts_when_the_steps_end(self):
+        box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        stages = [box.frame(app.SETTLE_MS + k * app.FRAME_MS).stage for k in (1, 2, 3)]
+        self.assertEqual([k * app.BUILD_CHUNKS / (3 * app.BUILD_CHUNKS) for k in (1, 2, 3)], stages)
+        self.assertEqual(["a"], BUILT)
+        game = box.frame(app.SETTLE_MS + 4 * app.FRAME_MS)
+        self.assertEqual("b", game.name)
+        self.assertEqual(["a", "b"], BUILT)
+
+    def test_a_painted_game_s_set_loads_behind_the_card_a_few_chunks_a_frame(self):
+        files = self.painted()
+        box = self.box((GAMES[0], Painted))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        stages, game = [], box.app.game
+        while isinstance(game, app.NameCard):
+            game = box.frame(box.ms + app.FRAME_MS)
+            if isinstance(game, app.NameCard):
+                stages.append(game.stage)
+        self.assertLess(3, len(stages))  # the bucket's set takes several frames
+        self.assertEqual(stages, sorted(stages))
+        self.assertEqual(1, len(files))  # setup found the set loaded
+        self.assertTrue(files[0].closed)
+        self.assertIn("bucket_scene", pictures.PICS)
+        frames = int(box.lines("switch")[-1].split("frames ")[1].split(",")[0])
+        self.assertEqual(len(stages), frames)
+
+    def test_d14_during_a_build_closes_its_steps_frees_the_set_and_picks_the_next(self):
+        box = self.box(Stepped(GAMES, 10 * app.BUILD_CHUNKS))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        box.frame(app.SETTLE_MS + app.FRAME_MS)
+        steps = box.app.games.made[-1]
+        with mock.patch.object(pictures, "free", wraps=pictures.free) as free:
+            card = box.frame(app.SETTLE_MS + 2 * app.FRAME_MS, d14=True)
+        self.assertEqual(1, steps.closed)
+        free.assert_called()
+        self.assertEqual(("c", app.NameCard.WAITING), (card.name, card.stage))
+        self.assertEqual(["pick b", "pick c"], box.lines("pick"))
+        self.assertEqual(["game a"], box.lines("game"))
+        box.frame(box.ms + app.SETTLE_MS)
+        self.assertEqual("c", box.settle().name)
+        self.assertEqual(["a", "c"], BUILT)
+
+    def test_d14_during_a_painted_build_closes_the_pack_and_keeps_no_set(self):
+        files = self.painted()
+        box = self.box((GAMES[0], Painted, GAMES[1]))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        box.frame(app.SETTLE_MS + app.FRAME_MS)
+        self.assertFalse(files[0].closed)
+        box.frame(app.SETTLE_MS + 2 * app.FRAME_MS, d14=True)
+        self.assertTrue(files[0].closed)
+        self.assertEqual(({}, None), (pictures.PICS, pictures.loaded))
+
+    def test_boot_during_a_build_does_not_reach_the_game(self):
+        box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        game = box.app.game
+        while isinstance(game, app.NameCard):
+            game = box.frame(box.ms + app.FRAME_MS, boot=True)
+        self.assertEqual([], game.presses)
+        box.frame(box.ms + app.FRAME_MS)
+        self.assertEqual([False], game.presses)
+
+    def test_no_timed_collect_during_a_build(self):
+        box = self.box(Stepped(GAMES, 10 * app.BUILD_CHUNKS), gc_floor=1)
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        with mock.patch.object(box.app, "collect") as collect:
+            self.assertEqual("b", box.settle().name)
+        collect.assert_not_called()
+
+    def test_the_switch_line_counts_the_build_s_frames_worst_and_longest(self):
+        box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS, pause=0.003))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        box.settle()
+        line = box.lines("switch")[-1]
+        found = re.match(r"^switch b (\d+) ms, load 0 ms, import 0 ms, frames (\d+), worst (\d+) ms, longest (\d+) ms$",
+                         line)
+        self.assertIsNotNone(found, line)
+        ms, frames, worst, longest = (int(x) for x in found.groups())
+        self.assertEqual(4 * app.FRAME_MS, ms)  # from the settle to the game, on the box's clock
+        self.assertEqual(3, frames)  # the card's frames after the settle; the fourth is the game's
+        self.assertLessEqual(3 * app.BUILD_CHUNKS, worst)  # the steps of a frame, each 3 ms
+        self.assertLessEqual(3 * app.BUILD_CHUNKS, longest)
+
+    def test_a_game_refused_during_a_build_puts_the_next_name_on_the_card_and_builds_it(self):
+        Broken = flaky("broken")
+        box = self.box((GAMES[0], Broken, GAMES[1]))
+        Broken.fails = [ValueError]
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        card = box.frame(app.SETTLE_MS + app.FRAME_MS)
+        self.assertIsInstance(card, app.NameCard)
+        self.assertEqual(("b", 3, 3, app.NameCard.LOADING), (card.name, card.n, card.count, card.stage))
+        self.assertEqual(["game broken refused: ValueError('broken')"],
+                         [line for line in box.said.getvalue().splitlines() if "refused" in line])
+        self.assertEqual("b", box.settle().name)
+        self.assertEqual(["a", "b"], BUILT)
+
+    def test_when_every_game_fails_during_a_build_the_last_error_is_raised(self):
+        X, Y = flaky("x"), flaky("y")
+        box = self.box((X, Y))
+        X.fails.append(ValueError)  # after start() built x: from now on both fail
+        Y.fails.append(ValueError)
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        box.frame(app.SETTLE_MS + app.FRAME_MS)  # y is refused, and x is on the card
+        with self.assertRaisesRegex(ValueError, "^x$"):
+            box.frame(app.SETTLE_MS + 2 * app.FRAME_MS)
+        self.assertEqual(["game y refused: ValueError('y')", "game x refused: ValueError('x')"],
+                         [line for line in box.said.getvalue().splitlines() if "refused" in line])
+
+    def test_no_fps_line_names_a_card_during_a_build(self):
+        box = self.box(Stepped(GAMES, app.BUILD_CHUNKS * (2 * app.FPS_EVERY_MS // app.FRAME_MS)))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        self.assertEqual("b", box.settle(limit=10 ** 4).name)
+        self.assertLess(2 * app.FPS_EVERY_MS, box.ms)
+        self.assertEqual([], box.lines("fps"))
 
 
 class CardTest(unittest.TestCase):
@@ -280,7 +540,10 @@ class NothingImportedTest(unittest.TestCase):
             self.addCleanup(box.close)
             self.assertEqual("ghost", box.frame(0, d14=True).name)  # the card: no import yet
             self.assertNotIn("refused", box.said.getvalue())
-            self.assertEqual("cave", box.frame(app.SETTLE_MS).name)
+            box.frame(app.SETTLE_MS)
+            game = box.settle()
+            self.assertNotIsInstance(game, app.NameCard)
+            self.assertEqual("cave", game.name)
         self.assertIn("game ghost refused", box.said.getvalue())
 
 

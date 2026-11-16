@@ -53,6 +53,9 @@ FPS_EVERY_MS = 5000
 FRAME_MS = 40  # each frame starts this long after the last, so objects move in equal steps; 0 = as fast as it goes. 110 while a send took 63 to 71 ms, 60 at 31 ms, 40 since partial show (P533 slice 5)
 FULL_FRAME_FREE = 400_000
 GC_FLOOR = 1_000_000  # with PSRAM gc is off in the loop; below this much free heap it runs at once
+BUILD_CHUNKS = 3  # the chunks (pictures.CHUNK_SIZE each) a frame reads during a build behind the card (P822): about 20 ms of 40.
+# A measured value: 2 when the switch line's worst passes a card frame's baseline worst by over 2 ms or its longest
+# passes 22 ms on a revisit (import 0 ms); 4 when both keep over 10 ms to spare
 SETTLE_MS = 700  # a pick builds its game once no D14 press came for this long; the one feel value: the PO's play decides (P818)
 GC_FRAMES = 5  # with gc off, a timed collection every this many frames: small ones often, not one long pause over 8 MB
 # The bench decides the SPI clock. 80 MHz showed a dark screen on 2026-11-01 (the panel's write cycle limit is 16 ns,
@@ -147,6 +150,8 @@ def say_lineup(games):
 class App:
     """Owns the display, the two buttons and the current game. frame() is one pass of the loop."""
 
+    steps = None  # --- MVP (P822) --- the build behind the card (Lineup.game_steps) from a settle until its game plays
+
     def __init__(self, display, read_fire, read_boot, games, full=False, gc_floor=0, out=None, knob=None,
                  cues=None):
         self.display = display
@@ -185,6 +190,9 @@ class App:
         """A D14 press: the next name of the lineup, on a NameCard. The game goes, and nothing is imported or loaded:
         the picked game is built when the pick settles (frame())."""
         self.index = (self.index + 1) % len(self.games)
+        if self.steps is not None:  # a build stopped (P822): its pack file closes, and leave() frees its half-read set
+            self.steps.close()
+            self.steps = None
         self.leave()
         self.game = NameCard(self.games.names[self.index], self.index + 1, len(self.games), now)
         self.out.reset()
@@ -192,23 +200,67 @@ class App:
         print("pick", self.game.name)
 
     def build(self):
-        """Build the game at index and say its name, then how long the build took, its art's load and its module's
-        import in it (P814, P818)."""
+        """Build the game at index at once (start() and switch()) and say its name, then how long the build took, its
+        art's load and its module's import in it (P814, P818)."""
         start = time.ticks_ms()
         self.leave()
         gc.collect()
-        self.game = self.new_game()
-        self.game.signals = self.signals
+        self.play(self.new_game())
+        print("switch %s %d ms, load %d ms, import %d ms" % (self.game.name, time.ticks_diff(self.mark, start),
+                                                            pictures.load_ms, self.games.import_ms))
+
+    def play(self, game):
+        """The built game plays: its signals, cues and music, a clean output, a new interval, and no press from
+        before; then its name."""
+        self.game = game
+        game.signals = self.signals
         if self.cues:
-            self.cues.follow(self.game, self.signals)
+            self.cues.follow(game, self.signals)
             self.cues.music()
         self.out.reset()
         self.new_interval()
         self.fire.forget()  # --- MVP (P818) --- a press during the import and the load was for the frozen screen
         self.boot.forget()
-        print("game", self.game.name)
-        print("switch %s %d ms, load %d ms, import %d ms" % (self.game.name, time.ticks_diff(self.mark, start),
-                                                            pictures.load_ms, self.games.import_ms))
+        print("game", game.name)
+
+    # --- MVP (P822) ---
+    def settle(self):
+        """The pick settled: its build starts behind the card. Nothing is imported in this frame, so the card is drawn
+        saying "loading" before the import freezes the next one."""
+        gc.collect()
+        self.settled_at, self.failures, self.longest = time.ticks_ms(), 0, 0
+        self.steps = self.games.game_steps(self.index)
+        self.game.stage = NameCard.LOADING
+
+    def build_step(self):
+        """BUILD_CHUNKS steps of the build behind the card; the card shows the progress. When the steps end, the game
+        plays and the switch line says the build's frames, worst and longest. Answers whether the game plays."""
+        t, k, game = time.ticks_us(), 0, None
+        try:
+            while k < BUILD_CHUNKS:
+                self.game.stage = next(self.steps)
+                k += 1
+        except StopIteration as built:
+            game = built.value
+        except Exception as e:  # refused as new_game refuses: the next game goes on the card, built from next frame
+            self.steps = None
+            self.failures += 1
+            self.refuse(e)
+            if self.failures >= len(self.games):
+                raise e
+            self.game = NameCard(self.games.names[self.index], self.index + 1, len(self.games), self.game.at)
+            self.game.stage = NameCard.LOADING
+            self.steps = self.games.game_steps(self.index)
+        self.longest = max(self.longest, time.ticks_diff(time.ticks_us(), t))
+        if game is None:
+            return False
+        self.steps = None
+        frames, worst = self.frames, self.worst  # the build's, before play() starts the game's interval
+        self.play(game)
+        print("switch %s %d ms, load %d ms, import %d ms, frames %d, worst %d ms, longest %d ms" % (
+            game.name, time.ticks_diff(self.mark, self.settled_at), pictures.load_ms, self.games.import_ms, frames,
+            worst // 1000, self.longest // 1000))
+        return True
 
     def new_interval(self):
         """The fps and time lines count from now."""
@@ -225,11 +277,15 @@ class App:
                 return self.games.game(self.index)
             except Exception as e:
                 error = e
-                pictures.free()  # a half-loaded set goes
-                gc.collect()  # and the half-built game (run() may have turned the collector off), before the line
-                print("game %s refused: %r" % (self.games.names[self.index], e))  # is built on a heap with room
-                self.index = (self.index + 1) % len(self.games)
+                self.refuse(e)
         raise error
+
+    def refuse(self, e):
+        """The game at index failed to build: said aloud, its memory gone, and the index on the next game."""
+        pictures.free()  # a half-loaded set goes
+        gc.collect()  # and the half-built game (run() may have turned the collector off), before the line
+        print("game %s refused: %r" % (self.games.names[self.index], e))  # is built on a heap with room
+        self.index = (self.index + 1) % len(self.games)
 
     def collect(self):
         """gc.collect(), timed. Called at quiet moments, so a pause lands where nobody is playing."""
@@ -247,14 +303,18 @@ class App:
         pressed, switched = self.fire.update(now), self.boot.update(now) and len(self.games) > 1  # Input; one game: no pick
         if self.knob:
             self.knob.poll(now)  # --- MVP (P764) ---
-        settled = isinstance(self.game, NameCard) and (pressed or time.ticks_diff(now, self.game.at) >= SETTLE_MS)
+        settled = self.steps is None and isinstance(self.game, NameCard) and (
+            pressed or time.ticks_diff(now, self.game.at) >= SETTLE_MS)  # a card during its build never settles again
+        built = False
         if switched:
             self.pick(now)  # --- MVP (P818) ---
         elif settled:
-            self.build()  # a BOOT press that settles a pick is used up here
+            self.settle()  # a BOOT press that settles a pick is used up here (P822: the build runs in later frames)
+        elif self.steps is not None:
+            built = self.build_step()  # --- MVP (P822) --- in place of the game's step; a BOOT press goes nowhere
         else:
             self.game.step(now, pressed, self.fire.held)  # FixedUpdate, Update, LateUpdate
-        if switched or settled:  # the new interval's stages: a build's time is not this frame's
+        if switched or settled or built:  # the new interval's stages: a build's time is not this frame's
             us, t0, before = self.us, time.ticks_us(), self.us[:]
         self.overlay.update(now)  # after the switch, so a turn shows in this frame and a pane sees this frame's game
         game = self.game
@@ -268,6 +328,10 @@ class App:
         took = time.ticks_diff(time.ticks_us(), t0)
         if took > self.slow[0]:  # the slowest frame of the interval, and where its time went
             self.slow = [took] + [a - b for a, b in zip(us, before)]
+        if self.steps is not None:  # --- MVP (P822) --- a build behind the card: no timed collect and no fps lines,
+            if settled:  # and its frames and worst count from the end of the settle's frame
+                self.new_interval()
+            return
         if self.gc_floor and self.frames % GC_FRAMES == 0:  # no gc.mem_free(): it costs about 20 ms per MB allocated
             self.collect()
         elapsed = time.ticks_diff(now, self.mark)
@@ -293,8 +357,10 @@ class NameCard(gfx.Game):
     "BOOT loads" small, on the plain background. It stays in TITLE, loads nothing and has no cues. at: the pick's
     time.ticks_ms(), from which the pick settles."""
 
+    WAITING, LOADING = "BOOT loads", "loading"  # --- MVP (P822) --- the stages it says: waiting to settle, the import
+
     def __init__(self, name, n, count, at=0):
-        self.name, self.n, self.count, self.at = name, n, count, at
+        self.name, self.n, self.count, self.at, self.stage = name, n, count, at, self.WAITING
         super().__init__()
 
     def step(self, now_ms, pressed, held):
@@ -305,7 +371,8 @@ class NameCard(gfx.Game):
         cv.big(self.name, cx - 12 * len(self.name), cy - 30, gfx.WHITE, 3)
         place = "%d / %d" % (self.n, self.count)
         cv.big(place, cx - 8 * len(place), cy + 6, gfx.GREY, 2)
-        cv.text("BOOT loads", cx - 40, cy + 34, gfx.YELLOW)
+        if isinstance(self.stage, str):  # a progress has no words
+            cv.text(self.stage, cx - 4 * len(self.stage), cy + 34, gfx.YELLOW)
 
 
 def open_st7789():
