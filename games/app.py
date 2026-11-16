@@ -23,10 +23,12 @@ main.py opens the Speaker. run() with no speaker is the silent box.
 run() prints `lineup <n>: <names>` and `import <ms> ms` (how long this module's own imports took), then `ready` once
 the display is set up, then `pick <name>` at each D14 press, and `game <name>` with
 `switch <name> <ms> ms, load <ms> ms, import <ms> ms` at the start: how long the build took, the time the art's reads
-took in it (P814) and the import of the game's module in it (P818). A build behind the card adds
-`, frames <n>, worst <ms> ms, longest <ms> ms` (P822): its ms run from the settle to the game, frames are the card's
-frames during the build, worst the longest gap between two frame starts, and longest the build's longest share of
-one frame (the import or the setup shows there). Its loop
+took in it (P814) and the import of the game's module in it (P818). A build behind the card says
+`switch <name> <ms> ms, load <ms> ms, import <ms> ms, setup <ms> ms, frames <n>, worst <ms> ms, longest <ms> ms,
+card <ms> ms` (P822): its ms run from the settle to the game, load is the load's own work summed between its steps,
+setup the making of the game, frames the card's frames during the build, worst the longest gap between two of their
+starts, longest the build's longest share of one frame without the setup (the import shows there on a first visit),
+and card the waiting card's worst, from the pick to the settle: the baseline for BUILD_CHUNKS. Its loop
 reads the console without waiting (commands/build.md, "The console read"), so mpremote can reach the board while it runs.
 Each frame the game paints into a list of recorded draw calls (gfx.Canvas); render.Dirty finds the rectangles that
 changed since the last frame, and only those are drawn into one 51,200-byte RGB565 buffer and blitted. Nothing at module level touches hardware.
@@ -61,8 +63,8 @@ FRAME_MS = 40  # each frame starts this long after the last, so objects move in 
 FULL_FRAME_FREE = 400_000
 GC_FLOOR = 1_000_000  # with PSRAM gc is off in the loop; below this much free heap it runs at once
 BUILD_CHUNKS = 3  # the chunks (pictures.CHUNK_SIZE each) a frame reads during a build behind the card (P822): about 20 ms of 40.
-# A measured value: 2 when the switch line's worst passes a card frame's baseline worst by over 2 ms or its longest
-# passes 22 ms on a revisit (import 0 ms); 4 when both keep over 10 ms to spare
+# A measured value, read from one switch line of a revisit (import 0 ms): 2 when its worst passes its card (the waiting
+# card's worst, the baseline) by over 2 ms or its longest passes 22 ms; 4 when both keep over 10 ms to spare
 SETTLE_MS = 700  # a pick builds its game once no D14 press came for this long; the one feel value: the PO's play decides (P818)
 GC_FRAMES = 5  # with gc off, a timed collection every this many frames: small ones often, not one long pause over 8 MB
 # The bench decides the SPI clock. 80 MHz showed a dark screen on 2026-11-01 (the panel's write cycle limit is 16 ns,
@@ -104,6 +106,7 @@ class Lineup:
         return len(self.names)
 
     import_ms = 0  # how long the last game_steps(i) took to import its module (P818)
+    setup_us = 0  # how long the last game_steps(i) took to make the game, its setup in it (P822)
 
     def game(self, i):
         """The i-th game, built at once: game_steps(i) run to its end."""
@@ -125,7 +128,10 @@ class Lineup:
         art = getattr(c, "ART", None)  # a probe's or a test's class may be no gfx.Game
         if art:
             yield from pictures.load_steps(*art)
-        return c()
+        t = time.ticks_us()
+        game = c()
+        self.setup_us = time.ticks_diff(time.ticks_us(), t)
+        return game
 
 
 def read_lineup():
@@ -161,7 +167,8 @@ class App:
     steps = None  # its steps (Lineup.game_steps), or None when no build runs
     settled_at = 0  # time.ticks_ms() of the settle
     failures = 0  # the games refused since the settle, in a row
-    longest = 0  # us: the build's longest share of one frame
+    longest = 0  # us: the build's longest share of one frame, its game's setup not in it
+    card_us = 0  # us: the longest gap between two frame starts while the card waited for the settle: the baseline
 
     def __init__(self, display, read_fire, read_boot, games, full=False, gc_floor=0, out=None, knob=None,
                  cues=None):
@@ -239,8 +246,8 @@ class App:
     def settle(self):
         """The pick settled: the last game's garbage is collected and the build starts behind the card. Nothing is
         imported in this frame, so the card is drawn saying "loading" before the import freezes the next one."""
-        gc.collect()
-        self.settled_at, self.failures, self.longest = time.ticks_ms(), 0, 0
+        self.settled_at, self.failures, self.longest, self.card_us = time.ticks_ms(), 0, 0, self.worst
+        gc.collect()  # in the line's ms
         self.steps = self.games.game_steps(self.index)
         self.game.caption = NameCard.LOADING
 
@@ -254,6 +261,7 @@ class App:
                 k += 1
         except StopIteration as built:
             game = built.value
+            t = time.ticks_add(t, self.games.setup_us)  # the setup has its own field: longest is the reading's
         except Exception as e:  # refused as new_game refuses: the next game goes on the card, built from next frame
             self.steps = None
             self.failures += 1
@@ -269,9 +277,9 @@ class App:
         self.steps = None
         frames, worst = self.frames, self.worst  # the build's, before play() starts the game's interval
         self.play(game)
-        print("switch %s %d ms, load %d ms, import %d ms, frames %d, worst %d ms, longest %d ms" % (
-            game.name, time.ticks_diff(self.mark, self.settled_at), pictures.load_ms, self.games.import_ms, frames,
-            worst // 1000, self.longest // 1000))
+        print("switch %s %d ms, load %d ms, import %d ms, setup %d ms, frames %d, worst %d ms, longest %d ms, card %d ms"
+              % (game.name, time.ticks_diff(self.mark, self.settled_at), pictures.load_ms, self.games.import_ms,
+                 self.games.setup_us // 1000, frames, worst // 1000, self.longest // 1000, self.card_us // 1000))
         return True
 
     def new_interval(self):

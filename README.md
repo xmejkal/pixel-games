@@ -120,7 +120,8 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    garbage collection. `main.py` starts the games. The console shows `lineup <n>: <names>`, `import <ms> ms`
    (how long `app.py`'s own imports took), then `game <name>`, then `switch <name> N ms, load N ms, import N ms` each
    time a game is built: how long the build took, the art's load in it and the import of the game's module in it.
-   Each D14 press prints `pick <name>` (P818). A build after a pick adds `frames N, worst N ms, longest N ms` (P822).
+   Each D14 press prints `pick <name>` (P818). A build after a pick adds `setup N ms, frames N, worst N ms,
+   longest N ms, card N ms` (P822).
 7. An older board also holds the `/art` folder of picture files. Both folders fit: with `/art` the board had 4.98 MB
    of flash free, and `/packs` takes 2.9 MB. The games no longer read `/art`. Once they show their pictures, remove it
    with `mpremote rm -r :art` (mpremote 1.29.0 here, see `mpremote --version`; an mpremote whose `rm` has no `-r`
@@ -131,9 +132,10 @@ lineup, and the game loads only when no press came for 0.7 s, or at once on a BO
 games to the fifth loads only the fifth. The game then loads behind the card (P822): the card says "loading" while
 the game's code is imported (the first time after a boot only), then shows a bar as its pictures are read, a few
 chunks a frame, so the screen keeps moving. A D14 press during the load stops it and picks the next game. The console
-says `pick <name>` at each press and `switch <name> N ms, load N ms, import N ms, frames N, worst N ms, longest N ms`
-when the game is built: from the settle to the game, the pictures' reading time, the import, the card's frames
-during the build, the longest gap between two of them, and the build's longest share of one frame.
+says `pick <name>` at each press and `switch <name> N ms, load N ms, import N ms, setup N ms, frames N, worst N ms,
+longest N ms, card N ms` when the game is built: from the settle to the game, the load's own time, the import, the
+game's setup, the card's frames during the build, the longest gap between two of them, the build's longest share of
+one frame without the setup, and the longest gap while the card waited for the settle.
 If the board stays dark after a long press of its D14 button, hold D14 for 1 to 2 seconds. That button also switches the board's power off.
 
 ## Status

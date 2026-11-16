@@ -350,24 +350,29 @@ class StepsTest(unittest.TestCase):
                          said.getvalue())
         self.assertEqual(({}, False), (pictures.PICS, pictures.ready))
 
-    def test_load_ms_is_the_reading_time_alone(self):
+    def test_load_ms_is_the_load_s_own_time_between_its_steps(self):
+        """load_ms (P822): the open, the header and every read, as a load in one go took them (P814 to P819), but no
+        frame the box draws between two steps."""
         clock = [0]
+        opened = self.open
 
-        def readinto(view, read=Recorded.readinto):
-            clock[0] += 2000  # each read: 2 ms
-            return read(recorded, view)
-        steps = pictures.load_steps("bucket")
+        def slow_open(path, mode):
+            clock[0] += 5000  # the open: 5 ms
+            f = opened(path, mode)
+            read = f.readinto
+
+            def readinto(view):
+                clock[0] += 2000  # each read, the header's too: 2 ms
+                return read(view)
+            f.readinto = readinto
+            return f
+        pictures.open = slow_open
         with mock.patch.object(pictures.time, "ticks_us", lambda: clock[0], create=True), \
                 mock.patch.object(pictures.time, "ticks_diff", lambda a, b: a - b, create=True):
-            recorded = None
-            first = next(steps)
-            recorded = self.files[0]
-            recorded.readinto = readinto
-            for _ in steps:
+            for _ in pictures.load_steps("bucket"):
                 clock[0] += 40000  # the box's frame between two steps: not the load's
-        chunks = len(self.reads) - 2  # the header and the first chunk were read on the real clock
-        self.assertLess(0, first)
-        self.assertEqual(chunks * 2, pictures.load_ms)
+        self.assertLess(2, len(self.reads))
+        self.assertEqual(5 + 2 * len(self.reads), pictures.load_ms)
 
 
 class PackFilesTest(unittest.TestCase):

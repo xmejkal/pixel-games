@@ -62,16 +62,24 @@ class Out:
         self.seen.append([pane.visible for pane in overlay.panes])
 
 
+class SlowOut(Out):
+    """An output whose draw takes 10 ms."""
+
+    def draw(self, game, us, overlay):
+        time.sleep(0.010)
+        super().draw(game, us, overlay)
+
+
 class Box:
     """An App on a clock the test sets, with D14 and BOOT pressed when the test says."""
 
-    def __init__(self, games=GAMES, **kw):
+    def __init__(self, games=GAMES, out=None, **kw):
         self.ms, self.d14, self.boot = 0, False, False
         self.clock = mock.patch.object(app.time, "ticks_ms", lambda: self.ms)
         self.clock.start()
         self.said = io.StringIO()
         with contextlib.redirect_stdout(self.said):
-            self.app = app.App(None, lambda: 99, lambda: 99, games=games, out=Out(), **kw)
+            self.app = app.App(None, lambda: 99, lambda: 99, games=games, out=out or Out(), **kw)
             self.app.fire.update = lambda now: self.boot
             self.app.boot.update = lambda now: self.d14
             self.app.start()
@@ -117,7 +125,8 @@ class PickTest(unittest.TestCase):
         self.assertEqual(["pick b", "pick c", "pick d", "pick e"], box.lines("pick"))
         self.assertEqual(2, len(box.lines("switch")))  # start's and the settled pick's
         self.assertRegex(box.lines("switch")[1],
-                         r"^switch e \d+ ms, load \d+ ms, import \d+ ms, frames \d+, worst \d+ ms, longest \d+ ms$")
+                         r"^switch e \d+ ms, load \d+ ms, import \d+ ms, setup \d+ ms, frames \d+, worst \d+ ms, "
+                         r"longest \d+ ms, card \d+ ms$")
 
     def test_the_pick_settles_at_settle_ms_not_before(self):
         box = self.box
@@ -501,20 +510,47 @@ class BuildTest(unittest.TestCase):
             self.assertEqual("b", box.run_build().name)
         collect.assert_not_called()
 
-    def test_the_switch_line_counts_the_build_s_frames_worst_and_longest(self):
-        box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS, pause=0.003))
+    def switch_line(self, box, name):
+        """The numbers of the last switch line of a build behind the card, by name."""
+        line = box.lines("switch")[-1]
+        found = re.match(r"^switch %s (\d+) ms, load (\d+) ms, import (\d+) ms, setup (\d+) ms, frames (\d+), worst (\d+) "
+                         r"ms, longest (\d+) ms, card (\d+) ms$" % name, line)
+        self.assertIsNotNone(found, line)
+        return dict(zip(("ms", "load", "import", "setup", "frames", "worst", "longest", "card"),
+                        (int(x) for x in found.groups())))
+
+    def test_the_switch_line_counts_the_build_s_frames_worst_longest_and_the_card_s_baseline(self):
+        box = self.box(Stepped(GAMES, 3 * app.BUILD_CHUNKS, pause=0.004), out=SlowOut())
+        box.frame(0, d14=True)
+
+        def collect():
+            box.ms += 30  # the settle's collect: in the line's ms
+        with mock.patch.object(app.gc, "collect", collect):
+            box.frame(app.SETTLE_MS)
+        box.run_build()
+        got = self.switch_line(box, "b")
+        self.assertEqual(30 + 4 * app.FRAME_MS, got["ms"])  # from the settle to the game, on the box's clock
+        self.assertEqual(3, got["frames"])  # the card's frames after the settle; the fourth is the game's
+        steps = 4 * app.BUILD_CHUNKS  # ms: a frame's steps, 4 ms each
+        self.assertTrue(steps <= got["longest"] < steps + 10, got)  # the steps alone, not the 10 ms draw
+        self.assertTrue(steps + 10 <= got["worst"] < steps + 40, got)  # the steps and the draw: a frame start's gap
+        self.assertTrue(10 <= got["card"] < steps + 10, got)  # the waiting card's frames: the draw alone
+
+    def test_setup_has_its_own_field_and_is_not_in_longest(self):
+        class Sleepy(gfx.Game):
+            name = "sleepy"
+
+            def setup(self):
+                time.sleep(0.03)
+
+        box = self.box((GAMES[0], Sleepy))
         box.frame(0, d14=True)
         box.frame(app.SETTLE_MS)
-        box.run_build()
-        line = box.lines("switch")[-1]
-        found = re.match(r"^switch b (\d+) ms, load 0 ms, import 0 ms, frames (\d+), worst (\d+) ms, longest (\d+) ms$",
-                         line)
-        self.assertIsNotNone(found, line)
-        ms, frames, worst, longest = (int(x) for x in found.groups())
-        self.assertEqual(4 * app.FRAME_MS, ms)  # from the settle to the game, on the box's clock
-        self.assertEqual(3, frames)  # the card's frames after the settle; the fourth is the game's
-        self.assertLessEqual(3 * app.BUILD_CHUNKS, worst)  # the steps of a frame, each 3 ms
-        self.assertLessEqual(3 * app.BUILD_CHUNKS, longest)
+        self.assertEqual("sleepy", box.run_build().name)
+        got = self.switch_line(box, "sleepy")
+        self.assertLessEqual(30, got["setup"])
+        self.assertLess(got["longest"], 30)
+        self.assertEqual(0, got["frames"])  # no art: the build ends in the frame after the settle
 
     def test_a_game_refused_during_a_build_puts_the_next_name_on_the_card_and_builds_it(self):
         Broken = flaky("broken")

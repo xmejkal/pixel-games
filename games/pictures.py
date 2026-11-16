@@ -27,7 +27,7 @@ PICS = {}  # name: (w, h, memoryview into the block) of the loaded set
 SETS = {}  # game name: its layers, each [name, top, w, h, speed, keyed, memoryview], back to front
 ready = False
 loaded = None  # (set, only) that PICS holds, or None
-load_ms = 0  # the ms the last load's reads took, summed over its chunks (P822); 0 after free(): App prints it
+load_ms = 0  # the ms of the last load's own work, summed between its steps (P822); 0 after free(): App prints it
 
 
 def free():
@@ -65,20 +65,27 @@ def spans(game, only=None):
 
 
 class Reading:
-    """What a load has read (P822): its bytes, of all the bytes it reads after the packs' headers, and the
-    microseconds its reads took, counted over the chunks alone, so a frame drawn between two of them is not in it."""
+    """A load's reading (P822): its bytes read, of all the bytes it reads after the packs' headers, and the microseconds
+    of its own work (the opens, the headers, the reads, the placing), counted between its steps, so a frame the box
+    draws between two of them is not in it. It starts counting when it is made."""
 
     def __init__(self, total):
-        self.done, self.total, self.us = 0, total, 0
+        self.done, self.total, self.us, self.since = 0, total, 0, ticks_us()
 
-    def read(self, f, view):
-        """f.readinto(view), timed and counted: the bytes read."""
-        t = ticks_us()
-        n = f.readinto(view)
-        self.us += ticks_diff(ticks_us(), t)
-        if n:
-            self.done += n
-        return n
+    def step(self, n):
+        """n more bytes read, and a step ends: its time counts. Answers the fraction of the load read."""
+        self.done += n
+        self.us += ticks_diff(ticks_us(), self.since)
+        return self.done / self.total
+
+    def resume(self):
+        """The next step starts."""
+        self.since = ticks_us()
+
+    def end(self):
+        """The load is placed: the last step's time counts. Answers the load's ms."""
+        self.us += ticks_diff(ticks_us(), self.since)
+        return self.us // 1000
 
 
 def read_chunks(f, view, reading):
@@ -87,11 +94,12 @@ def read_chunks(f, view, reading):
     between two reads and the box can draw a frame. Returns the bytes read: fewer than len(view) at the file's end."""
     got = 0
     while got < len(view):
-        n = reading.read(f, view[got:got + CHUNK_SIZE])
+        n = f.readinto(view[got:got + CHUNK_SIZE])
         if not n:
             break
         got += n
-        yield reading.done / reading.total
+        yield reading.step(n)
+        reading.resume()
     return got
 
 
@@ -173,10 +181,10 @@ def load(game=None, only=None):
 def load_steps(game=None, only=None):
     """load() a chunk at a time (P822): a generator that yields the fraction 0 to 1 of the load's bytes read after
     each chunk, so the box draws its card between two steps; when it ends, the set is placed and ready is set.
-    load_ms is the time its reads took. A missing pack, or one whose size or header is not this build's, is refused
-    aloud, naming the game: no art, rather than another build's. A refused load is kept like a loaded one, so asked
-    again it answers False with no read and no message; free() forgets it. Closed halfway (close()), it closes the
-    pack file; the caller then calls free(), and no half-read set stays."""
+    load_ms is the time of its own work, summed between its steps. A missing pack, or one whose size or header is not
+    this build's, is refused aloud, naming the game: no art, rather than another build's. A refused load is kept like
+    a loaded one, so asked again it answers False with no read and no message; free() forgets it. Closed halfway
+    (close()), it closes the pack file; the caller then calls free(), and no half-read set stays."""
     global ready, loaded, load_ms
     if art_index is None:
         return False
@@ -197,7 +205,8 @@ def load_steps(game=None, only=None):
     total = sum(n for _, parts in reads for _, n in parts)
     if not total:
         return False
-    buf, at, reading = block(HEADER * len(reads) + total), 0, Reading(total)
+    reading = Reading(total)
+    buf, at = block(HEADER * len(reads) + total), 0
     for g, parts in reads:
         try:
             got = yield from read_pack(g, parts, buf, at, reading)
@@ -207,7 +216,7 @@ def load_steps(game=None, only=None):
             return refuse("art: %s pack is not this build: copy games/*.py and games/packs, then hard reset" % g)
         place(g, got, buf, only)
         at += HEADER + sum(n for _, n in parts)
-    ready, load_ms = True, reading.us // 1000
+    ready, load_ms = True, reading.end()
     return True
 
 
