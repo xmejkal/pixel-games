@@ -10,6 +10,7 @@ from array import array
 
 from effects import FireTrail
 from cues import Cue
+from engine.actions import lean
 from fire import FireLayer, ramp
 from gfx import (ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Dice, Game,
                  Particles, c565)
@@ -507,6 +508,7 @@ class Snake(Game):
     name = "snake"
     ART = ("snake", None)  # its own art set, all of it (P822)
     hint = "tap turns right"
+    stick_hint = "stick steers"  # --- MVP (P872) ---
     bg = c565(14, 34, 22)
     accent = GREEN
     BONE = StatusBar.BONE  # art/sets/snake.py's
@@ -533,6 +535,7 @@ class Snake(Game):
     def setup(self):
         self.body = [(12, 9), (11, 9), (10, 9)]
         self.d, self.acc = 0, 0.0
+        self.went = 0  # --- MVP (P872) --- the way of the last step: right, as d starts
         self.food = self.spot()
         self.covers = pictures.load(*self.ART)  # the painted glass covers the screen, so no fill goes under it
         self.made = 3  # tiles made so far: tile i of the body is number made - i, so its kind stays as it crawls
@@ -554,7 +557,9 @@ class Snake(Game):
         return (0, 0)
 
     def play(self, pressed, held):
-        if pressed:
+        if self.stick is not None:
+            self.steer()  # --- MVP (P872) --- with the stick, FIRE does not turn it
+        elif pressed:
             self.d = (self.d + 1) % 4
             self.emit("turn")
         self.acc += self.dt * 1000
@@ -562,6 +567,7 @@ class Snake(Game):
         if self.acc < period:
             return
         self.acc -= period
+        self.went = self.d
         dx, dy = self.DIRS[self.d]
         nxt = ((self.body[0][0] + dx) % self.COLS, (self.body[0][1] + dy) % self.ROWS)
         if nxt in self.body[:-1]:
@@ -581,6 +587,24 @@ class Snake(Game):
             if (self.made - i) % 2 == 0:
                 self.trail.left(self.x_of(self.body[i]), self.y_of(self.body[i]), (self.made - i) % 12, self.last)
             self.gone = self.body.pop()
+
+    # --- MVP (P872) ---
+    def steer(self):
+        """The stick's way: the larger axis, if it leans, picks right, down, left or up (DIRS). A pick against went, the
+        way of the last step, is ignored, so two quick leans in one step cannot turn the head into its neck. A new way
+        says "turn"."""
+        x, y = self.stick.x, self.stick.y
+        if abs(x) >= abs(y):
+            way, d = lean(x), 0
+        else:
+            way, d = lean(y), 1
+        if not way:
+            return
+        if way < 0:
+            d += 2
+        if d != self.d and d != (self.went + 2) % 4:
+            self.d = d
+            self.emit("turn")
 
     def ate(self, cell):
         """A meal at cell: the sound, the gulp, the bulge down the feed, the ripple and the bone sparks."""

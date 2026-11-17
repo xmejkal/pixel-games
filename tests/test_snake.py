@@ -19,6 +19,7 @@ if not hasattr(time, "ticks_diff"):
 import arcade  # noqa: E402
 import gfx  # noqa: E402
 from arcade import Flip, Meals, Slide, Snake, StatusBar, Trail  # noqa: E402
+from engine.actions import Actions  # noqa: E402
 
 FRAME_MS = 40  # app.py's FRAME_MS
 SEED, FRAMES, EVERY = 2, 1000, 2  # the trace's seed, its length, and the bot's look: one frame in EVERY
@@ -493,6 +494,79 @@ class SoundTest(unittest.TestCase):
         game.d = 1
         game.play(False, False)  # into its own body
         self.assertEqual(["eat", "turn", "die"], game.signals.names)
+
+
+# --- MVP (P872) ---
+def stick_at(game, x, y):
+    if game.stick is None:
+        game.stick = Actions()
+    game.stick.x, game.stick.y = x, y
+    return game
+
+
+class StickTest(unittest.TestCase):
+    """With the stick, the larger axis that leans picks the way; a pick against the last step's way is ignored."""
+
+    def going(self, d):
+        """A game in play going d, its last step d too, and no step due."""
+        game = playing(d=d)
+        game.went, game.acc = d, 0.0
+        return game
+
+    def test_each_lean_picks_its_way_and_the_larger_axis_wins(self):
+        for d, x, y, want in ((0, 0, 100, 1), (0, 0, -100, 3), (1, 100, 0, 0), (1, -100, 0, 2), (0, 50, -90, 3),
+                              (1, 90, -60, 0)):
+            with self.subTest(d=d, x=x, y=y):
+                game = stick_at(self.going(d), x, y)
+                game.play(False, False)
+                self.assertEqual(want, game.d)
+
+    def test_a_tilt_under_lean_and_a_reverse_lean_are_ignored(self):
+        for x, y in ((30, -39), (-100, 0)):
+            game = stick_at(self.going(0), x, y)
+            game.play(False, False)
+            self.assertEqual(0, game.d)
+
+    def test_a_left_lean_before_the_first_step_is_ignored(self):
+        game = Snake()
+        game.state, game.dt = gfx.PLAY, FRAME_MS / 1000
+        stick_at(game, -100, 0).play(False, False)
+        self.assertEqual((0, 0), (game.d, game.went))
+
+    def test_two_leans_in_one_step_cannot_reverse_it_into_its_neck(self):
+        game = stick_at(self.going(0), 0, 100)
+        game.play(False, False)  # down, no step yet
+        stick_at(game, -100, 0).play(False, False)  # left: against the step's way, right
+        self.assertEqual(1, game.d)
+        game.acc = 1000.0
+        game.play(False, False)  # the step down
+        self.assertEqual(((12, 10), 1), (game.body[0], game.d))
+        game.play(False, False)  # the next frame: left is a turn now
+        self.assertEqual(2, game.d)
+
+    def test_a_new_way_says_turn_once_and_fire_does_not_turn_it(self):
+        game = stick_at(self.going(0), 0, 0)
+        game.signals = Heard()
+        game.play(True, True)
+        self.assertEqual(0, game.d)
+        stick_at(game, 0, 100)
+        game.play(False, False)
+        game.play(True, True)
+        self.assertEqual((1, ["turn"]), (game.d, game.signals.names))
+
+    def test_with_no_stick_a_press_turns_right_as_before(self):
+        game = self.going(0)
+        self.assertIsNone(game.stick)
+        game.play(True, True)
+        self.assertEqual(1, game.d)
+
+    def test_through_step_the_stick_steers(self):
+        game = Snake()
+        game.stick = Actions()
+        game.step(0, True, True)  # the title's press
+        game.stick.y = 100
+        game.step(FRAME_MS, False, False)
+        self.assertEqual(1, game.d)
 
 
 if __name__ == "__main__":
