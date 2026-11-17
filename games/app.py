@@ -231,10 +231,15 @@ class App:
                                                             pictures.load_ms, self.games.import_ms))
 
     def play(self, game):
-        """The built game plays: its signals, cues and music, a clean output, a new interval, and no press from
-        before; then its name."""
+        """The built game plays: its signals, the stick, its cues and music, a clean output, a new interval, and no
+        press from before; then its name."""
         self.game = game
         game.signals = self.signals
+        # --- MVP (P872) --- the map's Actions, the same record each frame, when the box has a stick; else None, and
+        # the game plays with the button. With a stick, a game's stick_hint is its title's hint
+        game.stick = self.action_map.actions if self.action_map.stick else None
+        if game.stick is not None and game.stick_hint:
+            game.hint = game.stick_hint
         if self.cues:
             self.cues.follow(game, self.signals)
             self.cues.music()
