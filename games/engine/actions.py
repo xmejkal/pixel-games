@@ -8,6 +8,15 @@ is its level, and forget() drops its pushes. The map imports no driver: app.open
 and hands them in. One map is one player's: a remote board gets a second map (P832).
 """
 
+# --- MVP (P872) ---
+LEAN = 40  # an axis this far from the middle, of 100, leans: a direction. A smaller tilt is no direction
+
+
+def lean(v):
+    """The direction an axis leans: -1, 0 or 1. v: the stick's x or y, -100 to 100. Small ints only, so a frame makes
+    nothing."""
+    return 1 if v >= LEAN else -1 if v <= -LEAN else 0
+
 
 class Action:
     """One action in one frame: pressed, a binding was pushed in this frame; held, a binding's level is pressed."""
