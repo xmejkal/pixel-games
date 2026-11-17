@@ -7,8 +7,8 @@ PICK is D14. A binding is a driver's button (drivers.buttons.Button): update(now
 is its level, and forget() drops its pushes. The map imports no driver: app.open_action_map builds them from the pin map
 and hands them in. One map is one player's: a remote board gets a second map (P832).
 A game reads the stick's x and y from the Actions that App.play hands it as game.stick (P872): bucket reads x as a
-speed and starfire x and y, and meteors, rescue, snake, gravpong, tunnel and road read their way through lean(), the
-one rule for a direction.
+speed and starfire x and y, through rate(), the one rule for a speed, and meteors, rescue, snake, gravpong, tunnel and
+road read their way through lean(), the one rule for a direction.
 """
 
 # --- MVP (P872) ---
@@ -19,6 +19,14 @@ def lean(v):
     """The direction an axis leans: -1, 0 or 1. v: the stick's x or y, -100 to 100. Small ints only, so a frame makes
     nothing."""
     return 1 if v >= LEAN else -1 if v <= -LEAN else 0
+
+
+def rate(top, v):
+    """The speed an axis sets: top * |v| // 100 with the sign of v, so a tilt and its mirror are as fast (top * v // 100
+    floors, so the minus side would be 1 faster). top: the speed at a full tilt. v: the stick's x or y, -100 to 100.
+    Small ints only, so a frame makes nothing."""
+    s = top * abs(v) // 100
+    return s if v >= 0 else -s
 
 
 class Action:

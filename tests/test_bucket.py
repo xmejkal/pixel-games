@@ -533,6 +533,13 @@ class SteerTest(unittest.TestCase):
             rules.steer(50, -50)
         self.assertEqual(start, rules.bucket_x)  # 0.5 s at half the speed, to the left: back where it started
 
+    def test_a_tilt_and_its_mirror_move_as_far(self):
+        right, left = Rules(), Rules()  # P885: 360 * 33 // 100 floors, so the left took 1 px/s more
+        right.steer(500, 33)
+        left.steer(500, -33)
+        self.assertEqual(59, right.bucket_x - Rules().bucket_x)
+        self.assertEqual(-59, left.bucket_x - Rules().bucket_x)
+
     def test_the_bucket_stops_at_each_edge_and_leaves_it_at_once(self):
         rules = Rules()
         for _ in range(100):

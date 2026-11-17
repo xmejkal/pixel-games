@@ -1,9 +1,7 @@
 """
 Sub-pixel motion (P872): a speed in px a second, stepped by a frame's ms, answered in whole px, with the part short of
 the next whole px kept for the next frame. So a slow speed still moves, a px now and then, and a frame of any length
-moves as far as its ms say. --- MVP (P872) ---
-
-Bucket's slide and meteors' slide keep the same rule in their own fields today; moving them here is a later chore.
+moves as far as its ms say. Bucket, meteors and starfire move through it (P885). --- MVP (P872) ---
 """
 
 

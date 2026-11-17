@@ -20,7 +20,7 @@
  {
   "file": "games/bucket.py",
   "name": "steer ignores the tilt: full speed at any x",
-  "find": "        self.slide(ms, BUCKET_PX_S * x // 100)\n",
+  "find": "        self.slide(ms, rate(BUCKET_PX_S, x))\n",
   "replace": "        self.slide(ms, BUCKET_PX_S if x > 0 else -BUCKET_PX_S)\n"
  },
  {

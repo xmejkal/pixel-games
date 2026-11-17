@@ -19,6 +19,8 @@ from array import array
 import pictures
 import plugins
 from cues import Cue
+from engine.actions import rate
+from engine.subpixel import SubPixel
 from gfx import GREY, HEIGHT, OVER, PALETTE, PLAY, WIDTH, YELLOW, Dice, Game, Particles, c565
 from plugins import PhysicsPlugin
 
@@ -50,7 +52,7 @@ class Rules:
 
     def __init__(self):
         self.pile = bytearray(COLS)
-        self.bucket_x, self.rest = (WIDTH - BUCKET_W) // 2, 0  # rest: px times ms short of the next whole px
+        self.bucket_x, self.subpixel = (WIDTH - BUCKET_W) // 2, SubPixel()  # subpixel: the part of a px still to move
         self.score, self.clock = 0, 0  # clock: the ms since the last drop
 
     def drop_ms(self):
@@ -63,19 +65,17 @@ class Rules:
 
     # --- MVP (P872) ---
     def steer(self, ms, x):
-        """ms of play with the stick: x, its axis from -100 (left) to 100, sets the speed, BUCKET_PX_S * x // 100 px a
-        second, so the bucket stops when the stick rests (the driver reads 0 in its dead zone)."""
-        self.slide(ms, BUCKET_PX_S * x // 100)
+        """ms of play with the stick: x, its axis from -100 (left) to 100, sets the speed, rate(BUCKET_PX_S, x) px a
+        second (as fast left as right), so the bucket stops when the stick rests (the driver reads 0 in its dead
+        zone)."""
+        self.slide(ms, rate(BUCKET_PX_S, x))
 
     def slide(self, ms, px_s):
         """ms of play at px_s px a second, + to the right, in whole px; the bucket stays on the screen."""
-        self.rest += px_s * ms
-        px = self.rest // 1000
-        self.rest -= px * 1000
-        x = self.bucket_x + px
+        x = self.bucket_x + self.subpixel.step(px_s, ms)
         if x < LEFT_X or x > RIGHT_X:
             x = LEFT_X if x < LEFT_X else RIGHT_X
-            self.rest = 0
+            self.subpixel.reset()
         self.bucket_x = x
 
     def due(self, ms, free):

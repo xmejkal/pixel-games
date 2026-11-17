@@ -23,6 +23,7 @@ from burning import BODY, N, BurningBodies
 from burning import COAL_SHADE
 from cues import Cue
 from engine.actions import lean
+from engine.subpixel import SubPixel
 from fire import MODES
 from gfx import BLACK, GREEN, HEIGHT, OVER, PLAY, RED, WHITE, WIDTH, YELLOW, Dice, Game, c565
 from motion import HIT
@@ -120,7 +121,7 @@ class Rules:
     a frame makes nothing."""
 
     def __init__(self):
-        self.walker_x, self.dir, self.rest = (WIDTH - WALKER_W) // 2, 1, 0  # rest: px times ms short of the next whole px
+        self.walker_x, self.dir, self.subpixel = (WIDTH - WALKER_W) // 2, 1, SubPixel()  # subpixel: the part of a px still to move
         self.way = 1  # --- MVP (P872) ---
         self.since = TURN_MS  # ms since the last turn, up to TURN_MS
         self.played_ms, self.clock = 0, 0  # clock: the ms since the last drop
@@ -152,13 +153,11 @@ class Rules:
     def slide(self, ms, way):
         """ms of walking the way way (-1, 0 or 1) at WALK_PX_S, in whole px; the walker stays on the screen. Answers
         whether it met an edge: move turns it there, walk does not."""
-        self.rest += way * WALK_PX_S * ms
-        px = self.rest // 1000
-        self.rest -= px * 1000
-        x = self.walker_x + px
+        x = self.walker_x + self.subpixel.step(way * WALK_PX_S, ms)
         edge = x < 0 or x > WALKER_MAX_X
         if edge:
-            x, self.rest = 0 if x < 0 else WALKER_MAX_X, 0
+            x = 0 if x < 0 else WALKER_MAX_X
+            self.subpixel.reset()
         self.walker_x = x
         return edge
 

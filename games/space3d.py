@@ -8,6 +8,7 @@ import time
 
 import pictures
 from cues import Cue
+from engine.actions import rate
 from engine.subpixel import SubPixel
 from gfx import (ACCENT, BEST, CYAN, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Dice, Game,
                  Particles, c565, shade)
@@ -83,21 +84,15 @@ class Starfire(Game):
 
     # --- MVP (P872) ---
     def steer(self, x, y):
-        """The stick's x and y, -100 to 100 (up reads negative), move the crosshair at aim_px_s(x) px a second across
-        and aim_px_s(y) down, in whole px, so it rests when the stick rests. A step that would cross an AIM_ bound stops
-        at it and drops that axis's rest. aim is a new tuple only when a px moved, so a stick at rest makes nothing."""
+        """The stick's x and y, -100 to 100 (up reads negative), move the crosshair at rate(AIM_PX_S, x) px a second
+        across and rate(AIM_PX_S, y) down, in whole px, so it rests when the stick rests. A step that would cross an
+        AIM_ bound stops at it and drops that axis's rest. aim is a new tuple only when a px moved, so a stick at rest
+        makes nothing."""
         ax, ay = self.aim
-        nx = clamp(self.aim_x, ax + self.aim_x.step(self.aim_px_s(x), self.ms), self.AIM_LEFT, self.AIM_RIGHT)
-        ny = clamp(self.aim_y, ay + self.aim_y.step(self.aim_px_s(y), self.ms), self.AIM_TOP, self.AIM_BOTTOM)
+        nx = clamp(self.aim_x, ax + self.aim_x.step(rate(self.AIM_PX_S, x), self.ms), self.AIM_LEFT, self.AIM_RIGHT)
+        ny = clamp(self.aim_y, ay + self.aim_y.step(rate(self.AIM_PX_S, y), self.ms), self.AIM_TOP, self.AIM_BOTTOM)
         if nx != ax or ny != ay:
             self.aim = (nx, ny)
-
-    def aim_px_s(self, v):
-        """The crosshair's speed in px a second for an axis at v, -100 to 100: AIM_PX_S * |v| // 100 with the sign of v,
-        so a tilt and its mirror move as fast (AIM_PX_S * v // 100 floors, so the minus side would be 1 px/s faster).
-        Small ints only."""
-        s = self.AIM_PX_S * abs(v) // 100
-        return s if v >= 0 else -s
 
     def fire(self):
         self.shot = 0.1
