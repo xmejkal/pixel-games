@@ -1,0 +1,56 @@
+[
+ {
+  "file": "games/engine/actions.py",
+  "name": "turn is not reset in a frame with no turn",
+  "find": "        actions.turn = self.encoder.take_detents(now_ms) if self.encoder else 0\n",
+  "replace": "        actions.turn = (self.encoder.take_detents(now_ms) or actions.turn) if self.encoder else 0\n"
+ },
+ {
+  "file": "games/engine/actions.py",
+  "name": "held is not recomputed, so a release never clears it",
+  "find": "        pressed = held = False\n",
+  "replace": "        pressed, held = False, action.held\n"
+ },
+ {
+  "file": "games/engine/actions.py",
+  "name": "FIRE reads PICK's bindings",
+  "find": "        self.read(self.fire_bindings, actions.fire, now_ms)\n",
+  "replace": "        self.read(self.pick_bindings, actions.fire, now_ms)\n"
+ },
+ {
+  "file": "games/engine/actions.py",
+  "name": "a binding is skipped after the first push",
+  "find": "            if button.update(now_ms):\n",
+  "replace": "            if pressed or button.update(now_ms):\n"
+ },
+ {
+  "file": "games/app.py",
+  "name": "the stick's switch is not bound to FIRE",
+  "find": "        fire = (boot, buttons.Button(Pin(pins.JOY_SW, Pin.IN, Pin.PULL_UP).value, joystick.SWITCH_ON))\n",
+  "replace": "        fire = (boot,)\n"
+ },
+ {
+  "file": "games/app.py",
+  "name": "the knob gets no turn",
+  "find": "            self.knob.poll(now, actions.turn)  # --- MVP (P764) ---\n",
+  "replace": "            self.knob.poll(now, 0)  # --- MVP (P764) ---\n"
+ },
+ {
+  "file": "games/app.py",
+  "name": "a push during a build is not forgotten",
+  "find": "        self.actions.forget()  # --- MVP (P818) --- a press during a build was for a frozen screen\n",
+  "replace": "        pass\n"
+ },
+ {
+  "file": "games/drivers/stick.py",
+  "name": "the dead zone is ignored",
+  "find": "    far = abs(d) - DEAD_ZONE\n",
+  "replace": "    far = abs(d)\n"
+ },
+ {
+  "file": "games/drivers/stick.py",
+  "name": "X_SIGN is ignored",
+  "find": "        return axis(self.adc_x.read_u16(), X_SIGN)\n",
+  "replace": "        return axis(self.adc_x.read_u16(), 1)\n"
+ }
+]
