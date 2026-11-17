@@ -9,7 +9,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | path | what it holds |
 | --- | --- |
 | `games/` | the games and their small framework (`app.py` starts them, `lcd.py` and `gfx.py` draw) |
-| `games/engine/` | the engine package that the games import, `:engine/` on the board (P849, stage 0b-1 of the [engine plan](docs/discovery/2026-11-16-p844-engine-plan/plan.md)): `signals.py` and `clock.py` so far, behind a boundary test (`tests/test_engine_boundary.py`). Its [README](games/engine/README.md) says what it holds. Not the submodule `engine/` below, whose C module the games import as `_engine` |
+| `games/engine/` | the engine package that the games import, `:engine/` on the board (P849, stage 0b-1 of the [engine plan](docs/discovery/2026-11-16-p844-engine-plan/plan.md)): `signals.py`, `clock.py`, `accel.py`, `actions.py` and `subpixel.py`, behind a boundary test (`tests/test_engine_boundary.py`). Its [README](games/engine/README.md) says what it holds. Not the submodule `engine/` below, whose C module the games import as `_engine` |
 | `art/` | the painted art: one set per game, the brush and the export |
 | `art/mocap.py` | turns CMU motion capture into the side-view poses that Rescue's fireman, the people he saves and Meteors' walker are painted from. It reads the CMU files from `~/.cache/pixel-games/cmu` and writes nothing. The terms are below the table |
 | `engine/` | a git submodule: [pixel-engine](https://github.com/xmejkal/pixel-engine), the C engine (bodies, balls, the heat field) with its Mac tests. Its own submodule `engine/driver/` is the [s3lcd fork](https://github.com/xmejkal/s3lcd), the C display driver with `frame.c`, a DMA send of one frame and partial updates |
@@ -19,7 +19,7 @@ The repository is also a log of how the games got smooth: every step was measure
 | `bench.md` | the bench log: each run, its numbers and what it taught |
 | `logs/` | the kept logs of some runs in `bench.md`, named by run number |
 | `p537-finding.md` | the options for smooth motion, ranked, with a plan in slices |
-| `docs/` | the discoveries: a public graphics library (P539) and the restyle of the games (P565). Also the wiring guides: `wiring.html` (every wire, with pictures) and `p758-encoder-steps.html` (the encoder, one wire per step) |
+| `docs/` | [overview.md](docs/overview.md): who does what between the box, the engine and spark, and how they talk (P896). The discoveries: a public graphics library (P539) and the restyle of the games (P565). Also the wiring guides: `wiring.html` (every wire, with pictures) and `p758-encoder-steps.html` (the encoder, one wire per step) |
 | `docs/screenshots/` | a PNG and a GIF of each game, scene and the overlay, made by `tools/render_scene.py --all docs/screenshots` |
 
 Rescue's figures and Meteors' walker come from the [CMU Graphics Lab Motion Capture Database](http://mocap.cs.cmu.edu). Each figure and its trial (subject:trial):
