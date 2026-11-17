@@ -72,7 +72,7 @@ class StarfireStickTest(unittest.TestCase):
         for x, y, at in ((100, 0, (g.AIM_RIGHT, CY)), (-100, 0, (g.AIM_LEFT, CY)), (0, -100, (CX, g.AIM_TOP)),
                          (0, 100, (CX, g.AIM_BOTTOM))):
             game = playing(x, y)
-            frames(game, 50)  # 2 s: 480 px, past every bound
+            frames(game, 51)  # 2.04 s: 489 px, past every bound, and 600 px.ms short of a px had no bound reset it
             with self.subTest(x=x, y=y):
                 self.assertEqual(at, game.aim)
                 self.assertEqual((0, 0), (game.aim_x.rest, game.aim_y.rest))

@@ -50,12 +50,12 @@ class TunnelStickTest(unittest.TestCase):
                 self.assertEqual(side, game.side)
 
     def test_a_stick_at_rest_or_a_small_tilt_keeps_the_wall(self):
-        for x, y in ((0, 0), (39, -39), (-30, 20)):
+        for x, y in ((0, 0), (39, -39), (-30, 20), (10, -30)):
             game = playing(Tunnel, x, y)
-            game.side = 2
+            game.side = 0  # neither 2 - 0 nor 1 + 0: a wall picked with no lean would show
             game.play(False, False)
             with self.subTest(x=x, y=y):
-                self.assertEqual(2, game.side)
+                self.assertEqual(0, game.side)
 
     def test_a_ring_passes_at_the_wall_picked_in_the_same_frame(self):
         for x, alive in ((-100, True), (0, False)):
