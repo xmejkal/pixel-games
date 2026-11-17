@@ -5,14 +5,14 @@ under the green SAFE sign.
 How to play: with the button, the fireman runs along the street and never stops on his own. Tap BOOT and he turns round.
 Hold it and he stops and sprays the hose ahead of him: a fire within HOSE_REACH_PX goes down and is out after about a
 second of water. With the joystick (P872), he runs the way the stick leans and stands, the hose ready, when it rests.
-FIRE (BOOT or the stick's switch) held sprays at once and a tap does not turn him. At the street's end he stops.
-People come out of the houses and run about in panic: a man, a woman, a child (small and fast), a grandma (slow, with a
-cane) and a man with his dog. Each wears a bright shirt, so they show on the dark street. A fire stops everyone. A
-person turns back from it. A person with a fire on one side and a fire or the street's end close on the other is
-trapped: they stop, wave and shout for help, under a pale arrow and a blinking "help!". The fireman stops at a fire too,
-until the hose puts it out. Run into a person and he picks them up. He is slower then and cannot spray, and he runs
-through the flames with the person sheltered in his arms. At the station's door he sets them down: a point, two for a
-child, and "+1" rises over the door. A meteor's shadow grows on the street for FALL_MS before it lands, in a blinking
+FIRE (BOOT or the stick's switch) held sprays at once and a tap does not turn him. With the stick, at the street's end
+he stops. People come out of the houses and run about in panic: a man, a woman, a child (small and fast), a grandma
+(slow, with a cane) and a man with his dog. Each wears a bright shirt, so they show on the dark street. A fire stops
+everyone. A person turns back from it. A person with a fire on one side and a fire or the street's end close on the
+other is trapped: they stop, wave and shout for help, under a pale arrow and a blinking "help!". The fireman stops at a
+fire too, until the hose puts it out. Run into a person and he picks them up. He is slower then and cannot spray, and he
+runs through the flames with the person sheltered in his arms. At the station's door he sets them down: a point, two for
+a child, and "+1" rises over the door. A meteor's shadow grows on the street for FALL_MS before it lands, in a blinking
 target ring. Where it lands a crater opens and burns for FIRE_MS. A person it lands on is gone, in a puff of smoke
 (nobody is drawn burning). Three people lost end the round. Every SAVES_A_STEP people saved, the meteors come faster and
 more people are out at once.
@@ -90,15 +90,15 @@ CROWD = (2, 3, 3, 4, 4, 5)  # people out at once at each tier
 class Fireman:
     """Where he is, the way he faces (1 right, -1 left), the press he is in, the px he ran (the run's pose), the
     person he carries (or None) and the ms since he picked them up, and whether a fire stopped him. With the stick
-    (P872): steered, the stick's way this frame (-1, 0 or 1; None on the button's path), and wait_ms, the hold before
-    a spray: TAP_MS for the button, 0 for the stick."""
+    (P872): way, the stick's way this frame (-1, 0 or 1; None on the button's path), and wait_ms, the hold before a
+    spray: TAP_MS for the button, 0 for the stick."""
 
     def __init__(self, x):
         self.x, self.facing, self.rest = x, 1, 0  # rest: px times ms short of the next whole px
         self.down_ms = -1  # ms the button has been held, the first frame's ms included; -1 when it is up
         self.ran, self.turned_ms, self.spray_ms = 0, TURN_MS, 0
         self.carrying, self.carried_ms, self.blocked = None, 0, False
-        self.steered, self.wait_ms = None, TAP_MS  # --- MVP (P872) ---
+        self.way, self.wait_ms = None, TAP_MS  # --- MVP (P872) ---
 
     def spraying(self):
         """Held wait_ms or longer, not in a turn and not carrying."""
@@ -132,7 +132,7 @@ class Fireman:
         self.turned_ms += ms
         self.carried_ms += ms
         self.down_ms = (ms if self.down_ms < 0 else self.down_ms + ms) if held else -1
-        self.steered, self.wait_ms = way, 0
+        self.way, self.wait_ms = way, 0
         if way and way != self.facing and not self.spraying():
             self.turn()
             return True
@@ -154,9 +154,12 @@ class Fireman:
         if self.spraying():
             self.spray_ms += ms
             return
-        if self.turning() or self.steered == 0:
+        if self.turning():
             return
-        if self.steered is not None and self.ahead(LEFT_X if self.facing < 0 else RIGHT_X) <= 0:
+        if self.way == 0:  # he stands with the stick: no fire stops him
+            self.blocked = False
+            return
+        if self.way is not None and self.ahead(LEFT_X if self.facing < 0 else RIGHT_X) <= 0:
             return  # steered into the end of the street he stands at: no px run, so his feet do not run on the spot
         self.rest += self.facing * (SPEED_PX_S if self.carrying is None else CARRY_PX_S) * ms
         px = self.rest // 1000
@@ -169,7 +172,7 @@ class Fireman:
         if self.x <= LEFT_X or self.x >= RIGHT_X:
             self.x = LEFT_X if self.x <= LEFT_X else RIGHT_X
             self.rest = 0
-            if self.steered is None and (self.x == LEFT_X) == (self.facing < 0):
+            if self.way is None and (self.x == LEFT_X) == (self.facing < 0):
                 self.turn()
 
     def run_pose(self):
@@ -270,7 +273,11 @@ class Rules:
             self.lost = []
         if self.ended:
             self.ended = []
-        if man.press(ms, held) if way is None else man.steer(ms, way, held):  # the stick steers him (P872)
+        if way is None:
+            turned = man.press(ms, held)
+        else:  # --- MVP (P872) --- the stick steers him
+            turned = man.steer(ms, way, held)
+        if turned:
             events |= TURNED
         fire = None if man.carrying is not None else self.fire_ahead(man.x, man.facing, BLOCK_PX + SPEED_PX_S)
         man.run(ms, None if fire is None else fire - man.facing * BLOCK_PX)  # carrying, he runs through the flames
@@ -697,7 +704,7 @@ class Rescue(Game):
             return POSES["turn", "l" if man.facing > 0 else "r"][man.turned_ms * TURN_POSES // TURN_MS], "turn"
         if man.spraying():
             return POSES["spray", side][man.spray_ms // SPRAY_POSE_MS % SPRAY_POSES], "spray"
-        if man.blocked or man.steered == 0:
+        if man.blocked or man.way == 0:
             return POSES["spray", side][0], "spray"
         return POSES["run", side][man.run_pose()], "run"
 

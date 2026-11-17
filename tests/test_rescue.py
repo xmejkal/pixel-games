@@ -613,7 +613,7 @@ class SteerTest(unittest.TestCase):
         rules = rules_with_crater_at(300)
         for _ in range(5):
             self.assertEqual(0, rules.step(40, False, 0))
-        self.assertEqual((START, 1, 0, 0), (rules.man.x, rules.man.facing, rules.man.steered, rules.man.ran))
+        self.assertEqual((START, 1, 0, 0), (rules.man.x, rules.man.facing, rules.man.way, rules.man.ran))
 
     def test_a_way_against_his_facing_turns_him_with_the_turn_s_poses_then_he_runs_it(self):
         rules = rules_with_crater_at(300)
@@ -626,6 +626,14 @@ class SteerTest(unittest.TestCase):
         rules.step(40, False, -1)
         self.assertFalse(rules.man.turning())
         self.assertLess(rules.man.x, START)
+
+    def test_standing_clears_a_fire_s_stop(self):
+        rules = rules_with_crater_at(200)  # he stops BLOCK_PX short of it
+        for _ in range(40):
+            rules.step(40, False, 1)
+        self.assertTrue(rules.man.blocked)
+        rules.step(40, False, 0)
+        self.assertFalse(rules.man.blocked)
 
     def test_fire_held_sprays_from_its_first_frame_and_nothing_flashes(self):
         rules = rules_with_crater_at(300)
@@ -658,7 +666,7 @@ class SteerTest(unittest.TestCase):
         rules = rules_with_crater_at(300)
         self.assertEqual(0, rules.step(40, True))
         self.assertEqual(TURNED, rules.step(40, False))
-        self.assertEqual((None, rs.TAP_MS), (rules.man.steered, rules.man.wait_ms))
+        self.assertEqual((None, rs.TAP_MS), (rules.man.way, rules.man.wait_ms))
 
 
 class StickGameTest(unittest.TestCase):
