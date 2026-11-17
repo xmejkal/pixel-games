@@ -1753,9 +1753,13 @@ than the control.
 
 - What the box gave before this card (the PO's box, 2026-11-17, from P851's plan; no log in `logs/`): each axis with
   `ADC(Pin(n), atten=ADC.ATTN_11DB).read_u16()` went from 0 to 65535 and rested about 33000, between 32391 and 33688.
-  A pad with no stick on it swept 0 to 40000, so no read says whether a stick is there: `app.open_actions` takes the
+  A pad with no stick on it swept 0 to 40000, so no read says whether a stick is there: `app.open_action_map` takes the
   stick when `pins.py` names `JOY_X`. `drivers/stick.py` keeps the center fixed at 32768 and reads 0 within
   `DEAD_ZONE` (1024) of it, over the rest's 920 at most.
+- The rest sample leaves `DEAD_ZONE` 104 counts over its 920: one sample, not a margin measured over many.
+- The switch is polled with the 20 ms debounce, not counted in a pin interrupt: a tap shorter than about one frame
+  (40 ms or more) can fall between two reads and is lost, and a press is seen one frame after BOOT's would be.
 - Not measured yet, P851's board step: the signs (`X_SIGN` and `Y_SIGN` are 1 until the PO pushes the stick left
-  once and up once), the switch's 10 presses counted as 10 (the switch is polled with the 20 ms debounce), and the
-  map's poll in the `avg` line's `input`.
+  once and up once), the switch's 10 presses counted as 10, with some quick taps among them, the map's poll in the
+  `avg` line's `input`, and the `heap` line staying flat with the poll on (the poll allocates nothing by a reading of
+  the code, not by a measurement).

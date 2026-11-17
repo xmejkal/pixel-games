@@ -13,7 +13,7 @@ pixel-engine submodule.
 | `actions.py` | `ActionMap`: the inputs bound to the actions a frame reads, FIRE, PICK, the knob's turn and the stick's x and y (P851) |
 
 - `__init__.py` is empty, so each module imports alone: a later board takes only the modules it needs.
-- `actions.py` imports no driver. `app.open_actions()` builds the drivers of `games/drivers/` (a button, the
+- `actions.py` imports no driver. `app.open_action_map()` builds the drivers of `games/drivers/` (a button, the
   encoder, the stick) from the pin map and hands them in, so a remote board's map can bind other inputs (P832).
 - A module imports only the modules of the package that its row of `DIRECTION` names, and MicroPython's built-in
   modules (`tests/test_engine_boundary.py`). It never imports a game's module or `engine_config`. The test fences

@@ -100,9 +100,9 @@ class Box:
         self.clock = mock.patch.object(app.time, "ticks_ms", lambda: self.ms)
         self.clock.start()
         self.said = io.StringIO()
-        actions = ActionMap((self.boot_button,), (self.d14_button,), encoder)  # encoder: the knob's, or None
+        action_map = ActionMap((self.boot_button,), (self.d14_button,), encoder)  # encoder: the knob's, or None
         with contextlib.redirect_stdout(self.said):
-            self.app = app.App(None, actions, games=games, out=out or Out(), **kw)
+            self.app = app.App(None, action_map, games=games, out=out or Out(), **kw)
             self.app.start()
 
     def push_during_build(self):

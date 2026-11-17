@@ -187,8 +187,8 @@ If the board stays dark after a long press of its D14 button, hold D14 for 1 to 
 The box reads its inputs through an action map (P851, `games/engine/actions.py`), as Unity's Input System binds one
 action to several inputs: FIRE is BOOT or the joystick's switch, PICK is D14, and the knob's turn steps the volume. So
 a press of the joystick's switch plays as a BOOT press does. The map also reads the joystick's x and y, -100 to 100,
-and no game reads them yet (P872). `app.open_actions()` builds the map from `pins.py`, with the stick only when the pin
-map names `JOY_X`. The drivers (`buttons.py`, `encoder.py` and `stick.py`) are the package `games/drivers/`, the
+and no game reads them yet (P872). `app.open_action_map()` builds the map from `pins.py`, with the stick only when the
+pin map names `JOY_X`. The drivers (`buttons.py`, `encoder.py` and `stick.py`) are the package `games/drivers/`, the
 folder `:drivers/` on the board. The `avg` line ends with `input`, the map's poll in ms per frame.
 
 ## Status

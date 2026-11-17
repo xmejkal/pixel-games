@@ -38,7 +38,7 @@ class FakeEncoder:
 
 
 class Pin:
-    """machine.Pin as open_actions uses it (P851): a level of 1, the pull-up's, and an interrupt it keeps."""
+    """machine.Pin as open_action_map uses it (P851): a level of 1, the pull-up's, and an interrupt it keeps."""
 
     IN, PULL_UP, IRQ_FALLING, IRQ_RISING = 1, 2, 3, 4
 
@@ -118,7 +118,7 @@ class ComposeTest(NoNative):
         with a_board_with_an_encoder():
             knob, speaker, _ = composed()
             self.assertIs(ViperMasterVolume, type(knob.volume))
-            self.assertIsInstance(app.open_actions().encoder, FakeEncoder)  # the map turns the knob (P851)
+            self.assertIsInstance(app.open_action_map().encoder, FakeEncoder)  # the map turns the knob (P851)
             knob, speaker, _ = composed(("volume",))
             self.assertIs(volume.MasterVolume, type(knob.volume))
 
@@ -156,12 +156,12 @@ class ComposeTest(NoNative):
         self.assertIs(ViperMasterVolume, main.viper_volume())
 
 
-class OpenActionsTest(unittest.TestCase):
-    """app.open_actions builds the box's action map from the pin map (P851)."""
+class OpenActionMapTest(unittest.TestCase):
+    """app.open_action_map builds the box's action map from the pin map (P851)."""
 
     def opened(self, encoder=None):
         with mock.patch.dict(sys.modules, {"machine": stand_in_machine(encoder)}):
-            return app.open_actions()
+            return app.open_action_map()
 
     def test_fire_is_boot_and_the_stick_s_polled_switch_and_pick_is_d14(self):
         actions = self.opened()
@@ -284,9 +284,9 @@ class BootTest(NoNative):
         self.assertEqual(1, len(runs))
         printed, parts = runs[0]
         self.assertEqual("engine sum=viper volume=viper native=none\n", printed)
-        self.assertEqual(["actions", "knob", "speaker"], sorted(parts))
+        self.assertEqual(["action_map", "knob", "speaker"], sorted(parts))
         self.assertIsNone(parts["knob"])
-        self.assertIsNone(parts["actions"].encoder)  # no machine.Encoder: no knob, no encoder (P851)
+        self.assertIsNone(parts["action_map"].encoder)  # no machine.Encoder: no knob, no encoder (P851)
         self.assertIs(ViperVoiceSum, type(parts["speaker"].mixer.sum))
 
     def test_the_boot_takes_the_knob_s_pads_before_anything_else(self):

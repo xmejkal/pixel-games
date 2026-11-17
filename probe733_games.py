@@ -429,6 +429,11 @@ class Probe:
                 print("stored level %s" % level)
             self.volume = TimedVolume(getattr(home, VOLUME)(volume.DEFAULT_STEP if level is None else level))
             if KNOB:  # the box's action map opens the encoder and turns this knob by it (P851)
+                import app
+
+                if not app.has_encoder():  # before the box starts: the map would open no encoder to read
+                    raise RuntimeError("KNOB=1 needs an image with machine.Encoder: this one has none, so the box's "
+                                       "action map opens no encoder")
                 self.volume.knob = volume.VolumeKnob(self.volume.volume, store)
                 self.printed = self.volume.volume.step  # P764: the step of the last `level` line
         self.first_pop_shown = False
@@ -452,7 +457,7 @@ class Probe:
         self.next_save = time.ticks_add(now, SAVE_EVERY_MS)
         self.next_spin, self.spin = time.ticks_add(now, SPIN_EVERY_MS), 0  # spin: the step per frame, or 0
         if self.volume and self.volume.knob:
-            self.volume.encoder = box.actions.encoder  # P851: the map owns it
+            self.volume.encoder = box.action_map.encoder  # P851: the map owns it
         self.press_on_over(box)
         self.stamp_pushes(box)
         if ALPHA is not None and box.volume_pane:  # P764: the game box adds the pane, and it shows itself
@@ -545,7 +550,7 @@ class Probe:
         current C call, but earlier than the frame that reads the push."""
         from drivers import buttons
 
-        fire = box.actions.fire_bindings[0]  # BOOT (P851)
+        fire = box.action_map.fire_bindings[0]  # BOOT (P851)
 
         def edge(pin):
             fire.pushes += 1
@@ -559,7 +564,7 @@ class Probe:
         """Nobody presses BOOT, and a game waits on its game-over screen for a press (gfx.Game.step)."""
         import gfx
 
-        boot = box.actions.fire_bindings[0]  # BOOT, FIRE's first binding (P851)
+        boot = box.action_map.fire_bindings[0]  # BOOT, FIRE's first binding (P851)
         update = boot.update
 
         def pressing(now_ms):

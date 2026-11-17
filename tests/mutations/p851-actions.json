@@ -8,20 +8,20 @@
  {
   "file": "games/engine/actions.py",
   "name": "held is not recomputed, so a release never clears it",
-  "find": "        pressed = held = False\n",
-  "replace": "        pressed, held = False, action.held\n"
+  "find": "    pressed = held = False\n",
+  "replace": "    pressed, held = False, action.held\n"
  },
  {
   "file": "games/engine/actions.py",
   "name": "FIRE reads PICK's bindings",
-  "find": "        self.read(self.fire_bindings, actions.fire, now_ms)\n",
-  "replace": "        self.read(self.pick_bindings, actions.fire, now_ms)\n"
+  "find": "        fold(self.fire_bindings, now_ms, actions.fire)\n",
+  "replace": "        fold(self.pick_bindings, now_ms, actions.fire)\n"
  },
  {
   "file": "games/engine/actions.py",
   "name": "a binding is skipped after the first push",
-  "find": "            if button.update(now_ms):\n",
-  "replace": "            if pressed or button.update(now_ms):\n"
+  "find": "        if button.update(now_ms):\n",
+  "replace": "        if pressed or button.update(now_ms):\n"
  },
  {
   "file": "games/app.py",
@@ -38,7 +38,7 @@
  {
   "file": "games/app.py",
   "name": "a push during a build is not forgotten",
-  "find": "        self.actions.forget()  # --- MVP (P818) --- a press during a build was for a frozen screen\n",
+  "find": "        self.action_map.forget()  # --- MVP (P818) --- a press during a build was for a frozen screen\n",
   "replace": "        pass\n"
  },
  {

@@ -5,11 +5,18 @@ The joystick (P851): its two axes on the ESP32-S3's ADC, each read as -FULL to F
 The module is the PO's joystick-module-mh (spark's requirements.json): two potentiometers and a push switch. The axes
 are pins.JOY_X and pins.JOY_Y (pads A0 and A1). The switch is pins.JOY_SW (pad D5), a plain button that drivers.buttons
 reads, with the chip's pull-up (pins.JOY_SW_PULL is "up"), so it reads SWITCH_ON when pressed. With ATTN_11DB,
-read_u16 reads the whole swing: on the PO's box (2026-11-17) each axis went from 0 to 65535 and rested about 33000.
+read_u16 reads the whole swing. The numbers here are the bench readings of 2026-11-17 on the PO's box, kept in P851's
+plan; no log was kept (bench.md, P851): each axis went from 0 to 65535 and rested about 33000.
 
 The center is fixed at CENTER, never sampled at boot, so a stick tilted at the boot cannot skew a session. DEAD_ZONE
-covers the rest: on the bench the rest moved between 32391 and 33688, at most 920 from CENTER. A pad with no stick on
-it floats: one swept 0 to 40000 on the bench, so no read says whether a stick is there; the pin map names it or not.
+covers the rest: in those readings the rest moved between 32391 and 33688, at most 920 from CENTER, so DEAD_ZONE (1024)
+leaves 104 counts over one sample of the rest, not a margin measured over many. A pad with no stick on it floats: one
+swept 0 to 40000 in those readings, so no read says whether a stick is there; the pin map names it or not.
+
+The switch is polled once a frame with the 20 ms debounce (app.open_action_map), not counted in a pin interrupt as
+BOOT is. So a tap shorter than about one frame (FRAME_MS, 40 ms, or a longer frame) can fall between two reads and is
+lost, and a press is seen one frame after the same press of BOOT would be, at the frame after it has read pressed
+for 20 ms. The bench step taps it quickly on purpose.
 """
 
 CENTER = 32768  # read_u16's middle (0 to 65535): fixed, never sampled

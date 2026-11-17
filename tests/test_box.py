@@ -380,6 +380,18 @@ class PackageTest(unittest.TestCase):
                 self.assertEqual([":signals.mpy", ":signals.py"], sorted(rm[-1][1:]))
                 self.assertEqual(1, len([c for c in rm if ":signals.py" in c or ":signals.mpy" in c]))
 
+    def test_the_drivers_moved_into_drivers_go_from_the_root(self):
+        """buttons and encoder left the root for games/drivers/ (P851): a board's old flat copies go, after both
+        packages are copied, and the board's boot.py stays."""
+        listing = "ls :\n         139 boot.py\n           0 packs/\n        2100 encoder.mpy\n        1700 buttons.py\n"
+        for compiler in (True, False):
+            with self.subTest(compiler=compiler):
+                commands, _ = self.deploy(listing, compiler=compiler)
+                removed = [n for c in commands if c[0] == "rm" for n in c[1:]]
+                self.assertEqual([":buttons.py", ":encoder.mpy"], sorted(removed))
+                copied = max(i for i, c in enumerate(commands) if c[0] == "cp" and c[-1] == ":drivers/")
+                self.assertLess(copied, min(i for i, c in enumerate(commands) if c[0] == "rm"))
+
     def test_a_moved_module_goes_only_after_the_package_is_copied(self):
         """A copy that fails before the folder is full leaves the old flat module, which the old app still imports:
         the board's app.mpy never finds signals nowhere."""

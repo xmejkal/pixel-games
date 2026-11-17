@@ -19,7 +19,7 @@ The rotary encoder is the volume's knob (P764): each turn shows the volume over 
 The step is not saved. App(knob=None) has no volume pane.
 The App reads its inputs through an action map (P851, engine.actions): each frame polls it once, and FIRE (BOOT, and
 the joystick's switch when pins names the stick) plays, PICK (D14) picks, and the knob's turn steps the volume. The
-stick's x and y are in the map, and no game reads them yet (P872). open_actions builds the map from the pin map.
+stick's x and y are in the map, and no game reads them yet (P872). open_action_map builds the map from the pin map.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
 main.py, the composition root (P850), builds the knob and the Speaker from the versions it chose, and the action map.
 run() with no speaker is the silent box, with no knob it has no volume pane, and with no action map it opens its own.
@@ -173,10 +173,10 @@ class App:
     longest = 0  # us: the build's longest share of one frame, its game's setup not in it
     card_us = 0  # us: the longest gap between two frame starts while the card waited for the settle: the baseline
 
-    def __init__(self, display, actions, games, full=False, gc_floor=0, out=None, knob=None, cues=None):
+    def __init__(self, display, action_map, games, full=False, gc_floor=0, out=None, knob=None, cues=None):
         self.display = display
         self.games = games if isinstance(games, Lineup) else Lineup.of(games)  # a Lineup, or a tuple of classes
-        self.actions = actions  # --- MVP (P851) --- an engine.actions.ActionMap: FIRE plays, PICK picks, turn steps
+        self.action_map = action_map  # --- MVP (P851) --- an engine.actions.ActionMap: FIRE plays, PICK picks
         self.input_us = 0  # --- MVP (P851) --- the map's polls this interval: the avg line's input
         self.out = out or StOut(display, full)
         self.frames, self.mark, self.us, self.state, self.gc_floor = 0, 0, [0, 0, 0, 0], 0, gc_floor
@@ -240,7 +240,7 @@ class App:
             self.cues.music()
         self.out.reset()
         self.new_interval()
-        self.actions.forget()  # --- MVP (P818) --- a press during a build was for a frozen screen
+        self.action_map.forget()  # --- MVP (P818) --- a press during a build was for a frozen screen
         print("game", game.name)
 
     # --- MVP (P822) ---
@@ -322,7 +322,7 @@ class App:
         before = us[:]
         now = time.ticks_ms()
         t = time.ticks_us()
-        actions = self.actions.poll(now)  # Input (P851): every binding, the knob and the stick, once
+        actions = self.action_map.poll(now)  # Input (P851): every binding, the knob and the stick, once
         self.input_us += time.ticks_diff(time.ticks_us(), t)
         pressed, switched = actions.fire.pressed, actions.pick.pressed and len(self.games) > 1  # one game: no pick
         if self.knob:
@@ -373,8 +373,8 @@ class App:
             gfx.PHASE_SUM[:] = [0] * 6
             # Once per interval: does the heap fill during play? (P533 run 16; gc.mem_alloc costs about 20 ms per MB)
             print("heap %s alloc %d glyphs %d" % (game.name, gc.mem_alloc(), len(gfx.GLYPHS)))
-            self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
-            self.input_us = 0
+            self.frames, self.mark, self.us, self.worst, self.slow, self.input_us = (
+                0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0], 0)
 
 
 # --- MVP (P818) ---
@@ -439,9 +439,9 @@ def has_encoder():
 
 # --- MVP (P764) ---
 def open_knob(volume, step=None):
-    """The volume's knob, or None when this image has no machine.Encoder: the action map turns it (open_actions builds
-    the encoder, P851). volume: the master volume's class that main.py chose (P850): the sound's callback applies it,
-    and the viper scale takes 116 us a block, the plain one 1220 us. step: the start step, read from :volume.txt by
+    """The volume's knob, or None when this image has no machine.Encoder: the action map turns it (open_action_map
+    builds the encoder, P851). volume: the master volume's class that main.py chose (P850): the sound's callback applies
+    it, and the viper scale takes 116 us a block, the plain one 1220 us. step: the start step, read from :volume.txt by
     main.compose (P866), or None for the volume's default. The step is not saved: a file save now and then stalled the
     loop for 2.4 s (bench.md, P764)."""
     if not has_encoder():
@@ -450,7 +450,7 @@ def open_knob(volume, step=None):
 
 
 # --- MVP (P851) ---
-def open_actions():
+def open_action_map():
     """The box's action map from the pin map: FIRE is BOOT, and the joystick's switch when pins names the stick; PICK is
     D14; the knob's encoder when this image has machine.Encoder; the stick when pins names JOY_X. The stick is there
     because the pin map names it, a fact: a pad with no stick floats (it swept 0 to 40000 on the bench), so no read can
@@ -486,12 +486,12 @@ def read_console(console, stdin):
         stdin.buffer.read(1)
 
 
-def run(games=None, knob=None, speaker=None, actions=None):
+def run(games=None, knob=None, speaker=None, action_map=None):
     """The loop main.py starts. games: a Lineup, a tuple of classes (a probe's), or None for the board's lineup
     (read_lineup). knob: the VolumeKnob main.compose() built (P850), or None for a box with no knob. speaker: a Speaker
-    that run() opens after the first game's setup, or None for the silent box (P768). actions: the ActionMap main.py
-    built with open_actions (P851), or None, a probe's run: then run opens it. Only the map opens the encoder, so two
-    encoders never share the counter unit."""
+    that run() opens after the first game's setup, or None for the silent box (P768). action_map: the ActionMap
+    main.py built with open_action_map (P851), or None, a probe's run: then run opens it. Only the map opens the
+    encoder, so two encoders never share the counter unit."""
     import select
     import sys
 
@@ -516,7 +516,7 @@ def run(games=None, knob=None, speaker=None, actions=None):
         except (OSError, ValueError) as e:  # no bank on the board, or a short one: the silent box
             print("sound off:", repr(e))
             speaker = None
-    app = App(display, open_actions() if actions is None else actions,
+    app = App(display, open_action_map() if action_map is None else action_map,
               games=Lineup(read_lineup()) if games is None else games, full=full and not out,
               gc_floor=GC_FLOOR if full else 0, out=out, knob=knob, cues=cues)
     say_lineup(app.games)  # --- MVP (P817) ---
