@@ -49,6 +49,11 @@ class TunnelStickTest(unittest.TestCase):
             with self.subTest(x=x, y=y):
                 self.assertEqual(side, game.side)
 
+    def test_x_wins_a_tie_of_the_axes_as_in_snake(self):
+        game = playing(Tunnel, 60, -60)
+        game.play(False, False)
+        self.assertEqual(1, game.side)
+
     def test_a_stick_at_rest_or_a_small_tilt_keeps_the_wall(self):
         for x, y in ((0, 0), (39, -39), (-30, 20), (10, -30)):
             game = playing(Tunnel, x, y)
