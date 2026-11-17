@@ -1,8 +1,9 @@
 # The game box and spark: who does what, and how they talk (P896)
 
 > The game box is a FireBeetle 2 ESP32-S3 with a 240 x 320 screen, a joystick, a knob, buttons and sound. It plays 15
-> games written in MicroPython on a C engine. spark is a Claude Code plugin that turns a list of parts into a wired,
-> pinned board. The two meet in one file, the pin map `games/pins.py`, which spark writes and the games import.
+> games written in MicroPython, six of them on a C engine. spark is a Claude Code plugin that turns a list of parts into a wired,
+> pinned board. The two meet in one file, the pin map `games/pins.py`, which spark writes and the games import. The
+> screen's pins are the exception: spark could not place them, so `games/gdi.py` types them by hand.
 > Everything above the pins (the engine, the drivers, the games) comes from the conversation with Claude, not from
 > spark.
 
@@ -122,20 +123,25 @@ sequenceDiagram
 
 The order of the hooks follows Unity's fixed and late update. While a game plays, the garbage collector is off, so a
 collection never stops a frame. `App.collect` runs small collections at quiet moments instead: every 5 frames and at
-each change of state (`games/app.py`, `GC_FRAMES`). This is why a frame of a game makes no new object: the stick's
-path (P872) uses ints and objects made in `setup` only.
+most changes of state (`games/app.py`, `GC_FRAMES`). A frame still makes some objects (`bench.md` measured 8 to 14 KB
+for each draw), and new code keeps that number down: the stick's path (P872) uses ints and objects made in `setup`
+only, so it makes none.
 
 ## 4. Two versions of each hot part
 
 Each part that runs every frame has a plain version in Python and a fast version in C or viper (P841, the
 [engine plan](discovery/2026-11-16-p844-engine-plan/plan.md)). The plain version is the oracle: the Mac tests run both
-on the same input and need the same answer (`tests/test_twins.py`). `main.compose` picks the fast one at boot, and
-`tools/box.py deploy --engine reference` forces the plain one, for a test on the box.
+on the same input and need the same answer (`tests/test_twins.py`). Two parts go through `main.compose` at boot,
+the mixer's sum and the master volume: it picks the fast one, and `tools/box.py deploy --engine reference` forces the
+plain one, for a test on the box. The C parts (bodies, balls, the heat field) fall back to Python when the firmware
+has no `_engine`, at import.
 
 ## 5. Where spark and the engine meet
 
 They meet in one file today. spark's `assign_pins.py` reads `requirements.json` (the box's parts: the amplifier, the
-joystick, the encoder, the microphone) and writes the pin map. The games import it, and no game types a GPIO number.
+joystick, the encoder, the microphone) and writes the pin map. The drivers import it and type no GPIO number. Two
+places still type pins by hand: the screen's cable pins in `games/gdi.py` (DC, RST, CS, SD_CS, BL), because a
+requirements file cannot pin a part to a connector yet (P663), and the BOOT button in `games/drivers/buttons.py`.
 
 ```mermaid
 sequenceDiagram
@@ -156,18 +162,18 @@ sequenceDiagram
 
 The other places where they touch:
 
-- Part records: `parts/` in this repository holds spark records of the box's modules. The microphone's record came
-  from `/spark:identify`, from a photo.
+- Part records: `parts/` in this repository holds one spark record, the microphone's, made from a photo
+  (README.md names `/spark:identify` as its source).
 - The wiring guide: [wiring.html](wiring.html) shows every wire with pictures. spark's README shows it as its example.
-- The project files: `.spark/project.json` and `rules.json` are spark's, written by `/spark:init`.
+- The project files: `.spark/project.json` and `.spark/rules.json` are spark's, written by `/spark:init`.
 
 What is not joined yet:
 
 | Step | spark | pixel-games |
 | --- | --- | --- |
-| Flash the firmware | `/spark:deploy` (`deploy.py`): looks at the board with esptool, asks for a yes, erases, writes an image, reads it back | `./build.sh engine`, then esptool by hand (README.md, "Build and run") |
+| Flash the firmware | `/spark:deploy` (`deploy.py`): looks at the board, asks for a yes, erases, writes the image a passed simulation tested, copies a facts file and reads it back | `./build.sh engine`, then esptool by hand (README.md, "Build and run") |
 | Copy the program | the project's files, with the image | `tools/box.py deploy`: compiles `.mpy`, copies the games, the engine package, the packs and `:lineup.py`, refuses a firmware with no `_engine` |
-| Look at the board | `look.py` asks before it reads a board that the project does not know (P865). The box shows the same USB serial each time, so the look asks each time | `tools/box.py log` reads the console |
+| Look at the board | `look.py` asks before it reads a board that the project does not know (P865). It remembers a board by a MAC-shaped USB serial after one yes, and asks each time for a board with no serial or a serial its firmware set | `tools/box.py log` reads the console |
 
 P892 ([#1266](https://github.com/xmejkal/spark/issues/1266)) puts the same question in front of every board touch in
 spark. P663 ([#892](https://github.com/xmejkal/spark/issues/892)) gives spark one model for pin conflicts: walk P581
@@ -180,12 +186,14 @@ found that the pin assigner gave the screen cable's pins to the amplifier and th
 | Pick the parts from a goal | partly (`/spark:idea`, `/spark:drawer`) | works for the modules. The screen of this box was chosen before spark |
 | Research a missing part | partly (`/spark:research`, `/spark:identify`) | the microphone's record came this way |
 | Build the board: pin map, breadboard sheet, Wokwi diagram | works (`/spark:build`) | works: the box's `games/pins.py` is spark's |
-| Check the board | works (`check_all.py`, five checks) | the box's run ends in `problems`, because the screen's reserved pins connect to no part (README.md, P758) |
-| Simulate | works (`run_scenario.py`) | stops where a part has no Wokwi model |
+| Check the board | works (`check_all.py`, five checks) | the box's run ends in `problems`, for two reasons: eight reserved pins (the screen's cable, the SPI bus, a button) connect to no part, and no Wokwi diagram comes out |
+| Simulate | works (`run_scenario.py`) | stops for the box: the encoder sits on GPIO 43 and 44, which the Wokwi board does not have, and the amplifier (MAX98357A) has no Wokwi model |
 | Firmware | spark exports facts only: the pin map, stand-in modules for an import check | the engine, the drivers and the games come from the conversation |
 | Flash and deploy | partly (`/spark:deploy`) | the C engine's firmware and the game copy go through pixel-games' own tools |
 
-So spark brings a project from an idea to a wired board with a pin map that the firmware imports. From there the
+So spark brings a project from an idea to a wired board with a pin map that the firmware imports. For an engine
+game, the part that matters most is the screen, and that is the part spark could not place: its cable's pins are
+typed by hand, and its simulation stops. From there the
 conversation writes the engine-based code, and pixel-games' tools build, test and deploy it. spark has no idea of a
 display engine or a game, and that is by its rule: "Spark exports facts, never behaviour" (`spark:AGENTS.md`). We
 found no card that plans to bring the engine into spark.
