@@ -170,7 +170,10 @@ class OpenActionMapTest(unittest.TestCase):
         self.assertEqual((True, True, False), (boot.watched, d14.watched, switch.watched))  # the switch: 20 ms debounce
         self.assertEqual((0, 0, 0), (boot.pressed_level, d14.pressed_level, switch.pressed_level))
         stick = actions.stick
-        self.assertEqual((app.pins.JOY_X, app.pins.JOY_Y), (stick.adc_x.pin.number, stick.adc_y.pin.number))
+        from drivers import stick as joystick
+
+        across = (app.pins.JOY_Y, app.pins.JOY_X) if joystick.SWAP_AXES else (app.pins.JOY_X, app.pins.JOY_Y)
+        self.assertEqual(across, (stick.adc_x.pin.number, stick.adc_y.pin.number))  # x moves with left and right
         self.assertEqual((ADC.ATTN_11DB, ADC.ATTN_11DB), (stick.adc_x.atten, stick.adc_y.atten))
 
     def test_a_pin_map_with_no_stick_binds_boot_alone(self):
