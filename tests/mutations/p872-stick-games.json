@@ -25,15 +25,15 @@
  },
  {
   "file": "games/meteors.py",
-  "name": "walk has no clamp at the right edge",
-  "find": "        if x < 0 or x > WALKER_MAX_X:\n",
-  "replace": "        if x < 0:\n"
+  "name": "the slide (move and walk) has no clamp at the right edge",
+  "find": "        edge = x < 0 or x > WALKER_MAX_X\n",
+  "replace": "        edge = x < 0\n"
  },
  {
   "file": "games/meteors.py",
   "name": "walk turns the walker at an edge",
-  "find": "            x = 0 if x < 0 else WALKER_MAX_X\n            self.rest = 0\n",
-  "replace": "            x = 0 if x < 0 else WALKER_MAX_X\n            self.rest, self.dir = 0, -self.dir\n"
+  "find": "        self.slide(ms, way)\n",
+  "replace": "        if self.slide(ms, way):\n            self.dir = -self.dir\n"
  },
  {
   "file": "games/meteors.py",

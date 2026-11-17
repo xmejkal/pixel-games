@@ -135,14 +135,8 @@ class Rules:
         self.since = min(self.since + ms, TURN_MS)
         if tapped and self.since >= TURN_MS:
             self.dir, self.since = -self.dir, 0
-        self.rest += self.dir * WALK_PX_S * ms
-        px = self.rest // 1000
-        self.rest -= px * 1000
-        x = self.walker_x + px
-        if x < 0 or x > WIDTH - WALKER_W:
-            x = 0 if x < 0 else WIDTH - WALKER_W
-            self.dir, self.rest, self.since = -self.dir, 0, 0
-        self.walker_x = x
+        if self.slide(ms, self.dir):
+            self.dir, self.since = -self.dir, 0
         self.way = self.dir  # --- MVP (P872) --- after the edge turn: this frame's drop aims next
 
     # --- MVP (P872) ---
@@ -153,14 +147,20 @@ class Rules:
         self.way = way
         if way:
             self.dir = way
+        self.slide(ms, way)
+
+    def slide(self, ms, way):
+        """ms of walking the way way (-1, 0 or 1) at WALK_PX_S, in whole px; the walker stays on the screen. Answers
+        whether it met an edge: move turns it there, walk does not."""
         self.rest += way * WALK_PX_S * ms
         px = self.rest // 1000
         self.rest -= px * 1000
         x = self.walker_x + px
-        if x < 0 or x > WALKER_MAX_X:
-            x = 0 if x < 0 else WALKER_MAX_X
-            self.rest = 0
+        edge = x < 0 or x > WALKER_MAX_X
+        if edge:
+            x, self.rest = 0 if x < 0 else WALKER_MAX_X, 0
         self.walker_x = x
+        return edge
 
     def going(self):
         """The way the aim reads: dir while the walker walks, 0 while it stands with the stick."""
