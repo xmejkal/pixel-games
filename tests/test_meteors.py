@@ -36,6 +36,7 @@ import motion  # noqa: E402
 import plugins  # noqa: E402
 import world_lib  # noqa: E402
 from engine import signals  # noqa: E402
+from engine.actions import Actions  # noqa: E402
 from meteors import COAL, FALL, PARKED, Meteors, Rules  # noqa: E402
 
 COALS = [0] * 8  # the ms of eight meteors that are coals: they block always
@@ -677,6 +678,80 @@ class CMeteorsTest(SeededTest):
                 (state_c, ms_c), (state_py, ms_py) = ends
                 self.assertEqual(state_c, state_py, (seed, player.__name__))
                 self.assertLessEqual(abs(ms_c - ms_py), 42, (seed, player.__name__))
+
+
+# --- MVP (P872) ---
+class WalkTest(unittest.TestCase):
+    """Rules.walk: the stick's way walks the walker, and 0 stands."""
+
+    def test_way_0_stands_and_the_time_still_counts(self):
+        rules = walker_at(100)
+        rules.walk(60, 0)
+        rules.walk(60, 0)
+        self.assertEqual((100, 1, 0, 120), (rules.walker_x, rules.dir, rules.way, rules.played_ms))
+
+    def test_way_left_walks_left_and_faces_left(self):
+        rules = walker_at(100)
+        rules.walk(100, -1)
+        self.assertEqual((100 - mt.WALK_PX_S // 10, -1, -1), (rules.walker_x, rules.dir, rules.way))
+        rules.walk(100, 0)  # standing keeps the facing
+        self.assertEqual((100 - mt.WALK_PX_S // 10, -1), (rules.walker_x, rules.dir))
+
+    def test_at_an_edge_it_stops_and_keeps_its_facing(self):
+        rules = walker_at(5, -1)
+        for _ in range(5):
+            rules.walk(60, -1)
+        self.assertEqual((0, -1), (rules.walker_x, rules.dir))
+        rules = walker_at(mt.WALKER_MAX_X - 5)
+        for _ in range(5):
+            rules.walk(60, 1)
+        self.assertEqual((mt.WALKER_MAX_X, 1), (rules.walker_x, rules.dir))
+        rules.walk(60, -1)  # no debt is carried from the edge
+        self.assertEqual(mt.WALKER_MAX_X + -mt.WALK_PX_S * 60 // 1000, rules.walker_x)
+
+    def test_a_standing_walker_s_drop_ahead_lands_where_it_stands(self):
+        here = 100 + (mt.WALKER_W - mt.BODY) // 2
+        for way, spot in ((0, here), (1, here + mt.WALK_PX_S * mt.FALL_MS // 1000)):
+            rules = walker_at(100)
+            rules.walk(0, way)
+            tries = itertools.cycle([0, 2])  # no drift, and the kind that aims ahead of the walker
+            with mock.patch.object(mt.random, "randrange", lambda *args: next(tries)):
+                self.assertEqual((spot, 0, spot), rules.aim([-1] * 8, COALS), way)
+
+    def test_the_button_path_keeps_way_on_dir_after_an_edge_turn(self):
+        rules = walker_at(mt.WALKER_MAX_X)
+        rules.move(60, False)
+        self.assertEqual((-1, -1), (rules.dir, rules.way))
+
+
+class StickTest(SeededTest):
+    """The game through Game.step: with a stick its x walks the walker and a tap does not turn it; with None a tap
+    turns it as before."""
+
+    def setUp(self):
+        super().setUp()
+        self.game = new_game()
+
+    def test_with_the_stick_its_lean_walks_and_a_tilt_under_lean_stands(self):
+        game = self.game
+        game.stick = Actions()
+        now = start(game)
+        game.rules.due = lambda ms, free: False
+        x = game.rules.walker_x
+        game.stick.x = -100
+        game.step(now + FRAME_MS, True, False)  # a tap does not turn him
+        self.assertEqual((x + -mt.WALK_PX_S * FRAME_MS // 1000, -1), (game.rules.walker_x, game.rules.dir))
+        x = game.rules.walker_x
+        game.stick.x = 30
+        game.step(now + 2 * FRAME_MS, False, False)
+        self.assertEqual((x, -1, 2 * FRAME_MS), (game.rules.walker_x, game.rules.dir, game.rules.played_ms))
+
+    def test_with_no_stick_a_tap_turns_it_as_before(self):
+        game = self.game
+        self.assertIsNone(game.stick)
+        now = start(game)
+        game.step(now + FRAME_MS, True, False)
+        self.assertEqual((-1, -1), (game.rules.dir, game.rules.way))
 
 
 if __name__ == "__main__":

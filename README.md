@@ -185,11 +185,14 @@ game's setup, the card's frames during the build, the longest gap between two of
 one frame without the setup, and the longest gap while the card waited for the settle.
 If the board stays dark after a long press of its D14 button, hold D14 for 1 to 2 seconds. That button also switches the board's power off.
 The box reads its inputs through an action map (P851, `games/engine/actions.py`), as Unity's Input System binds one
-action to several inputs: FIRE is BOOT or the joystick's switch, PICK is D14, and the knob's turn steps the volume. So
-a press of the joystick's switch plays as a BOOT press does. The map also reads the joystick's x and y, -100 to 100,
-and no game reads them yet (P872). `app.open_action_map()` builds the map from `pins.py`, with the stick only when the
-pin map names `JOY_X`. The drivers (`buttons.py`, `encoder.py` and `stick.py`) are the package `games/drivers/`, the
-folder `:drivers/` on the board. The `avg` line ends with `input`, the map's poll in ms per frame.
+action to several inputs: FIRE is BOOT or the joystick's switch, PICK is D14, and the knob's turn steps the volume. So a
+press of the joystick's switch plays as a BOOT press does. The map also reads the joystick's x and y, -100 to 100. Four
+games read them when the box has a stick (P872): Bucket moves at a speed the stick's tilt sets, Meteors walks and Rescue
+runs the way it leans and stands when it rests, and Snake goes the way it leans. Their titles then show the stick's
+hint. A box with no stick plays them with the button, as before. `app.open_action_map()` builds the map from `pins.py`,
+with the stick only when the pin map names `JOY_X`. The drivers (`buttons.py`, `encoder.py` and `stick.py`) are the
+package `games/drivers/`, the folder `:drivers/` on the board. The `avg` line ends with `input`, the map's poll in ms
+per frame.
 
 ## Status
 

@@ -6,7 +6,18 @@ The bindings follow Unity's Input System, where one action has several bindings:
 PICK is D14. A binding is a driver's button (drivers.buttons.Button): update(now_ms) says whether it was pushed, held
 is its level, and forget() drops its pushes. The map imports no driver: app.open_action_map builds them from the pin map
 and hands them in. One map is one player's: a remote board gets a second map (P832).
+A game reads the stick's x and y from the Actions that App.play hands it as game.stick (P872): bucket reads x as a
+speed, and meteors, rescue and snake read their way through lean(), the one rule for a direction.
 """
+
+# --- MVP (P872) ---
+LEAN = 40  # an axis this far from the middle, of 100, leans: a direction. A smaller tilt is no direction
+
+
+def lean(v):
+    """The direction an axis leans: -1, 0 or 1. v: the stick's x or y, -100 to 100. Small ints only, so a frame makes
+    nothing."""
+    return 1 if v >= LEAN else -1 if v <= -LEAN else 0
 
 
 class Action:

@@ -1,8 +1,9 @@
 """
 Bucket (P773): catch the falling boxes. A bucket rides on a rail near the bottom of the screen.
 
-How to play: hold BOOT and the bucket goes right, let go and it goes left. A box that falls into the bucket is a
-point. A box you miss bounces and lands on the pile in its column. When a column of the pile reaches the rail, the
+How to play: hold BOOT and the bucket goes right, let go and it goes left. With the joystick (P872), the bucket goes
+the way the stick leans, faster the further it leans, and stops when the stick rests. A box that falls into the bucket
+is a point. A box you miss bounces and lands on the pile in its column. When a column of the pile reaches the rail, the
 round ends. Each of the first 10 points makes the boxes come faster.
 
 The boxes fall on the rain's physics (plugins.PhysicsPlugin: engine.Bodies, or its twin in Python). The bodies do not
@@ -58,7 +59,17 @@ class Rules:
 
     def move(self, ms, held):
         """ms of play: the bucket goes right while held, else left, and stays on the screen."""
-        self.rest += (BUCKET_PX_S if held else -BUCKET_PX_S) * ms
+        self.slide(ms, BUCKET_PX_S if held else -BUCKET_PX_S)
+
+    # --- MVP (P872) ---
+    def steer(self, ms, x):
+        """ms of play with the stick: x, its axis from -100 (left) to 100, sets the speed, BUCKET_PX_S * x // 100 px a
+        second, so the bucket stops when the stick rests (the driver reads 0 in its dead zone)."""
+        self.slide(ms, BUCKET_PX_S * x // 100)
+
+    def slide(self, ms, px_s):
+        """ms of play at px_s px a second, + to the right, in whole px; the bucket stays on the screen."""
+        self.rest += px_s * ms
         px = self.rest // 1000
         self.rest -= px * 1000
         x = self.bucket_x + px
@@ -139,6 +150,7 @@ class Bucket(Game):
     name = "bucket"
     ART = ("bucket", None)  # its own art set, all of it (P822)
     hint = "hold: right"
+    stick_hint = "stick: move"  # --- MVP (P872) ---
     cues = {"catch": Cue("pickup"), "miss": Cue("land"), "die": Cue("die")}
 
     def __init__(self):
@@ -159,7 +171,10 @@ class Bucket(Game):
 
     def play(self, pressed, held):
         rules, plugin, phase = self.rules, self.physics_plugin, self.phase
-        rules.move(self.ms, held)
+        if self.stick is None:
+            rules.move(self.ms, held)
+        else:  # --- MVP (P872) ---
+            rules.steer(self.ms, self.stick.x)
         plugin.read(self.on_rest)
         if self.state != PLAY:  # a body asleep in the air ended the round
             return

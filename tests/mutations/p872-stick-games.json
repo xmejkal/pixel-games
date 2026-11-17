@@ -1,0 +1,104 @@
+[
+ {
+  "file": "games/engine/actions.py",
+  "name": "LEAN is lower: a small tilt is a direction",
+  "find": "LEAN = 40  # an axis",
+  "replace": "LEAN = 20  # an axis"
+ },
+ {
+  "file": "games/engine/actions.py",
+  "name": "an axis at LEAN does not lean",
+  "find": "    return 1 if v >= LEAN else -1 if v <= -LEAN else 0\n",
+  "replace": "    return 1 if v > LEAN else -1 if v < -LEAN else 0\n"
+ },
+ {
+  "file": "games/bucket.py",
+  "name": "the slide (move and steer) has no clamp at the right edge",
+  "find": "        if x < LEFT_X or x > RIGHT_X:\n",
+  "replace": "        if x < LEFT_X:\n"
+ },
+ {
+  "file": "games/bucket.py",
+  "name": "steer ignores the tilt: full speed at any x",
+  "find": "        self.slide(ms, BUCKET_PX_S * x // 100)\n",
+  "replace": "        self.slide(ms, BUCKET_PX_S if x > 0 else -BUCKET_PX_S)\n"
+ },
+ {
+  "file": "games/meteors.py",
+  "name": "the slide (move and walk) has no clamp at the right edge",
+  "find": "        edge = x < 0 or x > WALKER_MAX_X\n",
+  "replace": "        edge = x < 0\n"
+ },
+ {
+  "file": "games/meteors.py",
+  "name": "walk turns the walker at an edge",
+  "find": "        self.slide(ms, way)\n",
+  "replace": "        if self.slide(ms, way):\n            self.dir = -self.dir\n"
+ },
+ {
+  "file": "games/meteors.py",
+  "name": "a standing walker is aimed ahead of where it stands",
+  "find": "        return self.dir if self.way else 0\n",
+  "replace": "        return self.dir\n"
+ },
+ {
+  "file": "games/rescue.py",
+  "name": "the stick's path keeps the button's wait before a spray",
+  "find": "        self.way, self.wait_ms = way, 0\n",
+  "replace": "        self.way, self.wait_ms = way, TAP_MS\n"
+ },
+ {
+  "file": "games/rescue.py",
+  "name": "a way turns him while he sprays",
+  "find": "        if way and way != self.facing and not self.spraying():\n",
+  "replace": "        if way and way != self.facing:\n"
+ },
+ {
+  "file": "games/rescue.py",
+  "name": "a steered fireman turns at the end of the street",
+  "find": "            if self.way is None and (self.x == LEFT_X) == (self.facing < 0):\n",
+  "replace": "            if (self.x == LEFT_X) == (self.facing < 0):\n"
+ },
+ {
+  "file": "games/rescue.py",
+  "name": "steered into the end of the street, his feet run on the spot",
+  "find": "        if self.way is not None and self.ahead(LEFT_X if self.facing < 0 else RIGHT_X) <= 0:\n",
+  "replace": "        if False:\n"
+ },
+ {
+  "file": "games/arcade.py",
+  "name": "snake's reverse check reads d, not went",
+  "find": "        if d != self.d and d != (self.went + 2) % 4:\n",
+  "replace": "        if d != self.d and d != (self.d + 2) % 4:\n"
+ },
+ {
+  "file": "games/arcade.py",
+  "name": "a step does not set went",
+  "find": "        self.went = self.d\n",
+  "replace": "        pass\n"
+ },
+ {
+  "file": "games/app.py",
+  "name": "App.play never hands the game the stick",
+  "find": "        game.stick = self.action_map.actions if self.action_map.stick else None\n",
+  "replace": "        game.stick = None\n"
+ },
+ {
+  "file": "games/app.py",
+  "name": "App.play hands the game the actions on a box with no stick",
+  "find": "        game.stick = self.action_map.actions if self.action_map.stick else None\n",
+  "replace": "        game.stick = self.action_map.actions\n"
+ },
+ {
+  "file": "games/app.py",
+  "name": "the stick's hint is not shown",
+  "find": "            game.hint = game.stick_hint\n",
+  "replace": "            game.hint = game.hint\n"
+ },
+ {
+  "file": "games/rescue.py",
+  "name": "a fireman who stands with the stick keeps a fire's stale stop",
+  "find": "            self.blocked = False\n            return\n",
+  "replace": "            return\n"
+ }
+]

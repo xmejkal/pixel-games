@@ -1,4 +1,5 @@
-"""Three side-on games for one button: flappy (tap), runner (tap, hold for a high jump), snake (tap turns right)."""
+"""Three side-on games for one button: flappy (tap), runner (tap, hold for a high jump), snake (tap turns right; with
+the joystick it goes the way the stick leans, P872)."""
 
 import random
 import time
@@ -10,6 +11,7 @@ from array import array
 
 from effects import FireTrail
 from cues import Cue
+from engine.actions import lean
 from fire import FireLayer, ramp
 from gfx import (ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Dice, Game,
                  Particles, c565)
@@ -499,7 +501,8 @@ class StatusBar:
 
 class Snake(Game):
     """FEED (P573): an endless feed of phone-screen tiles crawls over the glass and grows by eating red notification
-    dots; you are eaten by your own feed. A tap turns it right. The head slides into each cell, gulps the dot and
+    dots; you are eaten by your own feed. A tap turns it right; with the joystick (P872) it goes the way the stick
+    leans, right, down, left or up, but never back into its neck. The head slides into each cell, gulps the dot and
     chews it, the dot goes down the feed as a bulge, and the glass ripples. When the feed meets itself every tile
     turns over to a grey SEEN, head to tail, and the card says YOU SAW n. YOU REMEMBER 0. Watercolour noir at
     10:00: the street mirrored in the glass, six hues for the feed, and one accent, the dot."""
@@ -507,6 +510,7 @@ class Snake(Game):
     name = "snake"
     ART = ("snake", None)  # its own art set, all of it (P822)
     hint = "tap turns right"
+    stick_hint = "stick steers"  # --- MVP (P872) ---
     bg = c565(14, 34, 22)
     accent = GREEN
     BONE = StatusBar.BONE  # art/sets/snake.py's
@@ -533,6 +537,7 @@ class Snake(Game):
     def setup(self):
         self.body = [(12, 9), (11, 9), (10, 9)]
         self.d, self.acc = 0, 0.0
+        self.went = 0  # --- MVP (P872) --- the way of the last step: right, as d starts
         self.food = self.spot()
         self.covers = pictures.load(*self.ART)  # the painted glass covers the screen, so no fill goes under it
         self.made = 3  # tiles made so far: tile i of the body is number made - i, so its kind stays as it crawls
@@ -554,7 +559,9 @@ class Snake(Game):
         return (0, 0)
 
     def play(self, pressed, held):
-        if pressed:
+        if self.stick is not None:
+            self.steer()  # --- MVP (P872) --- with the stick, FIRE does not turn it
+        elif pressed:
             self.d = (self.d + 1) % 4
             self.emit("turn")
         self.acc += self.dt * 1000
@@ -562,6 +569,7 @@ class Snake(Game):
         if self.acc < period:
             return
         self.acc -= period
+        self.went = self.d
         dx, dy = self.DIRS[self.d]
         nxt = ((self.body[0][0] + dx) % self.COLS, (self.body[0][1] + dy) % self.ROWS)
         if nxt in self.body[:-1]:
@@ -581,6 +589,24 @@ class Snake(Game):
             if (self.made - i) % 2 == 0:
                 self.trail.left(self.x_of(self.body[i]), self.y_of(self.body[i]), (self.made - i) % 12, self.last)
             self.gone = self.body.pop()
+
+    # --- MVP (P872) ---
+    def steer(self):
+        """The stick's way: the larger axis, if it leans, picks right, down, left or up (DIRS). A pick against went, the
+        way of the last step, is ignored, so two quick leans in one step cannot turn the head into its neck. A new way
+        says "turn"."""
+        x, y = self.stick.x, self.stick.y  # d indexes DIRS: x leans 0 (right) or 2 (left), y 1 (down) or 3 (up)
+        if abs(x) >= abs(y):
+            way, d = lean(x), 0
+        else:
+            way, d = lean(y), 1
+        if not way:
+            return
+        if way < 0:  # the other way on the same axis: DIRS[d + 2]
+            d += 2
+        if d != self.d and d != (self.went + 2) % 4:
+            self.d = d
+            self.emit("turn")
 
     def ate(self, cell):
         """A meal at cell: the sound, the gulp, the bulge down the feed, the ripple and the bone sparks."""

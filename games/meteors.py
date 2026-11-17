@@ -1,9 +1,10 @@
 """
-Meteors (P773): stay alive under a rain of burning meteors. A small walker walks the ground, left or right, and never
-stops.
+Meteors (P773): stay alive under a rain of burning meteors. A small walker walks the ground, left or right, and with
+the button never stops.
 
-How to play: tap BOOT to turn the walker round. It also turns at each screen edge. A mark on the ground shows where a
-meteor will land: a dark shadow at the meteor's full width (a red bar without the painted art). A meteor lands,
+How to play: tap BOOT to turn the walker round. It also turns at each screen edge. With the joystick (P872), the walker
+walks the way the stick leans and stands when it rests, and at a screen edge it stops. A mark on the ground shows where
+a meteor will land: a dark shadow at the meteor's full width (a red bar without the painted art). A meteor lands,
 bounces and then lies as a burning coal for a while, so the safe ground shrinks. The walker dies when it touches a
 meteor, in the air or as a coal. The score is the seconds it lived. Meteors come faster as time goes on, up to a limit.
 
@@ -21,6 +22,7 @@ import plugins
 from burning import BODY, N, BurningBodies
 from burning import COAL_SHADE
 from cues import Cue
+from engine.actions import lean
 from fire import MODES
 from gfx import BLACK, GREEN, HEIGHT, OVER, PLAY, RED, WHITE, WIDTH, YELLOW, Dice, Game, c565
 from motion import HIT
@@ -114,10 +116,12 @@ def on_the_way(meteors, x, leftward):
 
 class Rules:
     """The rules, with no display and no physics. walker_x: the walker's left edge in px. dir: +1 right, -1 left.
-    played_ms: the ms played. Ints only, so a frame makes nothing."""
+    way: the way it walks, -1, 0 (it stands, only with the stick) or 1 (P872). played_ms: the ms played. Ints only, so
+    a frame makes nothing."""
 
     def __init__(self):
         self.walker_x, self.dir, self.rest = (WIDTH - WALKER_W) // 2, 1, 0  # rest: px times ms short of the next whole px
+        self.way = 1  # --- MVP (P872) ---
         self.since = TURN_MS  # ms since the last turn, up to TURN_MS
         self.played_ms, self.clock = 0, 0  # clock: the ms since the last drop
 
@@ -131,14 +135,36 @@ class Rules:
         self.since = min(self.since + ms, TURN_MS)
         if tapped and self.since >= TURN_MS:
             self.dir, self.since = -self.dir, 0
-        self.rest += self.dir * WALK_PX_S * ms
+        if self.slide(ms, self.dir):
+            self.dir, self.since = -self.dir, 0
+        self.way = self.dir  # --- MVP (P872) --- after the edge turn: this frame's drop aims next
+
+    # --- MVP (P872) ---
+    def walk(self, ms, way):
+        """ms of play with the stick. way: -1 or 1 walks that way at WALK_PX_S and faces it (dir), 0 stands. At an
+        edge the walker stops and does not turn."""
+        self.played_ms += ms
+        self.way = way
+        if way:
+            self.dir = way
+        self.slide(ms, way)
+
+    def slide(self, ms, way):
+        """ms of walking the way way (-1, 0 or 1) at WALK_PX_S, in whole px; the walker stays on the screen. Answers
+        whether it met an edge: move turns it there, walk does not."""
+        self.rest += way * WALK_PX_S * ms
         px = self.rest // 1000
         self.rest -= px * 1000
         x = self.walker_x + px
-        if x < 0 or x > WIDTH - WALKER_W:
-            x = 0 if x < 0 else WIDTH - WALKER_W
-            self.dir, self.rest, self.since = -self.dir, 0, 0
+        edge = x < 0 or x > WALKER_MAX_X
+        if edge:
+            x, self.rest = 0 if x < 0 else WALKER_MAX_X, 0
         self.walker_x = x
+        return edge
+
+    def going(self):
+        """The way the aim reads: dir while the walker walks, 0 while it stands with the stick."""
+        return self.dir if self.way else 0
 
     def due(self, ms, free):
         """ms of play. free: a body is free for a meteor. Answers True when a meteor drops. With no body free the clock
@@ -154,8 +180,9 @@ class Rules:
     def fair(self, places, left, land_x):
         """Whether a new meteor at land_x leaves the walker a free stretch of SAFE_PX that it can reach alive, or at
         least no less than before. places, left: the meteors out now, as blocked() takes them."""
-        before = room(blocked(places, left), self.walker_x, self.dir)
-        after = room(blocked(list(places) + [land_x], list(left) + [LAND_MS]), self.walker_x, self.dir)
+        going = self.going()  # --- MVP (P872) --- 0 for a walker who stands
+        before = room(blocked(places, left), self.walker_x, going)
+        after = room(blocked(list(places) + [land_x], list(left) + [LAND_MS]), self.walker_x, going)
         return after >= SAFE_PX or after >= before
 
     def aim(self, places, left):
@@ -170,7 +197,7 @@ class Rules:
             if kind == 0:
                 land_x = random.randrange(lo, hi + 1)
             else:  # at the walker: where it is, then where it will be if it goes on
-                land_x = self.walker_x + (WALKER_W - BODY) // 2 + (self.dir * WALK_PX_S * FALL_MS // 1000 if kind == 2 else 0)
+                land_x = self.walker_x + (WALKER_W - BODY) // 2 + (self.going() * WALK_PX_S * FALL_MS // 1000 if kind == 2 else 0)
                 land_x = min(max(land_x, lo), hi)
             if self.fair(places, left, land_x):
                 return land_x, vx, land_x - shift
@@ -226,6 +253,7 @@ def pose_for(x, right):
 class Meteors(BurningBodies):
     name = "meteors"
     hint = "tap: turn"
+    stick_hint = "stick: walk"  # --- MVP (P872) ---
     SEED, GRAVITY, FRICTION, FLARE_MIN = None, GRAVITY_PX, 0.0, FLARE_MIN_PX  # friction 0: a meteor bounces straight up
     TITLE_MS = Game.TITLE_MS
     MODES = MODES[1:2]  # the picture mode alone: the flames over the painted dusk
@@ -347,7 +375,10 @@ class Meteors(BurningBodies):
         walker kills it."""
         rules, plugin, phase = self.rules, self.physics_plugin, self.phase
         self.covers = self.fire_plugin.field is not None or self.art  # no fill under the field or the painted dusk
-        rules.move(self.ms, pressed)
+        if self.stick is None:
+            rules.move(self.ms, pressed)
+        else:  # --- MVP (P872) ---
+            rules.walk(self.ms, lean(self.stick.x))
         self.score = rules.played_ms // 1000
         self.step_bodies()
         if self.state != PLAY:

@@ -10,7 +10,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(os.path.dirname(HERE), "games"))
 
-from engine.actions import ActionMap  # noqa: E402
+from engine.actions import LEAN, ActionMap, lean  # noqa: E402
 
 
 class FakeButton:
@@ -97,6 +97,13 @@ class ActionMapTest(unittest.TestCase):
         buttons = FakeButton(), FakeButton(), FakeButton()
         ActionMap(buttons[:2], buttons[2:]).forget()
         self.assertEqual([1, 1, 1], [b.forgets for b in buttons])
+
+
+# --- MVP (P872) ---
+class LeanTest(unittest.TestCase):
+    def test_an_axis_leans_from_lean_on_and_a_smaller_tilt_is_no_direction(self):
+        self.assertEqual(40, LEAN)
+        self.assertEqual([-1, -1, 0, 0, 0, 1, 1], [lean(v) for v in (-100, -40, -39, 0, 39, 40, 100)])
 
 
 if __name__ == "__main__":

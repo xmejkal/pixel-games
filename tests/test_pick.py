@@ -15,6 +15,7 @@ from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+from test_actions import FakeStick  # noqa: E402
 from test_app_knob import Encoder  # noqa: E402  also puts games/ and the stubs on the path, and time's ticks
 from test_signals import Loud, MusicBank, rendered  # noqa: E402
 
@@ -92,15 +93,16 @@ class Pressed:
 
 
 class Box:
-    """An App on a clock the test sets, with D14 and BOOT pressed when the test says."""
+    """An App on a clock the test sets, with D14 and BOOT pressed when the test says. stick: a driver stick (read_x,
+    read_y), or None for a box with no stick (P872)."""
 
-    def __init__(self, games=GAMES, out=None, encoder=None, **kw):
+    def __init__(self, games=GAMES, out=None, encoder=None, stick=None, **kw):
         self.ms, self.d14, self.boot = 0, False, False
         self.boot_button, self.d14_button = Pressed(lambda: self.boot), Pressed(lambda: self.d14)
         self.clock = mock.patch.object(app.time, "ticks_ms", lambda: self.ms)
         self.clock.start()
         self.said = io.StringIO()
-        action_map = ActionMap((self.boot_button,), (self.d14_button,), encoder)  # encoder: the knob's, or None
+        action_map = ActionMap((self.boot_button,), (self.d14_button,), encoder, stick)  # encoder: the knob's, or None
         with contextlib.redirect_stdout(self.said):
             self.app = app.App(None, action_map, games=games, out=out or Out(), **kw)
             self.app.start()
@@ -819,6 +821,60 @@ class KnobTest(unittest.TestCase):
         card = box.frame(10)
         self.assertIsInstance(card, app.NameCard)
         self.assertEqual([[False], [True]], box.app.out.seen)
+
+
+# --- MVP (P872) ---
+class Walker(gfx.Game):
+    """A game that reads the stick: each frame of play notes the stick's x, and a lean to the left ends the round."""
+
+    name = "walker"
+    stick_hint = "stick: walk"
+
+    def setup(self):
+        self.seen = []
+
+    def play(self, pressed, held):
+        self.seen.append(self.stick.x)
+        if self.stick.x < 0:
+            self.die()
+
+
+class StickTest(unittest.TestCase):
+    """App.play hands the game the stick when the box has one, and its stick_hint for the title."""
+
+    def box(self, stick=None, games=(Walker, GAMES[0])):
+        box = Box(games, stick=stick)
+        self.addCleanup(box.close)
+        return box
+
+    def test_a_box_with_a_stick_hands_the_game_the_map_s_actions_and_the_stick_hint(self):
+        box = self.box(FakeStick(0, 0))
+        game = box.app.game
+        self.assertIs(box.app.action_map.actions, game.stick)
+        self.assertEqual("stick: walk", game.hint)
+
+    def test_a_box_with_no_stick_leaves_stick_none_and_the_hint_as_it_was(self):
+        game = self.box().app.game
+        self.assertIsNone(game.stick)
+        self.assertEqual(gfx.Game.hint, game.hint)
+
+    def test_a_game_with_no_stick_hint_keeps_its_hint_on_a_box_with_a_stick(self):
+        box = self.box(FakeStick(0, 0), games=(GAMES[0], Walker))
+        self.assertIs(box.app.action_map.actions, box.app.game.stick)
+        self.assertEqual(gfx.Game.hint, box.app.game.hint)
+
+    def test_the_game_reads_this_frame_s_stick_and_fire_restarts_after_a_game_over(self):
+        stick = FakeStick(30, 0)
+        box = self.box(stick)
+        game = box.frame(0, boot=True)  # the press leaves the title
+        self.assertEqual(gfx.PLAY, game.state)
+        box.frame(40)
+        stick.x = -100
+        box.frame(80)
+        self.assertEqual(([30, -100], gfx.OVER), (game.seen, game.state))
+        stick.x = 0
+        box.frame(80 + game.OVER_MS + 40, boot=True)
+        self.assertEqual((gfx.PLAY, []), (game.state, game.seen))  # FIRE restarted it: a new round, nothing seen yet
 
 
 if __name__ == "__main__":

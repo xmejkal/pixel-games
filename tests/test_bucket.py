@@ -30,6 +30,7 @@ import lcd  # noqa: E402
 import plugins  # noqa: E402
 import world_lib  # noqa: E402
 from engine import signals  # noqa: E402
+from engine.actions import Actions  # noqa: E402
 from bucket import FALL, FREE, LAND, Bucket, Rules  # noqa: E402
 
 FRAME_MS = 42  # app.py's FRAME_MS is 40, and the board's frames run 42 to 60 ms
@@ -509,6 +510,66 @@ class CBucketTest(SeededTest):
                 piles.append((bytes(game.rules.pile), bytes(game.shown), game.score, game.state))
             self.assertEqual(piles[0], piles[1], player.__name__)
             self.assertGreater(sum(piles[0][0]) + piles[0][2], 5)
+
+
+# --- MVP (P872) ---
+class SteerTest(unittest.TestCase):
+    """Rules.steer: the stick's x sets the bucket's speed."""
+
+    def test_a_stick_at_rest_leaves_the_bucket_where_it_is(self):
+        rules = Rules()
+        start = rules.bucket_x
+        for _ in range(25):
+            rules.steer(40, 0)
+        self.assertEqual(start, rules.bucket_x)
+
+    def test_full_right_goes_bucket_px_s_a_second_and_half_left_half_of_it(self):
+        rules = Rules()
+        start = rules.bucket_x
+        for _ in range(5):
+            rules.steer(50, 100)
+        self.assertEqual(start + bk.BUCKET_PX_S // 4, rules.bucket_x)  # 0.25 s: the screen has no room for a second
+        for _ in range(10):
+            rules.steer(50, -50)
+        self.assertEqual(start, rules.bucket_x)  # 0.5 s at half the speed, to the left: back where it started
+
+    def test_the_bucket_stops_at_each_edge_and_leaves_it_at_once(self):
+        rules = Rules()
+        for _ in range(100):
+            rules.steer(60, -100)
+        self.assertEqual(bk.LEFT_X, rules.bucket_x)
+        rules.steer(60, 100)  # no debt is carried from the edge
+        self.assertEqual(bk.LEFT_X + bk.BUCKET_PX_S * 60 // 1000, rules.bucket_x)
+        for _ in range(100):
+            rules.steer(60, 100)
+        self.assertEqual(bk.RIGHT_X, rules.bucket_x)
+
+
+class StickTest(SeededTest):
+    """The game through Game.step: with a stick its x steers, with None BOOT does as before."""
+
+    def setUp(self):
+        super().setUp()
+        self.game = new_game()
+
+    def test_with_the_stick_its_x_steers_and_boot_held_does_not(self):
+        game = self.game
+        game.stick = Actions()
+        now = start(game)
+        x = game.rules.bucket_x
+        game.step(now + FRAME_MS, False, True)  # held, but the stick rests
+        self.assertEqual(x, game.rules.bucket_x)
+        game.stick.x = -100
+        game.step(now + 2 * FRAME_MS, False, True)
+        self.assertEqual(x + -bk.BUCKET_PX_S * FRAME_MS // 1000, game.rules.bucket_x)  # whole px, rounded down
+
+    def test_with_no_stick_boot_moves_it_as_before(self):
+        game = self.game
+        self.assertIsNone(game.stick)
+        now = start(game)
+        x = game.rules.bucket_x
+        game.step(now + FRAME_MS, False, True)
+        self.assertEqual(x + bk.BUCKET_PX_S * FRAME_MS // 1000, game.rules.bucket_x)
 
 
 if __name__ == "__main__":

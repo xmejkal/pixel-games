@@ -19,7 +19,9 @@ The rotary encoder is the volume's knob (P764): each turn shows the volume over 
 The step is not saved. App(knob=None) has no volume pane.
 The App reads its inputs through an action map (P851, engine.actions): each frame polls it once, and FIRE (BOOT, and
 the joystick's switch when pins names the stick) plays, PICK (D14) picks, and the knob's turn steps the volume. The
-stick's x and y are in the map, and no game reads them yet (P872). open_action_map builds the map from the pin map.
+stick's x and y are in the map: when the box has a stick, play() hands a game the map's Actions as game.stick, and its
+stick_hint as the title's hint, and bucket, meteors, rescue and snake read x and y (P872). open_action_map builds the
+map from the pin map.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
 main.py, the composition root (P850), builds the knob and the Speaker from the versions it chose, and the action map.
 run() with no speaker is the silent box, with no knob it has no volume pane, and with no action map it opens its own.
@@ -231,10 +233,15 @@ class App:
                                                             pictures.load_ms, self.games.import_ms))
 
     def play(self, game):
-        """The built game plays: its signals, cues and music, a clean output, a new interval, and no press from
-        before; then its name."""
+        """The built game plays: its signals, the stick, its cues and music, a clean output, a new interval, and no
+        press from before; then its name."""
         self.game = game
         game.signals = self.signals
+        # --- MVP (P872) --- the map's Actions, the same record each frame, when the box has a stick; else None, and
+        # the game plays with the button. With a stick, a game's stick_hint is its title's hint
+        game.stick = self.action_map.actions if self.action_map.stick else None
+        if game.stick is not None and game.stick_hint:
+            game.hint = game.stick_hint
         if self.cues:
             self.cues.follow(game, self.signals)
             self.cues.music()

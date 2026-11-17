@@ -318,7 +318,8 @@ def slowest(i, t):
 
 class Game:
     """One game: a title, play, game over. A subclass sets name, hint, bg and accent and writes setup(), play(pressed,
-    held) and paint(cv). It calls self.die() to end the round and adds to self.score."""
+    held) and paint(cv). It calls self.die() to end the round and adds to self.score. A game that reads the stick
+    (P872) reads self.stick in play: with None it plays with the button alone."""
 
     name = "game"
     hint = "tap to play"
@@ -331,6 +332,9 @@ class Game:
     plugins = ()  # the engine's layers the game turns on (plugins.Plugin), in their stage order; setup lists them
     signals = None  # --- MVP (P768) --- the game box's signals.Signals; a class attribute, as setup runs in __init__
     cues = {}  # --- MVP (P768) --- signal name -> cues.Cue: the sounds this game asks for
+    stick = None  # --- MVP (P872) --- the box's engine.actions.Actions when it has a stick (App.play sets it): the same
+    # record each frame, so play reads this frame's x and y. None: no stick, and the game plays with the button
+    stick_hint = None  # --- MVP (P872) --- the title's hint on a box with a stick (App.play puts it in hint), or None
     TITLE_MS = 1500
     OVER_MS = 900
 
