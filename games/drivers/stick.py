@@ -23,8 +23,10 @@ CENTER = 32768  # read_u16's middle (0 to 65535): fixed, never sampled
 TOP = 65535  # read_u16's largest value
 DEAD_ZONE = 1024  # read_u16 counts on each side of CENTER that read 0: over the bench's rest, 920 from CENTER at most
 FULL = 100  # an axis reads -FULL to FULL
-X_SIGN = 1  # 1 or -1, so left reads negative. Not measured yet: P851's bench step pushes the stick left once
-Y_SIGN = 1  # 1 or -1, so up reads negative. Not measured yet: P851's bench step pushes the stick up once
+SWAP_AXES = True  # the PO's module sits turned 90 degrees on the breadboard: up and down move pins.JOY_X, left and right
+# pins.JOY_Y (logs/p851-stick-directions.log, run 2: up read JOY_X low for 7 s; left read JOY_Y high, right low)
+X_SIGN = -1  # so left reads negative: left reads its pad high (the log above)
+Y_SIGN = 1  # so up reads negative: up reads its pad low (the log above)
 SWITCH_ON = 0  # the switch closes to ground against the pull-up (pins.JOY_SW_PULL is "up"), so it reads 0 when pressed
 
 
@@ -40,16 +42,19 @@ def axis(raw, sign):
 
 
 class Stick:
-    """read_x() and read_y(): the stick's axes now, -FULL to FULL, left and up negative once X_SIGN and Y_SIGN are
-    measured. adc_x and adc_y answer read_u16(), as machine.ADC does."""
+    """read_x() and read_y(): the stick's axes now, -FULL to FULL, left and up negative (X_SIGN, Y_SIGN). adc_x and adc_y answer read_u16(), as machine.ADC does."""
 
     def __init__(self, adc_x, adc_y):
         self.adc_x, self.adc_y = adc_x, adc_y
 
     @classmethod
     def on_board(cls, pin_x, pin_y):
+        """pin_x and pin_y: the module's own X and Y pads, as the pin map names them; SWAP_AXES says which moves with
+        left and right on this box."""
         from machine import ADC, Pin
 
+        if SWAP_AXES:
+            pin_x, pin_y = pin_y, pin_x
         return cls(ADC(Pin(pin_x), atten=ADC.ATTN_11DB), ADC(Pin(pin_y), atten=ADC.ATTN_11DB))
 
     def read_x(self):

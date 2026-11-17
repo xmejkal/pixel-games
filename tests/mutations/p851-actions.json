@@ -52,5 +52,17 @@
   "name": "X_SIGN is ignored",
   "find": "        return axis(self.adc_x.read_u16(), X_SIGN)\n",
   "replace": "        return axis(self.adc_x.read_u16(), 1)\n"
+ },
+ {
+  "file": "games/drivers/stick.py",
+  "name": "the axes are not swapped on this box",
+  "find": "        if SWAP_AXES:\n            pin_x, pin_y = pin_y, pin_x\n",
+  "replace": ""
+ },
+ {
+  "file": "games/drivers/stick.py",
+  "name": "left reads positive",
+  "find": "X_SIGN = -1  #",
+  "replace": "X_SIGN = 1  #"
  }
 ]

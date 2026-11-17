@@ -1,0 +1,43 @@
+# P851 bench, 2026-11-17 (Prague): raw zones of the stick (lo < 8000 < mid < 57000 < hi) on pins.JOY_X (x) and pins.JOY_Y (y), read_u16 at ATTN_11DB, a line at each change. Run 1: the PO pushed left, then what he meant as up. Run 2: up, held 7 s; then (the PO's next steps) left, held; then right.
+## run 1
+0.0 x=mid y=mid
+21.6 x=lo y=mid
+26.1 x=mid y=mid
+26.7 x=hi y=mid
+26.9 x=hi y=lo
+27.3 x=hi y=mid
+31.4 x=mid y=mid
+77.2 x=lo y=mid
+77.8 x=mid y=mid
+78.5 x=hi y=mid
+79.0 x=mid y=mid
+80.0 x=mid y=hi
+80.5 x=mid y=mid
+81.0 x=mid y=lo
+81.4 x=mid y=mid
+81.9 x=lo y=mid
+82.4 x=mid y=mid
+83.8 x=lo y=mid
+83.9 x=lo y=hi
+84.3 x=lo y=mid
+84.6 x=lo y=lo
+85.0 x=mid y=lo
+85.2 x=hi y=lo
+86.0 x=hi y=mid
+86.8 x=hi y=hi
+87.4 x=mid y=hi
+87.5 x=lo y=hi
+87.9 x=lo y=mid
+88.2 x=mid y=mid
+end
+## run 2
+0.0 x=mid y=mid
+12.6 x=lo y=mid
+19.8 x=mid y=mid
+42.3 x=mid y=hi
+47.2 x=mid y=mid
+49.0 x=mid y=lo
+49.1 x=hi y=lo
+49.4 x=mid y=lo
+52.6 x=mid y=mid
+end

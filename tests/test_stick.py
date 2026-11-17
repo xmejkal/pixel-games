@@ -29,6 +29,14 @@ def read(x, y=CENTER):
 
 
 class StickTest(unittest.TestCase):
+    """The arithmetic with both signs 1; the box's own signs and swap are in BoxFactsTest."""
+
+    def setUp(self):
+        for name in ("X_SIGN", "Y_SIGN"):
+            patcher = mock.patch.object(stick, name, 1)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
     def test_the_bench_s_rest_reads_0(self):
         for raw in (32391, CENTER, 33000, 33688, CENTER - DEAD_ZONE, CENTER + DEAD_ZONE):
             with self.subTest(raw=raw):
@@ -57,6 +65,13 @@ class StickTest(unittest.TestCase):
             self.assertEqual((FULL, -FULL), (read(TOP).read_x(), read(CENTER, TOP).read_y()))
 
     def test_on_board_opens_both_pads_at_11_db(self):
+        self.assertEqual([("pad4", 3), ("pad5", 3)], self.opened(False))
+
+    def test_swapped_axes_read_left_and_right_on_the_y_pad(self):
+        self.assertEqual([("pad5", 3), ("pad4", 3)], self.opened(True))
+
+    def opened(self, swap):
+        """The pads Stick.on_board(4, 5) opens, x first, with SWAP_AXES as swap."""
         made = []
 
         class ADC:
@@ -66,9 +81,21 @@ class StickTest(unittest.TestCase):
                 made.append((pin, atten))
 
         machine = types.SimpleNamespace(ADC=ADC, Pin=lambda n: "pad%d" % n)
-        with mock.patch.dict(sys.modules, {"machine": machine}):
+        with mock.patch.dict(sys.modules, {"machine": machine}), mock.patch.object(stick, "SWAP_AXES", swap):
             Stick.on_board(4, 5)
-        self.assertEqual([("pad4", 3), ("pad5", 3)], made)
+        return made
+
+
+class BoxFactsTest(unittest.TestCase):
+    """The PO's box (logs/p851-stick-directions.log): up reads JOY_X low, left reads JOY_Y high. With SWAP_AXES and
+    the signs, left and up read negative, right and down positive."""
+
+    def test_left_and_up_read_negative(self):
+        self.assertTrue(stick.SWAP_AXES)
+        left = Stick(FakeADC(TOP), FakeADC(CENTER))  # x is the JOY_Y pad once swapped: left reads it high
+        up = Stick(FakeADC(CENTER), FakeADC(0))  # y is the JOY_X pad: up reads it low
+        self.assertEqual((-FULL, 0), (left.read_x(), left.read_y()))
+        self.assertEqual((0, -FULL), (up.read_x(), up.read_y()))
 
 
 if __name__ == "__main__":

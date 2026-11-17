@@ -1759,7 +1759,10 @@ than the control.
 - The rest sample leaves `DEAD_ZONE` 104 counts over its 920: one sample, not a margin measured over many.
 - The switch is polled with the 20 ms debounce, not counted in a pin interrupt: a tap shorter than about one frame
   (40 ms or more) can fall between two reads and is lost, and a press is seen one frame after BOOT's would be.
-- Not measured yet, P851's board step: the signs (`X_SIGN` and `Y_SIGN` are 1 until the PO pushes the stick left
-  once and up once), the switch's 10 presses counted as 10, with some quick taps among them, the map's poll in the
+- The directions (logs/p851-stick-directions.log): the PO's module sits turned 90 degrees on the breadboard. Up read
+  `JOY_X` low for 7 s; left read `JOY_Y` high and right read it low. So `SWAP_AXES` is True, `X_SIGN` is -1 and
+  `Y_SIGN` is 1: left and up read negative. In run 1 the push meant as up read `JOY_X` high, against run 2's clear
+  hold; run 2 is kept.
+- Not measured yet, P851's board step: the switch's 10 presses counted as 10, with some quick taps among them, the map's poll in the
   `avg` line's `input`, and the `heap` line staying flat with the poll on (the poll allocates nothing by a reading of
   the code, not by a measurement).
