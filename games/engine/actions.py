@@ -7,7 +7,8 @@ PICK is D14. A binding is a driver's button (drivers.buttons.Button): update(now
 is its level, and forget() drops its pushes. The map imports no driver: app.open_action_map builds them from the pin map
 and hands them in. One map is one player's: a remote board gets a second map (P832).
 A game reads the stick's x and y from the Actions that App.play hands it as game.stick (P872): bucket reads x as a
-speed, and meteors, rescue and snake read their way through lean(), the one rule for a direction.
+speed and starfire x and y, and meteors, rescue, snake, gravpong, tunnel and road read their way through lean(), the
+one rule for a direction.
 """
 
 # --- MVP (P872) ---
