@@ -595,14 +595,14 @@ class Snake(Game):
         """The stick's way: the larger axis, if it leans, picks right, down, left or up (DIRS). A pick against went, the
         way of the last step, is ignored, so two quick leans in one step cannot turn the head into its neck. A new way
         says "turn"."""
-        x, y = self.stick.x, self.stick.y
+        x, y = self.stick.x, self.stick.y  # d indexes DIRS: x leans 0 (right) or 2 (left), y 1 (down) or 3 (up)
         if abs(x) >= abs(y):
             way, d = lean(x), 0
         else:
             way, d = lean(y), 1
         if not way:
             return
-        if way < 0:
+        if way < 0:  # the other way on the same axis: DIRS[d + 2]
             d += 2
         if d != self.d and d != (self.went + 2) % 4:
             self.d = d
