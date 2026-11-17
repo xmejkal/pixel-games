@@ -19,7 +19,9 @@ The rotary encoder is the volume's knob (P764): each turn shows the volume over 
 The step is not saved. App(knob=None) has no volume pane.
 The App reads its inputs through an action map (P851, engine.actions): each frame polls it once, and FIRE (BOOT, and
 the joystick's switch when pins names the stick) plays, PICK (D14) picks, and the knob's turn steps the volume. The
-stick's x and y are in the map, and no game reads them yet (P872). open_action_map builds the map from the pin map.
+stick's x and y are in the map: when the box has a stick, play() hands a game the map's Actions as game.stick, and its
+stick_hint as the title's hint, and bucket, meteors, rescue and snake read x and y (P872). open_action_map builds the
+map from the pin map.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
 main.py, the composition root (P850), builds the knob and the Speaker from the versions it chose, and the action map.
 run() with no speaker is the silent box, with no knob it has no volume pane, and with no action map it opens its own.

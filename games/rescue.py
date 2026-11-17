@@ -2,8 +2,10 @@
 Rescue (P800): a night street under a meteor shower. Carry the people who run about in panic to the fire station,
 under the green SAFE sign.
 
-How to play: the fireman runs along the street and never stops on his own. Tap BOOT and he turns round. Hold it and he
-stops and sprays the hose ahead of him: a fire within HOSE_REACH_PX goes down and is out after about a second of water.
+How to play: with the button, the fireman runs along the street and never stops on his own. Tap BOOT and he turns round.
+Hold it and he stops and sprays the hose ahead of him: a fire within HOSE_REACH_PX goes down and is out after about a
+second of water. With the joystick (P872), he runs the way the stick leans and stands, the hose ready, when it rests.
+FIRE (BOOT or the stick's switch) held sprays at once and a tap does not turn him. At the street's end he stops.
 People come out of the houses and run about in panic: a man, a woman, a child (small and fast), a grandma (slow, with a
 cane) and a man with his dog. Each wears a bright shirt, so they show on the dark street. A fire stops everyone. A
 person turns back from it. A person with a fire on one side and a fire or the street's end close on the other is

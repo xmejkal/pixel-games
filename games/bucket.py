@@ -1,8 +1,9 @@
 """
 Bucket (P773): catch the falling boxes. A bucket rides on a rail near the bottom of the screen.
 
-How to play: hold BOOT and the bucket goes right, let go and it goes left. A box that falls into the bucket is a
-point. A box you miss bounces and lands on the pile in its column. When a column of the pile reaches the rail, the
+How to play: hold BOOT and the bucket goes right, let go and it goes left. With the joystick (P872), the bucket goes
+the way the stick leans, faster the further it leans, and stops when the stick rests. A box that falls into the bucket
+is a point. A box you miss bounces and lands on the pile in its column. When a column of the pile reaches the rail, the
 round ends. Each of the first 10 points makes the boxes come faster.
 
 The boxes fall on the rain's physics (plugins.PhysicsPlugin: engine.Bodies, or its twin in Python). The bodies do not

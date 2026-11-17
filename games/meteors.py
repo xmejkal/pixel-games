@@ -1,9 +1,10 @@
 """
-Meteors (P773): stay alive under a rain of burning meteors. A small walker walks the ground, left or right, and never
-stops.
+Meteors (P773): stay alive under a rain of burning meteors. A small walker walks the ground, left or right, and with
+the button never stops.
 
-How to play: tap BOOT to turn the walker round. It also turns at each screen edge. A mark on the ground shows where a
-meteor will land: a dark shadow at the meteor's full width (a red bar without the painted art). A meteor lands,
+How to play: tap BOOT to turn the walker round. It also turns at each screen edge. With the joystick (P872), the
+walker walks the way the stick leans and stands when it rests, and at a screen edge it stops. A mark on the ground
+shows where a meteor will land: a dark shadow at the meteor's full width (a red bar without the painted art). A meteor lands,
 bounces and then lies as a burning coal for a while, so the safe ground shrinks. The walker dies when it touches a
 meteor, in the air or as a coal. The score is the seconds it lived. Meteors come faster as time goes on, up to a limit.
 

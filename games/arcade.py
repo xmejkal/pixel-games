@@ -1,4 +1,5 @@
-"""Three side-on games for one button: flappy (tap), runner (tap, hold for a high jump), snake (tap turns right)."""
+"""Three side-on games for one button: flappy (tap), runner (tap, hold for a high jump), snake (tap turns right; with
+the joystick it goes the way the stick leans, P872)."""
 
 import random
 import time
@@ -500,7 +501,8 @@ class StatusBar:
 
 class Snake(Game):
     """FEED (P573): an endless feed of phone-screen tiles crawls over the glass and grows by eating red notification
-    dots; you are eaten by your own feed. A tap turns it right. The head slides into each cell, gulps the dot and
+    dots; you are eaten by your own feed. A tap turns it right; with the joystick (P872) it goes the way the stick
+    leans, right, down, left or up, but never back into its neck. The head slides into each cell, gulps the dot and
     chews it, the dot goes down the feed as a bulge, and the glass ripples. When the feed meets itself every tile
     turns over to a grey SEEN, head to tail, and the card says YOU SAW n. YOU REMEMBER 0. Watercolour noir at
     10:00: the street mirrored in the glass, six hues for the feed, and one accent, the dot."""
