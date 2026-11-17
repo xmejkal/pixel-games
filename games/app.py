@@ -421,17 +421,19 @@ def open_st7789():
 
 
 # --- MVP (P764) ---
-def open_knob(volume):
+def open_knob(volume, step=None):
     """The rotary encoder as the volume's knob, or None when this image has no machine.Encoder. volume: the master
     volume's class that main.py chose (P850): the sound's callback applies it, and the viper scale takes 116 us a block,
-    the plain one 1220 us. The step is not saved."""
+    the plain one 1220 us. step: the start step, read from :volume.txt by main.compose (P866), or None for the
+    volume's default. The step is not saved: a file save now and then stalled the loop for 2.4 s (bench.md, P764)."""
     try:
         import machine
 
         machine.Encoder
     except (ImportError, AttributeError):
         return None
-    return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), volume())
+    level = volume() if step is None else volume(step)
+    return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), level)
 
 
 def read_console(console, stdin):
