@@ -86,7 +86,19 @@
  {
   "file": "games/space3d.py",
   "name": "the stick's y moves the crosshair the other way",
-  "find": "self.aim_y.step(self.AIM_PX_S * y // 100, self.ms)",
-  "replace": "self.aim_y.step(-self.AIM_PX_S * y // 100, self.ms)"
+  "find": "self.aim_y.step(self.aim_px_s(y), self.ms)",
+  "replace": "self.aim_y.step(-self.aim_px_s(y), self.ms)"
+ },
+ {
+  "file": "games/space3d.py",
+  "name": "the crosshair's speed floors, so a tilt to the minus side is 1 px/s faster",
+  "find": "        s = self.AIM_PX_S * abs(v) // 100\n        return s if v >= 0 else -s\n",
+  "replace": "        return self.AIM_PX_S * v // 100\n"
+ },
+ {
+  "file": "games/world3d.py",
+  "name": "y wins a tie of the axes in tunnel",
+  "find": "        if abs(x) >= abs(y):\n",
+  "replace": "        if abs(x) > abs(y):\n"
  }
 ]
