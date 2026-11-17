@@ -542,7 +542,7 @@ class SteerTest(unittest.TestCase):
 
     def test_the_bucket_stops_at_each_edge_and_leaves_it_at_once(self):
         rules = Rules()
-        for _ in range(100):
+        for _ in range(99):  # 99 * 21600 px.ms leaves a rest of 400 at the edge, which the edge must drop
             rules.steer(60, -100)
         self.assertEqual(bk.LEFT_X, rules.bucket_x)
         rules.steer(60, 100)  # no debt is carried from the edge
