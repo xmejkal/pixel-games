@@ -1748,3 +1748,14 @@ than the control.
   172,032 B, and 206,288 B free after the viper modules: the 0b-2 baseline.
 - The collector's idle time: 0.3 ms at boot and after the package, 37.6 ms after every game module is imported. A
   lead for flappy's lower fps with all 15 games loaded (P856 above) and for the late sound refills (P858).
+
+## P851 (#1215), 2026-11-17: the joystick through the action map
+
+- What the box gave before this card (the PO's box, 2026-11-17, from P851's plan; no log in `logs/`): each axis with
+  `ADC(Pin(n), atten=ADC.ATTN_11DB).read_u16()` went from 0 to 65535 and rested about 33000, between 32391 and 33688.
+  A pad with no stick on it swept 0 to 40000, so no read says whether a stick is there: `app.open_actions` takes the
+  stick when `pins.py` names `JOY_X`. `drivers/stick.py` keeps the center fixed at 32768 and reads 0 within
+  `DEAD_ZONE` (1024) of it, over the rest's 920 at most.
+- Not measured yet, P851's board step: the signs (`X_SIGN` and `Y_SIGN` are 1 until the PO pushes the stick left
+  once and up once), the switch's 10 presses counted as 10 (the switch is polled with the 20 ms debounce), and the
+  map's poll in the `avg` line's `input`.
