@@ -11,6 +11,7 @@ pixel-engine submodule.
 | `clock.py` | `since`, `ticks_us` and `ticks_diff`: the board's tick clock, 0 on the Mac |
 | `accel.py` | `Chooser`: chooses each part's version once at boot and says why in the `engine` line (P850) |
 | `actions.py` | `ActionMap`: the inputs bound to the actions a frame reads, FIRE, PICK, the knob's turn and the stick's x and y (P851) |
+| `subpixel.py` | `SubPixel`: a speed in px a second, stepped by a frame's ms, in whole px, the rest kept for the next frame (P872) |
 
 - `__init__.py` is empty, so each module imports alone: a later board takes only the modules it needs.
 - `actions.py` imports no driver. `app.open_action_map()` builds the drivers of `games/drivers/` (a button, the
