@@ -1,6 +1,6 @@
-"""Two more 3D games for one button: starfire (tap fires at the sweeping crosshair) and SMILE (tap when the city
-camera's lens faces you). With the joystick (P872), starfire's crosshair goes the way the stick leans, faster the
-further it leans, and stays where it is when the stick rests; FIRE fires at it."""
+"""Two more 3D games for one button, starfire also for the stick: starfire (tap fires at the sweeping crosshair) and
+SMILE (tap when the city camera's lens faces you). With the joystick (P872), starfire's crosshair goes the way the stick
+leans, faster the further it leans, and stays where it is when the stick rests; FIRE fires at it."""
 
 import math
 import random
@@ -16,9 +16,9 @@ W, H = WIDTH, HEIGHT
 CX, CY = W // 2, 128
 
 
-def stop(motion, v, low, high):
-    """v, a place that motion (a SubPixel) moved to, kept from low to high; at a bound motion keeps no rest. --- MVP
-    (P872) ---"""
+def clamp(motion, v, low, high):
+    """v, a place that motion (a SubPixel) moved to, kept from low to high: a step that would cross a bound stops at it
+    and drops motion's rest. --- MVP (P872) ---"""
     if v < low or v > high:
         motion.reset()
         return low if v < low else high
@@ -83,14 +83,21 @@ class Starfire(Game):
 
     # --- MVP (P872) ---
     def steer(self, x, y):
-        """The stick's x and y, -100 to 100 (up reads negative), move the crosshair at AIM_PX_S * x // 100 px a second
-        across and the same for y down, in whole px, so it rests when the stick rests. It stops at the AIM_ bounds, with
-        no rest kept there. aim is a new tuple only when a px moved, so a stick at rest makes nothing."""
+        """The stick's x and y, -100 to 100 (up reads negative), move the crosshair at aim_px_s(x) px a second across
+        and aim_px_s(y) down, in whole px, so it rests when the stick rests. A step that would cross an AIM_ bound stops
+        at it and drops that axis's rest. aim is a new tuple only when a px moved, so a stick at rest makes nothing."""
         ax, ay = self.aim
-        nx = stop(self.aim_x, ax + self.aim_x.step(self.AIM_PX_S * x // 100, self.ms), self.AIM_LEFT, self.AIM_RIGHT)
-        ny = stop(self.aim_y, ay + self.aim_y.step(self.AIM_PX_S * y // 100, self.ms), self.AIM_TOP, self.AIM_BOTTOM)
+        nx = clamp(self.aim_x, ax + self.aim_x.step(self.aim_px_s(x), self.ms), self.AIM_LEFT, self.AIM_RIGHT)
+        ny = clamp(self.aim_y, ay + self.aim_y.step(self.aim_px_s(y), self.ms), self.AIM_TOP, self.AIM_BOTTOM)
         if nx != ax or ny != ay:
             self.aim = (nx, ny)
+
+    def aim_px_s(self, v):
+        """The crosshair's speed in px a second for an axis at v, -100 to 100: AIM_PX_S * |v| // 100 with the sign of v,
+        so a tilt and its mirror move as fast (AIM_PX_S * v // 100 floors, so the minus side would be 1 px/s faster).
+        Small ints only."""
+        s = self.AIM_PX_S * abs(v) // 100
+        return s if v >= 0 else -s
 
     def fire(self):
         self.shot = 0.1

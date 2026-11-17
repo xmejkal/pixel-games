@@ -1,5 +1,6 @@
-"""Starfire with the stick on the Mac (P872): the crosshair moves at AIM_PX_S * x // 100 px a second (and so for y, up
-reading negative), rests when the stick rests, stops at its bounds with no rest kept, and a shot reads the frame's aim.
+"""Starfire with the stick on the Mac (P872): the crosshair moves at AIM_PX_S * |x| // 100 px a second with the sign of
+x (and so for y, up reading negative), rests when the stick rests, stops at a bound that a step would cross and drops
+its rest there, and a shot reads the frame's aim.
 With no stick the sweep runs as before. Run from the repository root: python3 -B -m unittest tests.test_space3d.
 --- MVP (P872) ---"""
 
@@ -66,6 +67,13 @@ class StarfireStickTest(unittest.TestCase):
         self.assertIs(aim, game.aim)
         frames(game, 1)
         self.assertEqual((CX + 1, CY), game.aim)
+
+    def test_a_tilt_and_its_mirror_move_as_far(self):
+        for x, moved in ((33, 79), (-33, -79), (1, 2), (-1, -2)):  # 240 * 33 // 100 is 79 px a second either way
+            game = playing(x, 0, ms=50)
+            frames(game, 20)  # 1000 ms
+            with self.subTest(x=x):
+                self.assertEqual((CX + moved, CY), game.aim)
 
     def test_it_stops_at_each_bound_with_no_rest_kept(self):
         g = Starfire
