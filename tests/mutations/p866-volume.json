@@ -1,0 +1,62 @@
+[
+ {
+  "file": "tools/box.py",
+  "name": "a step above the top is accepted",
+  "find": "if not re.fullmatch(r\"[0-9]{1,2}\", text) or int(text) > volume.STEPS:",
+  "replace": "if not re.fullmatch(r\"[0-9]{1,2}\", text):"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a step with text around it is accepted",
+  "find": "if not re.fullmatch(r\"[0-9]{1,2}\", text) or int(text) > volume.STEPS:",
+  "replace": "if not re.search(r\"[0-9]{1,2}\", text) or int(re.search(r\"[0-9]{1,2}\", text).group()) > volume.STEPS:"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the top step is refused",
+  "find": "int(text) > volume.STEPS:",
+  "replace": "int(text) >= volume.STEPS:"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "volume N writes but does not reset",
+  "find": "        write_file(self.runner, VOLUME_FILE, str(step))\n        self.runner.run([\"reset\"])\n",
+  "replace": "        write_file(self.runner, VOLUME_FILE, str(step))\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the deploy ignores --volume",
+  "find": "        if self.volume is not None:  # the start step (P866); without --volume the board keeps its own\n",
+  "replace": "        if False:\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a deploy without --volume overwrites the board's step",
+  "find": "        if self.volume is not None:  # the start step (P866); without --volume the board keeps its own\n            write_file(self.runner, VOLUME_FILE, str(self.volume))\n",
+  "replace": "        write_file(self.runner, VOLUME_FILE, str(self.volume))\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "show trusts a malformed file",
+  "find": "            return \"board: volume step %d\" % volume_step(text)\n",
+  "replace": "            return \"board: volume step %s\" % text\n"
+ },
+ {
+  "file": "games/main.py",
+  "name": "the boot ignores the saved step",
+  "find": "    knob = app.open_knob(master, step)\n",
+  "replace": "    knob = app.open_knob(master)\n"
+ },
+ {
+  "file": "games/main.py",
+  "name": "a box with no encoder ignores the saved step",
+  "find": "None if step is None else master(step)",
+  "replace": "None"
+ },
+ {
+  "file": "games/app.py",
+  "name": "the knob starts at the default whatever the step",
+  "find": "    level = volume() if step is None else volume(step)\n",
+  "replace": "    level = volume()\n"
+ }
+]
