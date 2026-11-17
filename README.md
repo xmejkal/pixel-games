@@ -184,6 +184,12 @@ longest N ms, card N ms` when the game is built: from the settle to the game, th
 game's setup, the card's frames during the build, the longest gap between two of them, the build's longest share of
 one frame without the setup, and the longest gap while the card waited for the settle.
 If the board stays dark after a long press of its D14 button, hold D14 for 1 to 2 seconds. That button also switches the board's power off.
+The box reads its inputs through an action map (P851, `games/engine/actions.py`), as Unity's Input System binds one
+action to several inputs: FIRE is BOOT or the joystick's switch, PICK is D14, and the knob's turn steps the volume. So
+a press of the joystick's switch plays as a BOOT press does. The map also reads the joystick's x and y, -100 to 100,
+and no game reads them yet (P872). `app.open_action_map()` builds the map from `pins.py`, with the stick only when the
+pin map names `JOY_X`. The drivers (`buttons.py`, `encoder.py` and `stick.py`) are the package `games/drivers/`, the
+folder `:drivers/` on the board. The `avg` line ends with `input`, the map's poll in ms per frame.
 
 ## Status
 
@@ -299,19 +305,20 @@ Runs now:
   one woody pop per ember, in sync with the sparks, over a low flame roar, from a bank rendered on the Mac
   (`tools/fire_bank.py`), kept in `engine.SoundBank` outside the GC heap. The fastest embers (rise 4 and 5) get larger pops. The fire's sound plays only in the bench probe
   (`probe733_games.py`). The game box plays its own sounds since P768 (see the overlay's status below). Try a change to the C crackle with `tools/crackle.sh`. Since P753, `FireSound` adds integer noise in C (`engine/core/fx_noise.c`): each falling burning body of `BurningBodies` whooshes by its airspeed, and Fire plays the pops alone, because the PO heard the noise bed as wind. Try it with `GAME=BurningBodies tools/crackle.sh 30 FireSound`.
-- The rotary encoder (P758, `games/encoder.py`): `Encoder.on_board(pins.ENC_A, pins.ENC_B, EDGES_PER_DETENT)` reads
+- The rotary encoder (P758, `games/drivers/encoder.py`): `Encoder.on_board(pins.ENC_A, pins.ENC_B, EDGES_PER_DETENT)` reads
   the knob through `machine.Encoder`, the ESP32-S3's pulse counter, so no interrupt runs. `detents()` gives the clicks,
   + one way and - the other. The bench measured 4 edges per click (bench.md, P758). The knob can rest 1 edge from a
   click's border, so a use that must not flicker calls `take_detents(now_ms)`: it has a dead band of 2 edges, and
   its rest point follows the knob. The game box uses the knob for the volume (P764). The encoder sits on the pads RX
-  and TX (`docs/wiring.html`), which the image gives to its serial console at each reset. So `app.py`, `encoder.py`
-  and `pins.py` go on the board together.
+  and TX (`docs/wiring.html`), which the image gives to its serial console at each reset. So `app.py`,
+  `drivers/encoder.py` and `pins.py` go on the board together.
   `encoder.take_pads(pins.ENC_A, pins.ENC_B)` takes them, and `app.run` calls it first.
 - The master volume (P757, `games/volume.py`): `MasterVolume` is one gain on the whole mix, the last step before
   the I2S. It has 16 steps of 3 dB, and step 0 is silent. A change of step ramps across one block, so it does not
   click. Give it to a driver: `CallbackRefill(mixer, i2s, sd, ring_samples, volume)`. `MasterVolume` is plain
   MicroPython (1.2 ms a block). `ViperMasterVolume` (`games/volume_viper.py`) gives the same samples in 0.1 ms.
-  `VolumeKnob(encoder, volume, store)` turns the step, 1 step per click, from `poll(now_ms)` once per frame.
+  `VolumeKnob(volume, store)` turns the step, 1 step per click, from `poll(now_ms, turned)` once per frame, with the
+  clicks the action map read (P851).
   `VolumeStore` keeps the step in `volume.txt`, and the knob saves it 3 s after the last turn. The save is off in the
   probe by default: each 37th save takes 2.4 s and stops the sound (bench.md, P757). The fix is a later card.
   Status: the gain works, and the knob turns it on the pads RX (GA, GPIO44) and TX (GB, GPIO43). On the first

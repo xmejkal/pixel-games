@@ -1748,3 +1748,21 @@ than the control.
   172,032 B, and 206,288 B free after the viper modules: the 0b-2 baseline.
 - The collector's idle time: 0.3 ms at boot and after the package, 37.6 ms after every game module is imported. A
   lead for flappy's lower fps with all 15 games loaded (P856 above) and for the late sound refills (P858).
+
+## P851 (#1215), 2026-11-17: the joystick through the action map
+
+- What the box gave before this card (the PO's box, 2026-11-17, from P851's plan; no log in `logs/`): each axis with
+  `ADC(Pin(n), atten=ADC.ATTN_11DB).read_u16()` went from 0 to 65535 and rested about 33000, between 32391 and 33688.
+  A pad with no stick on it swept 0 to 40000, so no read says whether a stick is there: `app.open_action_map` takes the
+  stick when `pins.py` names `JOY_X`. `drivers/stick.py` keeps the center fixed at 32768 and reads 0 within
+  `DEAD_ZONE` (1024) of it, over the rest's 920 at most.
+- The rest sample leaves `DEAD_ZONE` 104 counts over its 920: one sample, not a margin measured over many.
+- The switch is polled with the 20 ms debounce, not counted in a pin interrupt: a tap shorter than about one frame
+  (40 ms or more) can fall between two reads and is lost, and a press is seen one frame after BOOT's would be.
+- The directions (logs/p851-stick-directions.log): the PO's module sits turned 90 degrees on the breadboard. Up read
+  `JOY_X` low for 7 s; left read `JOY_Y` high and right read it low. So `SWAP_AXES` is True, `X_SIGN` is -1 and
+  `Y_SIGN` is 1: left and up read negative. In run 1 the push meant as up read `JOY_X` high, against run 2's clear
+  hold; run 2 is kept.
+- Not measured yet, P851's board step: the switch's 10 presses counted as 10, with some quick taps among them, the map's poll in the
+  `avg` line's `input`, and the `heap` line staying flat with the poll on (the poll allocates nothing by a reading of
+  the code, not by a measurement).

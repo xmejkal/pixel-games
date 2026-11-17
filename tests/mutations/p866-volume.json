@@ -56,7 +56,7 @@
  {
   "file": "games/app.py",
   "name": "the knob starts at the default whatever the step",
-  "find": "    level = volume() if step is None else volume(step)\n",
-  "replace": "    level = volume()\n"
+  "find": "    return VolumeKnob(volume() if step is None else volume(step))\n",
+  "replace": "    return VolumeKnob(volume())\n"
  }
 ]

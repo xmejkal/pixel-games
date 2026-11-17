@@ -17,9 +17,12 @@ BUILD_CHUNKS more (Lineup.game_steps, pictures.load_steps) while the card shows 
 next game; a BOOT press goes nowhere. start() and switch() still build at once.
 The rotary encoder is the volume's knob (P764): each turn shows the volume over the game for 1 s (overlay.VolumePane).
 The step is not saved. App(knob=None) has no volume pane.
+The App reads its inputs through an action map (P851, engine.actions): each frame polls it once, and FIRE (BOOT, and
+the joystick's switch when pins names the stick) plays, PICK (D14) picks, and the knob's turn steps the volume. The
+stick's x and y are in the map, and no game reads them yet (P872). open_action_map builds the map from the pin map.
 The sound (P768): a game emits signals (signals.Signals), and SoundCues plays the game's cues on the Speaker's mixer.
-main.py, the composition root (P850), builds the knob and the Speaker from the versions it chose. run() with no
-speaker is the silent box, and with no knob it has no volume pane.
+main.py, the composition root (P850), builds the knob and the Speaker from the versions it chose, and the action map.
+run() with no speaker is the silent box, with no knob it has no volume pane, and with no action map it opens its own.
 
 run() prints `lineup <n>: <names>` and `import <ms> ms` (how long this module's own imports took), then `ready` once
 the display is set up, then `pick <name>` at each D14 press, and `game <name>` with
@@ -40,8 +43,6 @@ import time
 
 STARTED = time.ticks_ms() if hasattr(time, "ticks_ms") else 0  # for run()'s import line; CPython has no ticks (P817)
 
-import buttons
-import encoder
 import gdi
 import gfx
 import pictures
@@ -50,6 +51,8 @@ from bank import Bank
 from box_bank import BOX_BANK_INDEX
 from catalog import NAMES, ROWS, lineup_fault
 from cues import SoundCues
+from drivers import encoder
+from engine.actions import ActionMap
 from engine.signals import Signals
 from lcd import open_tft
 from overlay import Overlay, VolumePane
@@ -161,7 +164,7 @@ def say_lineup(games):
 
 
 class App:
-    """Owns the display, the two buttons and the current game. frame() is one pass of the loop."""
+    """Owns the display, the action map and the current game. frame() is one pass of the loop."""
 
     # --- MVP (P822) --- the build behind the card, from a settle until its game plays
     steps = None  # its steps (Lineup.game_steps), or None when no build runs
@@ -170,12 +173,11 @@ class App:
     longest = 0  # us: the build's longest share of one frame, its game's setup not in it
     card_us = 0  # us: the longest gap between two frame starts while the card waited for the settle: the baseline
 
-    def __init__(self, display, read_fire, read_boot, games, full=False, gc_floor=0, out=None, knob=None,
-                 cues=None):
+    def __init__(self, display, action_map, games, full=False, gc_floor=0, out=None, knob=None, cues=None):
         self.display = display
         self.games = games if isinstance(games, Lineup) else Lineup.of(games)  # a Lineup, or a tuple of classes
-        self.fire = buttons.Button(read_fire, buttons.BOOT_BUTTON_ON)  # BOOT plays: holding it is safe once running
-        self.boot = buttons.Button(read_boot, pins.ONBOARD_BUTTON_ON)  # D14 picks: a long hold powers the board off
+        self.action_map = action_map  # --- MVP (P851) --- an engine.actions.ActionMap: FIRE plays, PICK picks
+        self.input_us = 0  # --- MVP (P851) --- the map's polls this interval: the avg line's input
         self.out = out or StOut(display, full)
         self.frames, self.mark, self.us, self.state, self.gc_floor = 0, 0, [0, 0, 0, 0], 0, gc_floor
         self.index = len(games) - 1
@@ -238,8 +240,7 @@ class App:
             self.cues.music()
         self.out.reset()
         self.new_interval()
-        self.fire.forget()  # --- MVP (P818) --- a press during start()'s or switch()'s build was for a frozen screen
-        self.boot.forget()
+        self.action_map.forget()  # --- MVP (P818) --- a press during a build was for a frozen screen
         print("game", game.name)
 
     # --- MVP (P822) ---
@@ -284,7 +285,7 @@ class App:
 
     def new_interval(self):
         """The fps and time lines count from now."""
-        self.frames, self.mark, self.us = 0, time.ticks_ms(), [0, 0, 0, 0]
+        self.frames, self.mark, self.us, self.input_us = 0, time.ticks_ms(), [0, 0, 0, 0], 0
         self.last, self.worst, self.slow = time.ticks_us(), 0, [0, 0, 0, 0, 0]  # the longest gap between two frame starts: a freeze shows here
 
     def new_game(self):
@@ -320,9 +321,12 @@ class App:
         self.worst, self.last = max(self.worst, time.ticks_diff(t0, self.last)), t0
         before = us[:]
         now = time.ticks_ms()
-        pressed, switched = self.fire.update(now), self.boot.update(now) and len(self.games) > 1  # Input; one game: no pick
+        t = time.ticks_us()
+        actions = self.action_map.poll(now)  # Input (P851): every binding, the knob and the stick, once
+        self.input_us += time.ticks_diff(time.ticks_us(), t)
+        pressed, switched = actions.fire.pressed, actions.pick.pressed and len(self.games) > 1  # one game: no pick
         if self.knob:
-            self.knob.poll(now)  # --- MVP (P764) ---
+            self.knob.poll(now, actions.turn)  # --- MVP (P764) ---
         settled = self.steps is None and isinstance(self.game, NameCard) and (
             pressed or time.ticks_diff(now, self.game.at) >= SETTLE_MS)  # a card during its build never settles again
         built = False
@@ -333,7 +337,7 @@ class App:
         elif self.steps is not None:
             built = self.build_frame()  # --- MVP (P822) --- in place of the game's step; a BOOT press goes nowhere
         else:
-            self.game.step(now, pressed, self.fire.held)  # FixedUpdate, Update, LateUpdate
+            self.game.step(now, pressed, actions.fire.held)  # FixedUpdate, Update, LateUpdate
         if switched or settled or built:  # the new interval's stages: a build's time is not this frame's
             us, t0, before = self.us, time.ticks_us(), self.us[:]
         self.overlay.update(now)  # after the switch, so a turn shows in this frame and a pane sees this frame's game
@@ -364,11 +368,13 @@ class App:
                 + tuple(x // 1000 for x in self.slow)))
             print("phases %s static %d paint %d fx %d hud %d over %d title %d" % ((game.name,) + tuple(x // 1000 for x in gfx.PHASES)))
             gfx.PHASES[:] = [0] * 6
-            print("avg %s static %.1f paint %.1f fx %.1f hud %.1f over %.1f title %.1f" % ((game.name,) + tuple(x / n for x in gfx.PHASE_SUM)))
+            print("avg %s static %.1f paint %.1f fx %.1f hud %.1f over %.1f title %.1f input %.1f" % (  # input: P851
+                (game.name,) + tuple(x / n for x in gfx.PHASE_SUM) + (self.input_us / n,)))  # the map's poll
             gfx.PHASE_SUM[:] = [0] * 6
             # Once per interval: does the heap fill during play? (P533 run 16; gc.mem_alloc costs about 20 ms per MB)
             print("heap %s alloc %d glyphs %d" % (game.name, gc.mem_alloc(), len(gfx.GLYPHS)))
-            self.frames, self.mark, self.us, self.worst, self.slow = 0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0]
+            self.frames, self.mark, self.us, self.worst, self.slow, self.input_us = (
+                0, now, [0, 0, 0, 0], 0, [0, 0, 0, 0, 0], 0)
 
 
 # --- MVP (P818) ---
@@ -420,20 +426,55 @@ def open_st7789():
     return display, FRAME_MODE == "full" or (FRAME_MODE == "auto" and free > FULL_FRAME_FREE)
 
 
-# --- MVP (P764) ---
-def open_knob(volume, step=None):
-    """The rotary encoder as the volume's knob, or None when this image has no machine.Encoder. volume: the master
-    volume's class that main.py chose (P850): the sound's callback applies it, and the viper scale takes 116 us a block,
-    the plain one 1220 us. step: the start step, read from :volume.txt by main.compose (P866), or None for the
-    volume's default. The step is not saved: a file save now and then stalled the loop for 2.4 s (bench.md, P764)."""
+def has_encoder():
+    """Whether this image has machine.Encoder, the pulse counter the knob needs (P764)."""
     try:
         import machine
 
         machine.Encoder
     except (ImportError, AttributeError):
+        return False
+    return True
+
+
+# --- MVP (P764) ---
+def open_knob(volume, step=None):
+    """The volume's knob, or None when this image has no machine.Encoder: the action map turns it (open_action_map
+    builds the encoder, P851). volume: the master volume's class that main.py chose (P850): the sound's callback applies
+    it, and the viper scale takes 116 us a block, the plain one 1220 us. step: the start step, read from :volume.txt by
+    main.compose (P866), or None for the volume's default. The step is not saved: a file save now and then stalled the
+    loop for 2.4 s (bench.md, P764)."""
+    if not has_encoder():
         return None
-    level = volume() if step is None else volume(step)
-    return VolumeKnob(encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), level)
+    return VolumeKnob(volume() if step is None else volume(step))
+
+
+# --- MVP (P851) ---
+def open_action_map():
+    """The box's action map from the pin map: FIRE is BOOT, and the joystick's switch when pins names the stick; PICK is
+    D14; the knob's encoder when this image has machine.Encoder; the stick when pins names JOY_X. The stick is there
+    because the pin map names it, a fact: a pad with no stick floats (it swept 0 to 40000 on the bench), so no read can
+    tell. BOOT and D14 count their pushes in a pin interrupt (Button.watch). The stick's switch is polled with the
+    20 ms debounce: the edge count takes a bounce seen late as a push (drivers/buttons.py, update)."""
+    from machine import Pin
+
+    from drivers import buttons
+
+    # D14 also drives the power chip's PWRON (boards/firebeetle2-esp32s3.json, hardware_revisions, V1.1 and earlier):
+    # held about 5 s, it powered the board off on 2026-11-02. So BOOT is the game button and D14 only a short press.
+    boot_pin, d14_pin = Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP), Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP)
+    boot = buttons.Button(boot_pin.value, buttons.BOOT_BUTTON_ON)  # BOOT plays: holding it is safe once running
+    d14 = buttons.Button(d14_pin.value, pins.ONBOARD_BUTTON_ON)  # D14 picks: a long hold powers the board off
+    boot.watch(boot_pin)
+    d14.watch(d14_pin)
+    fire, stick = (boot,), None
+    if hasattr(pins, "JOY_X"):
+        from drivers import stick as joystick
+
+        stick = joystick.Stick.on_board(pins.JOY_X, pins.JOY_Y)
+        fire = (boot, buttons.Button(Pin(pins.JOY_SW, Pin.IN, Pin.PULL_UP).value, joystick.SWITCH_ON))
+    knob = encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT) if has_encoder() else None
+    return ActionMap(fire, (d14,), knob, stick)
 
 
 def read_console(console, stdin):
@@ -445,15 +486,14 @@ def read_console(console, stdin):
         stdin.buffer.read(1)
 
 
-def run(games=None, knob=None, speaker=None):
+def run(games=None, knob=None, speaker=None, action_map=None):
     """The loop main.py starts. games: a Lineup, a tuple of classes (a probe's), or None for the board's lineup
-    (read_lineup). knob: the VolumeKnob main.compose() built (P850), or None for a box with no knob: run opens none of
-    its own, so two encoders never share the counter unit. speaker: a Speaker that run() opens after the first game's
-    setup, or None for the silent box (P768)."""
+    (read_lineup). knob: the VolumeKnob main.compose() built (P850), or None for a box with no knob. speaker: a Speaker
+    that run() opens after the first game's setup, or None for the silent box (P768). action_map: the ActionMap
+    main.py built with open_action_map (P851), or None, a probe's run: then run opens it. Only the map opens the
+    encoder, so two encoders never share the counter unit."""
     import select
     import sys
-
-    from machine import Pin
 
     encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first: until here a turn of the knob can type into the console (P757).
     # main.py took them at boot already (P850); a probe's run may come without; a second take sets the same pull-ups
@@ -469,9 +509,6 @@ def run(games=None, knob=None, speaker=None):
         print("backend st7789")
         display, full = open_st7789()
         print("frame", "full" if full else "bands")
-    # D14 also drives the power chip's PWRON (boards/firebeetle2-esp32s3.json, hardware_revisions, V1.1 and earlier):
-    # held about 5 s, it powered the board off on 2026-11-02. So BOOT is the game button and D14 only a short press.
-    fire, boot = Pin(buttons.BOOT_BUTTON, Pin.IN, Pin.PULL_UP), Pin(pins.ONBOARD_BUTTON, Pin.IN, Pin.PULL_UP)
     cues = None
     if speaker:  # --- MVP (P768) ---
         try:
@@ -479,11 +516,10 @@ def run(games=None, knob=None, speaker=None):
         except (OSError, ValueError) as e:  # no bank on the board, or a short one: the silent box
             print("sound off:", repr(e))
             speaker = None
-    app = App(display, fire.value, boot.value, games=Lineup(read_lineup()) if games is None else games, full=full and not out, gc_floor=GC_FLOOR if full else 0, out=out, knob=knob,
-              cues=cues)
+    app = App(display, open_action_map() if action_map is None else action_map,
+              games=Lineup(read_lineup()) if games is None else games, full=full and not out,
+              gc_floor=GC_FLOOR if full else 0, out=out, knob=knob, cues=cues)
     say_lineup(app.games)  # --- MVP (P817) ---
-    app.fire.watch(fire)
-    app.boot.watch(boot)
     if full:
         gc.disable()
     console = select.poll()

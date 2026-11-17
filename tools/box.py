@@ -17,11 +17,12 @@ engine beside _engine, one that lacks a name the games need of _engine (Bodies, 
 HeatField.cool) and an answer it does not know; a firmware with no C module deploys, as the stock image.
 Then it makes :packs when the board has none, compiles games/*.py but main.py with mpy-cross into .mpy files (they import in
 about half the time of a .py), copies them with games/main.py and games/box_bank.raw (the sound bank) to : and removes
-each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). The package games/engine/
-goes the same way into the folder :engine/ (P849), made when the board has none, each traceback naming
-engine/<module>.py, and each .py or .mpy in that folder that is not the package's goes. Then the .py and .mpy of each
-flat module that moved into the package (MOVED) go from the root, after the package is copied, so a failed copy leaves
-the old module; any other file at the root stays, the board's boot.py among them. It copies the crackle,
+each :<module>.py that now has an .mpy (the board runs a .py before an .mpy of the same name). Each package of PACKAGES,
+games/engine/ (P849) and games/drivers/ (P851), goes the same way into its folder, :engine/ or :drivers/, made when the
+board has none, each traceback naming engine/<module>.py or drivers/<module>.py, and each .py or .mpy in that folder
+that is not the package's goes. Then the .py and .mpy of each flat module that moved into a package (MOVED) go from the
+root, after the packages are copied, so a failed copy leaves the old module; any other file at the root stays, the
+board's boot.py among them. It copies the crackle,
 engine/natmod/crackle/_crackle.mpy (tools/crackle.sh builds it), to :_crackle.mpy, or says none is copied when it is
 not built; the board's crackle_c.mpy stays, for a flash of the rollback image. It copies each pack the
 lineup needs to :packs (mpremote skips a file whose sha256 is the same), writes :lineup.py and hard-resets the board
@@ -30,10 +31,10 @@ REFERENCE = "all" to :engine_config.py, `--engine reference=volume` (or referenc
 reads it at boot and its `engine` line says what it chose, such as `engine sum=viper volume=reference(forced)
 native=_engine,_crackle.mpy`, with a forced name no part used at its end as unused=<name>. A deploy without --engine
 removes :engine_config.py, so a forced setting lasts one deploy. A malformed value is refused before any command.
---py copies games/*.py and games/engine/*.py instead and removes the board's .mpy files of those modules (_crackle.mpy
-and crackle_c.mpy stay). deploy --all copies every game and pack and removes :lineup.py when the board has one.
---dry-run prints each command and runs none, mpy-cross included, as for a board with no :packs, no :engine, no
-:lineup.py, no :engine_config.py and no old .py or .mpy files, and never refuses the firmware. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
+--py copies games/*.py, games/engine/*.py and games/drivers/*.py instead and removes the board's .mpy files of those
+modules (_crackle.mpy and crackle_c.mpy stay). deploy --all copies every game and pack and removes :lineup.py when
+the board has one. --dry-run prints each command and runs none, mpy-cross included, as for a board with no :packs, no
+:engine, no :drivers, no :lineup.py, no :engine_config.py and no old .py or .mpy files, and never refuses the firmware. The .mpy files fit MicroPython v1.29's mpy v6.3: after a flash of another MicroPython, deploy
 again (or with --py). mpy-cross: pip install mpy-cross==1.29.0.post2.
 log: resets the board itself (a hard reset, trying again while the board still reboots from a deploy), then prints
 its console for N seconds (20 by default), opening the port again while USB comes back: the `engine`, `lineup`,
@@ -68,8 +69,9 @@ FLASH = "flash the image of ./build.sh engine first (README, Build and run)"
 NO_ANSWER = "the board did not answer: close any mpremote or log session, press reset, and deploy again"
 ENGINE_LINES = (["engine", "ImportError"], ["engine", "Bodies", "no"], ["engine", "Bodies", "yes"])
 CRACKLE = "engine/natmod/crackle/_crackle.mpy"  # the crackle's native module, as tools/crackle.sh builds it (P848)
-PACKAGES = ("engine",)  # the folders of games/ that go to the board as folders of the same name (P849)
-MOVED = ("signals",)  # flat modules that moved into a package: the deploy removes their .py and .mpy at the root (P849)
+PACKAGES = ("engine", "drivers")  # the folders of games/ that go to the board as folders of the same name (P849, P851)
+MOVED = ("signals", "buttons", "encoder")  # flat modules that moved into a package: the deploy removes their .py and
+# .mpy at the root (P849; buttons and encoder into drivers, P851)
 ENGINE_VALUE = re.compile(r"reference(=[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)*)?")  # --engine's whole value (P850)
 ENGINE_USAGE = "--engine takes reference or reference=PART[,PART...], each PART a lower-case name: got %r"
 

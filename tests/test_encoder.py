@@ -1,5 +1,5 @@
-"""games/encoder.py on the Mac (P758, P757): detents from a fake pulse counter, and the pin map's names. No board.
-Run from the repository root: python3 -m unittest discover tests. --- MVP (P758, P757) ---"""
+"""games/drivers/encoder.py on the Mac (P758, P757; in drivers/ since P851): detents from a fake pulse counter, and the
+pin map's names. No board. Run from the repository root: python3 -m unittest discover tests. --- MVP (P758, P757) ---"""
 
 import os
 import sys
@@ -15,7 +15,7 @@ if not hasattr(time, "ticks_diff"):  # the same three as tests/test_sound.py, wh
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import pins  # noqa: E402
-from encoder import REST_MS, Encoder, take_pads  # noqa: E402
+from drivers.encoder import REST_MS, Encoder, take_pads  # noqa: E402
 
 
 class FakeCounter:

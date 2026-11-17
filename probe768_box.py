@@ -66,7 +66,8 @@ class Probe:
         """The probe's presses, added to the button's own."""
         import gfx
 
-        update = box.fire.update
+        boot = box.action_map.fire_bindings[0]  # BOOT, FIRE's first binding (P851)
+        update = boot.update
 
         def pressing(now):
             pressed, game = update(now), box.game
@@ -79,7 +80,7 @@ class Probe:
                 self.presses += 1
             return pressed or auto
 
-        box.fire.update = pressing
+        boot.update = pressing
 
     def after(self, box, now):
         if self.start is None:

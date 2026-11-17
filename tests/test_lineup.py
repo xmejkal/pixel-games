@@ -29,6 +29,7 @@ import app  # noqa: E402
 import art_index  # noqa: E402
 import catalog  # noqa: E402
 import pictures  # noqa: E402
+from engine.actions import ActionMap  # noqa: E402  no button pressed (P851)
 
 GAME_MODULES = sorted({row[1] for row in catalog.CATALOG})
 
@@ -155,7 +156,7 @@ class LineupTest(unittest.TestCase):
             def reset(self):
                 pass
         with contextlib.redirect_stdout(io.StringIO()):
-            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup(("cave", "road")), out=Out())
+            box = app.App(None, ActionMap((), ()), games=app.Lineup(("cave", "road")), out=Out())
             box.start()
         self.assertEqual("cave", box.game.name)
         self.assertEqual(2, len(box.games))
@@ -185,7 +186,7 @@ class MissingModuleTest(unittest.TestCase):
 
     def test_the_box_refuses_it_aloud_and_builds_the_next_game(self):
         with mock.patch.dict(catalog.ROWS, self.GHOST), contextlib.redirect_stdout(io.StringIO()) as said:
-            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup(("ghost", "cave")), out=Out())
+            box = app.App(None, ActionMap((), ()), games=app.Lineup(("ghost", "cave")), out=Out())
             box.start()
             self.assertEqual(("cave", 1), (box.game.name, box.index))
             box.switch()
@@ -197,7 +198,7 @@ class MissingModuleTest(unittest.TestCase):
 
     def test_when_every_game_fails_the_error_is_raised_once(self):
         with mock.patch.dict(catalog.ROWS, self.GHOST), contextlib.redirect_stdout(io.StringIO()) as said:
-            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup(("ghost",)), out=Out())
+            box = app.App(None, ActionMap((), ()), games=app.Lineup(("ghost",)), out=Out())
             with self.assertRaises(ImportError):
                 box.start()
         self.assertEqual(1, said.getvalue().count("game ghost refused"))
@@ -224,7 +225,7 @@ class BrokenSetupTest(unittest.TestCase):
         with mock.patch.object(pictures, "free", side_effect=lambda: (calls.append("free"), free())), \
                 mock.patch.object(app.gc, "collect", side_effect=lambda: calls.append("collect")), \
                 contextlib.redirect_stdout(io.StringIO()) as said:
-            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup.of((Broken, app.games_for(("cave",))[0])),
+            box = app.App(None, ActionMap((), ()), games=app.Lineup.of((Broken, app.games_for(("cave",))[0])),
                           out=Out())
             box.start()
         self.assertEqual(("cave", 1), (box.game.name, box.index))
@@ -236,7 +237,7 @@ class BrokenSetupTest(unittest.TestCase):
     def test_an_mpy_of_another_build_is_refused_too(self):
         Broken, _ = self.broken(ValueError("incompatible .mpy file"))
         with contextlib.redirect_stdout(io.StringIO()) as said:
-            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup.of((Broken, app.games_for(("cave",))[0])),
+            box = app.App(None, ActionMap((), ()), games=app.Lineup.of((Broken, app.games_for(("cave",))[0])),
                           out=Out())
             box.start()
         self.assertEqual("cave", box.game.name)
@@ -247,7 +248,7 @@ class BrokenSetupTest(unittest.TestCase):
         Last, _ = self.broken(ValueError("last"))
         Last.name = "last"
         with contextlib.redirect_stdout(io.StringIO()) as said:
-            box = app.App(None, lambda: 1, lambda: 1, games=app.Lineup.of((First, Last)), out=Out())
+            box = app.App(None, ActionMap((), ()), games=app.Lineup.of((First, Last)), out=Out())
             with self.assertRaises(ValueError):
                 box.start()
         self.assertEqual(1, said.getvalue().count("game broken refused: MemoryError()"))

@@ -37,12 +37,46 @@ class FakeEncoder:
     pass
 
 
+class Pin:
+    """machine.Pin as open_action_map uses it (P851): a level of 1, the pull-up's, and an interrupt it keeps."""
+
+    IN, PULL_UP, IRQ_FALLING, IRQ_RISING = 1, 2, 3, 4
+
+    def __init__(self, number, mode=None, pull=None):
+        self.number, self.pull, self.handler = number, pull, None
+
+    def value(self):
+        return 1
+
+    def irq(self, handler, trigger):
+        self.handler = handler
+
+
+class ADC:
+    """machine.ADC as drivers.stick uses it: the stick at rest."""
+
+    ATTN_11DB = 3
+
+    def __init__(self, pin, atten=None):
+        self.pin, self.atten = pin, atten
+
+    def read_u16(self):
+        return 32768
+
+
+def stand_in_machine(encoder=None):
+    """A machine module with Pin and ADC, and Encoder when encoder is given."""
+    machine = types.ModuleType("machine")
+    machine.Pin, machine.ADC = Pin, ADC
+    if encoder is not None:
+        machine.Encoder = encoder
+    return machine
+
+
 @contextlib.contextmanager
 def a_board_with_an_encoder():
     """machine.Encoder exists, and Encoder.on_board answers a fake encoder."""
-    machine = types.ModuleType("machine")
-    machine.Encoder = object
-    with mock.patch.dict(sys.modules, {"machine": machine}), \
+    with mock.patch.dict(sys.modules, {"machine": stand_in_machine(object)}), \
             mock.patch.object(app.encoder.Encoder, "on_board", classmethod(lambda cls, *a, **k: FakeEncoder())):
         yield
 
@@ -84,7 +118,7 @@ class ComposeTest(NoNative):
         with a_board_with_an_encoder():
             knob, speaker, _ = composed()
             self.assertIs(ViperMasterVolume, type(knob.volume))
-            self.assertIsInstance(knob.encoder, FakeEncoder)
+            self.assertIsInstance(app.open_action_map().encoder, FakeEncoder)  # the map turns the knob (P851)
             knob, speaker, _ = composed(("volume",))
             self.assertIs(volume.MasterVolume, type(knob.volume))
 
@@ -120,6 +154,38 @@ class ComposeTest(NoNative):
     def test_the_twins_of_the_choose_calls_are_the_classes_the_twin_tests_compare(self):
         self.assertIs(ViperVoiceSum, main.viper_sum())
         self.assertIs(ViperMasterVolume, main.viper_volume())
+
+
+class OpenActionMapTest(unittest.TestCase):
+    """app.open_action_map builds the box's action map from the pin map (P851)."""
+
+    def opened(self, encoder=None):
+        with mock.patch.dict(sys.modules, {"machine": stand_in_machine(encoder)}):
+            return app.open_action_map()
+
+    def test_fire_is_boot_and_the_stick_s_polled_switch_and_pick_is_d14(self):
+        actions = self.opened()
+        boot, switch = actions.fire_bindings
+        (d14,) = actions.pick_bindings
+        self.assertEqual((True, True, False), (boot.watched, d14.watched, switch.watched))  # the switch: 20 ms debounce
+        self.assertEqual((0, 0, 0), (boot.pressed_level, d14.pressed_level, switch.pressed_level))
+        stick = actions.stick
+        from drivers import stick as joystick
+
+        across = (app.pins.JOY_Y, app.pins.JOY_X) if joystick.SWAP_AXES else (app.pins.JOY_X, app.pins.JOY_Y)
+        self.assertEqual(across, (stick.adc_x.pin.number, stick.adc_y.pin.number))  # x moves with left and right
+        self.assertEqual((ADC.ATTN_11DB, ADC.ATTN_11DB), (stick.adc_x.atten, stick.adc_y.atten))
+
+    def test_a_pin_map_with_no_stick_binds_boot_alone(self):
+        with mock.patch.object(app, "pins", types.SimpleNamespace(
+                **{k: v for k, v in vars(app.pins).items() if not k.startswith("JOY_")})):
+            actions = self.opened()
+        self.assertEqual((1, 1, None), (len(actions.fire_bindings), len(actions.pick_bindings), actions.stick))
+
+    def test_the_encoder_only_with_machine_encoder(self):
+        self.assertIsNone(self.opened().encoder)
+        with mock.patch.object(app.encoder.Encoder, "on_board", classmethod(lambda cls, *a, **k: FakeEncoder())):
+            self.assertIsInstance(self.opened(object).encoder, FakeEncoder)
 
 
 class Saved:
@@ -214,14 +280,16 @@ class BootTest(NoNative):
         def run(**parts):
             runs.append((said.getvalue(), parts))
 
-        with mock.patch.object(app, "run", run), mock.patch.dict(sys.modules, {"engine_config": None}), \
+        with mock.patch.object(app, "run", run), \
+                mock.patch.dict(sys.modules, {"engine_config": None, "machine": stand_in_machine()}), \
                 mock.patch.object(app.encoder, "take_pads", stand_in_pads), contextlib.redirect_stdout(said):
             runpy.run_path(os.path.join(GAMES, "main.py"), run_name="__main__")
         self.assertEqual(1, len(runs))
         printed, parts = runs[0]
         self.assertEqual("engine sum=viper volume=viper native=none\n", printed)
-        self.assertEqual(["knob", "speaker"], sorted(parts))
+        self.assertEqual(["action_map", "knob", "speaker"], sorted(parts))
         self.assertIsNone(parts["knob"])
+        self.assertIsNone(parts["action_map"].encoder)  # no machine.Encoder: no knob, no encoder (P851)
         self.assertIs(ViperVoiceSum, type(parts["speaker"].mixer.sum))
 
     def test_the_boot_takes_the_knob_s_pads_before_anything_else(self):
@@ -233,8 +301,7 @@ class BootTest(NoNative):
             def __init__(self, *args, **kw):
                 events.append("Encoder")
 
-        machine = types.ModuleType("machine")
-        machine.Encoder = Counter
+        machine = stand_in_machine(Counter)
         with mock.patch.dict(sys.modules, {"machine": machine, "engine_config": None, "app": None}), \
                 mock.patch.object(app.encoder, "take_pads",
                                   lambda a, b: events.append(("take_pads", a, b, said.getvalue())) or (a, b)), \
@@ -258,6 +325,7 @@ class BootTest(NoNative):
         said = io.StringIO()
         runs = []
         with config('REFERENCE = ("sum", "heat")  # tools/box.py deploy --engine\n'), \
+                mock.patch.dict(sys.modules, {"machine": stand_in_machine()}), \
                 mock.patch.object(app, "run", lambda **parts: runs.append(parts)), \
                 mock.patch.object(app.encoder, "take_pads", stand_in_pads), contextlib.redirect_stdout(said):
             runpy.run_path(os.path.join(GAMES, "main.py"), run_name="__main__")

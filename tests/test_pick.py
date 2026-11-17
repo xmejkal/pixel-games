@@ -25,6 +25,8 @@ import gfx  # noqa: E402
 import pictures  # noqa: E402
 import sound  # noqa: E402
 import volume  # noqa: E402
+from drivers import buttons  # noqa: E402
+from engine.actions import ActionMap  # noqa: E402
 
 BUILT = []  # each counting game's name, as it is built
 
@@ -70,19 +72,44 @@ class SlowOut(Out):
         super().draw(game, us, overlay)
 
 
+class Pressed:
+    """A driver button the test presses (P851): update(now) is True in a frame the test presses it, or once after a push
+    that push() counted as the pin interrupt counts it, unless forget() dropped that push first. held stays as a test
+    sets it (False: Box presses, it never holds)."""
+
+    def __init__(self, pressed):
+        self.pressed, self.held, self.pushes = pressed, False, 0
+
+    def update(self, now_ms):
+        pushed, self.pushes = self.pressed() or self.pushes > 0, 0
+        return pushed
+
+    def forget(self):
+        self.pushes = 0
+
+    def push(self):
+        self.pushes += 1
+
+
 class Box:
     """An App on a clock the test sets, with D14 and BOOT pressed when the test says."""
 
-    def __init__(self, games=GAMES, out=None, **kw):
+    def __init__(self, games=GAMES, out=None, encoder=None, **kw):
         self.ms, self.d14, self.boot = 0, False, False
+        self.boot_button, self.d14_button = Pressed(lambda: self.boot), Pressed(lambda: self.d14)
         self.clock = mock.patch.object(app.time, "ticks_ms", lambda: self.ms)
         self.clock.start()
         self.said = io.StringIO()
+        action_map = ActionMap((self.boot_button,), (self.d14_button,), encoder)  # encoder: the knob's, or None
         with contextlib.redirect_stdout(self.said):
-            self.app = app.App(None, lambda: 99, lambda: 99, games=games, out=out or Out(), **kw)
-            self.app.fire.update = lambda now: self.boot
-            self.app.boot.update = lambda now: self.d14
+            self.app = app.App(None, action_map, games=games, out=out or Out(), **kw)
             self.app.start()
+
+    def push_during_build(self):
+        """A push of BOOT and of D14 now, counted as the pin interrupt counts it: a game's setup calls it, while the box
+        is frozen in a build (P851)."""
+        self.boot_button.push()
+        self.d14_button.push()
 
     def frame(self, ms, d14=False, boot=False):
         self.ms, self.d14, self.boot = ms, d14, boot
@@ -238,16 +265,16 @@ class ReviewTest(unittest.TestCase):
             steps = []
 
             def setup(self):  # a press of each button while the box is frozen in the build
-                if holder:
-                    holder[0].boot.pushes += 1
-                    holder[0].fire.pushes += 1
+                for button in holder:
+                    button.pushes += 1
 
             def step(self, now_ms, pressed, held):
                 self.steps.append(pressed)
 
-        box = app.App(None, lambda: 99, lambda: 99, games=(Pushy, GAMES[0]), out=Out())
-        holder.append(box)
-        box.boot.watched = box.fire.watched = True  # pushes counted as the pin interrupt counts them
+        boot, d14 = buttons.Button(lambda: 99, buttons.BOOT_BUTTON_ON), buttons.Button(lambda: 99, 0)
+        box = app.App(None, ActionMap((boot,), (d14,)), games=(Pushy, GAMES[0]), out=Out())
+        holder.extend((boot, d14))
+        d14.watched = boot.watched = True  # pushes counted as the pin interrupt counts them
         with contextlib.redirect_stdout(io.StringIO()) as said:
             box.start()
             box.frame()
@@ -289,6 +316,95 @@ class ReviewTest(unittest.TestCase):
         with mock.patch.object(box.app, "collect") as collect:
             box.frame(10, d14=True)
         collect.assert_not_called()
+
+
+class Played(gfx.Game):
+    """A game that keeps gfx.Game's states (TITLE, then PLAY at a press) and plays nothing (P851)."""
+
+    name = "played"
+
+    def play(self, pressed, held):
+        pass
+
+
+PUSHING = []  # the Box whose push_during_build a Pushing game's setup calls
+
+
+class Pushing(Played):
+    """Played, whose setup pushes BOOT and D14 while the box is frozen in its build (P851)."""
+
+    name = "pushing"
+
+    def setup(self):
+        if PUSHING:
+            PUSHING[0].push_during_build()
+
+
+class CharacterizationTest(unittest.TestCase):
+    """The presses around a pick and a build, through Box.frame alone, written on the code before the action map
+    (P851) so the map keeps them: only the game, switch and pick lines and the App's state are asserted."""
+
+    def setUp(self):
+        BUILT.clear()
+        self.addCleanup(PUSHING.clear)
+
+    def box(self, games):
+        box = Box.__new__(Box)  # in PUSHING before start(): the first game's setup may push
+        PUSHING.append(box)
+        Box.__init__(box, games)
+        self.addCleanup(box.close)
+        return box
+
+    def said(self, box):
+        return box.lines("game"), len(box.lines("switch")), box.lines("pick")
+
+    def test_boot_pressed_in_every_build_frame_reaches_no_game(self):
+        box = self.box(Stepped((GAMES[0], Played), 3 * app.BUILD_CHUNKS))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        game = box.app.game
+        while isinstance(game, app.NameCard):
+            game = box.frame(box.ms + app.FRAME_MS, boot=True)
+        self.assertEqual((["game a", "game played"], 2, ["pick played"]), self.said(box))
+        self.assertEqual(gfx.TITLE, game.state)
+        box.frame(box.ms + app.FRAME_MS, boot=True)
+        self.assertEqual(gfx.PLAY, game.state)
+
+    def test_boot_on_the_frame_of_a_pick_neither_reaches_the_game_nor_settles(self):
+        box = self.box((Played, GAMES[1], GAMES[2]))
+        game = box.app.game
+        card = box.frame(0, d14=True, boot=True)
+        self.assertEqual((gfx.TITLE, "b"), (game.state, card.name))
+        self.assertIs(card, box.frame(10))  # the BOOT press did not settle it
+        card = box.frame(20, d14=True, boot=True)  # on a waiting card: the pick wins, the press is gone
+        self.assertEqual(("c", app.NameCard.WAITING), (card.name, card.caption))
+        self.assertIs(card, box.frame(30))
+        self.assertEqual((["game played"], 1, ["pick b", "pick c"]), self.said(box))
+
+    def test_boot_held_across_a_pick_settles_once_and_reaches_the_game_once_it_plays(self):
+        box = self.box((GAMES[0], Played))
+        box.frame(0, d14=True, boot=True)
+        box.frame(app.FRAME_MS, boot=True)  # settles the card
+        game = box.run_build()
+        self.assertEqual(gfx.TITLE, game.state)
+        box.frame(box.ms + app.FRAME_MS, boot=True)
+        self.assertEqual(gfx.PLAY, game.state)
+        self.assertEqual((["game a", "game played"], 2, ["pick played"]), self.said(box))
+
+    def test_a_push_during_start_s_build_is_dropped(self):
+        box = self.box((Pushing, GAMES[1]))
+        game = box.frame(0)
+        self.assertEqual(("pushing", gfx.TITLE), (game.name, game.state))
+        self.assertEqual((["game pushing"], 1, []), self.said(box))
+
+    def test_a_push_during_a_build_behind_the_card_is_dropped(self):
+        box = self.box((GAMES[0], Pushing))
+        box.frame(0, d14=True)
+        box.frame(app.SETTLE_MS)
+        game = box.run_build()
+        box.frame(box.ms + app.FRAME_MS)
+        self.assertEqual(("pushing", gfx.TITLE), (box.app.game.name, game.state))
+        self.assertEqual((["game a", "game pushing"], 2, ["pick pushing"]), self.said(box))
 
 
 class Steps:
@@ -697,7 +813,7 @@ class SoundTest(unittest.TestCase):
 
 class KnobTest(unittest.TestCase):
     def test_the_volume_pane_shows_over_a_card(self):
-        box = Box(knob=volume.VolumeKnob(Encoder(0, 1), volume.MasterVolume(8)))
+        box = Box(knob=volume.VolumeKnob(volume.MasterVolume(8)), encoder=Encoder(0, 1))
         self.addCleanup(box.close)
         box.frame(0, d14=True)
         card = box.frame(10)

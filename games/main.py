@@ -1,8 +1,9 @@
 """The game box's composition root (P850, stage 0b-2 of the engine plan): the one place that chooses each part's version
 and builds the parts. The board runs it at boot. It reads the board's engine_config.py (tools/box.py deploy --engine
 writes it, a deploy without --engine removes it), chooses the mixer's sum and the master volume through
-engine.accel's Chooser, prints the Chooser's `engine` line before the box's own lines, and hands the knob and the
-speaker to app.run. A probe imports it and calls compose() for the same parts: importing it starts nothing.
+engine.accel's Chooser, prints the Chooser's `engine` line before the box's own lines, and hands the knob, the
+speaker and the action map (app.open_action_map, P851) to app.run. A probe imports it and calls compose() for the same
+parts: importing it starts nothing.
 At boot it first takes the knob's pads, the console's RX and TX, before app's imports of some seconds: until then a
 turn of the knob types into the console (P757; the PO's knob turn on the board found it, P850).
 --- MVP (P850) ---"""
@@ -69,11 +70,11 @@ def compose(chooser=None, store=None):
 
 
 if __name__ == "__main__":
-    import encoder
     import pins
+    from drivers import encoder
 
     encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first, before app's imports and the knob (P757, P850)
     knob, speaker = compose()
     import app
 
-    app.run(knob=knob, speaker=speaker)
+    app.run(knob=knob, speaker=speaker, action_map=app.open_action_map())  # the buttons, the encoder, the stick (P851)

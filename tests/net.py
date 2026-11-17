@@ -280,7 +280,7 @@ def record_app():
 
         def frame(self, ms, d14=False, boot=False, held=False):
             host.clock.frame(ms)
-            self.app.fire.held = held or boot
+            self.boot_button.held = held or boot  # BOOT's level, through the action map (P851)
             return super().frame(ms, d14, boot)
 
         def step(self, **buttons):

@@ -4,7 +4,7 @@ stock machine.I2S, and heard by a microphone.
 
     mpremote cp games/sound.py :sound.py
     mpremote cp games/volume.py :volume.py + cp games/volume_viper.py :volume_viper.py   # for a run with VOLUME (P757)
-    mpremote cp games/encoder.py :encoder.py + cp games/pins.py :pins.py                 # for a run with KNOB (P757)
+    mpremote mkdir :drivers + cp games/drivers/*.py :drivers/ + cp games/pins.py :pins.py  # with KNOB (P757, P851)
     mpremote run probe733_games.py      # after sed set GAME, TONE, MIC, HITS, REFILL, IBUF, VOICE, VOLUME, LEVEL,
                                         # KNOB, SAVE and SECONDS
 
@@ -369,6 +369,7 @@ class TimedVolume:
     """A master volume with the probe's clock (P757): apply times itself. --- MVP (P757) ---"""
 
     knob = None  # the probe's VolumeKnob, with KNOB
+    encoder = None  # with KNOB: the box's encoder, which its action map owns and turns the knob by (P851)
     windows_max = 0  # with KNOB (P764): the most windows of one show()
 
     def __init__(self, volume):
@@ -385,7 +386,7 @@ class TimedVolume:
         line, knob = "volume level %d gain %d apply_max %d" % (self.volume.step, self.volume.gain, apply_max), self.knob
         if knob:
             windows_max, self.windows_max = self.windows_max, 0
-            line += " edges %d windows_max %d" % (knob.encoder.edges(), windows_max)
+            line += " edges %d windows_max %d" % (self.encoder.edges(), windows_max)
             if knob.store:
                 save_max, knob.store.save_max = knob.store.save_max, 0
                 line += " saves %d save_max %d save_errors %d" % (knob.saves, save_max, knob.save_errors)
@@ -427,12 +428,13 @@ class Probe:
                 level = store.load()
                 print("stored level %s" % level)
             self.volume = TimedVolume(getattr(home, VOLUME)(volume.DEFAULT_STEP if level is None else level))
-            if KNOB:
-                import encoder
-                import pins
-                self.volume.knob = volume.VolumeKnob(
-                    encoder.Encoder.on_board(pins.ENC_A, pins.ENC_B, encoder.EDGES_PER_DETENT), self.volume.volume,
-                    store)
+            if KNOB:  # the box's action map opens the encoder and turns this knob by it (P851)
+                import app
+
+                if not app.has_encoder():  # before the box starts: the map would open no encoder to read
+                    raise RuntimeError("KNOB=1 needs an image with machine.Encoder: this one has none, so the box's "
+                                       "action map opens no encoder")
+                self.volume.knob = volume.VolumeKnob(self.volume.volume, store)
                 self.printed = self.volume.volume.step  # P764: the step of the last `level` line
         self.first_pop_shown = False
         if VOICE in ("Crackle", "NativeCrackle", "SampledCrackle", "GrainCrackle", "FireSound"):  # P747, P751, P753
@@ -454,6 +456,8 @@ class Probe:
         self.open_at = time.ticks_add(now, TONE_OPEN_MS if MIC else 0)
         self.next_save = time.ticks_add(now, SAVE_EVERY_MS)
         self.next_spin, self.spin = time.ticks_add(now, SPIN_EVERY_MS), 0  # spin: the step per frame, or 0
+        if self.volume and self.volume.knob:
+            self.volume.encoder = box.action_map.encoder  # P851: the map owns it
         self.press_on_over(box)
         self.stamp_pushes(box)
         if ALPHA is not None and box.volume_pane:  # P764: the game box adds the pane, and it shows itself
@@ -496,7 +500,7 @@ class Probe:
         if knob:  # P764: the game box polls the knob, in its Input stage
             if knob.volume.step != self.printed:
                 self.printed = knob.volume.step
-                print("level %d edges %d" % (self.printed, knob.encoder.edges()))
+                print("level %d edges %d" % (self.printed, self.volume.encoder.edges()))
             self.volume.windows_max = max(self.volume.windows_max, getattr(box.out, "windows", 0) or 0)
         if SPIN_EVERY_MS and knob:  # --- MVP (P762) --- the overlay's stress run
             step = knob.volume.step
@@ -544,9 +548,9 @@ class Probe:
         the push for Button.update as Button.edge does. It keeps the first stamp until a frame takes it, so a release
         bounce does not move it. It is a scheduled handler too (no hard interrupt on this port), so it is late by the
         current C call, but earlier than the frame that reads the push."""
-        import buttons
+        from drivers import buttons
 
-        fire = box.fire
+        fire = box.action_map.fire_bindings[0]  # BOOT (P851)
 
         def edge(pin):
             fire.pushes += 1
@@ -560,7 +564,8 @@ class Probe:
         """Nobody presses BOOT, and a game waits on its game-over screen for a press (gfx.Game.step)."""
         import gfx
 
-        update = box.fire.update
+        boot = box.action_map.fire_bindings[0]  # BOOT, FIRE's first binding (P851)
+        update = boot.update
 
         def pressing(now_ms):
             game = box.game
@@ -576,7 +581,7 @@ class Probe:
                 self.hit(now_us, -1)
             return pressed or (game.state == gfx.OVER and game.age >= game.OVER_MS)
 
-        box.fire.update = pressing
+        boot.update = pressing
 
     def due(self, now_ms):
         if self.next_hit is None or time.ticks_diff(now_ms, self.next_hit) < 0:

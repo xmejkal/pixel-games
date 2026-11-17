@@ -50,8 +50,8 @@
  {
   "file": "games/app.py",
   "name": "the knob gets the reference volume whatever was chosen",
-  "find": "encoder.EDGES_PER_DETENT), volume())",
-  "replace": "encoder.EDGES_PER_DETENT), __import__(\"volume\").MasterVolume())"
+  "find": "    return VolumeKnob(volume() if step is None else volume(step))\n",
+  "replace": "    return VolumeKnob(__import__(\"volume\").MasterVolume() if step is None else __import__(\"volume\").MasterVolume(step))\n"
  },
  {
   "file": "tools/box.py",
@@ -86,8 +86,8 @@
  {
   "file": "games/main.py",
   "name": "the line is printed after the knob opens",
-  "find": "    print(chooser.line())\n    knob = app.open_knob(master)\n",
-  "replace": "    knob = app.open_knob(master)\n    print(chooser.line())\n"
+  "find": "    print(chooser.line())\n    step = (store or volume.VolumeStore()).load()\n    knob = app.open_knob(master, step)\n",
+  "replace": "    step = (store or volume.VolumeStore()).load()\n    knob = app.open_knob(master, step)\n    print(chooser.line())\n"
  },
  {
   "file": "games/engine/accel.py",
