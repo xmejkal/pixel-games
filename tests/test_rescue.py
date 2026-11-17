@@ -651,7 +651,8 @@ class SteerTest(unittest.TestCase):
                 rules.step(40, False, way)
             ran = rules.man.ran
             rules.step(40, False, way)
-            self.assertEqual((end, way, False, ran), (rules.man.x, rules.man.facing, rules.man.turning(), rules.man.ran))
+            man = rules.man
+            self.assertEqual((end, way, False, ran), (man.x, man.facing, man.turning(), man.ran))
 
     def test_the_button_path_is_as_before(self):
         rules = rules_with_crater_at(300)
