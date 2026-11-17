@@ -5,6 +5,7 @@ import time
 
 import pictures
 from cues import Cue
+from engine.actions import lean
 from gfx import (ACCENT, BEST, BLACK, GREEN, GREY, HEIGHT, ORANGE, OVER, PLAY, RED, TITLE, WHITE, WIDTH, YELLOW, Dice,
                  Game, Particles, c565, shade)
 
@@ -401,13 +402,15 @@ class Notes:
 
 class GravityPong(Game):
     """BUBBLE (P573): two night workers carry a net across an exchange floor at midnight and keep a soap bubble in the
-    air. A tap turns them round. Each catch sends the bubble up again, faster; the net sags and springs back, and the
-    workers tire. A missed bubble hits the floor and pops into banknotes, the ticker board's chart crashes, and the
-    card says IT WAS NEVER REAL. Watercolour noir at midnight: ink, bone, the film's cool tone and one accent."""
+    air. A tap turns them round. With the joystick (P872), they run the way it leans, stand when it rests and stop at a
+    wall. Each catch sends the bubble up again, faster; the net sags and springs back, and the workers tire. A missed
+    bubble hits the floor and pops into banknotes, the ticker board's chart crashes, and the card says IT WAS NEVER
+    REAL. Watercolour noir at midnight: ink, bone, the film's cool tone and one accent."""
 
     name = "gravpong"
     ART = ("gravpong", None)  # its own art set, all of it (P822)
     hint = "tap turns the net"
+    stick_hint = "stick runs the crew"  # --- MVP (P872) ---
     bg = c565(10, 30, 40)
     accent = c565(40, 220, 230)
     BONE = c565(232, 224, 204)  # art/sets/gravpong.py's
@@ -448,6 +451,7 @@ class GravityPong(Game):
 
     def setup(self):
         self.px, self.pdir = 125.0, 1
+        self.way = 1  # --- MVP (P872) --- the way the crew runs, -1, 0 (it stands, only with the stick) or 1
         self.bx, self.by, self.vx, self.vy = 160.0, 60.0, 70.0, 0.0
         self.covers = pictures.load(*self.ART)  # the painted midnight covers the screen, so no fill goes under it
         self.trail = []  # the flat look's fading tail, where there is no art
@@ -468,14 +472,22 @@ class GravityPong(Game):
         change, P573's review): the spent workers hold a smaller net under a bigger bubble."""
         return NET_WIDTHS[min(3, max(0, (self.score - self.TIRED_SCORE + 3) // 4))]
 
+    def run_px_s(self):
+        """The crew's speed in px a second: 170, and 4 more for each point up to 20."""
+        return 170 + min(self.score, 20) * 4
+
     def play(self, pressed, held):
         dt, pw = self.dt, self.net_width()
-        if pressed:
-            self.pdir = -self.pdir
-        self.px += self.pdir * (170 + min(self.score, 20) * 4) * dt
-        if self.px < 0 or self.px > W - pw:
-            self.px = max(0.0, min(float(W - pw), self.px))
-            self.pdir = -self.pdir
+        if self.stick is None:
+            if pressed:
+                self.pdir = -self.pdir
+            self.px += self.pdir * self.run_px_s() * dt
+            if self.px < 0 or self.px > W - pw:
+                self.px = max(0.0, min(float(W - pw), self.px))
+                self.pdir = -self.pdir
+            self.way = self.pdir  # --- MVP (P872) --- after the edge flip: the catch reads it
+        else:  # --- MVP (P872) ---
+            self.steer(lean(self.stick.x), pw)
         self.vy += 520 * dt
         self.bx += self.vx * dt
         before, self.by = self.by, self.by + self.vy * dt
@@ -491,12 +503,21 @@ class GravityPong(Game):
             self.px += (pw - self.net_width()) / 2  # a net that shrinks at the catch keeps its middle
             self.landed(self.vy)
             self.vy = -(410 + min(self.score, 25) * 9)
-            self.vx += self.pdir * 70 + random.randrange(-25, 26)
+            self.vx += self.way * 70 + random.randrange(-25, 26)  # a standing crew adds no side kick (P872)
             self.vx = max(-200.0, min(200.0, self.vx))
             self.fx.burst(self.bx, self.PY, self.BONE, 9, 120.0, 0.4, 250.0)
         elif self.by > H + r:
             self.pop_x, self.pop_y = int(self.bx), self.FLOOR - self.radius() * 3 // 4
             self.die(self.bx, self.pop_y, (self.FILM[0], self.BONE))
+
+    # --- MVP (P872) ---
+    def steer(self, way, pw):
+        """A frame of play with the stick. way: -1 or 1 runs the crew that way at run_px_s() and faces it (pdir), 0
+        stands. pw: the net's width. At a wall the crew stops and does not turn."""
+        self.way = way
+        if way:
+            self.pdir = way
+            self.px = max(0.0, min(float(W - pw), self.px + way * self.run_px_s() * self.dt))
 
     def landed(self, vy):
         """A catch at vy px/s: the sound, the squash and the sigh from now, the net kicked down, the film's drops."""
@@ -565,14 +586,14 @@ class GravityPong(Game):
     def draw_crew(self, cv, px, tired, over):
         """The light pool on the floor, then the workers on the net's ends at px, running their way (the left one faces
         right) or standing spent, and the net between them in the picture for its sag. Spent, they step slower and slump on
-        every other step."""
+        every other step. A crew that stands with the stick (P872) stands as at the end."""
         pw = self.net_width()
         pictures.draw(cv, "gravpong_pool", px + pw // 2 - self.POOL_W // 2, self.FLOOR - self.POOL_H // 2,
                       self.POOL_ALPHA)
         step = int(px) // (self.TIRED_STEP_PX if tired else self.STEP_PX)
         slump = 1 if tired and not over and step % 2 else 0
         for side in (0, 1):
-            if over:
+            if over or not self.way:  # --- MVP (P872) --- a crew that stands with the stick
                 name = self.STANDS[side]
             else:
                 ahead = (self.pdir > 0) == (side == 0)  # the worker runs the way it faces

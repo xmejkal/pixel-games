@@ -19,6 +19,7 @@ if not hasattr(time, "ticks_diff"):
 import gfx  # noqa: E402
 import arcade2  # noqa: E402
 from arcade2 import BubbleLook, GravityPong, Net, Notes  # noqa: E402
+from engine.actions import Actions  # noqa: E402
 
 FRAME_MS = 40  # app.py's FRAME_MS
 SEED, FRAMES, EVERY = 2, 1000, 3  # the trace's seed, its length, and the bot's look: one frame in EVERY
@@ -486,6 +487,71 @@ class SoundTest(unittest.TestCase):
         game.bx, game.by, game.vy = 300.0, gfx.HEIGHT + 20.0, 10.0
         game.play(False, False)
         self.assertEqual(["catch", "die"], game.signals.names)
+
+
+class StickTest(unittest.TestCase):
+    """The crew with the stick (P872): it runs the way the stick leans at its speed, stands when it rests, stops at a
+    wall without a turn, and a standing crew gives the bubble no side kick of its own."""
+
+    def steered(self, x):
+        game = playing()
+        game.stick = Actions()
+        game.stick.x = x
+        return game
+
+    def test_a_crew_at_rest_stands_and_its_catch_keeps_only_the_random_kick(self):
+        game = self.steered(0)
+        game.px, game.pdir = 100.0, 1
+        game.bx, game.by, game.vx, game.vy = 140.0, game.PY - 8.0, 0.0, 100.0
+        random.seed(7)
+        kick = random.randrange(-25, 26)
+        random.seed(7)
+        game.play(False, False)
+        self.assertEqual(1, game.score)
+        self.assertEqual((100.0, 0, 1), (game.px, game.way, game.pdir))
+        self.assertEqual(float(kick), game.vx)
+
+    def test_a_crew_leaning_into_the_left_wall_stops_there_and_does_not_turn(self):
+        game = self.steered(-100)
+        game.px, game.pdir = 2.0, -1
+        for _ in range(2):
+            game.play(False, False)
+            self.assertEqual((0.0, -1, -1), (game.px, game.pdir, game.way))
+
+    def test_a_crew_leaning_right_runs_at_its_speed_for_the_score(self):
+        game = self.steered(100)
+        game.score, game.px, game.pdir = 5, 100.0, -1
+        game.play(False, False)
+        self.assertAlmostEqual(100 + (170 + 5 * 4) * 0.04, game.px)
+        self.assertEqual((1, 1), (game.pdir, game.way))
+
+    def test_a_restart_runs_the_crew_again(self):
+        game = self.steered(0)
+        game.play(False, False)
+        self.assertEqual(0, game.way)
+        game.restart()
+        self.assertEqual(1, game.way)
+
+    def test_through_the_frame_the_stick_runs_it_left_and_a_press_does_not_turn_it(self):
+        game = GravityPong()
+        game.stick = Actions()
+        game.stick.x = -100
+        game.step(0, True, True)  # the title: the press starts play
+        self.assertEqual(gfx.PLAY, game.state)
+        px = game.px
+        for k in (1, 2):
+            game.step(k * FRAME_MS, True, True)
+            self.assertEqual(-1, game.pdir)
+            self.assertAlmostEqual(px - 170 * 0.04 * k, game.px)
+
+    def test_a_standing_crew_is_drawn_standing_and_a_running_one_running(self):
+        for x, standing in ((0, True), (100, False)):
+            game = self.steered(x)
+            game.px, game.last = 100.0, 10000
+            game.play(False, False)
+            names = [c[0] for c in Drawn(game).named("gravpong_worker_")]
+            with self.subTest(x=x):
+                self.assertEqual(standing, names == list(GravityPong.STANDS))
 
 
 if __name__ == "__main__":
