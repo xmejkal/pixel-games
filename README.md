@@ -87,6 +87,9 @@ Every subject, with the button pattern that made its picture (`tools/render_scen
 | GravityPong as BUBBLE | tap turns the net | Two night workers on an exchange floor at midnight carry a net and keep a soap bubble in the air, and it swells as the score climbs while the tired workers' net shrinks. The picture shows the bubble in flight over the ticker board; in the GIF it misses the net and pops into banknotes, and the board's chart crashes. | <a href="docs/screenshots/gravitypong.gif"><img src="docs/screenshots/gravitypong.png" width="160"></a> |
 | the overlay | turn the knob | The volume pane over the ball pit, see-through at alpha 128, so the balls show through its dark part. | <a href="docs/screenshots/overlay.gif"><img src="docs/screenshots/overlay.png" width="160"></a> |
 
+The button column is each subject's play with the button. On a box with the joystick, eight games play with the stick
+instead; the action map paragraph under "Build and run" says how.
+
 ## Build and run
 
 You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython v1.29.0 into `~/esp` if it is not there.
@@ -186,13 +189,14 @@ one frame without the setup, and the longest gap while the card waited for the s
 If the board stays dark after a long press of its D14 button, hold D14 for 1 to 2 seconds. That button also switches the board's power off.
 The box reads its inputs through an action map (P851, `games/engine/actions.py`), as Unity's Input System binds one
 action to several inputs: FIRE is BOOT or the joystick's switch, PICK is D14, and the knob's turn steps the volume. So a
-press of the joystick's switch plays as a BOOT press does. The map also reads the joystick's x and y, -100 to 100. Four
-games read them when the box has a stick (P872): Bucket moves at a speed the stick's tilt sets, Meteors walks and Rescue
-runs the way it leans and stands when it rests, and Snake goes the way it leans. Their titles then show the stick's
-hint. A box with no stick plays them with the button, as before. `app.open_action_map()` builds the map from `pins.py`,
-with the stick only when the pin map names `JOY_X`. The drivers (`buttons.py`, `encoder.py` and `stick.py`) are the
-package `games/drivers/`, the folder `:drivers/` on the board. The `avg` line ends with `input`, the map's poll in ms
-per frame.
+press of the joystick's switch plays as a BOOT press does. The map also reads the joystick's x and y, -100 to 100. Eight
+games read them when the box has a stick (P872): Bucket, and Starfire's crosshair, move at a speed the stick's tilt sets
+and stop when it rests. Meteors walks, and Rescue and GravityPong's crew run, the way it leans, and they stand when it
+rests. Snake goes the way it leans, Tunnel's ship takes the wall it leans to and keeps it at rest, and Road's car drives
+the lane under the stick: left, middle or right. Their titles then show the stick's hint. A box with no stick plays them
+with the button, as before. `app.open_action_map()` builds the map from `pins.py`, with the stick only when the pin map
+names `JOY_X`. The drivers (`buttons.py`, `encoder.py` and `stick.py`) are the package `games/drivers/`, the folder
+`:drivers/` on the board. The `avg` line ends with `input`, the map's poll in ms per frame.
 
 ## Status
 

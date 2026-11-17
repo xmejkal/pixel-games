@@ -1,5 +1,6 @@
-"""Two more 3D games for one button: starfire (tap fires at the sweeping crosshair) and SMILE (tap when the city
-camera's lens faces you)."""
+"""Two more 3D games for one button, starfire also for the stick: starfire (tap fires at the sweeping crosshair) and
+SMILE (tap when the city camera's lens faces you). With the joystick (P872), starfire's crosshair goes the way the stick
+leans, faster the further it leans, and stays where it is when the stick rests; FIRE fires at it."""
 
 import math
 import random
@@ -7,6 +8,7 @@ import time
 
 import pictures
 from cues import Cue
+from engine.subpixel import SubPixel
 from gfx import (ACCENT, BEST, CYAN, GREEN, GREY, HEIGHT, ORANGE, OVER, RED, WHITE, WIDTH, YELLOW, Dice, Game,
                  Particles, c565, shade)
 
@@ -14,19 +16,35 @@ W, H = WIDTH, HEIGHT
 CX, CY = W // 2, 128
 
 
+def clamp(motion, v, low, high):
+    """v, a place that motion (a SubPixel) moved to, kept from low to high: a step that would cross a bound stops at it
+    and drops motion's rest. --- MVP (P872) ---"""
+    if v < low or v > high:
+        motion.reset()
+        return low if v < low else high
+    return v
+
+
 class Starfire(Game):
     name = "starfire"
     hint = "tap fires"
+    stick_hint = "stick aims, fire fires"  # --- MVP (P872) ---
     bg = c565(2, 2, 10)
     accent = CYAN
     F, STARS = 150, 40
     AREA = (50, 40, 270, 200)
+    # --- MVP (P872) --- the stick's aim: px a second at a full lean, and the crosshair's middle at most, so its wings
+    # (15 px across, 10 px down) stay in AREA
+    AIM_PX_S = 240
+    AIM_LEFT, AIM_RIGHT = 65, 255
+    AIM_TOP, AIM_BOTTOM = 55, 185
     HEX = [(math.cos(i * 1.047), math.sin(i * 1.047)) for i in range(6)]
 
     def setup(self):
         self.stars = [[random.uniform(-4, 4), random.uniform(-3, 3), random.uniform(0.3, 4)] for _ in range(self.STARS)]
         self.rocks, self.booms, self.lives, self.spawn, self.shot = [], [], 3, 0.8, 0.0
         self.aim = (CX, CY)
+        self.aim_x, self.aim_y = SubPixel(), SubPixel()  # --- MVP (P872) --- the stick's aim, each axis's rest
 
     def project(self, x, y, z):
         k = self.F / z
@@ -34,7 +52,10 @@ class Starfire(Game):
 
     def play(self, pressed, held):
         dt, t = self.dt, self.t
-        self.aim = (CX + 95 * math.sin(t * 1.9), CY + 55 * math.sin(t * 1.3 + 1))
+        if self.stick is None:
+            self.aim = (CX + 95 * math.sin(t * 1.9), CY + 55 * math.sin(t * 1.3 + 1))
+        else:  # --- MVP (P872) --- before the shot, so a press fires at this frame's aim
+            self.steer(self.stick.x, self.stick.y)
         for s in self.stars:
             s[2] -= 1.6 * dt
             if s[2] < 0.2:
@@ -59,6 +80,24 @@ class Starfire(Game):
         self.booms = [b for b in self.booms if b[2] < 0.35]
         if pressed:
             self.fire()
+
+    # --- MVP (P872) ---
+    def steer(self, x, y):
+        """The stick's x and y, -100 to 100 (up reads negative), move the crosshair at aim_px_s(x) px a second across
+        and aim_px_s(y) down, in whole px, so it rests when the stick rests. A step that would cross an AIM_ bound stops
+        at it and drops that axis's rest. aim is a new tuple only when a px moved, so a stick at rest makes nothing."""
+        ax, ay = self.aim
+        nx = clamp(self.aim_x, ax + self.aim_x.step(self.aim_px_s(x), self.ms), self.AIM_LEFT, self.AIM_RIGHT)
+        ny = clamp(self.aim_y, ay + self.aim_y.step(self.aim_px_s(y), self.ms), self.AIM_TOP, self.AIM_BOTTOM)
+        if nx != ax or ny != ay:
+            self.aim = (nx, ny)
+
+    def aim_px_s(self, v):
+        """The crosshair's speed in px a second for an axis at v, -100 to 100: AIM_PX_S * |v| // 100 with the sign of v,
+        so a tilt and its mirror move as fast (AIM_PX_S * v // 100 floors, so the minus side would be 1 px/s faster).
+        Small ints only."""
+        s = self.AIM_PX_S * abs(v) // 100
+        return s if v >= 0 else -s
 
     def fire(self):
         self.shot = 0.1

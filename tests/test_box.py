@@ -432,10 +432,10 @@ class PackageTest(unittest.TestCase):
         run.assert_not_called()
         lines = said.getvalue().splitlines()
         at = lines.index("mpremote mkdir :engine")
-        self.assertRegex(lines[at - 1], r"^mpy-cross -march=xtensawin -s engine/signals\.py -o \S+signals\.mpy "
-                                        r"games/engine/signals\.py$")
+        self.assertRegex(lines[at - 1], r"^mpy-cross -march=xtensawin -s engine/subpixel\.py -o \S+subpixel\.mpy "
+                                        r"games/engine/subpixel\.py$")
         self.assertRegex(lines[at + 1], r"^mpremote cp \S+__init__\.mpy \S+accel\.mpy \S+actions\.mpy \S+clock\.mpy "
-                                        r"\S+signals\.mpy :engine/$")
+                                        r"\S+signals\.mpy \S+subpixel\.mpy :engine/$")
         self.assertNotIn("mpremote ls :engine", lines)
 
 

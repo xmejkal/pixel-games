@@ -1,0 +1,104 @@
+[
+ {
+  "file": "games/engine/subpixel.py",
+  "name": "SubPixel truncates toward 0: a negative speed keeps a negative rest",
+  "find": "        px = self.rest // 1000\n",
+  "replace": "        px = int(self.rest / 1000)\n"
+ },
+ {
+  "file": "games/engine/subpixel.py",
+  "name": "SubPixel.reset keeps the rest",
+  "find": "(a stop at an edge, a restart).\"\"\"\n        self.rest = 0\n",
+  "replace": "(a stop at an edge, a restart).\"\"\"\n        pass\n"
+ },
+ {
+  "file": "games/arcade2.py",
+  "name": "a standing crew still kicks the bubble its facing's way at the catch",
+  "find": "            self.vx += self.way * 70 + random.randrange(-25, 26)",
+  "replace": "            self.vx += self.pdir * 70 + random.randrange(-25, 26)"
+ },
+ {
+  "file": "games/arcade2.py",
+  "name": "the button's path never sets way, so its catch kicks the way of the start",
+  "find": "            self.way = self.pdir  # --- MVP (P872) --- after the edge flip: the catch reads it\n",
+  "replace": ""
+ },
+ {
+  "file": "games/arcade2.py",
+  "name": "a crew that stands with the stick is drawn running",
+  "find": "            if over or not self.way:  # --- MVP (P872) --- a crew that stands with the stick\n",
+  "replace": "            if over:\n"
+ },
+ {
+  "file": "games/arcade2.py",
+  "name": "the stick's crew runs through a wall",
+  "find": "            self.px = max(0.0, min(float(W - pw), self.px + way * self.run_px_s() * self.dt))\n",
+  "replace": "            self.px += way * self.run_px_s() * self.dt\n"
+ },
+ {
+  "file": "games/arcade2.py",
+  "name": "the stick's crew runs at the start's speed at any score",
+  "find": "self.px + way * self.run_px_s() * self.dt",
+  "replace": "self.px + way * 170 * self.dt"
+ },
+ {
+  "file": "games/world3d.py",
+  "name": "the smaller axis picks tunnel's wall",
+  "find": "        if abs(x) >= abs(y):\n",
+  "replace": "        if abs(x) <= abs(y):\n"
+ },
+ {
+  "file": "games/world3d.py",
+  "name": "up picks the bottom wall",
+  "find": "                self.side = 1 + way  # up 0, down 2\n",
+  "replace": "                self.side = 1 - way  # up 0, down 2\n"
+ },
+ {
+  "file": "games/world3d.py",
+  "name": "a stick at rest picks a wall",
+  "find": "            if way:\n                self.side = 2 - way",
+  "replace": "            if True:\n                self.side = 2 - way"
+ },
+ {
+  "file": "games/world3d.py",
+  "name": "any tilt of the stick moves road's car off the middle lane",
+  "find": "        self.lane = 1 + lean(x)\n",
+  "replace": "        self.lane = 1 + (x > 0) - (x < 0)\n"
+ },
+ {
+  "file": "games/space3d.py",
+  "name": "the stick's aim makes a new tuple each frame",
+  "find": "        if nx != ax or ny != ay:\n            self.aim = (nx, ny)\n",
+  "replace": "        self.aim = (nx, ny)\n"
+ },
+ {
+  "file": "games/space3d.py",
+  "name": "the crosshair keeps its rest at a bound",
+  "find": "        motion.reset()\n",
+  "replace": "        pass\n"
+ },
+ {
+  "file": "games/space3d.py",
+  "name": "the crosshair runs past its right and bottom bounds",
+  "find": "    if v < low or v > high:\n",
+  "replace": "    if v < low:\n"
+ },
+ {
+  "file": "games/space3d.py",
+  "name": "the stick's y moves the crosshair the other way",
+  "find": "self.aim_y.step(self.aim_px_s(y), self.ms)",
+  "replace": "self.aim_y.step(-self.aim_px_s(y), self.ms)"
+ },
+ {
+  "file": "games/space3d.py",
+  "name": "the crosshair's speed floors, so a tilt to the minus side is 1 px/s faster",
+  "find": "        s = self.AIM_PX_S * abs(v) // 100\n        return s if v >= 0 else -s\n",
+  "replace": "        return self.AIM_PX_S * v // 100\n"
+ },
+ {
+  "file": "games/world3d.py",
+  "name": "y wins a tie of the axes in tunnel",
+  "find": "        if abs(x) >= abs(y):\n",
+  "replace": "        if abs(x) > abs(y):\n"
+ }
+]

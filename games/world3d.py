@@ -1,8 +1,12 @@
-"""Two 3D games for one button: tunnel (wireframe rings, tap turns the ship) and road (horizon road, tap changes lane)."""
+"""Two 3D games for one button or the stick: tunnel (wireframe rings, tap turns the ship) and road (horizon road, tap
+changes lane). With the joystick (P872), the stick's way picks tunnel's wall (up, right, down or left) and a stick at
+rest keeps it; road's lane is the stick's place, left, middle or right, so a stick at rest drives the middle lane,
+and FIRE held boosts."""
 
 import math
 import random
 
+from engine.actions import lean
 from gfx import BLACK, CYAN, HEIGHT, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, c565, shade
 
 W, H = WIDTH, HEIGHT
@@ -11,6 +15,7 @@ W, H = WIDTH, HEIGHT
 class Tunnel(Game):
     name = "tunnel"
     hint = "tap turns the ship"
+    stick_hint = "stick picks the wall"  # --- MVP (P872) ---
     bg = c565(4, 4, 18)
     accent = CYAN
     F, CX, CY, HX, HY, NEAR, FAR, SPACE = 150, W // 2, 130, 0.7, 0.5, 1.0, 10.0, 2.6
@@ -21,8 +26,11 @@ class Tunnel(Game):
         self.rings = [[5.0, random.randrange(4)], [7.6, random.randrange(4)]]  # [depth, side with the gap]
 
     def play(self, pressed, held):
-        if pressed:
-            self.side = (self.side + 1) % 4
+        if self.stick is None:
+            if pressed:
+                self.side = (self.side + 1) % 4
+        else:  # --- MVP (P872) --- before the ring's check, so a wall picked in this frame counts
+            self.steer(self.stick.x, self.stick.y)
         self.run += self.speed * self.dt
         for r in self.rings:
             r[0] -= self.speed * self.dt
@@ -38,6 +46,20 @@ class Tunnel(Game):
             self.rings.append([self.FAR, random.randrange(4)])
         sx, sy = self.ship()  # a thin trail of sparks behind the ship
         self.fx.add(sx, sy, random.randrange(-20, 21), random.randrange(-20, 21), YELLOW, 0.3)
+
+    # --- MVP (P872) ---
+    def steer(self, x, y):
+        """The stick's x and y, -100 to 100 (up reads negative), pick the wall the ship flies on: the larger axis, if it
+        leans, picks it, as snake's rule does: right side 1, left 3, up 0, down 2 (ship()'s order). At rest the stick
+        keeps the wall."""
+        if abs(x) >= abs(y):
+            way = lean(x)
+            if way:
+                self.side = 2 - way  # right 1, left 3
+        else:
+            way = lean(y)
+            if way:
+                self.side = 1 + way  # up 0, down 2
 
     def ship(self):
         k = self.F / 1.3
@@ -87,6 +109,7 @@ class Tunnel(Game):
 class Road(Game):
     name = "road"
     hint = "tap lane, hold boost"
+    stick_hint = "stick picks the lane, hold fire to boost"  # --- MVP (P872) ---
     bg = c565(90, 170, 250)
     accent = ORANGE
     HOR, K, SEG, PY, TP = 88, 40.0, 4, 218, 130
@@ -97,10 +120,13 @@ class Road(Game):
         self.odo, self.obs, self.gapd, self.sway = 0.0, [], 6.0, 0.0
 
     def play(self, pressed, held):
-        if pressed:
-            self.lane += self.dir
-            if self.lane in (0, 2):
-                self.dir = -self.dir
+        if self.stick is None:
+            if pressed:
+                self.lane += self.dir
+                if self.lane in (0, 2):
+                    self.dir = -self.dir
+        else:  # --- MVP (P872) --- before lx eases and the obstacles' check
+            self.steer(self.stick.x)
         self.lx += (self.lane - 1 - self.lx) * min(1.0, self.dt * 12)
         v = 6.5 + min(self.score, 40) * 0.08
         v *= 1.7 if held else 1.0
@@ -122,6 +148,12 @@ class Road(Game):
             self.gapd = random.randrange(5, 10)
         if held:
             self.fx.add(self.player_at()[0], self.PY, random.randrange(-30, 31), 90, ORANGE, 0.25)
+
+    # --- MVP (P872) ---
+    def steer(self, x):
+        """The stick's x, -100 (left) to 100, is the lane: 0 while it leans left, 2 right, the middle 1 at rest. dir,
+        the button's next change, stays as it was."""
+        self.lane = 1 + lean(x)
 
     def player_at(self):
         return self.road_x(self.lx, self.TP), self.PY - 10
