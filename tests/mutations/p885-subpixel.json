@@ -1,0 +1,20 @@
+[
+ {
+  "file": "games/bucket.py",
+  "name": "the bucket keeps its rest at an edge, so it leaves the edge late or early",
+  "find": "            x = LEFT_X if x < LEFT_X else RIGHT_X\n            self.subpixel.reset()\n",
+  "replace": "            x = LEFT_X if x < LEFT_X else RIGHT_X\n"
+ },
+ {
+  "file": "games/meteors.py",
+  "name": "the walker keeps its rest at an edge, so it leaves the edge late or early",
+  "find": "            x = 0 if x < 0 else WALKER_MAX_X\n            self.subpixel.reset()\n",
+  "replace": "            x = 0 if x < 0 else WALKER_MAX_X\n"
+ },
+ {
+  "file": "games/meteors.py",
+  "name": "the walker's speed ignores way: it walks right while it stands or goes left",
+  "find": "self.subpixel.step(way * WALK_PX_S, ms)",
+  "replace": "self.subpixel.step(WALK_PX_S, ms)"
+ }
+]
