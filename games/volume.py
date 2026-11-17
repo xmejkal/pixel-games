@@ -5,8 +5,9 @@ A Refill of sound.py calls volume.apply(block) after the mixer's render. The vol
 silent, step STEPS is the mix as it is, and each step between is DB_PER_STEP dB. A change of step ramps across one
 block (16 ms), so it does not click. MasterVolume is the naive path, plain MicroPython bytecode, which stays working
 (D26). A faster class keeps apply(buf) and overrides scale: ViperMasterVolume of volume_viper.py.
-VolumeKnob turns the step with the rotary encoder (encoder.py), 1 step per detent, and saves it in a VolumeStore,
-so the step survives a restart. Step 0 is saved like any step: a board that was turned to 0 starts silent.
+VolumeKnob turns the step by the rotary encoder's detents (drivers/encoder.py), 1 step per detent, which the action map
+reads (P851), and saves it in a VolumeStore, so the step survives a restart. Step 0 is saved like any step: a board
+that was turned to 0 starts silent.
 
 DB_PER_STEP, DEFAULT_STEP, LOUDER and SAVE_AFTER_MS are choices for the PO's ear and hand, not measured facts.
 """
@@ -80,18 +81,18 @@ class VolumeStore:
 
 
 class VolumeKnob:
-    """The encoder's detents turn the volume's step, 1 step per detent. poll(now_ms) is the game loop's, once per
-    frame: it is True when the step changed. A turn past an end is dropped, so the first detent back counts.
-    With a store, the step is saved SAVE_AFTER_MS after its last change, when it differs from the saved one."""
+    """The encoder's detents turn the volume's step, 1 step per detent. poll(now_ms, turned) is the game loop's, once
+    per frame, with the detents the action map read in it (P851): it is True when the step changed. A turn past an end
+    is dropped, so the first detent back counts. With a store, the step is saved SAVE_AFTER_MS after its last change,
+    when it differs from the saved one."""
 
-    def __init__(self, encoder, volume, store=None, louder=LOUDER):
-        self.encoder, self.volume, self.store, self.louder = encoder, volume, store, louder
+    def __init__(self, volume, store=None, louder=LOUDER):
+        self.volume, self.store, self.louder = volume, store, louder
         self.saved, self.changed_ms = store.load() if store else None, None  # saved: the step in the store
         self.saves = self.save_errors = 0
 
-    def poll(self, now_ms):
+    def poll(self, now_ms, turned):
         step = self.volume.step
-        turned = self.encoder.take_detents(now_ms)
         if turned:
             self.volume.set(step + self.louder * turned)
         changed = self.volume.step != step

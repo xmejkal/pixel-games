@@ -22,6 +22,7 @@ import app  # noqa: E402
 import gfx  # noqa: E402
 import overlay  # noqa: E402
 import volume  # noqa: E402
+from engine.actions import ActionMap  # noqa: E402
 
 
 class Encoder:
@@ -57,29 +58,42 @@ class Out:
         self.seen.append([pane.visible for pane in overlay.panes])
 
 
-def make(knob=None):
-    box = app.App(None, lambda: 99, lambda: 99, games=(Game,), out=Out(), knob=knob)
+class D14:
+    """D14 as the action map binds it: update(now) is True while down is."""
+
+    held, down = False, False
+
+    def update(self, now_ms):
+        return self.down
+
+    def forget(self):
+        pass
+
+
+def make(knob=None, encoder=None):
+    """A box with the knob, its encoder in the action map (P851) feeding the knob's turn."""
+    box = app.App(None, ActionMap((), (), encoder), games=(Game,), out=Out(), knob=knob)
     box.start()
     return box
 
 
 class TestAppKnob(unittest.TestCase):
     def test_a_turn_shows_the_pane_in_the_same_frame(self):
-        box = make(volume.VolumeKnob(Encoder(0, 1), volume.MasterVolume(8)))
+        box = make(volume.VolumeKnob(volume.MasterVolume(8)), Encoder(0, 1))
         box.frame()
         box.frame()
         self.assertEqual(box.out.seen, [[False], [True]])
         self.assertEqual(box.knob.volume.step, 8 + volume.LOUDER)
 
     def test_no_turn_shows_nothing(self):
-        box = make(volume.VolumeKnob(Encoder(), volume.MasterVolume(8)))
+        box = make(volume.VolumeKnob(volume.MasterVolume(8)), Encoder())
         box.frame()
         box.frame()
         self.assertEqual(box.out.seen, [[False], [False]])
 
     def test_the_pane_watches_the_knobs_volume(self):
-        knob = volume.VolumeKnob(Encoder(), volume.MasterVolume(8))
-        box = make(knob)
+        knob = volume.VolumeKnob(volume.MasterVolume(8))
+        box = make(knob, Encoder())
         self.assertIs(box.volume_pane.volume, knob.volume)
         self.assertEqual(box.overlay.panes, [box.volume_pane])
 
@@ -99,15 +113,15 @@ class TestAppKnob(unittest.TestCase):
                 names.append(box.game.name)
                 games.append(box.game)
 
-        names, games = [], []
-        box = app.App(None, lambda: 99, lambda: 99, games=(Game, Other), out=Out())
+        names, games, d14 = [], [], D14()
+        box = app.App(None, ActionMap((), (d14,)), games=(Game, Other), out=Out())
         box.start()
         box.overlay.add(Watch())
-        box.boot.update = lambda now: True  # a D14 press in this frame: a pick (P818)
+        d14.down = True  # a D14 press in this frame: a pick (P818)
         box.frame()
         self.assertEqual(names, ["other"])  # the NameCard of the picked game
         self.assertIsInstance(box.game, app.NameCard)
-        box.boot.update = lambda now: False
+        d14.down = False
         with mock.patch.object(app, "SETTLE_MS", 0):  # the pick settles in the next frame
             box.frame()
             for _ in range(10):  # and the build ends behind the card (P822)

@@ -25,6 +25,8 @@ import gfx  # noqa: E402
 import pictures  # noqa: E402
 import sound  # noqa: E402
 import volume  # noqa: E402
+from drivers import buttons  # noqa: E402
+from engine.actions import ActionMap  # noqa: E402
 
 BUILT = []  # each counting game's name, as it is built
 
@@ -92,15 +94,15 @@ class Pressed:
 class Box:
     """An App on a clock the test sets, with D14 and BOOT pressed when the test says."""
 
-    def __init__(self, games=GAMES, out=None, **kw):
+    def __init__(self, games=GAMES, out=None, encoder=None, **kw):
         self.ms, self.d14, self.boot = 0, False, False
         self.boot_button, self.d14_button = Pressed(lambda: self.boot), Pressed(lambda: self.d14)
         self.clock = mock.patch.object(app.time, "ticks_ms", lambda: self.ms)
         self.clock.start()
         self.said = io.StringIO()
+        actions = ActionMap((self.boot_button,), (self.d14_button,), encoder)  # encoder: the knob's, or None
         with contextlib.redirect_stdout(self.said):
-            self.app = app.App(None, lambda: 99, lambda: 99, games=games, out=out or Out(), **kw)
-            self.app.fire, self.app.boot = self.boot_button, self.d14_button
+            self.app = app.App(None, actions, games=games, out=out or Out(), **kw)
             self.app.start()
 
     def push_during_build(self):
@@ -263,16 +265,16 @@ class ReviewTest(unittest.TestCase):
             steps = []
 
             def setup(self):  # a press of each button while the box is frozen in the build
-                if holder:
-                    holder[0].boot.pushes += 1
-                    holder[0].fire.pushes += 1
+                for button in holder:
+                    button.pushes += 1
 
             def step(self, now_ms, pressed, held):
                 self.steps.append(pressed)
 
-        box = app.App(None, lambda: 99, lambda: 99, games=(Pushy, GAMES[0]), out=Out())
-        holder.append(box)
-        box.boot.watched = box.fire.watched = True  # pushes counted as the pin interrupt counts them
+        boot, d14 = buttons.Button(lambda: 99, buttons.BOOT_BUTTON_ON), buttons.Button(lambda: 99, 0)
+        box = app.App(None, ActionMap((boot,), (d14,)), games=(Pushy, GAMES[0]), out=Out())
+        holder.extend((boot, d14))
+        d14.watched = boot.watched = True  # pushes counted as the pin interrupt counts them
         with contextlib.redirect_stdout(io.StringIO()) as said:
             box.start()
             box.frame()
@@ -811,7 +813,7 @@ class SoundTest(unittest.TestCase):
 
 class KnobTest(unittest.TestCase):
     def test_the_volume_pane_shows_over_a_card(self):
-        box = Box(knob=volume.VolumeKnob(Encoder(0, 1), volume.MasterVolume(8)))
+        box = Box(knob=volume.VolumeKnob(volume.MasterVolume(8)), encoder=Encoder(0, 1))
         self.addCleanup(box.close)
         box.frame(0, d14=True)
         card = box.frame(10)

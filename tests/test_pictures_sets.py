@@ -35,6 +35,7 @@ import app  # noqa: E402
 import art_index  # noqa: E402
 import gfx  # noqa: E402
 import pictures  # noqa: E402
+from engine.actions import ActionMap  # noqa: E402  no button pressed (P851)
 from export import pack_bytes  # noqa: E402
 
 # Each game module and the sets its pictures come from (a set and the only names it loads, None for all)
@@ -118,7 +119,7 @@ class LoadTest(unittest.TestCase):
             def reset(self):
                 pass
 
-        box = app.App(None, lambda: 1, lambda: 1, games=(Painted, Plain), out=Out())
+        box = app.App(None, ActionMap((), ()), games=(Painted, Plain), out=Out())
         with contextlib.redirect_stdout(io.StringIO()) as said:  # the box says each game's name
             box.start()
             self.assertIn("bucket_scene", pictures.PICS)

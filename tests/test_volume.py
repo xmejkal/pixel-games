@@ -142,37 +142,29 @@ class MasterVolumeTest(unittest.TestCase):
         self.assertEqual(calls, [(0, FULL)])
 
 
-class FakeEncoder:
-    """take_detents gives the next of `turns`, then 0."""
-
-    def __init__(self, *turns):
-        self.turns = list(turns)
-
-    def take_detents(self, now_ms):
-        return self.turns.pop(0) if self.turns else 0
-
-
 class VolumeKnobTest(unittest.TestCase):
+    """poll(now_ms, turned) gets the detents the action map read in the frame (P851)."""
+
     def test_each_detent_is_one_step_and_poll_says_when_the_step_changed(self):
         volume = MasterVolume(8)
-        knob = VolumeKnob(FakeEncoder(1, 0, -3, 2), volume)
-        seen = [(knob.poll(40 * k), volume.step) for k in range(5)]
+        knob = VolumeKnob(volume)
+        seen = [(knob.poll(40 * k, turned), volume.step) for k, turned in enumerate((1, 0, -3, 2, 0))]
         self.assertEqual(seen, [(True, 9), (False, 9), (True, 6), (True, 8), (False, 8)])
 
     def test_a_turn_past_an_end_is_dropped_and_the_first_detent_back_counts(self):
         volume = MasterVolume(15)
-        knob = VolumeKnob(FakeEncoder(5, -1, -20, 1), volume)
-        seen = [(knob.poll(40 * k), volume.step) for k in range(4)]
+        knob = VolumeKnob(volume)
+        seen = [(knob.poll(40 * k, turned), volume.step) for k, turned in enumerate((5, -1, -20, 1))]
         self.assertEqual(seen, [(True, STEPS), (True, STEPS - 1), (True, 0), (True, 1)])
 
     def test_a_turn_at_an_end_changes_nothing(self):
         volume = MasterVolume(STEPS)
-        self.assertFalse(VolumeKnob(FakeEncoder(2), volume).poll(0))
+        self.assertFalse(VolumeKnob(volume).poll(0, 2))
         self.assertEqual(volume.step, STEPS)
 
     def test_louder_flips_the_direction(self):
         volume = MasterVolume(8)
-        VolumeKnob(FakeEncoder(2), volume, louder=-1).poll(0)
+        VolumeKnob(volume, louder=-1).poll(0, 2)
         self.assertEqual(volume.step, 6)
 
 
@@ -194,65 +186,65 @@ class FakeVolumeStore:
 class VolumeKnobSaveTest(unittest.TestCase):
     def test_the_save_waits_for_the_knob_to_rest_and_happens_once(self):
         volume, store = MasterVolume(8), FakeVolumeStore()
-        knob = VolumeKnob(FakeEncoder(1, 1, 0, 1), volume, store)
-        for now_ms in (0, 40, 80, 2000):  # the last change is at 2000
-            knob.poll(now_ms)
-        knob.poll(2000 + SAVE_AFTER_MS - 1)
+        knob = VolumeKnob(volume, store)
+        for now_ms, turned in ((0, 1), (40, 1), (80, 0), (2000, 1)):  # the last change is at 2000
+            knob.poll(now_ms, turned)
+        knob.poll(2000 + SAVE_AFTER_MS - 1, 0)
         self.assertEqual(store.steps, [])
-        knob.poll(2000 + SAVE_AFTER_MS)
-        knob.poll(2000 + 2 * SAVE_AFTER_MS)
+        knob.poll(2000 + SAVE_AFTER_MS, 0)
+        knob.poll(2000 + 2 * SAVE_AFTER_MS, 0)
         self.assertEqual((store.steps, knob.saves, knob.save_errors), ([11], 1, 0))
 
     def test_a_step_that_came_back_to_the_saved_one_is_not_saved_again(self):
         volume, store = MasterVolume(8), FakeVolumeStore(8)
-        knob = VolumeKnob(FakeEncoder(1, -1), volume, store)
-        for now_ms in (0, 40, 40 + SAVE_AFTER_MS):
-            knob.poll(now_ms)
+        knob = VolumeKnob(volume, store)
+        for now_ms, turned in ((0, 1), (40, -1), (40 + SAVE_AFTER_MS, 0)):
+            knob.poll(now_ms, turned)
         self.assertEqual(store.steps, [])
 
     def test_a_step_that_came_back_to_a_start_the_store_does_not_hold_is_saved(self):
         volume, store = MasterVolume(8), FakeVolumeStore(5)  # the probe's LEVEL beside an older file
-        knob = VolumeKnob(FakeEncoder(1, -1), volume, store)
-        for now_ms in (0, 40, 40 + SAVE_AFTER_MS):
-            knob.poll(now_ms)
+        knob = VolumeKnob(volume, store)
+        for now_ms, turned in ((0, 1), (40, -1), (40 + SAVE_AFTER_MS, 0)):
+            knob.poll(now_ms, turned)
         self.assertEqual(store.steps, [8])
 
     def test_a_turn_back_after_a_save_is_saved_too(self):
         volume, store = MasterVolume(8), FakeVolumeStore(8)
-        knob = VolumeKnob(FakeEncoder(1, 0, -1), volume, store)
-        for now_ms in (0, SAVE_AFTER_MS, SAVE_AFTER_MS + 40, 2 * SAVE_AFTER_MS + 40):
-            knob.poll(now_ms)
+        knob = VolumeKnob(volume, store)
+        for now_ms, turned in ((0, 1), (SAVE_AFTER_MS, 0), (SAVE_AFTER_MS + 40, -1), (2 * SAVE_AFTER_MS + 40, 0)):
+            knob.poll(now_ms, turned)
         self.assertEqual(store.steps, [9, 8])
 
     def test_the_save_waits_across_the_wrap_of_ticks_ms(self):
         period = 1 << 30
         with mock.patch.object(time, "ticks_diff", lambda a, b: (a - b + period // 2) % period - period // 2):
             volume, store = MasterVolume(8), FakeVolumeStore(8)
-            knob = VolumeKnob(FakeEncoder(1), volume, store)
-            knob.poll(period - 1000)
-            knob.poll(SAVE_AFTER_MS - 1001)
+            knob = VolumeKnob(volume, store)
+            knob.poll(period - 1000, 1)
+            knob.poll(SAVE_AFTER_MS - 1001, 0)
             self.assertEqual(store.steps, [])
-            knob.poll(SAVE_AFTER_MS - 1000)
+            knob.poll(SAVE_AFTER_MS - 1000, 0)
             self.assertEqual(store.steps, [9])
 
     def test_step_0_is_saved_like_any_step(self):
         volume, store = MasterVolume(2), FakeVolumeStore()
-        knob = VolumeKnob(FakeEncoder(-5), volume, store)
-        knob.poll(0)
-        knob.poll(SAVE_AFTER_MS)
+        knob = VolumeKnob(volume, store)
+        knob.poll(0, -5)
+        knob.poll(SAVE_AFTER_MS, 0)
         self.assertEqual(store.steps, [0])
 
     def test_a_save_error_is_counted_and_tried_once(self):
         volume = MasterVolume(8)
-        knob = VolumeKnob(FakeEncoder(1), volume, FakeVolumeStore(broken=True))
-        for now_ms in (0, SAVE_AFTER_MS, 2 * SAVE_AFTER_MS, 3 * SAVE_AFTER_MS):
-            knob.poll(now_ms)
+        knob = VolumeKnob(volume, FakeVolumeStore(broken=True))
+        for now_ms, turned in ((0, 1), (SAVE_AFTER_MS, 0), (2 * SAVE_AFTER_MS, 0), (3 * SAVE_AFTER_MS, 0)):
+            knob.poll(now_ms, turned)
         self.assertEqual((knob.saves, knob.save_errors, volume.step), (0, 1, 9))
 
     def test_with_no_store_nothing_is_saved(self):
-        knob = VolumeKnob(FakeEncoder(1), MasterVolume(8))
-        knob.poll(0)
-        knob.poll(SAVE_AFTER_MS)
+        knob = VolumeKnob(MasterVolume(8))
+        knob.poll(0, 1)
+        knob.poll(SAVE_AFTER_MS, 0)
         self.assertEqual((knob.saves, knob.save_errors), (0, 0))
 
 

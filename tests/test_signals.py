@@ -28,6 +28,7 @@ import cues  # noqa: E402
 import gfx  # noqa: E402
 import sound  # noqa: E402
 from engine import signals  # noqa: E402
+from engine.actions import ActionMap  # noqa: E402  no button pressed (P851)
 
 GAMES = os.path.join(os.path.dirname(HERE), "games")
 
@@ -117,7 +118,7 @@ class MusicBank(FakeBank):
 class TestMusic(unittest.TestCase):
     def box(self):
         mixer = sound.Mixer(2)
-        box = app.App(None, lambda: 99, lambda: 99, games=(Loud, Quiet), out=Out(), cues=cues.SoundCues(mixer, MusicBank()))
+        box = app.App(None, ActionMap((), ()), games=(Loud, Quiet), out=Out(), cues=cues.SoundCues(mixer, MusicBank()))
         box.start()
         return box, mixer
 
@@ -156,7 +157,7 @@ class TestSoundCues(unittest.TestCase):
 
     def box(self, *games):
         mixer = sound.Mixer()
-        box = app.App(None, lambda: 99, lambda: 99, games=games, out=Out(), cues=cues.SoundCues(mixer, FakeBank()))
+        box = app.App(None, ActionMap((), ()), games=games, out=Out(), cues=cues.SoundCues(mixer, FakeBank()))
         box.start()
         return box, mixer
 
@@ -188,7 +189,7 @@ class TestSoundCues(unittest.TestCase):
         self.assertEqual(rendered(mixer), [0, 0, 0, 0])
 
     def test_the_box_with_no_cues_is_silent_and_runs(self):
-        box = app.App(None, lambda: 99, lambda: 99, games=(Loud,), out=Out())
+        box = app.App(None, ActionMap((), ()), games=(Loud,), out=Out())
         box.start()
         box.game.emit("jump")
         box.frame()
@@ -231,7 +232,8 @@ class TestSoundCues(unittest.TestCase):
             cues = {"fire": cues.Cue("low", sound.FULL // 2, True), "jump": cues.Cue("high")}
 
         mixer = sound.Mixer(2)
-        box = app.App(None, lambda: 99, lambda: 99, games=(Burning, Quiet), out=Out(), cues=cues.SoundCues(mixer, FakeBank()))
+        box = app.App(None, ActionMap((), ()), games=(Burning, Quiet), out=Out(),
+                      cues=cues.SoundCues(mixer, FakeBank()))
         box.start()
         game = box.game
         game.emit("fire", 0)

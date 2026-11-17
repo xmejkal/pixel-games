@@ -10,8 +10,11 @@ pixel-engine submodule.
 | `signals.py` | `Signals`: a game emits a signal by its name, and each listener of that name is called at once |
 | `clock.py` | `since`, `ticks_us` and `ticks_diff`: the board's tick clock, 0 on the Mac |
 | `accel.py` | `Chooser`: chooses each part's version once at boot and says why in the `engine` line (P850) |
+| `actions.py` | `ActionMap`: the inputs bound to the actions a frame reads, FIRE, PICK, the knob's turn and the stick's x and y (P851) |
 
 - `__init__.py` is empty, so each module imports alone: a later board takes only the modules it needs.
+- `actions.py` imports no driver. `app.open_actions()` builds the drivers of `games/drivers/` (a button, the
+  encoder, the stick) from the pin map and hands them in, so a remote board's map can bind other inputs (P832).
 - A module imports only the modules of the package that its row of `DIRECTION` names, and MicroPython's built-in
   modules (`tests/test_engine_boundary.py`). It never imports a game's module or `engine_config`. The test fences
   this package only: the games get their own rule in a later stage of the plan.

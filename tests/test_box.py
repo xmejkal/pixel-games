@@ -25,7 +25,9 @@ import volume  # noqa: E402  games/ is on the path through box
 PY = sorted("games/" + n for n in os.listdir(box.GAMES) if n.endswith(".py"))
 COPY = ["cp"] + PY + ["games/box_bank.raw", ":"]
 PACKAGE = sorted(n for n in os.listdir(os.path.join(box.GAMES, "engine")) if n.endswith(".py"))  # __init__.py first
-FOLDER = [["mkdir", ":engine"], ["cp"] + ["games/engine/" + n for n in PACKAGE] + [":engine/"]]  # --py, no :engine/
+DRIVERS = sorted(n for n in os.listdir(os.path.join(box.GAMES, "drivers")) if n.endswith(".py"))  # the second (P851)
+FOLDER = [["mkdir", ":engine"], ["cp"] + ["games/engine/" + n for n in PACKAGE] + [":engine/"],
+          ["mkdir", ":drivers"], ["cp"] + ["games/drivers/" + n for n in DRIVERS] + [":drivers/"]]  # --py, no folders
 EMPTY = "         139 boot.py\n"
 FULL = "ls :\n         139 boot.py\n           0 packs/\n          31 lineup.py\n"
 PROBE = ["run", "tools/firmware_probe.py"]
@@ -126,18 +128,18 @@ class DeployTest(unittest.TestCase):
         self.assertEqual([PROBE, ["ls", ":"], ["mkdir", ":packs"], COPY] + FOLDER +
                          [["cp", "games/packs/runner.pak", ":packs/runner.pak"],
                           ["cp", "games/packs/snake.pak", ":packs/snake.pak"],
-                          ["cp", "games/packs/flappy.pak", ":packs/flappy.pak"]], runner.commands[:9])
-        self.assertEqual(":lineup.py", runner.commands[9][-1])
-        self.assertEqual([["reset"]], runner.commands[10:])
+                          ["cp", "games/packs/flappy.pak", ":packs/flappy.pak"]], runner.commands[:11])
+        self.assertEqual(":lineup.py", runner.commands[11][-1])
+        self.assertEqual([["reset"]], runner.commands[12:])
         self.assertEqual("LINEUP = ('runner', 'snake', 'flappy', 'marshmallow')  # tools/box.py deploy (P817)\n",
                          runner.lineup)
 
     def test_a_lineup_on_a_board_with_packs_makes_no_folder(self):
         runner = FakeRunner(FULL)
         deploy(runner).run(["cave"])
-        self.assertEqual([PROBE, ["ls", ":"], COPY] + FOLDER, runner.commands[:5])
+        self.assertEqual([PROBE, ["ls", ":"], COPY] + FOLDER, runner.commands[:7])
         self.assertEqual(["reset"], runner.commands[-1])
-        self.assertEqual(7, len(runner.commands))
+        self.assertEqual(9, len(runner.commands))
         self.assertEqual("LINEUP = ('cave',)  # tools/box.py deploy (P817)\n", runner.lineup)
 
     def test_all_copies_every_pack_and_removes_the_board_s_lineup(self):
@@ -175,10 +177,10 @@ class DeployTest(unittest.TestCase):
         lines = said.getvalue().splitlines()
         self.assertEqual(["mpremote run tools/firmware_probe.py", "mpremote ls :", "mpremote mkdir :packs",
                           "mpremote " + " ".join(COPY)] + ["mpremote " + " ".join(c) for c in FOLDER] +
-                         ["no _crackle.mpy built, so none is copied: tools/crackle.sh builds it"], lines[:7])
-        self.assertEqual("mpremote cp games/packs/snake.pak :packs/snake.pak", lines[7])
-        self.assertRegex(lines[8], r"^mpremote cp \S+lineup\.py :lineup\.py$")
-        self.assertEqual(["mpremote reset"], lines[9:])
+                         ["no _crackle.mpy built, so none is copied: tools/crackle.sh builds it"], lines[:9])
+        self.assertEqual("mpremote cp games/packs/snake.pak :packs/snake.pak", lines[9])
+        self.assertRegex(lines[10], r"^mpremote cp \S+lineup\.py :lineup\.py$")
+        self.assertEqual(["mpremote reset"], lines[11:])
 
     def test_the_runner_runs_mpremote_from_the_repository_root(self):
         with mock.patch.object(box.subprocess, "run") as run:
@@ -233,7 +235,7 @@ class MpyTest(unittest.TestCase):
     def test_it_compiles_each_module_but_main_for_the_chip_naming_its_source(self):
         commands, calls = self.deploy(EMPTY)
         self.assertEqual(["mpy-cross", "--version"], calls[0])
-        self.assertEqual(len(MODULES) + len(PACKAGE), len(calls) - 1)  # the package's after the root's
+        self.assertEqual(len(MODULES) + len(PACKAGE) + len(DRIVERS), len(calls) - 1)  # the packages' after the root's
         for module, call in zip(MODULES, calls[1:]):
             self.assertEqual(["mpy-cross", "-march=xtensawin", "-s", module + ".py", "-o"], call[:5])
             self.assertEqual((module + ".mpy", "games/%s.py" % module), (os.path.basename(call[5]), call[6]))
@@ -246,7 +248,8 @@ class MpyTest(unittest.TestCase):
         self.assertEqual([m + ".mpy" for m in MODULES], [os.path.basename(f) for f in copy[1:-3]])
         self.assertEqual(["games/main.py", "games/box_bank.raw", ":"], copy[-3:])
         self.assertEqual(["mkdir", ":engine"], commands[4])
-        self.assertEqual(["cp", "games/packs/snake.pak", ":packs/snake.pak"], commands[6])
+        self.assertEqual(["mkdir", ":drivers"], commands[6])
+        self.assertEqual(["cp", "games/packs/snake.pak", ":packs/snake.pak"], commands[8])
         self.assertNotIn("rm", [c[0] for c in commands])
         self.assertEqual(["reset"], commands[-1])
 
@@ -333,21 +336,27 @@ class PackageTest(unittest.TestCase):
 
     def test_the_package_goes_into_its_folder(self):
         commands, calls = self.deploy()
-        package = calls[-len(PACKAGE):]
-        for name, call in zip(PACKAGE, package):
-            self.assertEqual(["mpy-cross", "-march=xtensawin", "-s", "engine/" + name, "-o"], call[:5])
-            self.assertEqual((name[:-3] + ".mpy", "games/engine/" + name), (os.path.basename(call[5]), call[6]))
-        at = commands.index(["mkdir", ":engine"])
-        self.assertEqual([c[5] for c in package] + [":engine/"], commands[at + 1][1:])
-        self.assertNotIn(["ls", ":engine"], commands)  # a folder just made has nothing to clean
-        self.assertIn("__init__.py", PACKAGE)
+        for folder, names, package in (("engine", PACKAGE, calls[-len(PACKAGE) - len(DRIVERS):-len(DRIVERS)]),
+                                       ("drivers", DRIVERS, calls[-len(DRIVERS):])):
+            for name, call in zip(names, package):
+                self.assertEqual(["mpy-cross", "-march=xtensawin", "-s", folder + "/" + name, "-o"], call[:5])
+                self.assertEqual((name[:-3] + ".mpy", "games/%s/%s" % (folder, name)),
+                                 (os.path.basename(call[5]), call[6]))
+            at = commands.index(["mkdir", ":" + folder])
+            self.assertEqual([c[5] for c in package] + [":%s/" % folder], commands[at + 1][1:])
+            self.assertNotIn(["ls", ":" + folder], commands)  # a folder just made has nothing to clean
+            self.assertIn("__init__.py", names)
 
     def test_a_board_with_the_folder_gets_no_mkdir(self):
-        commands, _ = self.deploy("ls :\n           0 packs/\n           0 engine/\n", "ls :engine\n")
+        commands, _ = self.deploy("ls :\n           0 packs/\n           0 engine/\n           0 drivers/\n",
+                                  "ls :engine\n")
         self.assertNotIn(["mkdir", ":engine"], commands)
+        self.assertNotIn(["mkdir", ":drivers"], commands)
         at = commands.index(["ls", ":engine"])
         self.assertEqual("cp", commands[at - 1][0])
         self.assertEqual(":engine/", commands[at - 1][-1])
+        self.assertEqual(("cp", ":drivers/"), (commands[at + 1][0], commands[at + 1][-1]))  # nothing to remove
+        at = commands.index(["ls", ":drivers"])
         self.assertEqual(["cp", "games/packs/snake.pak", ":packs/snake.pak"], commands[at + 1])  # nothing to remove
 
     def test_a_stale_py_in_the_folder_goes(self):
@@ -399,7 +408,7 @@ class PackageTest(unittest.TestCase):
                            ":engine/signals.mpy"]], rm)
 
     def test_the_moved_table_names_modules_that_left_the_root_for_a_package(self):
-        self.assertEqual(("signals",), box.MOVED)
+        self.assertEqual(("signals", "buttons", "encoder"), box.MOVED)
         for name in box.MOVED:
             with self.subTest(name):
                 self.assertFalse(os.path.exists(os.path.join(box.GAMES, name + ".py")))
@@ -413,8 +422,8 @@ class PackageTest(unittest.TestCase):
         at = lines.index("mpremote mkdir :engine")
         self.assertRegex(lines[at - 1], r"^mpy-cross -march=xtensawin -s engine/signals\.py -o \S+signals\.mpy "
                                         r"games/engine/signals\.py$")
-        self.assertRegex(lines[at + 1], r"^mpremote cp \S+__init__\.mpy \S+accel\.mpy \S+clock\.mpy \S+signals\.mpy "
-                                        r":engine/$")
+        self.assertRegex(lines[at + 1], r"^mpremote cp \S+__init__\.mpy \S+accel\.mpy \S+actions\.mpy \S+clock\.mpy "
+                                        r"\S+signals\.mpy :engine/$")
         self.assertNotIn("mpremote ls :engine", lines)
 
 
