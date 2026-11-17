@@ -1,7 +1,7 @@
-"""Two 3D games for one button: tunnel (wireframe rings, tap turns the ship) and road (horizon road, tap changes lane).
-With the joystick (P872), the stick's way picks tunnel's wall (up, right, down or left) and a stick at rest keeps it;
-road's lane is the stick's place, left, middle or right, so a stick at rest drives the middle lane, and FIRE held
-boosts."""
+"""Two 3D games for one button or the stick: tunnel (wireframe rings, tap turns the ship) and road (horizon road, tap
+changes lane). With the joystick (P872), the stick's way picks tunnel's wall (up, right, down or left) and a stick at
+rest keeps it; road's lane is the stick's place, left, middle or right, so a stick at rest drives the middle lane,
+and FIRE held boosts."""
 
 import math
 import random

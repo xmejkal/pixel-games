@@ -87,6 +87,9 @@ Every subject, with the button pattern that made its picture (`tools/render_scen
 | GravityPong as BUBBLE | tap turns the net | Two night workers on an exchange floor at midnight carry a net and keep a soap bubble in the air, and it swells as the score climbs while the tired workers' net shrinks. The picture shows the bubble in flight over the ticker board; in the GIF it misses the net and pops into banknotes, and the board's chart crashes. | <a href="docs/screenshots/gravitypong.gif"><img src="docs/screenshots/gravitypong.png" width="160"></a> |
 | the overlay | turn the knob | The volume pane over the ball pit, see-through at alpha 128, so the balls show through its dark part. | <a href="docs/screenshots/overlay.gif"><img src="docs/screenshots/overlay.png" width="160"></a> |
 
+The button column is each subject's play with the button. On a box with the joystick, eight games play with the stick
+instead; the action map paragraph under "Build and run" says how.
+
 ## Build and run
 
 You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython v1.29.0 into `~/esp` if it is not there.
