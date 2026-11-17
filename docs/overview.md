@@ -9,8 +9,8 @@
 
 This page is the overview. It says what each part does, how the parts talk, and how far spark can build an
 engine-based app or a game today. The lessons on the engine itself are in [engine-walkthrough.md](engine-walkthrough.md)
-and [engine-deep-dives.md](engine-deep-dives.md). The same pictures, as infographics, are on the
-[Miro hub board](https://miro.com/app/board/uXjVEavQ4JQ=/). All paths are relative to the root of this repository, on
+and [engine-deep-dives.md](engine-deep-dives.md). The same pictures, as infographics, are in five frames on the
+[Miro hub board](https://miro.com/app/board/uXjVEavQ4JQ=/?moveToWidget=3458764690785736286). All paths are relative to the root of this repository, on
 master `5461560` (2026-11-17). A path that starts with `spark:` is in the
 [spark repository](https://github.com/xmejkal/spark), on main `8ab39d54`.
 
@@ -183,9 +183,9 @@ found that the pin assigner gave the screen cable's pins to the amplifier and th
 
 | Step | spark today | For an engine game |
 | --- | --- | --- |
-| Pick the parts from a goal | partly (`/spark:idea`, `/spark:drawer`) | works for the modules. The screen of this box was chosen before spark |
+| Pick the parts from a goal | partly (`/spark:idea`, `/spark:drawer`) | partly: the modules are in `requirements.json`, but the screen of this box was chosen before spark |
 | Research a missing part | partly (`/spark:research`, `/spark:identify`) | the microphone's record came this way |
-| Build the board: pin map, breadboard sheet, Wokwi diagram | works (`/spark:build`) | works: the box's `games/pins.py` is spark's |
+| Build the board: pin map, breadboard sheet, Wokwi diagram | works (`/spark:build`) | partly: the box's `games/pins.py` is spark's, but the screen's cable pins are typed by hand |
 | Check the board | works (`check_all.py`, five checks) | the box's run ends in `problems`, for two reasons: eight reserved pins (the screen's cable, the SPI bus, a button) connect to no part, and no Wokwi diagram comes out |
 | Simulate | works (`run_scenario.py`) | stops for the box: the encoder sits on GPIO 43 and 44, which the Wokwi board does not have, and the amplifier (MAX98357A) has no Wokwi model |
 | Firmware | spark exports facts only: the pin map, stand-in modules for an import check | the engine, the drivers and the games come from the conversation |
