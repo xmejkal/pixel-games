@@ -17,6 +17,7 @@ if not hasattr(time, "ticks_diff"):
     time.ticks_ms = lambda: int(time.perf_counter() * 1e3)
 
 import rescue as rs  # noqa: E402
+from engine.actions import Actions  # noqa: E402
 from rescue import BURNT, OUT, TURNED, Crater, Rules  # noqa: E402
 
 START = 150  # px: his hips at the start, facing right
@@ -601,6 +602,103 @@ class GameTest(unittest.TestCase):
         wide = "hold the button down to pour the water over the fire"  # wider than the screen, nowhere to break
         self.assertGreater(8 * len(wide), gfx.WIDTH)
         self.assertEqual((wide,), gfx.hint_lines(wide))
+
+
+# --- MVP (P872) ---
+class SteerTest(unittest.TestCase):
+    """The stick's path: Rules.step with a way (the stick's lean). FIRE held sprays at once, a way turns and runs him,
+    0 stands, and a steered fireman stops at the end of the street."""
+
+    def test_way_0_stands(self):
+        rules = rules_with_crater_at(300)
+        for _ in range(5):
+            self.assertEqual(0, rules.step(40, False, 0))
+        self.assertEqual((START, 1, 0, 0), (rules.man.x, rules.man.facing, rules.man.steered, rules.man.ran))
+
+    def test_a_way_against_his_facing_turns_him_with_the_turn_s_poses_then_he_runs_it(self):
+        rules = rules_with_crater_at(300)
+        self.assertEqual(TURNED, rules.step(40, False, -1))
+        self.assertEqual(-1, rules.man.facing)
+        for _ in range(rs.TURN_MS // 40 - 1):
+            self.assertTrue(rules.man.turning())
+            self.assertEqual(0, rules.step(40, False, -1))  # one turn: he faces the way now
+            self.assertEqual(START, rules.man.x)
+        rules.step(40, False, -1)
+        self.assertFalse(rules.man.turning())
+        self.assertLess(rules.man.x, START)
+
+    def test_fire_held_sprays_from_its_first_frame_and_nothing_flashes(self):
+        rules = rules_with_crater_at(300)
+        rules.step(40, True, 0)
+        self.assertEqual((True, False), (rules.man.spraying(), rules.man.flashing()))
+
+    def test_the_spray_wins_over_a_way(self):
+        rules = rules_with_crater_at(300)
+        for way in (1, -1):
+            self.assertEqual(0, rules.step(40, True, way))
+        self.assertEqual((START, 1), (rules.man.x, rules.man.facing))
+        self.assertTrue(rules.man.spraying())
+
+    def test_a_tap_never_turns_him(self):
+        rules = rules_with_crater_at(300)
+        self.assertEqual([0, 0], [rules.step(40, True, 0), rules.step(40, False, 0)])
+        self.assertEqual(1, rules.man.facing)
+
+    def test_steered_he_stops_at_each_end_of_the_street_and_does_not_turn(self):
+        for way, end in ((1, rs.RIGHT_X), (-1, rs.LEFT_X)):
+            rules = calm(Rules(random.Random(800).randrange, end - 5 * way))
+            for _ in range(50):
+                rules.step(40, False, way)
+            ran = rules.man.ran
+            rules.step(40, False, way)
+            self.assertEqual((end, way, False, ran), (rules.man.x, rules.man.facing, rules.man.turning(), rules.man.ran))
+
+    def test_the_button_path_is_as_before(self):
+        rules = rules_with_crater_at(300)
+        self.assertEqual(0, rules.step(40, True))
+        self.assertEqual(TURNED, rules.step(40, False))
+        self.assertEqual((None, rs.TAP_MS), (rules.man.steered, rules.man.wait_ms))
+
+
+class StickGameTest(unittest.TestCase):
+    """The game through Game.step: with a stick its lean steers him, with None a tap turns him as before."""
+
+    def game(self):
+        random.seed(800)
+        game = rs.Rescue()
+        game.step(0, True, True)  # the title's press
+        return game
+
+    def test_standing_with_the_stick_shows_the_hose_ready_and_carrying_the_carry(self):
+        game = self.game()
+        game.stick = Actions()
+        game.step(40, False, False)
+        self.assertEqual((rs.POSES["spray", "r"][0], "spray"), game.man_picture())
+        game.rules.man.carrying = rs.Person(rs.MAN, START, 1, NEVER)
+        self.assertEqual("carry", game.man_picture()[1])
+
+    def test_with_the_stick_a_lean_turns_him_and_a_tap_does_not(self):
+        game = self.game()
+        game.stick = Actions()
+        game.step(40, True, True)
+        game.step(80, False, False)
+        self.assertEqual(1, game.rules.man.facing)
+        game.stick.x = -100
+        game.step(120, False, False)
+        self.assertEqual((-1, True), (game.rules.man.facing, game.rules.man.turning()))
+
+    def test_with_no_stick_a_tap_turns_him_as_before(self):
+        game = self.game()
+        self.assertIsNone(game.stick)
+        game.step(40, True, True)
+        game.step(80, False, False)
+        self.assertEqual(-1, game.rules.man.facing)
+
+    def test_the_stick_s_hint_fits_the_screen_on_two_lines(self):
+        import gfx  # noqa: E402
+        lines = gfx.hint_lines(rs.Rescue.stick_hint)
+        self.assertEqual(("stick runs, fire sprays,", "carry people to the station"), lines)
+        self.assertTrue(all(8 * len(line) <= gfx.WIDTH for line in lines))
 
 
 

@@ -26,6 +26,7 @@ import random
 
 import pictures
 from cues import LEVELS, Cue
+from engine.actions import lean
 from fire import ALPHA, PALETTE, FireLayer
 from gfx import DARK, GREY, ORANGE, RED, WHITE, WIDTH, YELLOW, Game, Particles, c565
 from meteors import SMOKE_ALPHAS, SMOKE_H, SMOKE_MS, SMOKE_W
@@ -86,23 +87,26 @@ CROWD = (2, 3, 3, 4, 4, 5)  # people out at once at each tier
 
 class Fireman:
     """Where he is, the way he faces (1 right, -1 left), the press he is in, the px he ran (the run's pose), the
-    person he carries (or None) and the ms since he picked them up, and whether a fire stopped him."""
+    person he carries (or None) and the ms since he picked them up, and whether a fire stopped him. With the stick
+    (P872): steered, the stick's way this frame (-1, 0 or 1; None on the button's path), and wait_ms, the hold before
+    a spray: TAP_MS for the button, 0 for the stick."""
 
     def __init__(self, x):
         self.x, self.facing, self.rest = x, 1, 0  # rest: px times ms short of the next whole px
         self.down_ms = -1  # ms the button has been held, the first frame's ms included; -1 when it is up
         self.ran, self.turned_ms, self.spray_ms = 0, TURN_MS, 0
         self.carrying, self.carried_ms, self.blocked = None, 0, False
+        self.steered, self.wait_ms = None, TAP_MS  # --- MVP (P872) ---
 
     def spraying(self):
-        """Held TAP_MS or longer, not in a turn and not carrying."""
-        return self.down_ms >= TAP_MS and not self.turning() and self.carrying is None
+        """Held wait_ms or longer, not in a turn and not carrying."""
+        return self.down_ms >= self.wait_ms and not self.turning() and self.carrying is None
 
     def turning(self):
         return self.turned_ms < TURN_MS
 
     def flashing(self):
-        return FLASH_MS <= self.down_ms < TAP_MS and self.carrying is None
+        return FLASH_MS <= self.down_ms < self.wait_ms and self.carrying is None
 
     def press(self, ms, held):
         """ms of a frame with the button held or not. A press released before TAP_MS turns him, at the release.
@@ -118,6 +122,20 @@ class Fireman:
             self.turn()
         return tap
 
+    # --- MVP (P872) ---
+    def steer(self, ms, way, held):
+        """ms of a frame with the stick: way, its lean (-1, 0 or 1), and FIRE held or not. FIRE held sprays from its
+        first frame (wait_ms 0), so nothing flashes, and a spray wins over a way. A way against his facing turns him
+        (the turn's poses); 0 stands. A tap never turns him. Answers whether he turned."""
+        self.turned_ms += ms
+        self.carried_ms += ms
+        self.down_ms = (ms if self.down_ms < 0 else self.down_ms + ms) if held else -1
+        self.steered, self.wait_ms = way, 0
+        if way and way != self.facing and not self.spraying():
+            self.turn()
+            return True
+        return False
+
     def turn(self):
         """He turns on the spot. The turn's poses are the run's at phases 0, 3, 6 and 9 of 12, so the run goes on
         after it from phase 0: ran moves on to the next whole stride. Carrying, he turns at once, as the turn's poses
@@ -129,12 +147,15 @@ class Fireman:
 
     def run(self, ms, stop=None):
         """ms of running the way he faces; at an end of the street he turns by himself. Spraying or turning, he
-        stands. stop: an x ahead that he does not pass (a fire's edge), or None."""
+        stands. stop: an x ahead that he does not pass (a fire's edge), or None. Steered by the stick (P872), he stands
+        at way 0, and stops at an end of the street without a turn."""
         if self.spraying():
             self.spray_ms += ms
             return
-        if self.turning():
+        if self.turning() or self.steered == 0:
             return
+        if self.steered is not None and self.ahead(LEFT_X if self.facing < 0 else RIGHT_X) <= 0:
+            return  # steered into the end of the street he stands at: no px run, so his feet do not run on the spot
         self.rest += self.facing * (SPEED_PX_S if self.carrying is None else CARRY_PX_S) * ms
         px = self.rest // 1000
         self.rest -= px * 1000
@@ -146,7 +167,7 @@ class Fireman:
         if self.x <= LEFT_X or self.x >= RIGHT_X:
             self.x = LEFT_X if self.x <= LEFT_X else RIGHT_X
             self.rest = 0
-            if (self.x == LEFT_X) == (self.facing < 0):
+            if self.steered is None and (self.x == LEFT_X) == (self.facing < 0):
                 self.turn()
 
     def run_pose(self):
@@ -239,14 +260,15 @@ class Rules:
                 best = c.x
         return best
 
-    def step(self, ms, held):
-        """One frame of ms with the button held or not. Answers the frame's bits."""
+    def step(self, ms, held, way=None):
+        """One frame of ms with the button held or not. way: the stick's lean (P872), or None on the button's path.
+        Answers the frame's bits."""
         man, events = self.man, 0
         if self.lost:
             self.lost = []
         if self.ended:
             self.ended = []
-        if man.press(ms, held):
+        if man.press(ms, held) if way is None else man.steer(ms, way, held):  # the stick steers him (P872)
             events |= TURNED
         fire = None if man.carrying is not None else self.fire_ahead(man.x, man.facing, BLOCK_PX + SPEED_PX_S)
         man.run(ms, None if fire is None else fire - man.facing * BLOCK_PX)  # carrying, he runs through the flames
@@ -502,6 +524,7 @@ class Rescue(Game):
     name = "rescue"
     ART = ("rescue", None)  # its own art set, all of it (P822)
     hint = "tap turns, hold sprays, carry people to the station"
+    stick_hint = "stick runs, fire sprays, carry people to the station"  # --- MVP (P872) ---
     bg = c565(14, 12, 26)
     accent = ORANGE
     cues = {"hose": Cue("hose", loop=True), "siren": Cue("siren"), "whoosh": Cue("whoosh"), "boom": Cue("boom"),
@@ -531,7 +554,7 @@ class Rescue(Game):
         if not self.started:  # the round starts with the siren
             self.started = True
             self.emit("siren")
-        events = rules.step(self.ms, held)
+        events = rules.step(self.ms, held, None if self.stick is None else lean(self.stick.x))
         man = rules.man
         self.fires(events)
         self.effects(events)
@@ -661,8 +684,8 @@ class Rescue(Game):
 
     def man_picture(self):
         """The painted picture for now and its cycle: the carry while he carries, the turn just after a turn, the
-        spray while he sprays (and its first pose, the hose ready, while a fire stops him), else the run's pose for
-        the px he ran. The names are made once, in POSES."""
+        spray while he sprays (and its first pose, the hose ready, while a fire stops him or he stands with the stick),
+        else the run's pose for the px he ran. The names are made once, in POSES."""
         man = self.rules.man
         side = "r" if man.facing > 0 else "l"
         if man.carrying is not None:
@@ -672,7 +695,7 @@ class Rescue(Game):
             return POSES["turn", "l" if man.facing > 0 else "r"][man.turned_ms * TURN_POSES // TURN_MS], "turn"
         if man.spraying():
             return POSES["spray", side][man.spray_ms // SPRAY_POSE_MS % SPRAY_POSES], "spray"
-        if man.blocked:
+        if man.blocked or man.steered == 0:
             return POSES["spray", side][0], "spray"
         return POSES["run", side][man.run_pose()], "run"
 
