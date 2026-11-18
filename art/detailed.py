@@ -3,12 +3,13 @@ and an air tank, to see whether the detail shows at that size. It is in no game 
 does not call it, and the packs stay as they are.
 
 One number, the height in px from the soles to the helmet's top, sets the size. Every width and offset is a share
-of the body height, so the same painter gives 48 px or 96 px.
+of the body height, so the same painter gives any height. The detail needs about 96 px: at 48 px the eye and the
+sole are under 1 px and do not show.
 
-Run from the repository root: python3 art/detailed.py --out DIR writes figure-sheet.png (the twelve run poses,
-today's 26 px fireman beside them, and two poses at 3x), run.gif (both firemen run over Rescue's street at the
-captured speed) and run-close.gif (the run in place at 2x and half speed), and prints the run's box and bytes.
-It needs the CMU files in mocap.CMU_DIR and paints nothing without them.
+Run from the repository root: python3 art/detailed.py --out DIR [--rim outline|none|lit] writes figure-sheet.png
+(the twelve run poses, today's 26 px fireman beside them, two poses at 3x and one pose with each rim), run.gif (both
+firemen run over Rescue's street at the captured speed) and run-close.gif (the run in place at 2x and about half
+speed), and prints the run's box and bytes. It needs the CMU files in mocap.CMU_DIR and paints nothing without them.
 """
 
 import argparse
@@ -20,20 +21,19 @@ from PIL import Image, ImageChops
 import mocap
 from brush import Sprite, rnd
 from export import Sheet, committed_index, from_bin, pack_bytes, q565
-from sets.rescue import FEET, HELMET, HELMET_L, HELMET_TOP, Figure, along, dist
+from sets.rescue import FEET, HELMET, HELMET_L, HELMET_TOP, Figure, along, dist, lighter
 
 TALL = 96  # px from the soles to the helmet's top, standing
 SEED = 904  # the grain's seed: two runs write the same files
 COAT, TROUSERS = (198, 158, 84), (168, 132, 72)  # a tan turnout coat: shade shows on it after RGB565, on black not
-BOOT, SOLE = (30, 28, 36), (92, 88, 100)
+BOOT, TREAD = (30, 28, 36), (92, 88, 100)  # TREAD: the boot's sole
 SKIN, EYE, MOUTH = (236, 184, 146), (36, 28, 30), (150, 84, 74)
 GLOVE = (104, 60, 40)
 SEAM = (74, 62, 52)  # round the near arm where it lies on the coat
 TANK, STRAP, BUCKLE = (108, 124, 152), (44, 42, 52), (214, 190, 120)
 SHIELD = (206, 48, 40)  # the helmet's front shield
 FRAME_MS = 40  # one frame of the game
-RUN_PX_S = 2.316  # body heights a second: the capture's stride, 1.698 body heights, in its 0.733 s loop
-STRIDE = 1.698  # body heights he runs in one run cycle (art/mocap.py prints it)
+CLOSE_MS = 120  # a pose of run-close.gif: about half the captured speed (a pose is 61 ms of the capture)
 
 
 def box(height):
@@ -43,10 +43,6 @@ def box(height):
 
 def darker(colour, k=0.7):
     return tuple(int(c * k) for c in colour)
-
-
-def lighter(colour):
-    return tuple(min(255, int(c * 1.22 + 16)) for c in colour)
 
 
 def unit(a, b):
@@ -61,12 +57,56 @@ def union(*masks):
     return out
 
 
+def pose_index(ran, stride, poses):
+    """The pose after ran px of running, of poses in a cycle of stride px: as games/rescue.py picks it."""
+    return ran * poses // stride % poses
+
+
+class LitRim:
+    """Today's rim (Figure.rim): 1 px left and right of the shape, warm on the side he faces and cool behind."""
+
+    def apply(self, figure, img, right):
+        return Figure.rim(figure, img, right)
+
+
+class NoRim:
+    """The shape alone."""
+
+    def apply(self, figure, img, right):
+        return img
+
+
+class Outline:
+    """A 1 px outline all round the shape: each pixel a dark shade of the colours it borders, so the dark boots
+    and gloves keep their shape on a dark street."""
+
+    SHADE = 0.35
+
+    def apply(self, figure, img, right):
+        out, px = img.copy(), img.load()
+        w, h = img.size
+        for y in range(h):
+            for x in range(w):
+                if px[x, y][3]:
+                    continue
+                near = [px[q] for q in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))
+                        if 0 <= q[0] < w and 0 <= q[1] < h and px[q][3]]
+                if near:
+                    out.putpixel((x, y), tuple(int(sum(c[i] for c in near) / len(near) * self.SHADE)
+                                               for i in range(3)) + (255,))
+        return out
+
+
+RIMS = {"outline": Outline, "none": NoRim, "lit": LitRim}  # --rim's names; the first is the default
+
+
 class DetailedFireman(Figure):
     """One pose of the fireman with detail, facing the way the pose does: a tan coat with a collar and a hem,
     trousers, boots with soles, reflective bands, gloves from the wrist to the fingers, a face on the side the nose
     is, a helmet with a brim, a shield and a neck flap, an air tank on his back with a strap, and a belt. The
-    numbers below are shares of the body height. Figure gives the joints' places, the bands as whole pixels and the
-    1 px rim."""
+    numbers below are shares of the body height. Figure gives the joints' places and the bands as whole pixels.
+    The part and the band here are not Figure's: a part is shaded, and a band scales with the height. rim is the
+    figure's edge, one of RIMS."""
 
     SOLE = 0.038  # from the toe joint down to the boot's underside
     THIGH, SHIN, UPPER, FORE = (0.115, 0.095), (0.095, 0.075), (0.095, 0.08), (0.08, 0.07)  # each limb's two widths
@@ -76,9 +116,10 @@ class DetailedFireman(Figure):
     BAND, SEAM_W = 0.024, 0.014
     TANK_W, TANK_OUT, STRAP_W, BELT_W = 0.085, 0.105, 0.022, 0.034
 
-    def __init__(self, size, height=TALL):
+    def __init__(self, size, height=TALL, rim=None):
         super().__init__(size)
         self.PX = height / (1 + HELMET_TOP + self.SOLE)
+        self.edge = rim or Outline()
 
     def at(self, joint):
         x, y, _ = joint
@@ -100,7 +141,7 @@ class DetailedFireman(Figure):
         self.belt(s, p, ahead)
         self.head(s, p, ahead, toward)
         self.arm(s, p, near, False)
-        return self.rim(self.banded(s.cut(outline=False)), ahead >= 0)
+        return self.edge.apply(self, self.banded(s.cut(outline=False)), ahead >= 0)
 
     # --- the brush -----------------------------------------------------------------------------------------------
 
@@ -140,6 +181,12 @@ class DetailedFireman(Figure):
         return s.shape("line", (cx - uy * half, cy + ux * half), (cx + uy * half, cy - ux * half),
                        width=self.BAND * self.PX)
 
+    def spine(self, s, p):
+        """The middle of the hips, and the torso's mask from there to the neck."""
+        hips = along(p["lhipjoint"], p["rhipjoint"], 0.5)
+        return hips, s.shape("line", hips, p["lowerback"], p["upperback"], p["thorax"], p["lowerneck"],
+                             width=self.TORSO * self.PX)
+
     # --- the body ------------------------------------------------------------------------------------------------
 
     def leg(self, s, p, side, far):
@@ -155,7 +202,7 @@ class DetailedFireman(Figure):
         off = (self.FOOT_W / 2 + self.SOLE_W / 4) * self.PX * down
         heel = (ankle[0] - ux * self.FOOT_W * self.PX / 2, ankle[1] - uy * self.FOOT_W * self.PX / 2)
         self.detail(s, s.shape("line", (heel[0] - uy * off, heel[1] + ux * off), (toe[0] - uy * off, toe[1] + ux * off),
-                               width=self.SOLE_W * self.PX), SOLE)
+                               width=self.SOLE_W * self.PX), TREAD)
 
     def arm(self, s, p, side, far):
         shoulder, elbow, wrist = p[side + "clavicle"], p[side + "humerus"], p[side + "radius"]
@@ -184,9 +231,7 @@ class DetailedFireman(Figure):
 
     def coat(self, s, p):
         """The coat: the torso from the hips to the neck, and a hem that hangs over the tops of both thighs."""
-        hips = along(p["lhipjoint"], p["rhipjoint"], 0.5)
-        spine = (hips, p["lowerback"], p["upperback"], p["thorax"], p["lowerneck"])
-        torso = s.shape("line", *spine, width=self.TORSO * self.PX)
+        _, torso = self.spine(s, p)
         half, margin = self.TORSO * self.PX / 2, self.THIGH[0] * self.PX * 0.62
         hems = sorted(along(p[k + "hipjoint"], p[k + "femur"], 0.4) for k in "lr")
         back, front = (hems[0][0] - margin, hems[0][1]), (hems[1][0] + margin, hems[1][1])
@@ -209,9 +254,7 @@ class DetailedFireman(Figure):
 
     def belt(self, s, p, ahead):
         """The tank's strap over the shoulder and down the chest, the belt, its buckle and a pouch."""
-        hips = along(p["lhipjoint"], p["rhipjoint"], 0.5)
-        coat = s.shape("line", hips, p["lowerback"], p["upperback"], p["thorax"], p["lowerneck"],
-                       width=self.TORSO * self.PX)
+        hips, coat = self.spine(s, p)
         front = ahead * self.TORSO * self.PX
         shoulder, chest = p["lowerneck"], p["upperback"]
         strap = s.shape("line", (shoulder[0] - front * 0.5, shoulder[1] + self.STRAP_W * self.PX),
@@ -263,7 +306,7 @@ class DetailedFireman(Figure):
         self.detail(s, s.shape("poly", at(ahead * 0.86, 0.02), at(ahead * 1.24 + (0.18 if ahead >= 0 else -0.18) * side,
                                                                     -0.34), at(ahead * 0.8, -0.44)), darker(SKIN, 0.9))
         wide = 0.2 + 0.2 * side
-        self.detail(s, s.shape("line", at(ahead * 0.62 - wide, -0.62), at(ahead * 0.62 + wide, -0.62), width=r * 0.14),
+        self.detail(s, s.shape("line", at(ahead * 0.62 - wide, -0.62), at(ahead * 0.62 + wide, -0.62), width=max(1.0, r * 0.14)),
                     MOUTH)
 
     def helmet(self, s, at, r, ahead, side):
@@ -285,28 +328,42 @@ class DetailedFireman(Figure):
 
 class RunPictures:
     """The run's twelve poses from the capture, each painted on its own picture and all cut to the one box they
-    use: pictures (RGBA, in the board's RGB565 colours), size, hips (the hips' x in the box), stride (px a cycle)."""
+    use: pictures (RGBA, in the board's RGB565 colours), size, stride (px a cycle) and speed (px a second), both
+    the capture's."""
 
-    def __init__(self, capture, height, seed=SEED):
-        rnd.seed(seed)
-        self.figure = DetailedFireman(box(height), height)
+    def __init__(self, capture, height, rim=None, seed=SEED):
+        self.capture, self.height, self.rim, self.seed = capture, height, rim, seed
         self.cycle = next(c for c in mocap.CYCLES if c.name == "run")
-        painted = [self.figure.paint(pose) for pose in capture.poses(self.cycle)]
+        figure = self.figure()
+        painted = [figure.paint(pose) for pose in capture.poses(self.cycle)]
         used = [img.getchannel("A").getbbox() for img in painted]
         x0, y0, x1 = min(b[0] for b in used), min(b[1] for b in used), max(b[2] for b in used)
         self.pictures = [q565(img.crop((x0, y0, x1, img.height))) for img in painted]
         self.size = self.pictures[0].size
-        self.hips = self.figure.w // 2 - x0
-        self.stride = round(STRIDE * self.figure.PX)
+        self.stride = round(capture.stride(self.cycle) * figure.PX)
+        self.speed = self.stride * self.cycle.fps / capture.loop(self.cycle)[1]
 
-    def bytes(self):
+    def figure(self, rim=None):
+        """A painter of this run's height on the run's seed, with the run's rim or another."""
+        rnd.seed(self.seed)
+        return DetailedFireman(box(self.height), self.height, rim or self.rim)
+
+    def size_bytes(self):
         """The run in a pack: RGB565, both facings."""
         w, h = self.size
         return w * h * 2 * len(self.pictures) * 2
 
-    def pose(self, ran):
-        """The picture after ran px of running, as games/rescue.py picks it."""
-        return self.pictures[ran * len(self.pictures) // self.stride % len(self.pictures)]
+    def picture(self, ran):
+        """The picture after ran px of running."""
+        return self.pictures[pose_index(ran, self.stride, len(self.pictures))]
+
+    def alone(self, index, rim=None, turned=False):
+        """One pose alone, cut to its own shape: with another rim, or turned toward the viewer as the wave is
+        (mocap.VIEW)."""
+        c = self.cycle
+        cycle = mocap.Cycle(c.name, c.trial, c.fps, c.frames, c.period, c.poses, view=mocap.VIEW) if turned else c
+        img = q565(self.figure(rim).paint(self.capture.poses(cycle)[index]))
+        return img.crop(img.getchannel("A").getbbox())
 
 
 class Committed:
@@ -316,24 +373,25 @@ class Committed:
 
     def __init__(self):
         self.art = committed_index()["ART"]
-        self.street = self.picture("rescue_night").convert("RGB")
-        self.run = [self.picture("rescue_run_r%d" % i) for i in range(self.RUN_POSES)]
+        self.street = self.read("rescue_night").convert("RGB")
+        self.run = [self.read("rescue_run_r%d" % i) for i in range(self.RUN_POSES)]
 
-    def picture(self, name):
+    def read(self, name):
         return from_bin(pack_bytes(name), *self.art[name][:2])
 
-    def pose(self, ran):
-        return self.run[ran * self.RUN_POSES // self.STRIDE_PX % self.RUN_POSES]
+    def picture(self, ran):
+        return self.run[pose_index(ran, self.STRIDE_PX, self.RUN_POSES)]
 
 
 class FigureSheet:
     """figure-sheet.png: the twelve poses in a row with today's fireman at their end, then one run pose and the
-    pose turned toward the viewer at 3x, on the street's dark, so they read as on the board."""
+    pose turned toward the viewer at 3x, then that pose with each rim, on the street's dark, so they read as on the
+    board."""
 
-    ZOOM, GAP, DARK = 3, 6, (30, 16, 40)  # DARK: the street's sky at its middle (art/sets/rescue.py's NIGHT)
+    ZOOM, GAP, DARK, POSE = 3, 6, (30, 16, 40), 3  # DARK: the street's sky at its middle (art/sets/rescue.py's NIGHT)
 
-    def __init__(self, run, turned, old):
-        self.run, self.turned, self.old = run, turned, old
+    def __init__(self, run, old):
+        self.run, self.old = run, old
 
     def on_dark(self, pictures, zoom=1):
         w = sum(img.width for img in pictures) + self.GAP * (len(pictures) + 1)
@@ -342,14 +400,16 @@ class FigureSheet:
         for img in pictures:
             row.paste(img, (x, h - self.GAP - img.height), img)
             x += img.width + self.GAP
-        return row.resize((w * zoom, h * zoom), Image.NEAREST)
+        return row.resize((w * zoom, h * zoom), Image.Resampling.NEAREST)
 
     def image(self):
-        w, h = self.run.size
-        rows = [("the run's twelve poses at %d px, each %d by %d px, and today's 26 px fireman" % (TALL, w, h),
-                 self.on_dark(self.run.pictures + [self.old.run[0]])),
-                ("pose 3 of the run, and the same pose turned toward the viewer, at %dx" % self.ZOOM,
-                 self.on_dark([self.run.pictures[3], self.turned], self.ZOOM))]
+        run, (w, h) = self.run, self.run.size
+        rows = [("the run's twelve poses at %d px, each %d by %d px, and today's 26 px fireman" % (run.height, w, h),
+                 self.on_dark(run.pictures + [self.old.run[0]])),
+                ("pose %d of the run, and the same pose turned toward the viewer, at %dx" % (self.POSE, self.ZOOM),
+                 self.on_dark([run.alone(self.POSE), run.alone(self.POSE, turned=True)], self.ZOOM)),
+                ("the rims (--rim): %s, at %dx" % (", ".join(RIMS), self.ZOOM),
+                 self.on_dark([run.alone(self.POSE, rim()) for rim in RIMS.values()], self.ZOOM))]
         sheet = Sheet(max(img.width for _, img in rows) + 20, sum(img.height + 28 for _, img in rows) + 10)
         y = 6
         for label, img in rows:
@@ -367,17 +427,16 @@ class RunClip:
         self.run, self.old = run, old
 
     def frames(self):
-        speed = RUN_PX_S * self.run.figure.PX
         w, h = self.run.size
-        count = int((self.W + w) / speed * 1000 / FRAME_MS) + 1
+        count = int((self.W + w) / self.run.speed * 1000 / FRAME_MS) + 1
         out = []
         for i in range(count):
             frame = self.old.street.copy()
             small = self.old.SPEED_PX_S * i * FRAME_MS // 1000
-            pose = self.old.pose(small)
-            frame.paste(pose, (150 + small - pose.width // 2, FEET - pose.height + 1), pose)
-            ran = int(speed * i * FRAME_MS / 1000)
-            frame.paste(self.run.pose(ran), (ran - w, FEET - h + 1), self.run.pose(ran))
+            before = self.old.picture(small)
+            frame.paste(before, (150 + small - before.width // 2, FEET - before.height + 1), before)
+            ran = int(self.run.speed * i * FRAME_MS / 1000)
+            frame.paste(self.run.picture(ran), (ran - w, FEET - h + 1), self.run.picture(ran))
             out.append(frame)
         return out
 
@@ -388,46 +447,42 @@ class RunClip:
         for img in self.run.pictures:
             frame = self.old.street.crop((left, top, left + w + 20, FEET + 11))
             frame.paste(img, (10, 10), img)
-            out.append(frame.resize((frame.width * zoom, frame.height * zoom), Image.NEAREST))
+            out.append(frame.resize((frame.width * zoom, frame.height * zoom), Image.Resampling.NEAREST))
         return out
 
 
 def write_gif(frames, path, ms):
-    """A looping GIF on one palette taken from the first frame, so the colours do not flicker."""
-    palette = frames[0].quantize(255)
+    """A looping GIF on one palette, taken from the first, the middle and the last frame side by side, so every
+    colour of the clip is in it and none flickers."""
+    samples = [frames[0], frames[len(frames) // 2], frames[-1]]
+    strip = Image.new("RGB", (sum(f.width for f in samples), samples[0].height))
+    for i, f in enumerate(samples):
+        strip.paste(f, (sum(g.width for g in samples[:i]), 0))
+    palette = strip.quantize(255)
     indexed = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
     indexed[0].save(path, save_all=True, append_images=indexed[1:], duration=ms, loop=0)
-
-
-def turned_pose(capture, cycle, index):
-    """The cycle's pose index, turned toward the viewer as the wave is (mocap.VIEW)."""
-    view = mocap.Cycle(cycle.name, cycle.trial, cycle.fps, cycle.frames, cycle.period, cycle.poses, view=mocap.VIEW)
-    return capture.poses(view)[index]
 
 
 def main():
     parser = argparse.ArgumentParser(description="Paint the detailed fireman's run at %d px: a sheet and two GIFs." % TALL)
     parser.add_argument("--out", required=True, metavar="DIR", help="the folder the three pictures are written to")
+    parser.add_argument("--rim", choices=list(RIMS), default=next(iter(RIMS)),
+                        help="the figure's edge: outline, a dark 1 px line all round; none; lit, today's warm and "
+                             "cool rim (%(default)s)")
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args()
     capture = mocap.Capture(args.cmu)
     if capture.missing():
         parser.error("not in %s: %s" % (args.cmu, ", ".join(capture.missing())))
-    run, old = RunPictures(capture, TALL), Committed()
-    turned = q565(DetailedFireman(box(TALL), TALL).paint(turned_pose(capture, run.cycle, 3)))
+    run, old = RunPictures(capture, TALL, RIMS[args.rim]()), Committed()
     os.makedirs(args.out, exist_ok=True)
-    FigureSheet(run, turned.crop(turned.getchannel("A").getbbox()), old).image().save(
-        os.path.join(args.out, "figure-sheet.png"))
+    FigureSheet(run, old).image().save(os.path.join(args.out, "figure-sheet.png"))
     clip = RunClip(run, old)
     write_gif(clip.frames(), os.path.join(args.out, "run.gif"), FRAME_MS)
-    write_gif(clip.close(), os.path.join(args.out, "run-close.gif"), 2 * round(mocap_loop_ms(capture, run.cycle) / 12))
+    write_gif(clip.close(), os.path.join(args.out, "run-close.gif"), CLOSE_MS)
     w, h = run.size
-    print("the run at %d px: 12 poses of %d by %d px, %d bytes with both facings" % (TALL, w, h, run.bytes()))
-
-
-def mocap_loop_ms(capture, cycle):
-    """The cycle's loop in ms."""
-    return capture.loop(cycle)[1] * 1000 / cycle.fps
+    print("the run at %d px, rim %s: 12 poses of %d by %d px, %d bytes with both facings" % (
+        TALL, args.rim, w, h, run.size_bytes()))
 
 
 if __name__ == "__main__":

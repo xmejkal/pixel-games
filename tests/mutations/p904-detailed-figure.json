@@ -13,21 +13,69 @@
  },
  {
   "file": "art/detailed.py",
-  "name": "the neck flap hangs over the face, not over the back of the head",
-  "find": "        back = -1 if ahead >= 0 else 1\n        if side < 0.7:",
-  "replace": "        back = 1 if ahead >= 0 else -1\n        if side < 0.7:"
+  "name": "the eye is at the back of the head",
+  "find": "            ex, ey = at(ahead * 0.5 + k * side * 0.42, -0.02)",
+  "replace": "            ex, ey = at(-ahead * 0.5 + k * side * 0.42, -0.02)"
  },
  {
   "file": "art/detailed.py",
-  "name": "the glove starts in the palm, so the wrist is coat",
-  "find": "s.shape(\"line\", wrist, palm, hand, tip, width=self.GLOVE_W * self.PX)",
-  "replace": "s.shape(\"line\", palm, hand, tip, width=self.GLOVE_W * self.PX)"
+  "name": "the tank is on his chest",
+  "find": "        out = -ahead * self.TANK_OUT * self.PX",
+  "replace": "        out = ahead * self.TANK_OUT * self.PX"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "no glove is painted",
+  "find": "        self.glove(s, p, side, glove)\n",
+  "replace": ""
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "no helmet is painted",
+  "find": "        self.helmet(s, at, r, ahead, side)\n",
+  "replace": ""
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the coat has no bands",
+  "find": "        self.part(s, union(torso, hem), COAT, bands)",
+  "replace": "        self.part(s, union(torso, hem), COAT)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the default rim is no rim",
+  "find": "        self.edge = rim or Outline()",
+  "replace": "        self.edge = rim or NoRim()"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the outline is as bright as the colour it borders",
+  "find": "    SHADE = 0.35",
+  "replace": "    SHADE = 1.0"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the outline misses the pixels over and under the shape",
+  "find": "for q in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1))\n                        if 0 <= q[0] < w and 0 <= q[1] < h and px[q][3]]\n                if near:",
+  "replace": "for q in ((x + 1, y), (x - 1, y))\n                        if 0 <= q[0] < w and 0 <= q[1] < h and px[q][3]]\n                if near:"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the pose follows the px, not the stride",
+  "find": "    return ran * poses // stride % poses",
+  "replace": "    return ran % poses"
  },
  {
   "file": "art/detailed.py",
   "name": "the stride is a fraction of a px, so a pose index is no whole number",
-  "find": "        self.stride = round(STRIDE * self.figure.PX)",
-  "replace": "        self.stride = STRIDE * self.figure.PX"
+  "find": "        self.stride = round(capture.stride(self.cycle) * figure.PX)",
+  "replace": "        self.stride = capture.stride(self.cycle) * figure.PX"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the run's speed is a px a frame of the capture, not a px a second",
+  "find": "        self.speed = self.stride * self.cycle.fps / capture.loop(self.cycle)[1]",
+  "replace": "        self.speed = self.stride / capture.loop(self.cycle)[1]"
  },
  {
   "file": "art/detailed.py",
