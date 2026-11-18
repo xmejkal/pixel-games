@@ -4,17 +4,25 @@
 ## Who
 <!-- One line per persona: who · evidence status (E pointer | H source).
 e.g. `- Team leads who assign work · H Lena's belief, no interview yet` -->
-- ⟨fill⟩ <!-- REQUIRED:who -->
+- The PO as the box's player · E his answers D1 to D3 in brief.md, n = 1
+- The PO as the engine's author, who writes the next game with Claude in a session · E D5 and D8 in brief.md
+- A visitor who sees the box, or a reader of the repository · H the facilitator's reading of the PO's "we should sell it more". Nobody was asked <!-- REQUIRED:who -->
 
 ## Jobs
 <!-- One job story per line, each clause tagged: When …, I want to …, so I can ….
 e.g. `- When I assign a task in a meeting [E tickets.csv:6], I want the assignee to see it that day [H Lena], so I can stop chasing people [E tickets.csv:7]` -->
-- ⟨fill⟩ <!-- REQUIRED:jobs -->
+- Job 1 · When I show or play a game with motion-capture figures [E the PO, https://github.com/xmejkal/spark/issues/1279], I want the figures big enough that their detail shows [E "ours are tiny and one doesn't appreciate the details so much", the same card], so I can "sell it more" [E the same card]
+- Job 2 · When I play a mission [E D1], I want to pick who I control and switch between figures [E D1], so I can finish a task that needs more than one figure [E D1's example, which the facilitator wrote and the PO chose]
+- Job 3 · When I do not hold a figure [E D4], I want it to have its own life [E D4], so the scene looks alive [H the facilitator's reading of D4]
+- Job 4 · When I write the next game [E D5], I want the figure, its poses and its steering ready to import [E D5, D6], so I do not write them again in each game [H the facilitator's reading. E for the repeat today: `games/rescue.py:90`, `games/rescue.py:203`, `games/meteors.py:119`] <!-- REQUIRED:jobs -->
 
 ## Today they…
 <!-- Per job: what they do instead today (a competitor, a workaround or nothing), tagged.
 e.g. `- Job 1 · paste each task into Slack by hand · E tickets.csv:7` -->
-- ⟨fill⟩ <!-- REQUIRED:today -->
+- Job 1 · the figures are painted at about 24 px a body height · E `games/rescue.py:39` ("24.07 px a body height")
+- Job 2 · nothing. Each game has one figure that the player steers · E `games/rescue.py:90` (`Fireman`), `games/meteors.py:119` (the walker in `Rules`) · caveat: two games read, the other thirteen not
+- Job 3 · Rescue's people run, wave and turn in panic by a rule written in the game · E `games/rescue.py:203-229` (`Person`)
+- Job 4 · each game writes its own class and copies the cycles' numbers by hand · E `games/rescue.py:39-43`, `games/meteors.py:217` <!-- REQUIRED:today -->
 
 ## Journeys
 <!-- One ### per actor and scenario: the table, then a Mermaid flowchart of the same steps. Never a Mermaid
