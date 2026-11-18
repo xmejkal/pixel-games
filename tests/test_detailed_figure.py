@@ -394,6 +394,11 @@ class CharacterTest(unittest.TestCase):
             with self.subTest(character=character.name):
                 yield character
 
+    def test_each_character_runs_its_cycle(self):
+        self.assertEqual([("fireman", "run"), ("paramedic", "woman"), ("footballer", "dogman"), ("child", "child"),
+                          ("officer", "man"), ("builder", "dogman"), ("chef", "man"), ("acrobat", "woman")],
+                         [(c.name, name) for c, name in detailed.CAST])
+
     def test_the_fireman_is_the_records_defaults_and_the_first_of_the_cast(self):
         self.assertEqual(detailed.Character(), detailed.FIREMAN)
         self.assertEqual((detailed.FIREMAN, "run"), detailed.CAST[0])
@@ -402,7 +407,7 @@ class CharacterTest(unittest.TestCase):
     def test_from_the_soles_on_the_last_row_to_the_head_joint(self):
         """(head + SOLE) x PX - 1 px, PX from the height and the scale alone, head the head joint's height: 1 less
         what the legs lose, (1 - leg) x 0.5 on the standing pose. The picture's top row, the headwear's top, is 1 to
-        1.4 head radii over that joint."""
+        1.4 head radii over that joint; a toque's, its height in head radii within 1 px."""
         for c in self.each():
             figure, img = base(c)
             px = detailed.TALL * c.scale / (1 + detailed.HELMET_TOP + figure.SOLE)
@@ -411,6 +416,9 @@ class CharacterTest(unittest.TestCase):
             self.assertEqual(img.height - 1, rows[-1])
             joint = rows[-1] - ((head + figure.SOLE) * px - 1)  # the head joint's row, from the soles' row
             r = c.head * px
+            if isinstance(c.headwear, detailed.Toque):
+                self.assertLessEqual(abs(joint - rows[0] - c.headwear.height * r), 1)
+                continue
             self.assertLessEqual(r - 1, joint - rows[0])
             self.assertLessEqual(joint - rows[0], 1.4 * r + 1)
 
@@ -436,16 +444,16 @@ class CharacterTest(unittest.TestCase):
                     changed.append((c, "without %s" % type(part).__name__,
                                     dataclasses.replace(c, gear=c.gear[:k - 2] + c.gear[k - 1:])))
         self.assertTrue({detailed.Helmet, detailed.Hair, detailed.Proportions, detailed.Tank, detailed.Collar,
-                         detailed.Strap, detailed.Belt, detailed.Bag} <= seen)
+                         detailed.Strap, detailed.Belt, detailed.Bag, detailed.PeakedCap, detailed.Toque,
+                         detailed.Apron} <= seen)
         for c, name, character in changed:
             with self.subTest(character=c.name, field=name):
                 self.assertNotEqual(bytes_of(base(c)[1]), bytes_of(drawn(character)[1]))
 
     def test_facing_left_is_the_mirror_of_facing_right_in_shape_and_colour(self):
         """The shape: each pixel that one picture covers, the other covers within 1 px across (an odd line width at
-        8x puts an edge that falls on a half pixel on one side only); measured 1.0 for every character. The colour:
-        of the pixels both cover, at least 0.97 within 30 (the sum over the channels; the grain is not mirrored);
-        measured 0.989 to 1.0, and 0.89 to 0.95 with the hair's cap not mirrored."""
+        8x puts an edge that falls on a half pixel on one side only). The colour: of the pixels both cover, at least
+        0.97 within 30 (the sum over the channels; the grain is not mirrored)."""
         for c in self.each():
             a, b = ImageOps.mirror(base(c)[1]), drawn(c, facing_left())[1]
             w, h = a.size
@@ -570,6 +578,83 @@ class CharacterTest(unittest.TestCase):
         self.assertGreater(share["child"], share["fireman"] * 1.1)
 
 
+class NewPartsTest(unittest.TestCase):
+    """The parts of the second four characters on the standing pose, facing right and left: a part's pixels are those
+    that one of its fields changes."""
+
+    FACINGS = ((standing, 1), (facing_left, -1))
+
+    def changed(self, c, moved, pose):
+        """The figure, and the pixels that differ between c and moved on the pose."""
+        figure, img = drawn(c, pose())
+        return figure, changed_by(img, drawn(moved, pose())[1])
+
+    def worn_on_the_head(self, c, pose, **fields):
+        """The figure, and the pixels that these fields of the headwear change."""
+        return self.changed(c, dataclasses.replace(c, headwear=dataclasses.replace(c.headwear, **fields)), pose)
+
+    def worn_first(self, c, pose, **fields):
+        """The figure, and the pixels that these fields of the first gear part change."""
+        return self.changed(c, dataclasses.replace(c, gear=(dataclasses.replace(c.gear[0], **fields),) + c.gear[1:]),
+                            pose)
+
+    def test_the_peaked_caps_peak_is_on_the_side_the_nose_is(self):
+        for pose, ahead in self.FACINGS:
+            with self.subTest(ahead=ahead):
+                cap = detailed.OFFICER.headwear
+                figure, peak = self.worn_on_the_head(detailed.OFFICER, pose, peak=0.0)
+                self.assertGreaterEqual(len(peak), 3)
+                r = figure.HEAD * figure.PX  # the peak: from 0.9 head radii ahead to 0.9 + its length, over the crown
+                ahead_of_head = (mean_x(peak) - figure.at(pose()["head"])[0]) * ahead
+                self.assertGreater(ahead_of_head, (0.5 + cap.peak / 4) * r)
+
+    def test_the_bun_is_behind_the_head(self):
+        for pose, ahead in self.FACINGS:
+            with self.subTest(ahead=ahead):
+                figure, bun = self.worn_on_the_head(detailed.ACROBAT, pose, bun=0.35)  # a part still: the grain stays
+                self.assertGreaterEqual(len(bun), 6)
+                self.assertLess((mean_x(bun) - figure.at(pose()["head"])[0]) * ahead, 0)
+
+    def test_the_apron_is_in_front_of_the_body_from_the_chest_to_the_knees(self):
+        """Over the body it shows 218 px standing, either way; painted under the body only the 70 below the jacket's
+        hem would show: at least 150 tell the two apart."""
+        for pose, ahead in self.FACINGS:
+            with self.subTest(ahead=ahead):
+                c = detailed.CHEF
+                figure, apron = self.worn_first(c, pose, colour=other(c.gear[0].colour))
+                fitted = c.proportions.fit(pose())
+                self.assertGreaterEqual(len(apron), 150)
+                self.assertGreater((mean_x(apron) - figure.at(fitted["root"])[0]) * ahead, 0)
+                chest, knee = figure.at(fitted["upperback"])[1], figure.at(fitted["rfemur"])[1]
+                self.assertGreaterEqual(min(y for _, y in apron), chest - 1)
+                self.assertLessEqual(max(y for _, y in apron), knee + 1)
+
+    def test_the_builders_hard_hat_has_no_shield_and_no_flap(self):
+        """No pixel near the shield's colour on his head; and nothing more than 1.25 head radii behind the head from
+        0.4 to 1.3 head radii under the head joint, where only a neck flap reaches (under the brim's tail, over his
+        vest's back)."""
+        c = detailed.BUILDER
+        figure, img = base(c)
+        (hx, hy), r = figure.at(standing()["head"]), c.head * figure.PX
+        self.assertEqual([], [q for q in coloured(img, detailed.SHIELD, 40) if abs(q[1] - hy) <= 2 * r])
+        behind = [(x, y) for y in range(round(hy + 0.4 * r), round(hy + 1.3 * r)) for x in range(img.width)
+                  if img.getpixel((x, y))[3] and x < hx - 1.25 * r]
+        self.assertEqual([], behind)
+
+    def test_the_toque_rises_higher_over_the_head_joint_than_the_helmet(self):
+        tops = {c.name: opaque_rows(base(c)[1])[0] - base(c)[0].at(c.proportions.fit(standing())["head"])[1]
+                for c in (detailed.FIREMAN, detailed.CHEF)}
+        self.assertLess(tops["chef"], tops["fireman"] - detailed.FIREMAN.head * base(detailed.FIREMAN)[0].PX)
+
+    def test_the_officer_has_a_belt_and_nothing_of_his_gear_crosses_his_chest(self):
+        c = detailed.OFFICER
+        figure, img = base(c)
+        self.assertIsInstance(c.gear[0], detailed.Belt)
+        gear = changed_by(img, drawn(dataclasses.replace(c, gear=()))[1])
+        self.assertGreaterEqual(len(gear), 6)
+        self.assertGreater(min(y for _, y in gear), figure.at(standing()["upperback"])[1])
+
+
 class Stand:
     """A stand-in for RunPictures: one plain picture a facing, so CharacterClip is tested with no CMU file."""
 
@@ -666,15 +751,14 @@ class CastFromCaptureTest(unittest.TestCase):
             raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
         cls.capture, cls.runners = cast_runs()
 
-    def test_the_childs_lowest_pose_stands_on_the_last_row_and_no_pose_is_cut(self):
-        """Painted on the box the run paints in, no pose of his touches its left, right or top edge."""
-        run = next(run for run in self.runners if run.character == detailed.CHILD)
-        self.assertEqual(run.size[1] - 1, max(opaque_rows(img)[-1] for img in run.pictures))
-        figure = run.figure()
-        for i, pose in enumerate(run.capture.poses(run.cycle)):
-            with self.subTest(pose=i):
-                x0, y0, x1, _ = figure.paint(pose).getchannel("A").getbbox()
-                self.assertTrue(x0 > 0 and y0 > 0 and x1 < figure.w)
+    def test_every_runners_lowest_pose_stands_on_the_last_row_and_no_pose_touches_its_boxs_left_right_or_top(self):
+        """The chef's toque and the child's short legs among them: the poses' first column, top row and end column in
+        the box the run paints in (RunPictures.used) are inside it."""
+        for (c, _), run in zip(detailed.CAST, self.runners):
+            with self.subTest(character=c.name):
+                self.assertEqual(run.size[1] - 1, max(opaque_rows(img)[-1] for img in run.pictures))
+                x0, y0, x1 = run.used
+                self.assertTrue(x0 > 0 and y0 > 0 and x1 < detailed.box(detailed.TALL)[0])
 
     def test_the_stride_shrinks_with_the_legs(self):
         """So the feet keep still on the street: the capture's stride in px of the record's size, times its legs."""

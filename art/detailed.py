@@ -197,6 +197,22 @@ class Belt(Gear):
 
 
 @dataclass(frozen=True)
+class Apron(Gear):
+    """An apron over the front of the body: a bib from the chest to the waist, and from there down over the thigh
+    ahead to the knee."""
+
+    colour: tuple = (150, 190, 230)
+
+    def over(self, figure, s, p, ahead):
+        hips, _, front = figure.trunk(s, p, ahead)
+        chest, waist = p["upperback"], p["lowerback"]
+        knee = max((p["lfemur"], p["rfemur"]), key=lambda q: q[0] * front)  # the knee ahead
+        figure.part(s, s.shape("poly", (chest[0] + front * 0.05, chest[1]), (chest[0] + front * 0.6, chest[1]),
+                               (waist[0] + front * 0.62, waist[1]), (knee[0] + front * 0.45, knee[1]),
+                               (knee[0] - front * 0.3, knee[1]), (hips[0] - front * 0.1, hips[1])), self.colour)
+
+
+@dataclass(frozen=True)
 class Bag(Gear):
     """A bag at the hip on a strap over the shoulder, with a cross on its side."""
 
@@ -245,18 +261,19 @@ class Headwear:
 
 @dataclass(frozen=True)
 class Helmet(Headwear):
-    """A fireman's helmet: the dome down to the brow, a short brim ahead and one tail head radii long behind, the
-    shield at the front, and a neck flap over the back of the head down to the collar."""
+    """A helmet: the dome down to the brow, a short brim ahead and one tail head radii long behind, the shield at the
+    front, and a neck flap over the back of the head down to the collar (the fireman's). A hard hat has no shield and
+    no flap (None)."""
 
     colour: tuple = HELMET
     light: tuple = HELMET_L
-    shield: tuple = SHIELD
+    shield: tuple | None = SHIELD
     tail: float = 2.15
-    flap: tuple = COAT_DARK
+    flap: tuple | None = COAT_DARK
 
     def nape(self, figure, s, view):
         at, ahead, back = view.at, view.ahead, -view.way
-        if view.frontal < 0.7:  # the neck flap, over the back of the head and down to the collar
+        if self.flap is not None and view.frontal < 0.7:  # the neck flap, over the back of the head to the collar
             figure.detail(s, s.shape("poly", at(back * 0.25, 0.1), at(back * 1.7 * abs(ahead), -0.1),
                                      at(back * 1.3 * abs(ahead), -1.5), at(back * 0.1, -1.4)), self.flap)
 
@@ -271,17 +288,19 @@ class Helmet(Headwear):
                        width=r * 0.34)
         lx, ly = at(ahead * 0.5, top * 0.7)
         figure.detail(s, union(dome, brim), self.colour, light=(lx, ly, r * 0.9, self.light), rim=0.4)
-        sx, sy = at(ahead * 0.78, 0.62)
-        figure.detail(s, s.shape("ellipse", sx - r * 0.3, sy - r * 0.36, sx + r * 0.3, sy + r * 0.36), self.shield)
+        if self.shield is not None:
+            sx, sy = at(ahead * 0.78, 0.62)
+            figure.detail(s, s.shape("ellipse", sx - r * 0.3, sy - r * 0.36, sx + r * 0.3, sy + r * 0.36), self.shield)
 
 
 @dataclass(frozen=True)
 class Hair(Headwear):
-    """Hair: a cap over the top and the back of the head, and down head radii of it hanging behind the neck (0: short
-    hair)."""
+    """Hair: a cap over the top and the back of the head, down head radii of it hanging behind the neck (0: short
+    hair), and a bun of bun head radii at the back of the head (0: none)."""
 
     colour: tuple = (70, 50, 36)
     down: float = 0.0
+    bun: float = 0.0
     TOP = 1.3  # the cap's top over the head joint, in head radii
     CAP = ((1.0, 0.42), (0.9, 0.85), (0.55, 1.18), (0.0, TOP), (-0.6, 1.2), (-1.02, 0.78), (-1.14, 0.1),
            (-0.98, -0.62), (-0.5, -0.66), (-0.2, -0.1), (0.35, 0.36))  # across and up in head radii, facing right
@@ -294,6 +313,47 @@ class Hair(Headwear):
 
     def nape(self, figure, s, view):
         figure.part(s, s.shape("poly", *[view.at(view.way * a, b) for a, b in self.CAP]), self.colour)
+
+    def over(self, figure, s, view):
+        if self.bun:  # at the back of the head, over the cap
+            bx, by = view.at(-view.way * 0.85, 0.85)
+            k = self.bun * view.r
+            figure.part(s, s.shape("ellipse", bx - k, by - k, bx + k, by + k), self.colour)
+
+
+@dataclass(frozen=True)
+class PeakedCap(Headwear):
+    """A peaked cap: a crown over the top of the head, a band round it, and a peak ahead of the brow, peak head radii
+    long."""
+
+    colour: tuple = (30, 36, 72)
+    band: tuple = (214, 208, 190)
+    peak: float = 0.75
+    CROWN = ((1.08, 0.3), (1.14, 0.95), (0.7, 1.28), (-0.3, 1.32), (-1.1, 1.1), (-1.12, 0.3))  # facing right
+
+    def over(self, figure, s, view):
+        at, way, r = view.at, view.way, view.r
+        figure.part(s, s.shape("poly", *[at(way * a, b) for a, b in self.CROWN]), self.colour)
+        figure.detail(s, s.shape("line", at(-way * 1.1, 0.45), at(way * 1.1, 0.45), width=r * 0.3), self.band)
+        figure.detail(s, s.shape("line", at(way * 0.9, 0.3), at(way * (0.9 + self.peak), 0.14), width=r * 0.24),
+                      darker(self.colour, 0.6))
+
+
+@dataclass(frozen=True)
+class Toque(Headwear):
+    """A chef's toque: a band round the head from the brow up, and a puffed top, height head radii over the head
+    joint."""
+
+    colour: tuple = (246, 246, 242)
+    height: float = 2.6
+    PUFF = ((-0.7, 0.0), (-1.0, 0.45), (-0.85, 0.85), (-0.4, 1.0), (0.0, 0.92), (0.4, 1.0), (0.85, 0.85), (1.0, 0.45),
+            (0.7, 0.0))  # across, and the share of the way from the band's top to the toque's
+
+    def over(self, figure, s, view):
+        at = view.at
+        band = s.shape("poly", at(-1.05, 0.3), at(1.05, 0.3), at(1.0, 1.15), at(-1.0, 1.15))
+        puff = s.shape("poly", *[at(1.45 * a, 1.1 + (self.height - 1.1) * v) for a, v in self.PUFF])
+        figure.part(s, union(band, puff), self.colour)
 
 
 @dataclass(frozen=True)
@@ -367,7 +427,19 @@ FOOTBALLER = Character("footballer", skin=(150, 100, 68), top=(40, 160, 80), leg
 CHILD = Character("child", scale=0.75, head=0.095, skin=(240, 194, 158), top=(250, 210, 60), legs=(60, 100, 200),
                   boots=(210, 50, 50), hands=None, sleeve=0.3, trouser=0.35, shaft=None, hem=0.0, bands=False,
                   headwear=Hair((150, 104, 60)), gear=(), proportions=Proportions(leg=0.75, arm=0.85))
-CAST = ((FIREMAN, "run"), (PARAMEDIC, "woman"), (FOOTBALLER, "dogman"), (CHILD, "child"))  # each with its cycle
+NAVY = (36, 44, 84)
+OFFICER = Character("officer", skin=(124, 84, 60), top=NAVY, legs=NAVY, boots=(26, 24, 28), hands=None, shaft=None,
+                    hem=0.0, bands=False, headwear=PeakedCap(), gear=(Belt(),))
+BUILDER = Character("builder", skin=(200, 146, 104), top=(240, 130, 30), legs=(60, 80, 130), boots=(150, 110, 60),
+                    hands=(150, 150, 156), sleeve=0.35, shaft=(150, 110, 60), hem=0.15,
+                    headwear=Helmet((240, 240, 236), light=(255, 255, 255), shield=None, tail=1.2, flap=None),
+                    gear=(Belt((96, 66, 40), (200, 200, 206), (124, 90, 52)),))
+CHEF = Character("chef", skin=(240, 202, 172), top=(236, 236, 230), legs=(70, 70, 80), boots=(26, 24, 28), hands=None,
+                 shaft=None, hem=0.25, bands=False, headwear=Toque(), gear=(Apron(),))
+ACROBAT = Character("acrobat", skin=(180, 128, 92), top=(220, 50, 140), legs=(236, 190, 60), boots=(220, 50, 140),
+                    hands=None, shaft=None, hem=0.0, bands=False, headwear=Hair((34, 26, 24), bun=0.55), gear=())
+CAST = ((FIREMAN, "run"), (PARAMEDIC, "woman"), (FOOTBALLER, "dogman"), (CHILD, "child"), (OFFICER, "man"),
+        (BUILDER, "dogman"), (CHEF, "man"), (ACROBAT, "woman"))  # each with the cycle of art/mocap.py it runs
 
 
 class DetailedFigure(Figure):
@@ -613,6 +685,7 @@ class RunPictures:
         used = [img.getchannel("A").getbbox() for img in painted]
         x0, y0, x1 = min(b[0] for b in used), min(b[1] for b in used), max(b[2] for b in used)
         self.pictures = [q565(img.crop((x0, y0, x1, img.height))) for img in painted]
+        self.used = (x0, y0, x1)  # the run's first column, top row and end column in its box: at an edge, a pose is cut
         self.left = [ImageOps.mirror(img) for img in self.pictures]  # as CapturedPictures.add in art/sets/rescue.py
         self.size = self.pictures[0].size
         self.stride = round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)  # the feet keep still

@@ -244,5 +244,47 @@
   "name": "the pose follows the whole run, not the place in the lap, so it jumps where the clip loops",
   "find": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(at, self.runs_left[k])))",
   "replace": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran, self.runs_left[k])))"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the peaked cap's peak is behind the head",
+  "find": "        figure.detail(s, s.shape(\"line\", at(way * 0.9, 0.3), at(way * (0.9 + self.peak), 0.14), width=r * 0.24),",
+  "replace": "        figure.detail(s, s.shape(\"line\", at(-way * 0.9, 0.3), at(-way * (0.9 + self.peak), 0.14), width=r * 0.24),"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the bun is at the front of the head",
+  "find": "            bx, by = view.at(-view.way * 0.85, 0.85)",
+  "replace": "            bx, by = view.at(view.way * 0.85, 0.85)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the apron hangs down to the ankles",
+  "find": "        knee = max((p[\"lfemur\"], p[\"rfemur\"]), key=lambda q: q[0] * front)  # the knee ahead",
+  "replace": "        knee = max((p[\"ltibia\"], p[\"rtibia\"]), key=lambda q: q[0] * front)  # the knee ahead"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the toque is not painted",
+  "find": "        figure.part(s, union(band, puff), self.colour)",
+  "replace": "        pass"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the apron is painted under the body",
+  "find": "    def over(self, figure, s, p, ahead):\n        hips, _, front = figure.trunk(s, p, ahead)",
+  "replace": "    def under(self, figure, s, p, ahead):\n        hips, _, front = figure.trunk(s, p, ahead)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the builder runs the man's cycle",
+  "find": "(BUILDER, \"dogman\")",
+  "replace": "(BUILDER, \"man\")"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the hard hat has the fireman's shield and neck flap",
+  "find": "headwear=Helmet((240, 240, 236), light=(255, 255, 255), shield=None, tail=1.2, flap=None),",
+  "replace": "headwear=Helmet((240, 240, 236), light=(255, 255, 255), shield=SHIELD, tail=1.2, flap=COAT_DARK),"
  }
 ]
