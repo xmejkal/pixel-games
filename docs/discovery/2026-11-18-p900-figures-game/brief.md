@@ -9,7 +9,7 @@ Stands on: the assumptions not retired in risks-and-tests.md; of which those the
 is unrated. check computes both. -->
 **Ready for:** collecting evidence <!-- REQUIRED:ready -->
 **Stands on:** ⟨fill⟩ H, ⟨fill⟩ of which would change the decision <!-- REQUIRED:debt -->
-**Decision needed:** none yet: the lenses run. Q1 follows them <!-- REQUIRED:decision-needed -->
+**Decision needed:** paused by D11 at step 3, the lenses. The PO's word restarts it <!-- REQUIRED:decision-needed -->
 
 ## Frame
 - Request, verbatim (corrections marked): "Let's make  a new game with the game box, so controllable with joystick movements and bigger figures of various kinds and situations and one can pick who to control, and there is some collaboration mission always." Then: "lets create a card for the new game including refactoring and separating out some reusable elemnts other games could use". Then, to start this discovery: "so let's do it, lets refine and plan it, offer cool other available tools that I might like to use in the engine too, offer options" (the PO, 2026-11-18, in the session. His full words are on the card, https://github.com/xmejkal/spark/issues/1279) <!-- REQUIRED:request -->
@@ -78,6 +78,7 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 - D8 · after the new game succeeded, the old games move onto the parts (P903) · the PO · 2026-11-18 · https://github.com/xmejkal/spark/issues/1282 · options: none offered
 - D9 · start this discovery and offer tool options: "so let's do it, lets refine and plan it, offer cool other available tools that I might like to use in the engine too, offer options". This yes covers the discovery, the tools survey and its 15 web searches. The card's move to Discovery rests on his standing rule "It moves as the work moves" (his rules file, the section "Start of a session") · the PO · 2026-11-18 · in the session · options: P878 first, the game first, the game stays an idea (he chose P878 first, and P878 merged as PR #1278)
 - D10 · the frame is right: the scope, the out-of-scope list (the remote player, the car simulator P902, the old games P903 beyond one game that proves the parts) and the outcome sentence. The depth is TRIO: three lenses, then the refuter · the PO · 2026-11-18 · in the session, Q0 · options for the frame: yes, add the car, parts first, game first · options for the depth: three lenses, one lens, full council
+- D11 · the open things are finished first: P900 goes back to Idea, the agents that run finish and their reports stay on the branch, and the discovery goes on at his word. "Before we start with it and refine it, lets first finish the open things, please." · the PO · 2026-11-18 · in the session · options: back to Idea, stop the agents too, keep it in Discovery
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
@@ -87,6 +88,7 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 <!-- Each action on the board or the issue (stage, waiting flag, comment, filing): taken, with its D, or pending.
 None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - move #1279 to Discovery · taken 2026-11-18 · D9. Discovery then holds 2 of 2 and the board 4 of 4 in flight
+- move #1279 back to Idea · taken 2026-11-18 · D11. The board then holds 3 of 4 in flight
 - a comment on #1279 that links this brief · pending, after the folder's PR exists
 - Waiting on the PO and Waiting since on #1279 · pending, set only if Q0 waits past this session
 <!-- EXTEND:brief-sections -->
