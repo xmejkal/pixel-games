@@ -3,9 +3,10 @@ headwear and gear, to see whether the detail shows at that size. The fireman has
 and an air tank; CAST holds him and the other characters, each a Character record with its own cycle. It is in no
 game and in no art set: art/paint.py does not call it, and the packs stay as they are.
 
-One number, the height in px from the soles to the helmet's top, sets the size. Every width and offset is a share
-of the body height, so the same painter gives any height. The detail needs about 96 px: at 48 px the eye and the
-sole are under 1 px and do not show.
+One number, the height in px from the soles to the helmet's top, sets the size; a character's scale is its share
+of it, and its headwear sits on top of its head. Every width and offset is a share of the body height, so the same
+painter gives any height. The detail needs about 96 px: at 48 px the eye and the sole are under 1 px and do not
+show.
 
 Run from the repository root: python3 art/detailed.py --out DIR [--rim outline|none|lit] writes figure-sheet.png
 (the fireman's twelve run poses, today's 26 px fireman beside them, two poses at 3x and one pose with each rim),
@@ -33,7 +34,7 @@ COAT, TROUSERS = (198, 158, 84), (168, 132, 72)  # a tan turnout coat: shade sho
 BOOT, TREAD = (30, 28, 36), (92, 88, 100)  # TREAD: the boot's sole
 SKIN, EYE, MOUTH = (236, 184, 146), (36, 28, 30), (150, 84, 74)
 GLOVE = (104, 60, 40)
-SEAM = (74, 62, 52)  # round the near arm where it lies on the coat
+SEAM = (74, 62, 52)  # round the near arm where it lies on the body
 TANK, STRAP, BUCKLE = (108, 124, 152), (44, 42, 52), (214, 190, 120)
 SHIELD = (206, 48, 40)  # the helmet's front shield
 FRAME_MS = 40  # one frame of the game
@@ -182,7 +183,7 @@ class Belt(Gear):
 
 @dataclass(frozen=True)
 class Bag(Gear):
-    """A bag at the hip on a strap from the far shoulder across the chest, with a cross on its side."""
+    """A bag at the hip on a strap over the shoulder, with a cross on its side."""
 
     colour: tuple = (52, 128, 72)
     cross: tuple = (244, 244, 240)

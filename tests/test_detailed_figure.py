@@ -1,7 +1,8 @@
 """The detailed fireman (P904's spike, art/detailed.py): one number sets his size, he stands on the picture's last
 row, he has a face, a helmet, gloves and a tank on his back, facing right or left, and his edge is one of three
-rims. On a standing pose written here, so these hold without the CMU files. And, only when the CMU files are
-downloaded, the twelve run poses painted from them. Run from the repository root:
+rims. The other characters of CAST: each field of the record shows, skin is where the record says and has no band,
+and characters.gif's clip and palette. On a standing pose written here, so these hold without the CMU files. And,
+only when the CMU files are downloaded, the run poses painted from them. Run from the repository root:
 python3 -m unittest discover tests."""
 
 import dataclasses
@@ -334,28 +335,6 @@ class RunFromCaptureTest(unittest.TestCase):
             with self.subTest(ran=ran):
                 self.assertIs(self.captured.pictures[detailed.pose_index(ran, self.captured.stride, 12)],
                               self.captured.picture(ran))
-
-
-class FiremanBytesGuardTest(unittest.TestCase):
-    """During P904 step 2a's build only: the fireman's standing pose both ways, his 12 run poses and his 12 turned
-    poses keep master's bytes (aa35f88). Removed in the PR's last commit."""
-
-    MASTER = ('b1b254e1c62a192b', '94ebdebddad59f13', '62944133e66e0a47', 'd487390dae5def38', '44ca583b8ad453ec',
-              '47037dbdad05a250', '7e868d5e0d7cfa06', 'b617d2af352f2ceb', '9c3d02b4196461de', 'd85d34f1a8774b3c',
-              '51609a2a24ae3997', '3041a2eb5cf5f117', '1345c52c84ed6b5b', '6f595e006fe5d1e7', '19a422396ae2902e',
-              'dbea70bb12385432', '8de7bb1900eb5605', '6e020e5eeb0a1242', '779763b99ce59afa', '202e59bc20a4cef8',
-              'cd95334e879265b5', '269ae0f67de596f5', '5a641c73cf4964de', '265e5ca15bc9c418', '4d0592d56ad26e52',
-              '1e73a45fd5f96431')
-
-    def test_the_firemans_pictures_keep_masters_bytes(self):
-        capture = mocap.Capture()
-        if capture.missing():
-            raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
-        got = [bytes_of(painted(detailed.TALL)[1]), bytes_of(painted(detailed.TALL, facing_left())[1])]
-        run = detailed.RunPictures(capture, detailed.TALL)
-        got += [bytes_of(img) for img in run.pictures]
-        got += [bytes_of(run.alone(i, turned=True)) for i in range(12)]
-        self.assertEqual(list(self.MASTER), got)
 
 
 class CharacterTest(unittest.TestCase):
