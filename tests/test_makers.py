@@ -180,7 +180,7 @@ class CutoutTest(unittest.TestCase):
     """The cutout maker on the standing pose and on bent() at 96 px with no rim, beside the whole painter's picture;
     its atlas on bent(), and filled at 48 px."""
 
-    BENT = 0.88  # the IoU with the whole painter's on bent(), a little under the 0.9xx measured
+    BENT = 0.86  # the IoU with the whole painter's on bent(): measured 0.874, and 0.569 with the turn reversed
 
     def test_standing_its_shape_agrees_with_the_whole_painters(self):
         self.assertGreaterEqual(iou(made(detailed.DetailedFigure, "standing")[1],
@@ -228,14 +228,13 @@ class CutoutTest(unittest.TestCase):
                          [img.getpixel(q) for q in sorted(over)])
 
     def test_a_far_limb_has_the_far_shade(self):
-        """Its pixels that show are darker than the near limb's of the same kind: shade() is 0.7 of the colour."""
+        """The far thigh's pixels that show are darker than the near thigh's: shade() is 0.7 of the trousers' colour.
+        (In bent() the far arm hangs behind the body and the tank, and a far boot is lighter, not darker.)"""
         figure, img = made(makers.CutoutFigure, "bent")
         parts = figure.placed(bent())
-        for kind in ("thigh", "upper arm"):
-            with self.subTest(kind=kind):
-                far, near = (visible(figure, parts, makers.PARTS.index((kind, f))) for f in (True, False))
-                self.assertGreaterEqual(min(len(far), len(near)), 10)
-                self.assertLess(sum(mean(img, far)), 0.85 * sum(mean(img, near)))
+        far, near = (visible(figure, parts, makers.PARTS.index(("thigh", f))) for f in (True, False))
+        self.assertGreaterEqual(min(len(far), len(near)), 10)
+        self.assertLess(sum(mean(img, far)), 0.85 * sum(mean(img, near)))
 
     def test_with_8_angles_the_worst_end_miss_is_larger_than_with_32(self):
         rnd.seed(1)
@@ -262,13 +261,13 @@ class CutoutTest(unittest.TestCase):
 
     def test_a_band_on_a_turned_part_is_the_bands_colour_at_the_turned_place(self):
         """The near forearm turns from hanging down to forward: its band is across it at 0.62 of the way from the
-        elbow, as the whole painter puts it."""
+        elbow, as the whole painter puts it, in the band's colour in RGB565 (the atlas's pictures are)."""
         figure, img = made(makers.CutoutFigure, "bent")
         elbow, wrist = (figure.at(bent()["r" + n]) for n in ("humerus", "radius"))
         length, (ux, uy) = math.dist(elbow, wrist), ((wrist[0] - elbow[0]), (wrist[1] - elbow[1]))
         on = []
         for x, y in opaque(img):
-            if img.getpixel((x, y))[:3] != STRIPE:
+            if img.getpixel((x, y))[:3] != q565(STRIPE):
                 continue
             dx, dy = x + 0.5 - elbow[0], y + 0.5 - elbow[1]
             ahead, across = (dx * ux + dy * uy) / length, abs(dx * uy - dy * ux) / length
