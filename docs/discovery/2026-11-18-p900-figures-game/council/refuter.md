@@ -493,3 +493,178 @@ none
 - The session's words for D13 to D17. The head's painting lines for C21. P822's body. Whether the rules ran in the
   log's idle windows. The parts of the brief that the diff did not touch were not read again.
 - No scratch file was made.
+
+# Third pass, 2026-11-18: the sections changed after the spike's results
+
+The refuter, third pass, 22:55 to 23:07 Prague, on the uncommitted diff of `brief.md` and `risks-and-tests.md` only.
+Sources read on disk at `4949c73` (`~/Development/pixel-p904`): `bench.md` lines 1770 to 1954,
+`logs/run-p904-2c.log`, `logs/run-p904-2c-2.log`, `logs/run-p846-baseline-a.log:84-96`, `games/pictures.py:40-54`,
+`games/gfx.py:383`. The bodies of pixel-games PRs #109, #110 and #111. The comments 6976801110, 6987519468 and
+6991338050 on spark #1283, and 6973482873 and 6974532204 on spark #1279. Every cited bench.md anchor points at the
+lines the brief says. D25's words have no pointer, so I did not find them.
+
+## 0. First check: the existing product
+
+- The observed problem is the PO's wish for bigger figures (A3, A4). The changed sections answer feasibility only.
+  The value row stays open, and C20 (after play he named other problems than size) is not touched. This is
+  consistent, not a fault.
+- What breaks for current users is not shown either way. The product's pool is made once at a hard reset, "as big
+  as the largest pack" in `art_index.PACKS` (`games/pictures.py:42-44`, quoted:
+  `largest = max(total for path, total, build_id in art_index.PACKS.values())`). Today that is 739,216 bytes
+  (comment 6987519468). If the figures pack joins the product's index, every one of the fifteen games holds a pool of
+  2,464,000 bytes. The spike did not run that case. It used a shadow index with one game: log line 9 says
+  `lineup 1: figures`, and bench.md says "This shadow index makes the pool as big as this pack."
+- After each run the box showed Marshmallow (load 153 and 154 ms, 23 fps after step 2d). No baseline for
+  Marshmallow's fps is cited, the other 14 games were not started, and after step 2d "What the box held was not read
+  back". So "the box was left as it was" is not shown.
+- The frame says the load time must not get worse (C22). D19 accepts about 2 s for the new game "with a loading
+  card". The run had no loading card (bench.md: "The load ran with no loading card, because the probe's one game
+  builds at once").
+- C28's free PSRAM and the largest block were measured with the probe's one game. P822's 4 MB pool (C23) and the
+  fifteen games' heaps beside a 2.46 MB pool were not measured.
+
+## 1. The cited claims
+
+- ★C24. Read: log line 13 `switch figures 2211 ms, load 2138 ms, import 0 ms`. Line 14 `pack pool 2464000`. Lines
+  73, 78, 83 and 88 `fps figures 24`. Bench.md:1819 "Two moving 96 px figures hold 19 fps: pass." Verdict: holds,
+  for the numbers. The caveats it drops are in part 2.
+- ★C25. Read: bench.md:1906 "The highest count that holds 19 is 36. Its read lines say 19, 20, 20 and 20 (lines 151,
+  156, 161 and 166)."; bench.md:1907 "The first count that does not hold 19 is 40."; log line 151
+  `fps figures 19`, line 177 `fps figures 18`, lines 21 to 36 `fps figures 23`. Verdict: partly. Bench.md says "the
+  figures start at other places than in step 2c's run", so it is not "the same scene". Change "With more figures the
+  same scene held 19 fps up to 36 figures and read 18 with 40" to "Over the same street and set, with start places
+  that differ from step 2c's run, each listed count from 16 to 36 held 19 fps and 40 read 18". Add to the caveat:
+  at every count of this run a worst gap over 60 ms shows, so the figures moved slower than their speed
+  (bench.md step 2d, `games/gfx.py:383`).
+- ★C26. Read: PR #109 "fireman (run) at 96 px: 12 poses of 67 by 102 px, 328032 bytes with both facings", "child
+  (child) at 96 px: 12 poses of 42 by 72 px, 145152 bytes with both facings", "the cast: 8 characters, 2310384
+  bytes"; PR #110 "fireman's jump ... 259584 bytes", "fireman's forward jump ... 309504 bytes", "fireman's climb ...
+  254592 bytes". Verdict: holds, for the fireman. Each move is 12 poses. Its reuse in part 2 is stronger.
+- C27. Read: PR #111 "cutout, the pixels only: the run uses 86 part pictures, 60226 bytes, for one facing (the board
+  mirrors a part for the other); with every step of the six limb kinds, 389 pictures ..., 270848 bytes" and "flat,
+  the poses only (no code, no time): ... 1536 bytes". Verdict: holds. Dropped: "The bytes are the pixels only, with
+  no header a picture", and the cutout's 1,080 bytes of poses are not in 60,226.
+- C28. Read: bench.md:1832 "`psram free 5026784 largest 4980736` at the end". Verdict: partly. Step 2d's run ended
+  with `psram free 4764636 largest 4718592` (bench.md, step 2d). Change "After the run with the 2,464,000 byte pool,
+  5,026,784 bytes of PSRAM were free, with a largest block of 4,980,736" to "At the end of step 2c's probe, before
+  its cleanup, 5,026,784 bytes of PSRAM were free (largest block 4,980,736). Step 2d's run, with 64 figure objects,
+  ended with 4,764,636 (largest 4,718,592)".
+- C29. Read: comment 6976801110 "The PO's words on the first four characters (2026-11-18, in the session,
+  pixel-games PR https://github.com/xmejkal/pixel-games/pull/106)", then "> the characters themselves look ok for
+  the first iteration, but we will make them better later". Verdict: partly. His words were about four characters,
+  before PR #109 added the officer, the builder, the chef and the acrobat. Change "The PO saw the painted characters
+  and said" to "The PO saw the first four painted characters (PR #106) and said".
+- D24. Read: comment 6991338050 "to the offer of a second board run with 32 and 64 figures: "yes, run more people"".
+  Holds as a record. The comment is the facilitator's post of his words, not his own post. "options: none offered,
+  an offer of a run with 32 and 64 figures" contradicts itself. The counts 36 and 40 came from the plan's amendment
+  (22:03 Prague), not from his words.
+- D25. Could not open: "in the session" has no pointer. See part 2.
+
+## 2. The changed sections against their sources
+
+- "Ready for: an experiment". The rule (brief.md:4-6): "an experiment: the decider chose a test (a D) before choosing
+  an option". D13's test has come back. No D chooses P905 as the next test. D21 files it ("file the three items"),
+  and D23 put P904 before P905. The header says itself "Its place in Ready is the PO's to give". By the rule the
+  state is "collecting evidence". Change to "**Ready for:** collecting evidence (the test of A1, D13, came back on
+  2026-11-18, see Results. No D has chosen the next test: P905, filed by D21, waits for the PO's order)".
+- "A1 is retired" (A1's status, the Riskiest line, the feasibility row, Results row 1).
+  - The three parts of D22 and D19, as read, are met: 24 fps on lines 73 to 88, `pack pool` on line 14, 2,138 ms on
+    line 13.
+  - Two of the readings are not the PO's words. The 2,500 ms is "my reading of "about 2 s"" (comment 6987519468).
+    D19 says "with a loading card", and the run had none. Results row 1 says "read as 2,500 ms or less" and does not
+    say whose reading.
+  - A1's belief is "two 96 px figures with enough poses". The pack held one run of 12 poses for each of eight
+    characters (193 names). The test line before today named "two figures with two cycles each". ★C3 says even that
+    cut "holds none of the cycles that his example mission needs". The PO agreed to count a rising number of
+    characters (comment 6987519468: "The PO agreed on 2026-11-18 that step 2c counts a rising number of characters
+    at once"), but that agreement is no D in the brief.
+  - The feasibility row now says "H that a mission's moves fit too". That is the "enough poses" half of A1. So the
+    part that came back is narrower than A1 as written. "Retired" claims all of A1. Either restate A1 as tested or
+    keep it open with the narrowed half. "Stands on: 8 H" counts A1 as retired. With A1 kept open it is 9.
+  - The scene: "Rescue's own play (crowd, fire, dog) is not in it" (comment 6987519468, plan point 2). See part 3.
+- Results row 2, "the number of figures on the screen does not limit a mission of two. No option of Q4 moves."
+  - The first sentence holds only in the probe's scene. At 16 figures the rate fell from 24 to 23 with 64 objects
+    alive, gc 4.0 against 2.5 ms a frame, and the cause "is not proven" (bench.md:1919-1921). Objects alive, not
+    figures on screen, are possibly the limit that a game with AI adds.
+  - The second sentence is stronger than the source. The run gives a paint cost of about 0.6 ms a whole figure
+    (bench.md step 2d, "worked out"). The cutout and the C painter options spend frame time that C27 says is
+    unknown. This run is the first number those options are judged against. It moves no option's rank by itself,
+    but it does inform two options.
+- The Riskiest line (A2). It is the facilitator's opinion, labelled so, with Q1's ratings unasked. The Test line's
+  pass line "10 switches in a row" names no proposer. The rival choice is in part 3.
+- Q4's first option, rewritten.
+  - "each move of a character adds 254,592 to 328,032 bytes" is stronger than ★C26. The range is the fireman's four
+    moves. The child's run is 145,152 bytes. No other character's jump or climb was painted.
+  - "shown on the board for eight characters with one run each" was shown with a lineup of one game and the shadow
+    index (part 0). Not shown: the product pool at 2.46 MB beside the fifteen games.
+  - The opinion "the first maker, because it is the only one that ran on the board" is circular. It ran because the
+    plan chose it first: "The first maker on the board is "whole" ... this maker needs no new board code"
+    (comment 6987519468). The order of the test is not a merit of the option.
+- Q4's second option (cutout). "about a fifth of the bytes for a run" holds only for the 86 pictures with a mirror
+  on the board: 60,226 of 328,032 bytes is 18 % (calculated here). Without the mirror it is 120,452 (PR #111), 37 %.
+  "less for each further move" is the facilitator's reading of "a second move costs its poses and the pictures of
+  the steps that it adds". With every limb step the atlas is 270,848 bytes, 83 % of one whole run. No source says
+  how many steps a second move adds.
+- Q4's third option (one picture source). The PO's quote holds (comment 6974532204). The seam ("the game asks for a
+  picture by character, motion, pose and facing") is the facilitator's text in that comment, not his. "that the
+  choice of Q4 can change later with no change in a game" is a design claim, not a test result. A change of maker
+  changes the frame time (C27) and needs a flash for cutout or flat, so the game's code stays but its frame rate
+  possibly changes.
+- Q4's line under Questions, "status: asked 2026-11-18, after the spike's result". No pointer says where it was
+  asked.
+- "Decision needed: Q4 ... now with measured numbers (★C24 to C27)". Only ★C24 and ★C25 are board measurements.
+  ★C26 and C27 are byte counts painted on the Mac.
+- The collection plan's first row, "Does a 2 MB pool leave the heap enough ... answered". Answered for the probe's
+  one game only. The heap of a real game beside the pool is not measured (part 0).
+- D25. The words "continue as you advice" do not say what the advice was, and "#1279. and go on" does not name a
+  board move. The board action "move #1279 to Discovery again · asked of the spark session · D25" rests on a D whose
+  words do not cover it. "Discovery holds one of two" has no time or source.
+- The board action "move P904 #1283 to Review ... taken 2026-11-18 by the spark session" names no D. The brief's
+  own rule above Board actions says "None is taken without a D". The board itself was not read here.
+- The Hand-off line says the refuter ran "a third time on the sections that the return changed". It was written
+  before this pass existed. It also drops whether the passes are applied, which the old line said.
+
+## 3. Rival explanations
+
+- ★C24, 24 fps with two figures: a light scene, not headroom that a game has. The probe's frame with two figures
+  is step 1.3 to 1.4, paint 10.4 to 11.0, send 3.3 to 5.6 and gc 2.6 ms (bench.md table). Rescue's own frame at
+  19 fps is step 8.4, paint 26.8, send 3.7 and gc 7.5 ms (`logs/run-p846-baseline-a.log:90`, 46.4 ms in all).
+  Count 2 against count 0 adds about 1.2 to 1.9 ms of paint and 2.5 to 4.8 ms of send. Added to Rescue's 46.4 ms,
+  that is about 50 to 53 ms a frame, about 19 to 20 fps: at the pass line, not over it. Calculated here, rough:
+  Rescue's own 24 px figures leave that frame. The pass line itself says "as Rescue did". No source rules this
+  out.
+- ★C24, 24 and not 25: the App caps at 25 fps (`FRAME_MS` 40). With two figures the worst gap reached 60 ms (log
+  line 89, `worst 60`), the game clock's cap (`games/gfx.py:383`, `min(..., 60)`). A heavier frame crosses it, and
+  then the figures move slower than their speed.
+- ★C24, the load of 2,138 ms: one load in a lineup of one, with no loading card. Step 2d's switch took 107 ms more
+  with the same load. A switch from another game in the product's lineup was not measured.
+- ★C25, 23 against 24 at 16 figures: objects alive and the collector (64 against 16 objects, about 70,000 more
+  bytes, gc 4.0 against 2.5 ms), or the other start places. The source names both and proves neither.
+- C28: what took 3,227,920 bytes is not said. Step 2d's run took 262,148 bytes more. The free PSRAM depends on what
+  the game holds, so a game with rules and AI leaves less.
+- C29: his "ok" was for four characters. PR #109 lists faults in the later four ("The officer's cap band is faint",
+  "The builder's hard hat reads more like a cap"), which he has not judged.
+- The new Riskiest (A2): the rival is the rest of A1. A mission's characters and moves in bytes, in one pool that
+  every game holds, and a game's own frame with two 96 px figures, are both untested. A2 has evidence of risk too
+  (★C5, ★C6). Without Q1's ratings the folder cannot rank them.
+
+## 4. Numbers without unit, population, period or provenance
+
+- "one move of one character is 254,592 to 328,032 bytes" (feasibility row) and "each move of a character adds
+  254,592 to 328,032 bytes" (Q4): the population is the fireman's four 12-pose moves, not every character.
+- "about a fifth of the bytes for a run" (Q4, cutout): no provenance. It is calculated from 60,226 and 328,032, one facing,
+  pixels only, with a mirror on the board.
+- "a load of about 2 s, read as 2,500 ms or less" (Results row 1, Test line): the reading's author is missing (the
+  facilitator, amended 20:33 Prague before the result).
+- "5,026,784 bytes of PSRAM were free" (C28): the period is the end of step 2c's probe, before its cleanup. It is one of
+  two runs.
+- "held 19 fps up to 36 figures" (★C25, Results row 2): each count is four 5 s read lines of a 30 s count, with 64
+  objects alive. The counts between the listed ones are unknown.
+- "24 fps in each read line" (★C24): four 5 s lines of one 30 s count, one run, the App capped at 25.
+- "10 switches in a row with no wrong figure" (Test line): no proposer.
+- "Discovery holds one of two" (Board actions): no time and no source.
+- "8 H" (Stands on): depends on A1 counted as retired (part 2).
+
+## Searches
+
+None on the web. Local reads and `gh` reads only, as listed at the top of this pass. No scratch file was made.
