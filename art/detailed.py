@@ -229,13 +229,9 @@ class HeadView:
 
 
 class Headwear:
-    """What a character wears on its head: rise, its top over the head joint; and three hooks of
-    DetailedFigure.head, each given the HeadView: under, before the head's skin (behind the head); nape, after the
-    skin and before the face; over, after the face. Each hook does nothing here."""
-
-    def rise(self, head):
-        """Its top over the head joint, in body heights, on a head of that radius (body heights)."""
-        raise NotImplementedError
+    """What a character wears on its head, painted at three hooks of DetailedFigure.head, each given the HeadView:
+    under, before the head's skin (behind the head); nape, after the skin and before the face; over, after the face.
+    Each hook does nothing here."""
 
     def under(self, figure, s, view):
         pass
@@ -258,9 +254,6 @@ class Helmet(Headwear):
     tail: float = 2.15
     flap: tuple = COAT_DARK
 
-    def rise(self, head):
-        return HELMET_TOP
-
     def nape(self, figure, s, view):
         at, ahead, back = view.at, view.ahead, -view.way
         if view.frontal < 0.7:  # the neck flap, over the back of the head and down to the collar
@@ -269,7 +262,7 @@ class Helmet(Headwear):
 
     def over(self, figure, s, view):
         at, r, ahead, way, frontal = view.at, view.r, view.ahead, view.way, view.frontal
-        top = self.rise(figure.HEAD) / figure.HEAD  # the dome's top, in head radii above the head joint
+        top = HELMET_TOP / figure.HEAD  # the dome's top, in head radii above the head joint
         dome = s.shape("poly", *[at(1.22 * c, 0.12 + (top - 0.12) * v) for c, v in
                                  ((-1.0, 0.0), (-0.92, 0.45), (-0.7, 0.78), (-0.38, 0.95), (0.0, 1.0), (0.38, 0.95),
                                   (0.7, 0.78), (0.92, 0.45), (1.0, 0.0))])
@@ -292,9 +285,6 @@ class Hair(Headwear):
     TOP = 1.3  # the cap's top over the head joint, in head radii
     CAP = ((1.0, 0.42), (0.9, 0.85), (0.55, 1.18), (0.0, TOP), (-0.6, 1.2), (-1.02, 0.78), (-1.14, 0.1),
            (-0.98, -0.62), (-0.5, -0.66), (-0.2, -0.1), (0.35, 0.36))  # across and up in head radii, facing right
-
-    def rise(self, head):
-        return head * self.TOP
 
     def under(self, figure, s, view):
         if self.down:  # behind the head and the neck, so the head's skin is over its front
@@ -320,11 +310,14 @@ class Proportions:
     def fit(self, pose):
         """The pose with each limb's two pieces scaled by its share in all three coordinates, a foot or a hand
         following its limb's end unchanged, then moved up or down so that its lowest foot joint is as high as before:
-        a planted foot stays on the ground, a flight keeps its height. With both shares 1, the pose itself."""
+        a planted foot stays on the ground, a flight keeps its height. A limb of share 1 is left as it is; with both
+        shares 1, the pose itself."""
         if (self.leg, self.arm) == (1, 1):
             return pose
         out = dict(pose)
         for share, limb, follow in ((self.leg, self.LEG, self.FOOT), (self.arm, self.ARM, self.HAND)):
+            if share == 1:  # left as it is: no float noise from a multiply by 1
+                continue
             for side in "lr":
                 joints = [side + n for n in limb]
                 for a, b in zip(joints, joints[1:]):
@@ -344,8 +337,7 @@ class Character:
     bare. shaft: a tall boot's or a sock's colour from the boot up the shin (None: a shoe). hem: how far down the
     thighs its top hangs, a share of them. bands: reflective bands on its top and trousers. Its headwear (a Headwear),
     its gear (Gear, in paint order) and its limbs' proportions (Proportions). The defaults are the fireman's. It is
-    not art/sets/rescue.py's Look, which
-    is how Rescue's 25 px people look."""
+    not art/sets/rescue.py's Look, which is how Rescue's 25 px people look."""
 
     name: str = "fireman"
     scale: float = 1.0
@@ -761,8 +753,10 @@ class CharacterClip:
     are on), every second one running left on its left pictures, each at its own speed, a frame of the game apart.
     The smaller a runner's picture, the farther up the street its row, whatever order the runners come in. The farther
     runner is pasted first, so the nearer one is over it. The clip lasts as long as the slowest runner takes to cross
-    the street once; each runner goes round a lap that its run over the clip fills a whole number of times, so every
-    runner is at its start place again when the clip starts again (its place loops, its pose need not)."""
+    the street once; each runner goes round a lap that its run over the clip fills a whole number of times, and its
+    pose follows its place in the lap, so every runner is at its start place in its first pose when the clip starts
+    again (the pose jumps only where the lap wraps, off the street). Two runners of one height keep the order they
+    are passed in."""
 
     W, TOP, BOTTOM = 320, 200, 238
 
@@ -798,7 +792,7 @@ class CharacterClip:
             run, w, lap = self.runners[k], self.runners[k].size[0], self.laps[k]
             ran = self.ran(run, i)
             at = (k * lap // n + ran) % lap  # each starts its own share of the way round
-            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran, self.runs_left[k])))
+            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(at, self.runs_left[k])))
         return out
 
     def frames(self):
