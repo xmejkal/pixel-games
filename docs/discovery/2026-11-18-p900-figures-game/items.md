@@ -4,7 +4,7 @@ block for more. needed by: the decider's words, quoted. value proven by: a proof
 status: proposed, or filed D<n>.
 e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)` -->
 
-## A 96 px figure is only arithmetic → one painted run on the Mac and one run on the board, with the bytes, the free memory and the frame rate
+## A 96 px figure is only arithmetic → two steps with their own gates: a painted figure on the Mac (no bench), then a 2 MB pack on the board with the memory and the frame rate (his bench)
 - type: spike <!-- REQUIRED:item-type -->
 - needed by: "we should sell it more and make bigger figures, ours are tiny and one doesn't appreciate the details so much" (the PO, 2026-11-18) <!-- REQUIRED:needed-by -->
 - value proven by: a GIF he can look at, and a board log with the pool, the free PSRAM, the fps and the load time against the pass line <!-- REQUIRED:value-proven-by -->
@@ -19,9 +19,20 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - type: story <!-- REQUIRED:item-type -->
 - needed by: "one can pick who to control, and there is some collaboration mission always" (the PO, 2026-11-18) <!-- REQUIRED:needed-by -->
 - value proven by: he plays it on the board (a feel slice: it stops at ready to play) <!-- REQUIRED:value-proven-by -->
-- depends on: the spike, and P901 (https://github.com/xmejkal/spark/issues/1280) <!-- REQUIRED:depends-on -->
+- depends on: the spike. P901 (https://github.com/xmejkal/spark/issues/1280) follows it, as slice 2 of the story map <!-- REQUIRED:depends-on -->
 - status: proposed <!-- REQUIRED:item-status -->
 - label (the repository's type label): story <!-- REQUIRED:spark-process:label -->
+- parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->
+- slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games <!-- REQUIRED:spark-process:slice -->
+<!-- EXTEND:item-fields -->
+
+## Nobody knows which input switches a figure well → a prototype on today's pool: two placeholder figures at today's size and each way to switch, played by him
+- type: spike <!-- REQUIRED:item-type -->
+- needed by: "one can pick who to control, and there is some collaboration mission always" (the PO, 2026-11-18) <!-- REQUIRED:needed-by -->
+- value proven by: he tries each way to switch and names the one he wants (a feel slice) <!-- REQUIRED:value-proven-by -->
+- depends on: — (no 96 px art, no bigger pool and no P901 are needed, council/refuter.md part e) <!-- REQUIRED:depends-on -->
+- status: proposed <!-- REQUIRED:item-status -->
+- label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games <!-- REQUIRED:spark-process:slice -->
 <!-- EXTEND:item-fields -->
