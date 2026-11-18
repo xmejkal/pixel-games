@@ -243,7 +243,8 @@ class Cycle:
 class Rising(Cycle):
     """A loop where the body also goes up: the climb. Its loop is found with the end lowered by the root's rise, and
     its poses are closed: the gap between the loop's ends, the rise taken out, is spread over them, so that after one
-    loop every joint is one rise higher."""
+    loop every joint is one rise higher. Closing is what Unity's "Loop Pose" does (Unity's manual,
+    https://docs.unity3d.com/Manual/RootMotion.html)."""
 
     def settle(self, poses, first, last):
         """Pose i less i / poses of the gap between the last view, lowered by the rise, and the first."""
@@ -258,8 +259,9 @@ class Rising(Cycle):
 
 
 class OneShot(Cycle):
-    """A move that plays once and does not loop: a jump. It takes no period: its loop is its whole span, and its first
-    and last poses are the span's ends."""
+    """A one-shot, a move that plays once and does not loop (Godot's AnimationNodeOneShot,
+    https://docs.godotengine.org/en/stable/classes/class_animationnodeoneshot.html): a jump. It takes no period: its
+    loop is its whole span, and its first and last poses are the span's ends."""
 
     def __init__(self, name, trial, fps, frames, poses):
         super().__init__(name, trial, fps, frames, None, poses)
@@ -365,8 +367,9 @@ class Capture:
         return cycle.settle(out, view(window[0]), view(window[period]))
 
     def root_motion(self, cycle):
-        """The root's place along the way the body faces at the frame of each pose, and of one more after the last
-        (Cycle.frame), from the play's first frame, in body heights: the body's own way through the world. For a loop
+        """The root motion, the body's own way through the world kept apart from its poses (Unity's manual,
+        https://docs.unity3d.com/Manual/RootMotion.html): the root's place along the way the body faces at the frame of
+        each pose, and of one more after the last (Cycle.frame), from the play's first frame, in body heights. For a loop
         the last number is the forward part of the stride."""
         window, (fx, fz), _, height = self.window(cycle)
         period = len(window) - 1

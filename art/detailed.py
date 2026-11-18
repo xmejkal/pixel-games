@@ -676,7 +676,7 @@ class Pictures:
     """A character's cycle (cycle_name: a name in mocap.CYCLES, mocap.CROWD or mocap.MOVES), its poses (poses()) each
     painted by painter on its own picture of box(height) and all cut to the one box they use: pictures (RGBA, in the
     board's RGB565 colours) facing right and left, each the mirror of the right one, size, and pivot, the point that is
-    put on a place: the hips' column on the last row."""
+    put on a place (Unity's sprite pivot): the hips' column on the last row."""
 
     def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
         self.capture, self.height, self.rim, self.seed, self.character = capture, height, rim, seed, character
