@@ -680,7 +680,7 @@ class Pictures:
 
     def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
         self.capture, self.height, self.rim, self.seed, self.character = capture, height, rim, seed, character
-        self.cycle = next(c for c in mocap.CYCLES + mocap.CROWD + mocap.MOVES if c.name == cycle_name)
+        self.cycle = mocap.named(cycle_name)
         self.painter = self.figure()
         painted = [self.painter.paint(pose) for pose in self.poses()]
         used = [img.getchannel("A").getbbox() for img in painted]

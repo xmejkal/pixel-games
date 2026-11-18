@@ -294,6 +294,11 @@ MOVES = (
 )
 
 
+def named(name):
+    """The cycle of CYCLES, CROWD or MOVES that has this name."""
+    return next(c for c in CYCLES + CROWD + MOVES if c.name == name)
+
+
 class Capture:
     """The CMU files in one folder: each cycle's poses. The kinematics run once per trial and frame span."""
 

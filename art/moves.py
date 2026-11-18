@@ -34,10 +34,13 @@ class MovePictures(Pictures):
     """A character's move (cycle_name: a name in mocap.MOVES): the Pictures of its snapped poses, and where each goes.
     lifts: each pose's lift, in body heights. travel: px (forward, up) that each pose's picture goes from the play's
     start. advance: px (forward, up) from one play's start to the next. pose_ms: the capture's time from one pose to
-    the next, which a one-shot's last pose also lasts; play_ms: a play's. toes: the middle between the toe joints of
-    pose 0, px from its pivot."""
+    the next, which a one-shot's last pose also lasts; play_ms: a play's. posed: the snapped poses."""
 
     def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="jump"):
+        raw = capture.poses(mocap.named(cycle_name))
+        self.posed = [snapped(pose) for pose in raw]  # each with its lowest foot joint on the floor
+        # each pose's lift: the root's up before the snap less after it
+        self.lifts = [a["root"][1] - b["root"][1] for a, b in zip(raw, self.posed)]
         super().__init__(capture, height, rim, seed, character, cycle_name)
         px, leg = self.painter.PX, character.proportions.leg  # forward as the run's stride, so the feet keep still
         motion = capture.root_motion(self.cycle)
@@ -45,18 +48,17 @@ class MovePictures(Pictures):
         self.advance = (round(motion[-1] * px * leg), round(capture.rise(self.cycle) * px))
         self.pose_ms = self.cycle.frame(1, capture.loop(self.cycle)[1]) * 1000 / self.cycle.fps
         self.play_ms = len(self.pictures) * self.pose_ms
-        pose = character.proportions.fit(self.posed[0])
-        (lx, ly), (rx, ry) = (self.painter.at(pose[n]) for n in ("ltoes", "rtoes"))
-        x0, y0, _ = self.used
-        self.toes = ((lx + rx) / 2 - x0 - self.pivot[0], (ly + ry) / 2 - y0 - self.pivot[1])
 
     def poses(self):
-        """The capture's poses, each snapped: its lowest foot joint on the floor. It keeps them (posed) and each one's
-        lift, the root's up before the snap less after it."""
-        raw = self.capture.poses(self.cycle)
-        self.posed = [snapped(pose) for pose in raw]
-        self.lifts = [a["root"][1] - b["root"][1] for a, b in zip(raw, self.posed)]
+        """The poses to paint: the snapped ones."""
         return self.posed
+
+    def toes(self):
+        """The middle between the toe joints of pose 0, px from its pivot."""
+        pose = self.character.proportions.fit(self.posed[0])
+        (lx, ly), (rx, ry) = (self.painter.at(pose[n]) for n in ("ltoes", "rtoes"))
+        x0, y0, _ = self.used
+        return (lx + rx) / 2 - x0 - self.pivot[0], (ly + ry) / 2 - y0 - self.pivot[1]
 
     def pose_at(self, ms):
         """The pose ms into the move, played again and again, and its place: the whole plays times the advance, plus
@@ -181,7 +183,8 @@ class MoveClip:
         pose 0, a rung lies under the lowest foot then and one every half advance, and its foot is a rung lower."""
         move, row, column = mover
         (f, u), (af, au) = move.travel[0], move.advance
-        tx, ty = column + f + move.toes[0], row - u + move.toes[1]
+        dx, dy = move.toes()
+        tx, ty = column + f + dx, row - u + dy
         y = row - u + 1  # the row under the soles in pose 0
         x = tx + (ty - y) * af / au
         return Ladder((x - af / 2, y + au / 2), (af, au), math.hypot(af, au) / 2)

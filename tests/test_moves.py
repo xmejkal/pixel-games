@@ -293,11 +293,14 @@ class StandMove(moves.MovePictures):
 
     def __init__(self, colour, travel, advance=(0, 0), pose_ms=100, size=(10, 20), toes=(0, -2), cycle=JUMP,
                  character=detailed.FIREMAN):
-        self.cycle, self.character, self.size, self.toes = cycle, character, size, toes
+        self.cycle, self.character, self.size, self.toe_place = cycle, character, size, toes
         self.travel, self.advance, self.pose_ms, self.play_ms = travel, advance, pose_ms, len(travel) * pose_ms
         self.pictures = [Image.new("RGBA", size, colour + (10 + 20 * i, 255)) for i in range(len(travel))]
         self.left = [ImageOps.mirror(img) for img in self.pictures]
         self.pivot = (size[0] // 2, size[1] - 1)
+
+    def toes(self):
+        return self.toe_place
 
 
 class MoveSheetTest(unittest.TestCase):
