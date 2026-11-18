@@ -4,6 +4,8 @@ rims. On a standing pose written here, so these hold without the CMU files. And,
 downloaded, the twelve run poses painted from them. Run from the repository root:
 python3 -m unittest discover tests."""
 
+import dataclasses
+import hashlib
 import os
 import sys
 import tempfile
@@ -15,7 +17,7 @@ sys.path.insert(0, os.path.join(REPO, "art"))  # the art modules import each oth
 import detailed  # noqa: E402
 import mocap  # noqa: E402
 from brush import rnd  # noqa: E402
-from PIL import Image  # noqa: E402
+from PIL import Image, ImageOps  # noqa: E402
 from sets.rescue import COOL, STRIPE, WARM  # noqa: E402
 
 SIDES = {"r": 0.05, "l": -0.05}  # each side's depth toward the viewer, in body heights
@@ -60,6 +62,46 @@ def coloured(img, colour, within=40):
     """The opaque pixels close to colour: (x, y) each."""
     return [(x, y) for y in range(img.height) for x in range(img.width)
             if img.getpixel((x, y))[3] and sum(abs(a - b) for a, b in zip(img.getpixel((x, y)), colour)) < within]
+
+
+def drawn(character, pose=None, seed=1):
+    """A character of detailed.CAST, or one made with dataclasses.replace, at 96 px with no rim."""
+    rnd.seed(seed)
+    figure = detailed.DetailedFigure(detailed.box(detailed.TALL), detailed.TALL, detailed.NoRim(), character)
+    return figure, figure.paint(pose or standing())
+
+
+def other(value):
+    """Another value of a record's field: a colour turned round, a colour for none, a share or a size moved, a
+    yes for a no, the other headwear, the gear without its last part or with a tank."""
+    if isinstance(value, bool):
+        return not value
+    if value is None:
+        return (128, 64, 200)
+    if isinstance(value, (int, float)):
+        return value * 0.75 if value else 0.5
+    if isinstance(value, tuple) and value and isinstance(value[0], int):
+        return tuple(255 - c for c in value)
+    if isinstance(value, tuple):
+        return value[:-1] if value else (detailed.Tank(),)
+    return detailed.Hair((60, 40, 30), 1.0, 0) if isinstance(value, detailed.Helmet) else detailed.Helmet()
+
+
+def bytes_of(img):
+    return hashlib.sha256(img.tobytes()).hexdigest()[:16]
+
+
+def changed_by(img, other_img):
+    """The pixels that differ between two pictures of one size: (x, y) each."""
+    return [(x, y) for y in range(img.height) for x in range(img.width)
+            if img.getpixel((x, y)) != other_img.getpixel((x, y))]
+
+
+def outlined(character):
+    """The character standing, with the dark outline, as the clip shows it."""
+    rnd.seed(1)
+    figure = detailed.DetailedFigure(detailed.box(detailed.TALL), detailed.TALL, detailed.Outline(), character)
+    return figure.paint(standing())
 
 
 class StandingFigureTest(unittest.TestCase):
@@ -292,6 +334,246 @@ class RunFromCaptureTest(unittest.TestCase):
             with self.subTest(ran=ran):
                 self.assertIs(self.captured.pictures[detailed.pose_index(ran, self.captured.stride, 12)],
                               self.captured.picture(ran))
+
+
+class FiremanBytesGuardTest(unittest.TestCase):
+    """During P904 step 2a's build only: the fireman's standing pose both ways, his 12 run poses and his 12 turned
+    poses keep master's bytes (aa35f88). Removed in the PR's last commit."""
+
+    MASTER = ('b1b254e1c62a192b', '94ebdebddad59f13', '62944133e66e0a47', 'd487390dae5def38', '44ca583b8ad453ec',
+              '47037dbdad05a250', '7e868d5e0d7cfa06', 'b617d2af352f2ceb', '9c3d02b4196461de', 'd85d34f1a8774b3c',
+              '51609a2a24ae3997', '3041a2eb5cf5f117', '1345c52c84ed6b5b', '6f595e006fe5d1e7', '19a422396ae2902e',
+              'dbea70bb12385432', '8de7bb1900eb5605', '6e020e5eeb0a1242', '779763b99ce59afa', '202e59bc20a4cef8',
+              'cd95334e879265b5', '269ae0f67de596f5', '5a641c73cf4964de', '265e5ca15bc9c418', '4d0592d56ad26e52',
+              '1e73a45fd5f96431')
+
+    def test_the_firemans_pictures_keep_masters_bytes(self):
+        capture = mocap.Capture()
+        if capture.missing():
+            raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
+        got = [bytes_of(painted(detailed.TALL)[1]), bytes_of(painted(detailed.TALL, facing_left())[1])]
+        run = detailed.RunPictures(capture, detailed.TALL)
+        got += [bytes_of(img) for img in run.pictures]
+        got += [bytes_of(run.alone(i, turned=True)) for i in range(12)]
+        self.assertEqual(list(self.MASTER), got)
+
+
+class CharacterTest(unittest.TestCase):
+    """Every character of detailed.CAST on the standing pose (no CMU file is read), and the fields of its record."""
+
+    def each(self):
+        for character, _ in detailed.CAST:
+            with self.subTest(character=character.name):
+                yield character
+
+    def test_the_fireman_is_the_records_defaults_and_the_first_of_the_cast(self):
+        self.assertEqual(detailed.Character(), detailed.FIREMAN)
+        self.assertEqual((detailed.FIREMAN, "run"), detailed.CAST[0])
+        self.assertEqual(painted(detailed.TALL)[1].tobytes(), drawn(detailed.FIREMAN)[1].tobytes())
+
+    def test_from_the_soles_on_the_last_row_to_the_head_joint(self):
+        """(1 + SOLE) x PX - 1 px, PX from the height and the scale alone; the head joint measured down from the
+        picture's top row by the headwear's rise."""
+        for c in self.each():
+            figure, img = drawn(c)
+            px = detailed.TALL * c.scale / (1 + detailed.HELMET_TOP + figure.SOLE)
+            rows = opaque_rows(img)
+            self.assertEqual(img.height - 1, rows[-1])
+            joint = rows[0] + c.headwear.rise(c.head) * px
+            self.assertLessEqual(abs(rows[-1] - joint - ((1 + figure.SOLE) * px - 1)), 1)
+
+    def test_each_field_of_the_record_and_of_its_parts_changes_the_picture(self):
+        for c in self.each():
+            before = drawn(c)[1].tobytes()
+            changed = [(f.name, dataclasses.replace(c, **{f.name: other(getattr(c, f.name))}))
+                       for f in dataclasses.fields(c) if f.name != "name"]
+            for k, part in enumerate((c.headwear,) + c.gear):
+                for f in dataclasses.fields(part):
+                    moved = dataclasses.replace(part, **{f.name: other(getattr(part, f.name))})
+                    changed.append(("%s.%s" % (type(part).__name__, f.name),
+                                    dataclasses.replace(c, headwear=moved) if k == 0 else
+                                    dataclasses.replace(c, gear=c.gear[:k - 1] + (moved,) + c.gear[k:])))
+                if k:
+                    changed.append(("without %s" % type(part).__name__,
+                                    dataclasses.replace(c, gear=c.gear[:k - 1] + c.gear[k:])))
+            for name, character in changed:
+                with self.subTest(field=name):
+                    self.assertNotEqual(before, drawn(character)[1].tobytes())
+
+    def test_facing_left_is_the_mirror_of_facing_right(self):
+        for c in self.each():
+            right = ImageOps.mirror(drawn(c)[1].getchannel("A"))
+            left = drawn(c, facing_left())[1].getchannel("A")
+            w, h = left.size
+            both = [(bool(right.getpixel((x, y))), bool(left.getpixel((x, y)))) for y in range(h) for x in range(w)]
+            either = [b for b in both if any(b)]
+            self.assertGreaterEqual(sum(1 for a, b in either if a == b) / len(either), 0.97)
+
+    def test_the_top_is_between_the_hips_and_the_neck_and_the_headwear_over_the_head_joint(self):
+        """A part's pixels are those that its colour changes."""
+        for c in self.each():
+            figure, img = drawn(c)
+            pose = standing()
+            top = changed_by(img, drawn(dataclasses.replace(c, top=other(c.top)))[1])
+            self.assertGreaterEqual(len(top), 30)
+            middle = sum(y for _, y in top) / len(top)
+            self.assertLess(figure.at(pose["lowerneck"])[1], middle)
+            self.assertLess(middle, figure.at(pose["rhipjoint"])[1])
+            hat = dataclasses.replace(c.headwear, colour=other(c.headwear.colour))
+            worn = changed_by(img, drawn(dataclasses.replace(c, headwear=hat))[1])
+            self.assertGreaterEqual(len(worn), 12)
+            self.assertLess(sum(y for _, y in worn) / len(worn), figure.at(pose["head"])[1])
+
+    def test_a_sleeve_share_under_one_leaves_the_forearm_in_skin_down_to_3_px_above_the_wrist(self):
+        for sleeve in (0.45, 1.0):
+            with self.subTest(sleeve=sleeve):
+                c = dataclasses.replace(detailed.FIREMAN, sleeve=sleeve)
+                figure, img = drawn(c)
+                elbow, wrist = (round(figure.at(standing()["r" + j])[1]) for j in ("humerus", "radius"))
+                skin = {y for _, y in coloured(img, c.skin) if elbow + 3 <= y <= wrist - 3}
+                self.assertEqual(set(range(elbow + 3, wrist - 2)) if sleeve < 1 else set(), skin)
+
+    def test_a_trouser_share_under_one_leaves_the_knee_in_skin(self):
+        for trouser in (0.5, 1.0):
+            with self.subTest(trouser=trouser):
+                c = dataclasses.replace(detailed.FIREMAN, trouser=trouser)
+                figure, img = drawn(c)
+                knee = round(figure.at(standing()["rfemur"])[1])
+                skin = [q for q in coloured(img, c.skin) if abs(q[1] - knee) <= 2]
+                self.assertEqual(trouser < 1, bool(skin))
+
+    def test_no_reflective_band_is_on_skin(self):
+        """A band pixel is one that the bands change; under it, with no bands, there is no skin. Also with short
+        sleeves, short trousers and bare hands, where the bands would lie on bare skin."""
+        bare = dataclasses.replace(detailed.FIREMAN, sleeve=0.45, trouser=0.5, hands=None)
+        for c in list(self.each()) + [bare]:
+            with self.subTest(bare=c is bare):
+                banded = drawn(dataclasses.replace(c, bands=True))[1]
+                plain = drawn(dataclasses.replace(c, bands=False))[1]
+                bands = changed_by(banded, plain)
+                self.assertGreaterEqual(len(bands), 8)
+                skins = (c.skin, detailed.darker(c.skin))
+                on_skin = [q for q in bands if any(sum(abs(a - b) for a, b in zip(plain.getpixel(q), s)) < 40
+                                                   for s in skins)]
+                self.assertEqual([], on_skin)
+
+    def test_the_childs_head_is_wider_for_its_height_than_the_firemans(self):
+        share = {}
+        for c in (detailed.FIREMAN, detailed.CHILD):
+            figure, img = drawn(c)
+            hy = figure.at(standing()["head"])[1]
+            xs = [x for x, y in coloured(img, c.skin) if abs(y - hy) <= 2]
+            rows = opaque_rows(img)
+            share[c.name] = (max(xs) - min(xs) + 1) / (rows[-1] - rows[0] + 1)
+        self.assertGreater(share["child"], share["fireman"] * 1.1)
+
+
+class Stand:
+    """A stand-in for RunPictures: one plain picture a facing, so CharacterClip is tested with no CMU file."""
+
+    def __init__(self, colour, speed, size=(10, 20)):
+        self.size, self.speed, self.stride = size, speed, 40
+        self.pictures = [Image.new("RGBA", size, colour + (255,))] * 12
+        self.left = [Image.new("RGBA", size, tuple(255 - c for c in colour) + (255,))] * 12
+
+    def picture(self, ran, left=False):
+        return (self.left if left else self.pictures)[detailed.pose_index(ran, self.stride, 12)]
+
+
+class CharacterClipTest(unittest.TestCase):
+    """characters.gif's frames on stand-in pictures: rows, facings, speeds and the paste order."""
+
+    def setUp(self):
+        self.runners = [Stand((200, 0, 0), 50), Stand((0, 200, 0), 80), Stand((0, 0, 200), 120)]
+        self.street = Image.new("RGB", (detailed.CharacterClip.W, 240), (0, 0, 0))
+        self.clip = detailed.CharacterClip(self.runners, self.street)
+
+    def test_each_runner_has_a_row_from_200_to_238_and_every_second_runs_left(self):
+        self.assertEqual([200, 219, 238], self.clip.rows)
+        self.assertEqual([False, True, False], self.clip.left)
+
+    def test_the_runners_are_pasted_in_the_order_of_their_rows(self):
+        places = self.clip.places(0)
+        self.assertEqual(sorted(p[1] for p in places), [p[1] for p in places])
+
+    def test_a_left_runner_shows_its_left_pictures(self):
+        for i in (0, 5):
+            for k, (x, y, img) in zip((0, 1, 2), self.clip.places(i)):
+                with self.subTest(frame=i, runner=k):
+                    self.assertIs(img, self.runners[k].picture(0, self.clip.left[k]))
+
+    def test_each_runner_advances_by_its_own_speed(self):
+        for k, run in enumerate(self.runners):
+            with self.subTest(runner=k):
+                x0, x1 = self.clip.places(0)[k][0], self.clip.places(25)[k][0]
+                way = -1 if self.clip.left[k] else 1
+                self.assertEqual(int(run.speed * 25 * detailed.FRAME_MS / 1000), (x1 - x0) * way)
+
+    def test_a_frame_is_the_street_with_each_runner_pasted_at_its_place(self):
+        frames = self.clip.frames()
+        self.assertGreater(len(frames), 1)
+        for x, row, img in self.clip.places(3):
+            h = img.height
+            if 0 <= x and x + img.width <= detailed.CharacterClip.W:
+                with self.subTest(row=row):
+                    self.assertEqual(img.getpixel((0, h - 1))[:3], frames[3].getpixel((x, row)))
+
+
+class CastFromCaptureTest(unittest.TestCase):
+    """Every runner of detailed.CAST painted from the CMU files: skipped without them, and a skip is not a pass."""
+
+    @classmethod
+    def setUpClass(cls):
+        capture = mocap.Capture()
+        if capture.missing():
+            raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
+        cls.runners = [detailed.RunPictures(capture, detailed.TALL, character=c, cycle=cycle)
+                       for c, cycle in detailed.CAST]
+
+    def test_twelve_poses_in_one_box_and_each_left_picture_is_the_mirror(self):
+        for (c, _), run in zip(detailed.CAST, self.runners):
+            with self.subTest(character=c.name):
+                self.assertEqual(12, len(run.pictures))
+                self.assertEqual({run.size}, {img.size for img in run.pictures + run.left})
+                for right, left in zip(run.pictures, run.left):
+                    self.assertEqual(ImageOps.mirror(right).tobytes(), left.tobytes())
+
+    def test_the_printed_total_is_the_sum_of_the_runs(self):
+        lines = detailed.cast_bytes(self.runners)
+        self.assertEqual(len(self.runners) + 1, len(lines))
+        self.assertIn(" %d bytes" % sum(run.size_bytes() for run in self.runners), lines[-1])
+        for (c, _), run, line in zip(detailed.CAST, self.runners, lines):
+            with self.subTest(character=c.name):
+                self.assertIn(c.name, line)
+                self.assertIn(" %d bytes" % run.size_bytes(), line)
+
+
+class CastPaletteTest(unittest.TestCase):
+    """characters.gif's one palette, CAST_COLOURS of it from the figures, keeps every character's colours and the
+    street's, within the bounds of GifPaletteTest."""
+
+    def test_a_written_gif_keeps_the_figures_colours_and_the_streets(self):
+        street = detailed.Committed().street
+        figures = [detailed.q565(outlined(c)) for c, _ in detailed.CAST]
+        with_figures, places = street.copy(), []
+        for k, figure in enumerate(figures):
+            places.append((10 + k * 78, 200 + k * 12 - figure.height + 1))
+            with_figures.paste(figure, places[-1], figure)
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "cast.gif")
+            detailed.write_gif([street, with_figures], path, 40, figures, detailed.CAST_COLOURS)
+            with Image.open(path) as gif:
+                gif.seek(1)
+                got = gif.convert("RGB")
+        off = {True: 0, False: 0}
+        for y in range(got.height):
+            for x in range(got.width):
+                on = any(0 <= x - px < f.width and 0 <= y - py < f.height and f.getpixel((x - px, y - py))[3]
+                         for f, (px, py) in zip(figures, places))
+                error = max(abs(a - b) for a, b in zip(got.getpixel((x, y)), with_figures.getpixel((x, y))))
+                off[on] = max(off[on], error)
+        self.assertLessEqual(off[True], GifPaletteTest.FIGURE)
+        self.assertLessEqual(off[False], GifPaletteTest.STREET)
 
 
 if __name__ == "__main__":
