@@ -1,12 +1,16 @@
 """The set figures (P904 step 2c): Rescue's still street and the eight characters of art/detailed.py's CAST, each
 running facing right and facing left, for probe904_figures.py, which counts how many 96 px figures the game box moves
-at once. It is in no ART_SETS: art/paint.py does not write it, no pack of it is committed, and the box's pool stays as
-big as its largest committed pack. write(folder) writes its pack and an index of that pack alone, which the probe
-copies to the board and removes again. It moves to art/sets/ and joins ART_SETS when a game loads it (P900).
+at once. 96 px is detailed.TALL, an adult's standing height from the soles to the top of the fireman's helmet. The
+pictures are 72 to 111 px tall and 42 to 67 px wide: the child is smaller, the chef's toque is taller, and a pose in
+flight adds. It is in no ART_SETS: art/paint.py does not write it, no pack of it is committed, and the box's pool
+stays as big as its largest committed pack. write(folder) writes its pack and an index of that pack alone; the probe
+calls it with a temporary folder, copies the two files to the board and removes them again. It moves to art/sets/ and
+joins ART_SETS when a game loads it (P900).
 
 Its pictures, in their order: figures_night (the street, not keyed), then for each character figures_<name>_r0 to
 _r11 (its run's poses facing right) and figures_<name>_l0 to _l11 (the same, facing left), each keyed. It needs the
-CMU files in mocap.CMU_DIR and paints nothing without them.
+CMU files, in mocap.CMU_DIR or in the folder of the capture it is given: without them the paint raises
+FileNotFoundError.
 """
 
 import dataclasses
@@ -20,15 +24,15 @@ from export import Packs, write_index, write_packs
 from sets.rescue import read_committed
 
 NAME = "figures"
-POSES = 12  # a run's poses (RunPictures paints twelve)
 
 
 @functools.lru_cache(maxsize=None)
 def cast(capture):
-    """Each character of detailed.CAST running at 96 px (a RunPictures), painted from capture (a mocap.Capture; None:
+    """Each character of detailed.CAST's run at 96 px (a RunPictures), painted from capture (a mocap.Capture; None:
     the CMU files in mocap.CMU_DIR) once for paint_figures, gaits and write: about 53 s on the Mac."""
     capture = capture or mocap.Capture()
-    return tuple(detailed.RunPictures(capture, detailed.TALL, character=c, cycle_name=name) for c, name in detailed.CAST)
+    return tuple(detailed.RunPictures(capture, detailed.TALL, character=c, cycle_name=name)
+                 for c, name in detailed.CAST)
 
 
 def paint_figures(capture=None):
@@ -42,8 +46,9 @@ def paint_figures(capture=None):
 
 
 def gaits(capture=None):
-    """One row per character for the probe's board part: (name, pivot x, stride, speed), the pivot x in its pictures
-    facing right, the stride in px a cycle, the speed in px a second."""
+    """A gait row per character for the probe's board part: (name, pivot x, stride, speed). A gait is the pivot x in
+    its pictures facing right, the stride in px a cycle and the speed in px a second, as captured (the probe rounds the
+    speed to a whole px a second)."""
     return tuple((run.character.name, run.pivot[0], run.stride, run.speed) for run in cast(capture))
 
 
@@ -61,4 +66,4 @@ def write(folder, capture=None):
     return os.path.join(folder, "packs", NAME + ".pak"), index
 
 
-ART_SET = ArtSet(NAME, 904, paint_figures)
+ART_SET = ArtSet(NAME, detailed.SEED, paint_figures)  # the seed of every P904 picture

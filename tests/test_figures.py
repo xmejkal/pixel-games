@@ -28,6 +28,7 @@ from export import HEADER, MAGIC, build_id, to_bin  # noqa: E402
 from sets import ART_SETS  # noqa: E402
 from sets.rescue import read_committed  # noqa: E402
 
+POSES = 12  # a run's poses
 FOLDER = tempfile.TemporaryDirectory()  # the written pack and index, once for the module
 WRITTEN = {}  # "paths": what figures.write answered
 
@@ -54,20 +55,16 @@ def index_module(path):
 def names():
     """The set's names as the plan orders them: the street, then each character's run facing right, then left."""
     return ["figures_night"] + ["figures_%s_%s%d" % (c.name, side, i) for c, _ in detailed.CAST for side in "rl"
-                                for i in range(figures.POSES)]
+                                for i in range(POSES)]
 
 
 class SetTest(unittest.TestCase):
     """The set's record: no paint."""
 
     def test_the_set_is_figures_on_its_own_seed_and_in_no_art_set(self):
-        self.assertEqual(("figures", 904), (figures.ART_SET.name, figures.ART_SET.seed))
+        self.assertEqual(("figures", detailed.SEED), (figures.ART_SET.name, figures.ART_SET.seed))
         self.assertNotIn("figures", [art_set.name for art_set in ART_SETS])
         self.assertFalse(figures.ART_SET.index_layers)
-
-    def test_193_names_one_street_and_24_a_character(self):
-        self.assertEqual(193, len(names()))
-        self.assertEqual(193, len(set(names())))
 
 
 class FiguresFromCaptureTest(unittest.TestCase):
@@ -82,6 +79,7 @@ class FiguresFromCaptureTest(unittest.TestCase):
 
     def test_its_pictures_are_the_193_names_in_order_and_only_the_street_is_not_keyed(self):
         self.assertEqual(names(), list(self.painting.pictures))
+        self.assertEqual(193, len(set(self.painting.pictures)))
         self.assertEqual([False] + [True] * 192, [keyed for _, keyed in self.painting.pictures.values()])
         self.assertEqual([], self.painting.layers)
 
@@ -92,7 +90,7 @@ class FiguresFromCaptureTest(unittest.TestCase):
     def test_each_characters_pictures_are_its_runs_poses_right_and_left(self):
         self.assertEqual([c for c, _ in detailed.CAST], [run.character for run in self.runs])
         for run in self.runs:
-            for i in range(figures.POSES):
+            for i in range(POSES):
                 with self.subTest(character=run.character.name, pose=i):
                     right = self.painting.pictures["figures_%s_r%d" % (run.character.name, i)][0]
                     left = self.painting.pictures["figures_%s_l%d" % (run.character.name, i)][0]

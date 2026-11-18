@@ -1,21 +1,33 @@
 [
  {
   "file": "probe904_figures.py",
-  "name": "the figure moves in whole px, so a frame's fraction of a px is lost",
-  "find": "        px = self.speed * ms / 1000\n",
-  "replace": "        px = self.speed * ms // 1000\n"
+  "name": "the speed is not rounded, so each step makes floats",
+  "find": "        self.speed = round(speed)  # whole px a second\n",
+  "replace": "        self.speed = speed  # whole px a second\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the start column is not a whole number",
+  "find": "int(self.lo + (self.hi - self.lo) * share)",
+  "replace": "self.lo + (self.hi - self.lo) * share"
  },
  {
   "file": "probe904_figures.py",
   "name": "the figure runs right whichever way it faces",
-  "find": "        self.x += px * self.facing\n",
-  "replace": "        self.x += px\n"
+  "find": "        self.rest += self.facing * self.speed * ms\n",
+  "replace": "        self.rest += self.speed * ms\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the carry is lost at each step, so the figure runs slower than its speed",
+  "find": "        self.rest -= px * 1000\n",
+  "replace": "        self.rest = 0\n"
  },
  {
   "file": "probe904_figures.py",
   "name": "the figure's px run is only its last step's, so its pose does not follow the distance",
-  "find": "        self.ran += px\n",
-  "replace": "        self.ran = px\n"
+  "find": "        self.ran += abs(px)\n",
+  "replace": "        self.ran = abs(px)\n"
  },
  {
   "file": "probe904_figures.py",
@@ -27,6 +39,12 @@
   "file": "probe904_figures.py",
   "name": "at an edge the figure is not put back, so its picture leaves the screen",
   "find": "            self.x = self.lo if self.x < self.lo else self.hi\n",
+  "replace": "            pass\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a turn keeps the carry",
+  "find": "            self.rest = 0\n",
   "replace": "            pass\n"
  },
  {
@@ -44,20 +62,26 @@
  {
   "file": "probe904_figures.py",
   "name": "the picture's last row is one over FEET, so the soles float",
-  "find": "        return int(self.x) - pivot, FEET - self.h + 1\n",
-  "replace": "        return int(self.x) - pivot, FEET - self.h\n"
+  "find": "        return self.x - pivot, FEET - self.h + 1\n",
+  "replace": "        return self.x - pivot, FEET - self.h\n"
  },
  {
   "file": "probe904_figures.py",
   "name": "the pose changes once a stride, not twelve times",
-  "find": "int(self.ran) * POSES // self.stride % POSES)",
-  "replace": "int(self.ran) // self.stride % POSES)"
+  "find": "[self.ran * POSES // self.stride % POSES]",
+  "replace": "[self.ran // self.stride % POSES]"
  },
  {
   "file": "probe904_figures.py",
   "name": "the figure always shows its right pictures",
-  "find": "\"r\" if self.facing > 0 else \"l\",",
-  "replace": "\"r\","
+  "find": "(self.right if self.facing > 0 else self.left)",
+  "replace": "(self.right)"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "picture() formats its name each frame instead of picking one made once",
+  "find": "        return (self.right if self.facing > 0 else self.left)[self.ran * POSES // self.stride % POSES]\n",
+  "replace": "        return \"figures_%s_%s%d\" % (self.name, \"r\" if self.facing > 0 else \"l\", self.ran * POSES // self.stride % POSES)\n"
  },
  {
   "file": "probe904_figures.py",
@@ -85,7 +109,73 @@
  },
  {
   "file": "probe904_figures.py",
-  "name": "the run time limit is 12 s over the counts, not 120 s",
+  "name": "the figures start at places that repeat",
+  "find": "i * 5 % n / (n - 1)",
+  "replace": "i * 4 % n / (n - 1)"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the first figure starts at the left edge facing it",
+  "find": "1 if i % 2 == 0 else -1))",
+  "replace": "-1 if i % 2 == 0 else 1))"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "every figure steps, not only the counted ones",
+  "find": "            for i in range(self.count):\n                self.figures[i].step(self.ms)\n",
+  "replace": "            for figure in self.figures:\n                figure.step(self.ms)\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "every figure is the fireman",
+  "find": "                row = rows[i % len(rows)]\n",
+  "replace": "                row = rows[0]\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the game shows its title first",
+  "find": "        TITLE_MS = 0\n",
+  "replace": "        TITLE_MS = 1500\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a picture that does not draw goes unnoticed, so an empty scene can pass",
+  "find": "        if not pictures.draw(cv, name, x, y):\n",
+  "replace": "        if not pictures.draw(cv, name, x, y) and False:\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "memory() reads the internal heap, not PSRAM",
+  "find": "if h[0] > 1_000_000]",
+  "replace": "if h[0] <= 1_000_000]"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the pool is asked for the smallest pack's size, not the largest",
+  "find": "    size = max(row[1] for row in pictures.art_index.PACKS.values())",
+  "replace": "    size = min(row[1] for row in pictures.art_index.PACKS.values())"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the count clock runs before the App's own frame",
+  "find": "        _frame(self)\n        if isinstance(self.game, Probe):\n            clock.after_frame(self)\n",
+  "replace": "        if isinstance(self.game, Probe):\n            clock.after_frame(self)\n        _frame(self)\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "any error of a frame ends as a finished board run with done",
+  "find": "    except Done:\n        pass\n",
+  "replace": "    except Exception:\n        pass\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the end has no memory lines",
+  "find": "    memory()\n    print(\"done\")\n",
+  "replace": "    print(\"done\")\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the board run's time limit is 12 s over the counts, not 120 s",
   "find": "LIMIT_S = len(COUNTS) * SECONDS + 120",
   "replace": "LIMIT_S = len(COUNTS) * SECONDS + 12"
  },
@@ -103,69 +193,75 @@
  },
  {
   "file": "probe904_figures.py",
-  "name": "the run has no time limit",
+  "name": "the board run has no time limit",
   "find": "            return self.runner.run([\"run\", copy], timeout=LIMIT_S), None\n",
   "replace": "            return self.runner.run([\"run\", copy]), None\n"
  },
  {
   "file": "probe904_figures.py",
-  "name": "the wait has the run's time limit too",
+  "name": "the wait has the board run's time limit too",
   "find": "                self.tried(WAIT, self.box.RESET_TRIES)\n",
   "replace": "                self.runner.run(WAIT, timeout=LIMIT_S)\n"
  },
  {
   "file": "probe904_figures.py",
-  "name": "a timed-out run is not caught, so its lines are not logged",
-  "find": "        except subprocess.TimeoutExpired as e:\n            return text(e.stdout) + text(e.stderr), \"the run took over %d s\" % e.timeout\n",
+  "name": "a timed-out board run is not caught, so its lines are not logged",
+  "find": "        except subprocess.TimeoutExpired as e:\n            return text(e.stdout) + text(e.stderr), \"the board run took over %d s\" % e.timeout\n",
   "replace": ""
  },
  {
   "file": "probe904_figures.py",
-  "name": "a timed-out run's bytes are not decoded",
+  "name": "a timed-out board run's bytes are not decoded",
   "find": "    return out.decode(\"utf-8\", \"replace\") if isinstance(out, bytes) else out or \"\"\n",
   "replace": "    return out or \"\"\n"
  },
  {
   "file": "probe904_figures.py",
-  "name": "the cleanup runs only after a run that came back, not after a failed copy",
-  "find": "            finally:\n                self.clean()\n",
-  "replace": "            except BaseException:\n                raise\n            self.clean()\n"
+  "name": "a log is written over an earlier one",
+  "find": "    while os.path.exists(path):\n",
+  "replace": "    while False:\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "done inside another line counts as done",
+  "find": "\"done\" not in lines:",
+  "replace": "\"done\" not in \"\\n\".join(lines):"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the cleanup runs only after a board run that came back, not after a failed copy",
+  "find": "            finally:\n                self.clean(first)\n",
+  "replace": "            except BaseException:\n                raise\n            self.clean(first)\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the cleanup reads :packs on a box with no packs folder, so its error hides the copy's",
+  "find": "if dry or folder + \"/\" in root else set()",
+  "replace": "if True else set()"
  },
  {
   "file": "probe904_figures.py",
   "name": "the cleanup removes both copies whether or not the board holds them",
-  "find": "                 if dry or path.split(\"/\")[-1] in names]\n",
-  "replace": "                 if True]\n"
+  "find": "                     if dry or path.split(\"/\")[-1] in names]\n",
+  "replace": "                     if True]\n"
  },
  {
   "file": "probe904_figures.py",
-  "name": "a picture that does not draw goes unnoticed, so an empty scene can pass",
-  "find": "        if not pictures.draw(cv, name, x, y):\n",
-  "replace": "        if not pictures.draw(cv, name, x, y) and False:\n"
+  "name": "a failed cleanup hides the first error",
+  "find": "\"; before it: \" + first if first else \"\"",
+  "replace": "\"\""
  },
  {
   "file": "probe904_figures.py",
-  "name": "every figure steps, not only the counted ones",
-  "find": "            for figure in self.figures[:self.count]:\n                figure.step(self.ms)\n",
-  "replace": "            for figure in self.figures:\n                figure.step(self.ms)\n"
+  "name": "mac() lets a missing mpremote out as a traceback",
+  "find": "    except (box.subprocess.CalledProcessError, FileNotFoundError) as e:\n        raise SystemExit(box.failure(e))\n",
+  "replace": "    except box.subprocess.CalledProcessError as e:\n        raise SystemExit(box.failure(e))\n"
  },
  {
   "file": "probe904_figures.py",
-  "name": "every figure is the fireman",
-  "find": "                gait = gaits[i % len(gaits)]\n",
-  "replace": "                gait = gaits[0]\n"
- },
- {
-  "file": "probe904_figures.py",
-  "name": "the game shows its title first",
-  "find": "        TITLE_MS = 0\n",
-  "replace": "        TITLE_MS = 1500\n"
- },
- {
-  "file": "probe904_figures.py",
-  "name": "the copy sends only the first character's gait",
-  "find": "\"\\nGAITS = %r\" % (tuple(gaits),)",
-  "replace": "\"\\nGAITS = %r\" % (tuple(gaits)[:1],)"
+  "name": "the copy sends only the first character's gait row",
+  "find": "\"\\nGAITS = %r\" % (tuple(rows),)",
+  "replace": "\"\\nGAITS = %r\" % (tuple(rows)[:1],)"
  },
  {
   "file": "art/figures.py",
@@ -196,5 +292,11 @@
   "name": "the runner drops the time limit",
   "find": "        limit = {} if timeout is None else {\"timeout\": timeout}",
   "replace": "        limit = {}"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a missing tool's line does not name the tool",
+  "find": "        return \"no %s: %s\" % (e.filename or \"mpremote\", e)",
+  "replace": "        return \"no tool: %s\" % e"
  }
 ]

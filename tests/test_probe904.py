@@ -1,9 +1,9 @@
 """probe904_figures.py (P904 step 2c): how many 96 px figures the game box moves at once. On the Mac, with no board:
-the figure's run and turn on stand-in gaits, the count at each wall time, the frame wrapper's lines, the pack line's
-pool or heap, the Mac part's commands with a recording runner (as tests/test_box.py's FakeRunner) and a stand-in for
-art/figures.py, and its dry run. And, only when the CMU files are downloaded, the probe's game on the stand-in display
-(tests/drawing_tft.py) with the set's written pack: skipped without them, and a skip is not a pass. Run from the
-repository root: python3 -B -m unittest tests.test_probe904."""
+the figure's steps and turns on stand-in gait rows, the count at each wall time, the count clock's lines, the pack
+line's pool or heap, board() on stand-in board modules, the Mac part's commands with a recording runner (as
+tests/test_box.py's FakeRunner) and a stand-in for art/figures.py, mac() and its dry run. And, only when the CMU files
+are downloaded, the probe's game on the stand-in display (tests/drawing_tft.py) with the set's written pack: skipped
+without them, and a skip is not a pass. Run from the repository root: python3 -B -m unittest tests.test_probe904."""
 
 import contextlib
 import io
@@ -34,50 +34,65 @@ import pictures  # noqa: E402
 import probe904_figures as probe  # noqa: E402
 import rescue  # noqa: E402
 
-# stand-in gaits (name, pivot x, stride, speed) and picture sizes: none round, none alike, one pivot left of its
+# stand-in gait rows (name, pivot x, stride, speed) and picture sizes: none round, none alike, one pivot left of its
 # picture's middle and one right of it, so a mirrored pivot or a margin of the wrong side shows
-GAIT_A, SIZE_A = ("fireman", 47, 83, 141.7), (113, 109)
-GAIT_B, SIZE_B = ("paramedic", 71, 97, 167.3), (104, 98)
-STAND_IN_GAITS = (GAIT_A, GAIT_B, ("footballer", 53, 89, 151.9))
+ROW_A, SIZE_A = ("fireman", 47, 83, 141.7), (113, 109)
+ROW_B, SIZE_B = ("paramedic", 71, 97, 167.3), (104, 98)
+STAND_IN_ROWS = (ROW_A, ROW_B, ("footballer", 53, 89, 151.9))
 SAID = "probe p904 counts 0,1,2,4,8,16 seconds 30\npack pool 2463997\ncount 0 starts\nfps figures 23\n" \
-       "count 16 starts\nfps figures 7\ndone\n"  # a run's output, as the board prints it
-LIMIT = 6 * 30 + 120  # the run's time limit: the counts times SECONDS, plus 120 s
+       "count 16 starts\nfps figures 7\ndone\n"  # a board run's output, as the board prints it
+LIMIT = 6 * 30 + 120  # the board run's time limit: the counts times SECONDS, plus 120 s
+STEPS = (37, 23, 41, 60, 17)  # ms: 142 px a second times none of them is a whole px
 
 
 class FigureTest(unittest.TestCase):
-    """One moving figure on stand-in gaits."""
+    """One moving figure on stand-in gait rows."""
 
     def test_the_screens_width_and_the_row_of_the_soles_are_the_games(self):
         self.assertEqual((gfx.WIDTH, rescue.FEET), (probe.WIDTH, probe.FEET))
 
-    def test_it_moves_at_its_speed_the_way_it_faces_and_counts_the_px_it_ran(self):
-        for facing in (1, -1):
+    def test_it_moves_at_its_whole_speed_with_a_carry_in_thousandths(self):
+        # 141.7 px a second is 142; 178 ms of it is 25.276 px. Facing right the floors give 25 px and keep 276
+        # thousandths; facing left each step floors toward the left: 26 px, and 724 thousandths kept
+        for facing, moved, ran, rest in ((1, 25, 25, 276), (-1, -26, 26, 724)):
             with self.subTest(facing=facing):
-                figure = probe.Figure(GAIT_A, SIZE_A, 0.5, facing)
+                figure = probe.Figure(ROW_A, SIZE_A, 0.5, facing)
+                self.assertEqual(142, figure.speed)
                 x = figure.x
-                figure.step(37)
-                self.assertAlmostEqual(x + facing * 141.7 * 0.037, figure.x, places=9)
-                self.assertAlmostEqual(141.7 * 0.037, figure.ran, places=9)
-                figure.step(23)
-                self.assertAlmostEqual(141.7 * 0.060, figure.ran, places=9)
+                for ms in STEPS:
+                    figure.step(ms)
+                self.assertEqual((x + moved, ran, rest), (figure.x, figure.ran, figure.rest))
 
-    def test_it_starts_its_share_of_the_way_between_its_bounds(self):
-        figure = probe.Figure(GAIT_B, SIZE_B, 0.25, -1)
+    def test_many_steps_leave_whole_numbers_and_a_pose_is_one_name_made_once(self):
+        figure = probe.Figure(ROW_B, SIZE_B, 0.3, -1)
+        self.assertIs(int, type(figure.x))
+        names = {}
+        for k in range(2000):
+            figure.step(STEPS[k % len(STEPS)])
+            self.assertEqual((int, int, int), (type(figure.x), type(figure.ran), type(figure.rest)), k)
+            name = figure.picture()
+            self.assertIs(names.setdefault((name, figure.facing), name), name)  # the same pose: the same object
+            self.assertIs(name, figure.picture())
+        self.assertEqual(2 * probe.POSES, len(names))
+
+    def test_it_starts_its_share_of_the_way_between_its_bounds_on_a_whole_column(self):
+        figure = probe.Figure(ROW_B, SIZE_B, 0.25, -1)
         self.assertEqual((71, 319 - 71), (figure.lo, figure.hi))  # the pivot, right of the middle, is the margin
-        self.assertAlmostEqual(71 + (248 - 71) * 0.25, figure.x, places=9)
-        self.assertEqual((65, 319 - 65), (probe.Figure(GAIT_A, SIZE_A, 0, 1).lo, probe.Figure(GAIT_A, SIZE_A, 0, 1).hi))
+        self.assertEqual(int(71 + (248 - 71) * 0.25), figure.x)
+        self.assertEqual((65, 319 - 65), (probe.Figure(ROW_A, SIZE_A, 0, 1).lo, probe.Figure(ROW_A, SIZE_A, 0, 1).hi))
 
     def test_it_turns_at_each_edge_and_its_picture_stays_whole_on_the_screen(self):
-        for gait, (w, h) in ((GAIT_A, SIZE_A), (GAIT_B, SIZE_B)):
+        for row, (w, h) in ((ROW_A, SIZE_A), (ROW_B, SIZE_B)):
             for facing in (1, -1):
-                with self.subTest(character=gait[0], facing=facing):
-                    figure = probe.Figure(gait, (w, h), 0.4, facing)
+                with self.subTest(character=row[0], facing=facing):
+                    figure = probe.Figure(row, (w, h), 0.4, facing)
                     turns, xs = [], []
                     for k in range(3000):
                         before, x = figure.facing, figure.x
-                        figure.step((23, 41, 60, 17)[k % 4])
+                        figure.step(STEPS[k % len(STEPS)])
                         if figure.facing != before:
                             turns.append(figure.facing)
+                            self.assertEqual(0, figure.rest)  # a turn drops the carry, as rescue.py's run
                         else:  # the facing follows the direction
                             self.assertEqual(figure.facing, 1 if figure.x > x else -1)
                         left, top = figure.corner()
@@ -88,16 +103,16 @@ class FigureTest(unittest.TestCase):
                     self.assertEqual((figure.lo, figure.hi), (min(xs), max(xs)))
 
     def test_its_pose_follows_the_px_it_ran_and_its_side_its_facing(self):
-        figure = probe.Figure(GAIT_A, SIZE_A, 0.5, 1)  # stride 83: 12 poses do not divide it
-        for ran, pose in ((0, 0), (6.9, 0), (7.0, 1), (41.6, 5), (83.0, 0), (90.2, 1), (160.0, 11)):
+        figure = probe.Figure(ROW_A, SIZE_A, 0.5, 1)  # stride 83: 12 poses do not divide it
+        for ran, pose in ((0, 0), (6, 0), (7, 1), (41, 5), (83, 0), (90, 1), (160, 11)):
             for facing, side in ((1, "r"), (-1, "l")):
                 with self.subTest(ran=ran, facing=facing):
                     figure.ran, figure.facing = ran, facing
                     self.assertEqual("figures_fireman_%s%d" % (side, pose), figure.picture())
 
     def test_its_corner_puts_its_pivot_on_its_column_and_its_soles_on_row_214(self):
-        figure = probe.Figure(GAIT_A, SIZE_A, 0.5, 1)
-        figure.x = 150.7
+        figure = probe.Figure(ROW_A, SIZE_A, 0.5, 1)
+        figure.x = 150
         self.assertEqual((150 - 47, 214 - 109 + 1), figure.corner())
         figure.facing = -1  # the left picture is the right one mirrored: its pivot is w - 1 - 47 from its left
         self.assertEqual((150 - 65, 214 - 109 + 1), figure.corner())
@@ -105,7 +120,10 @@ class FigureTest(unittest.TestCase):
 
 class CountTest(unittest.TestCase):
     def test_the_counts_and_their_seconds(self):
-        self.assertEqual(((0, 1, 2, 4, 8, 16), 30, None), (probe.COUNTS, probe.SECONDS, probe.GAITS))
+        self.assertEqual(((0, 1, 2, 4, 8, 16), 30), (probe.COUNTS, probe.SECONDS))
+
+    def test_the_source_holds_no_gait_rows_the_mac_part_fills_them_in_a_copy(self):
+        self.assertIsNone(probe.GAITS)
 
     def test_each_counts_first_and_last_millisecond_and_none_after_the_last(self):
         for k, count in enumerate((0, 1, 2, 4, 8, 16)):
@@ -126,8 +144,8 @@ class Clock:
         return self.times.pop(0)
 
 
-class CountsTest(unittest.TestCase):
-    """The frame wrapper's work, on a stand-in App and a stand-in clock."""
+class CountClockTest(unittest.TestCase):
+    """The count clock, on a stand-in App and a stand-in clock."""
 
     def test_it_prints_the_pack_line_once_then_each_count_and_starts_an_interval_at_each(self):
         start = 1234
@@ -136,7 +154,7 @@ class CountsTest(unittest.TestCase):
         game = types.SimpleNamespace(count=None)
         app = types.SimpleNamespace(game=game, intervals=[])
         app.new_interval = lambda: app.intervals.append(game.count)
-        counts = probe.Counts(clock.ticks_ms, lambda a, b: a - b, lambda: "pack pool 2463997")
+        counts = probe.CountClock(clock.ticks_ms, lambda a, b: a - b, lambda: "pack pool 2463997")
         frames = 0
         with contextlib.redirect_stdout(io.StringIO()) as said, self.assertRaises(probe.Done):
             while True:
@@ -152,7 +170,7 @@ class CountsTest(unittest.TestCase):
         clock = Clock([5000, 5000 + 29999, 5000 + 30000, 5000 + 30001])
         game = types.SimpleNamespace(count=None)
         app = types.SimpleNamespace(game=game, new_interval=lambda: None)
-        counts = probe.Counts(clock.ticks_ms, lambda a, b: a - b, lambda: "pack heap 7")
+        counts = probe.CountClock(clock.ticks_ms, lambda a, b: a - b, lambda: "pack heap 7")
         seen = []
         with contextlib.redirect_stdout(io.StringIO()):
             for _ in range(4):
@@ -178,6 +196,99 @@ class PackLineTest(unittest.TestCase):
         self.assertEqual("pack pool 2463997", probe.pack_line(Pool(2463997).pool, 2463997))
         self.assertEqual("pack pool 2463997", probe.pack_line(Pool(2470001).pool, 2463997))
         self.assertEqual("pack heap 2463997", probe.pack_line(Pool(739213).pool, 2463997))
+
+
+# the board's modules for board(): PSRAM's regions are over 1 MB, the internal heap's under it, every value different
+HEAP_DATA, HEAP_EXEC = 4, 1
+REGIONS = [(8388603, 6747503, 6553597, 6000001), (327673, 188419, 160001, 150007),
+           (4194301, 2000003, 1900007, 1800011), (31991, 20011, 19997, 18013)]
+PACKS = {"other": ("packs/other.pak", 739213, "aa"), "figures": ("packs/figures.pak", 2463997, "bb"),
+         "third": ("packs/third.pak", 1507149, "cc")}  # the largest neither first nor last
+
+
+def board_modules(fail_at=None):
+    """Stand-ins for the modules board() imports, as a dict for sys.modules, and the list of the pool's sizes asked.
+    The App's frame prints `frame N` and moves the clock 41 ms; with fail_at, that frame raises a RuntimeError. run()
+    builds the one game and calls frame() until it raises."""
+    clock, asked, frees = [7777], [], [6603371, 6402313]
+    time_ = types.SimpleNamespace(ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b)
+
+    class App:
+        def __init__(self, game):
+            self.game, self.frames = game, 0
+
+        def frame(self):
+            self.frames += 1
+            clock[0] += 41
+            print("frame %d" % self.frames)
+            if self.frames == fail_at:
+                raise RuntimeError("figures_fireman_r3 did not draw: no art")
+
+        def new_interval(self):
+            print("interval")
+
+    def run(games, knob, speaker):
+        print("run %s %s %d" % (knob, speaker, len(games)))
+        app = App(games[0]())
+        while True:
+            app.frame()
+
+    art = {"figures_%s_r0" % row[0]: size + ("figures", 16) for row, size in
+           zip(STAND_IN_ROWS, (SIZE_A, SIZE_B, (98, 107)))}
+    index = types.SimpleNamespace(ART=art, PACKS=PACKS)
+    pictures_ = types.SimpleNamespace(art_index=index, load=lambda *art: True, draw=lambda *a: True)
+    esp32 = types.SimpleNamespace(HEAP_DATA=HEAP_DATA, HEAP_EXEC=HEAP_EXEC,
+                                  idf_heap_info=lambda kind: REGIONS if kind == HEAP_DATA else [(9, 9, 9, 9)])
+    gc_ = types.SimpleNamespace(collect=lambda: None, mem_free=lambda: frees.pop(0),
+                                mem_alloc=lambda: 279361 - len(frees))
+    modules = {"app": types.SimpleNamespace(App=App, run=run), "main": types.SimpleNamespace(
+        compose=lambda: ("knob", "speaker")), "pictures": pictures_, "s3lcd": types.SimpleNamespace(
+        pool=lambda n: asked.append(n) or bytearray(1)), "esp32": esp32, "gc": gc_, "time": time_, "gfx": gfx}
+    return modules, asked
+
+
+class BoardTest(unittest.TestCase):
+    """board() on stand-in board modules: the App, main, pictures, s3lcd, esp32, gc and time."""
+
+    def board(self, fail_at=None):
+        """board() run: what it printed, the pool's sizes asked, and the error it left with or None."""
+        modules, asked = board_modules(fail_at)
+        error = None
+        with mock.patch.dict(sys.modules, modules), mock.patch.object(probe, "GAITS", STAND_IN_ROWS), \
+                contextlib.redirect_stdout(io.StringIO()) as said:
+            try:
+                probe.board()
+            except Exception as e:  # noqa: BLE001  the test reads which one
+                error = e
+        return said.getvalue().splitlines(), asked, error
+
+    def test_it_runs_the_game_with_mains_parts_and_ends_on_done_after_the_last_count(self):
+        lines, asked, error = self.board()
+        self.assertIsNone(error)
+        psram = "psram free %d largest %d" % (6747503 + 2000003, 6553597)
+        self.assertEqual(["probe p904 counts 0,1,2,4,8,16 seconds 30", psram, "gc free 6603371 alloc 279360",
+                          "run knob speaker 1", "frame 1", "pack pool 2463997", "count 0 starts", "interval",
+                          "frame 2"], lines[:9])
+        self.assertEqual(["frame %d" % (180000 // 41 + 2), psram, "gc free 6402313 alloc 279361", "done"], lines[-4:])
+        self.assertEqual([2463997], asked)  # the largest pack's size, asked once
+        starts = [line for line in lines if line.startswith("count ")]
+        self.assertEqual(["count %d starts" % n for n in (0, 1, 2, 4, 8, 16)], starts)
+
+    def test_the_apps_own_frame_runs_before_the_count_clock(self):
+        lines, _, _ = self.board()
+        for n in (0, 1, 16):
+            with self.subTest(count=n):
+                at = lines.index("count %d starts" % n)
+                self.assertTrue(lines[at - 1].startswith("frame ") or lines[at - 1].startswith("pack "), lines[at - 1])
+        self.assertLess(lines.index("frame 1"), lines.index("pack pool 2463997"))
+
+    def test_any_other_error_of_a_frame_leaves_board_as_itself_with_no_done(self):
+        lines, asked, error = self.board(fail_at=3)
+        self.assertIsInstance(error, RuntimeError)
+        self.assertIn("figures_fireman_r3", str(error))
+        self.assertEqual("frame 3", lines[-1])
+        self.assertNotIn("done", lines)
+        self.assertEqual(1, len([line for line in lines if line.startswith("psram ")]))
 
 
 @contextlib.contextmanager
@@ -220,8 +331,8 @@ class GameFromCaptureTest(unittest.TestCase):
         cls.folder = tempfile.TemporaryDirectory()
         cls.art = figures_art(cls.folder.name)
         cls.index = cls.art.__enter__()
-        cls.gaits = figures.gaits(None)
-        cls.Probe = probe.game_class(cls.gaits)
+        cls.rows = figures.gaits(None)
+        cls.Probe = probe.game_class(cls.rows)
 
     @classmethod
     def tearDownClass(cls):
@@ -251,10 +362,20 @@ class GameFromCaptureTest(unittest.TestCase):
         self.assertEqual(16, len(self.game.figures))
         for i, figure in enumerate(self.game.figures):
             with self.subTest(figure=i):
-                name, pivot, stride, speed = self.gaits[i % 8]
+                name, pivot, stride, speed = self.rows[i % 8]
                 self.assertEqual(detailed.CAST[i % 8][0].name, name)
-                self.assertEqual((name, pivot, stride, speed), (figure.name, figure.pivot, figure.stride, figure.speed))
+                self.assertEqual((name, pivot, stride, round(speed)),
+                                 (figure.name, figure.pivot, figure.stride, figure.speed))
                 self.assertEqual(self.index.ART["figures_%s_r0" % name][:2], (figure.w, figure.h))
+
+    def test_the_sixteen_start_places_differ_and_none_faces_the_edge_it_starts_at(self):
+        places = [(figure.x, figure.facing) for figure in self.game.figures]
+        self.assertEqual(16, len({x for x, _ in places}))
+        for figure in self.game.figures:
+            with self.subTest(figure=figure.name, x=figure.x):
+                self.assertFalse(figure.x == figure.hi and figure.facing == 1)
+                self.assertFalse(figure.x == figure.lo and figure.facing == -1)
+        self.assertEqual([1, -1] * 8, [facing for _, facing in places])
 
     def test_each_drawn_figure_is_its_pose_whole_on_screen_with_its_soles_on_row_214(self):
         for count in (1, 2, 4, 16):
@@ -297,9 +418,9 @@ class GameFromCaptureTest(unittest.TestCase):
         self.game.play(False, False)
         for i, figure in enumerate(self.game.figures):
             with self.subTest(figure=i):
-                moved = figure.speed * 0.043 * figure.facing
+                moved = figure.speed * 43 * figure.facing // 1000  # from no carry
                 if i < 2:
-                    self.assertAlmostEqual(min(max(xs[i] + moved, figure.lo), figure.hi), figure.x, places=9)
+                    self.assertEqual(min(max(xs[i] + moved, figure.lo), figure.hi), figure.x)
                 else:
                     self.assertEqual(xs[i], figure.x)
 
@@ -319,23 +440,30 @@ class GameFromCaptureTest(unittest.TestCase):
             pictures.PICS[name] = kept
 
 
+ROOT = ("boot.py", "main.py", "app.mpy", "art_index.mpy", "packs/")
+
+
 class Board:
     """A recording runner for the Mac part: it keeps each command and its time limit, answers `ls :` and `ls :packs`
-    with what the board holds (each copy lands, each rm removes), reads the probe's copy at its run and answers said.
-    fails: commands (joined by spaces) that raise a CalledProcessError, once each time they are named. copy_fails: a
-    copy's destination and how it fails: "before" lands nothing, "halfway" leaves its file. run_error: what the run
-    raises instead of answering."""
+    with what the board holds (each copy lands, each rm removes; `ls :packs` fails on a board with no packs folder),
+    reads the probe's copy at its board run and answers said. fails: commands (joined by spaces) that raise a
+    CalledProcessError, once each time they are named. broken: commands that raise it every time once a copy began.
+    copy_fails: a copy's destination and how it fails: "before" lands nothing, "halfway" leaves its file. run_error:
+    what the board run raises instead of answering."""
 
     dry_run = False
 
-    def __init__(self, root=("boot.py", "main.py", "app.mpy", "art_index.mpy", "packs/"), packs=("rescue.pak",),
-                 said=SAID, fails=(), copy_fails=None, run_error=None):
+    def __init__(self, root=ROOT, packs=("rescue.pak",), said=SAID, fails=(), broken=(), copy_fails=None,
+                 run_error=None):
         self.root, self.packs, self.said = set(root), set(packs), said
-        self.fails, self.copy_fails, self.run_error = list(fails), copy_fails or {}, run_error
-        self.commands, self.limits, self.copy = [], [], None
+        self.fails, self.broken, self.copy_fails, self.run_error = list(fails), set(broken), copy_fails or {}, run_error
+        self.commands, self.limits, self.copy, self.copied = [], [], None, False
 
     def listing(self, names):
         return "".join("%12d %s\n" % (1000 + len(n), n) for n in sorted(names))
+
+    def fail(self, args, why):
+        raise subprocess.CalledProcessError(1, ["mpremote"] + args, output="", stderr=why)
 
     def run(self, args, timeout=None):
         self.commands.append(args)
@@ -343,19 +471,26 @@ class Board:
         line = " ".join(args)
         if line in self.fails:
             self.fails.remove(line)
-            raise subprocess.CalledProcessError(1, ["mpremote"] + args, output="", stderr="could not enter raw repl")
+            self.fail(args, "could not enter raw repl")
+        if self.copied and line in self.broken:
+            self.fail(args, "could not enter raw repl")
         if args[0] == "cp":
+            self.copied = True
             how = self.copy_fails.get(args[-1])
+            if args[-1].startswith(":packs/") and "packs/" not in self.root:
+                self.fail(args, "OSError: [Errno 2] ENOENT")
             if how != "before":
                 (self.packs if args[-1].startswith(":packs/") else self.root).add(args[-1].split("/")[-1].lstrip(":"))
             if how:
-                raise subprocess.CalledProcessError(1, ["mpremote"] + args, output="", stderr="no space left")
+                self.fail(args, "no space left")
         if args[0] == "rm":
             for path in args[1:]:
                 (self.packs if path.startswith(":packs/") else self.root).discard(path.split("/")[-1].lstrip(":"))
         if args == ["ls", ":"]:
             return "ls :\n" + self.listing(self.root)
         if args == ["ls", ":packs"]:
+            if "packs/" not in self.root:
+                self.fail(args, "OSError: [Errno 2] ENOENT")
             return "ls :packs\n" + self.listing(self.packs)
         if args[0] == "run":
             with open(args[1]) as f:
@@ -368,7 +503,7 @@ class Board:
 
 class StandInArt:
     """art/figures.py stood in: write puts small files where figures.write puts the pack and the index, and gaits
-    answers STAND_IN_GAITS. It keeps the captures it was given."""
+    answers STAND_IN_ROWS. It keeps the captures it was given."""
 
     def __init__(self):
         self.captures = []
@@ -385,11 +520,14 @@ class StandInArt:
 
     def gaits(self, capture):
         self.captures.append(capture)
-        return STAND_IN_GAITS
+        return STAND_IN_ROWS
 
 
 def cleanup():
     return [["ls", ":"], ["ls", ":packs"], ["rm", ":art_index.py", ":packs/figures.pak"], ["reset"]]
+
+
+RECOVERY = ("mpremote rm :art_index.py :packs/figures.pak", "mpremote reset")
 
 
 class MacTest(unittest.TestCase):
@@ -416,11 +554,11 @@ class MacTest(unittest.TestCase):
                 return said.getvalue(), e
         return said.getvalue(), None
 
-    def logged(self):
-        with open(self.log) as f:
+    def logged(self, path=None):
+        with open(path or self.log) as f:
             return f.read()
 
-    def test_a_run_copies_the_pack_then_the_index_waits_runs_once_and_cleans_up(self):
+    def test_a_board_run_copies_the_pack_then_the_index_waits_runs_once_and_cleans_up(self):
         board = Board()
         said, refused = self.run_bench(board)
         self.assertIsNone(refused)
@@ -430,20 +568,31 @@ class MacTest(unittest.TestCase):
                          + cleanup(), board.commands)
         self.assertTrue(board.commands[1][1].endswith(os.path.join("packs", "figures.pak")))
         self.assertTrue(board.commands[2][1].endswith("art_index.py"))
-        self.assertEqual({"boot.py", "main.py", "app.mpy", "art_index.mpy", "packs/"}, board.root)
+        self.assertEqual(set(ROOT), board.root)
         self.assertEqual({"rescue.pak"}, board.packs)
         self.assertEqual([self.capture, self.capture], self.art.captures)
         self.assertEqual(SAID, self.logged())
-        self.assertEqual(SAID, said)
+        self.assertEqual(SAID + "the log is %s\n" % self.log, said)
         self.assertFalse(os.path.exists(copy))  # the temporary folder is gone
 
-    def test_the_time_limit_is_on_the_run_and_only_on_it(self):
+    def test_a_later_board_run_writes_the_first_free_log_and_leaves_the_earlier_ones(self):
+        stem = os.path.join(self.folder.name, "run-p904-2c")
+        for path, text in ((self.log, "the first board run\n"), (stem + "-2.log", "the second board run\n")):
+            with open(path, "w") as f:
+                f.write(text)
+        said, refused = self.run_bench(Board())
+        self.assertIsNone(refused)
+        self.assertEqual(("the first board run\n", "the second board run\n", SAID),
+                         (self.logged(), self.logged(stem + "-2.log"), self.logged(stem + "-3.log")))
+        self.assertEqual("the log is %s-3.log" % stem, said.splitlines()[-1])
+
+    def test_the_time_limit_is_on_the_board_run_and_only_on_it(self):
         board = Board()
         self.run_bench(board)
         self.assertEqual([None] * 5 + [LIMIT] + [None] * 4, board.limits)
         self.assertEqual(LIMIT, probe.LIMIT_S)
 
-    def test_the_copy_is_the_probe_with_the_gaits_filled_in(self):
+    def test_the_copy_is_the_probe_with_the_gait_rows_filled_in(self):
         board = Board()
         self.run_bench(board)
         with open(os.path.join(REPO, "probe904_figures.py")) as f:
@@ -455,25 +604,17 @@ class MacTest(unittest.TestCase):
         self.assertTrue(differ[0][0].startswith("GAITS = None"))
         module = {"__name__": "copy"}
         exec(compile(board.copy, "copy", "exec"), module)
-        self.assertEqual(STAND_IN_GAITS, module["GAITS"])
+        self.assertEqual(STAND_IN_ROWS, module["GAITS"])
 
-    def test_a_box_with_its_own_art_index_is_refused_before_any_copy(self):
+    def test_a_box_with_an_art_index_is_refused_before_any_copy_naming_both_kinds(self):
         board = Board(root=("boot.py", "main.py", "art_index.py", "packs/"))
         said, refused = self.run_bench(board)
-        self.assertIn("art_index.py", str(refused.code))
+        self.assertIn("real index", str(refused.code))
+        self.assertIn("shadow index", str(refused.code))
+        for line in RECOVERY:
+            self.assertIn(line, str(refused.code))
         self.assertEqual([["ls", ":"]], board.commands)
         self.assertIn("art_index.py", board.root)
-        self.assertFalse(os.path.exists(self.log))
-
-    def test_missing_cmu_files_are_refused_with_the_captures_message_before_any_copy(self):
-        board, empty = Board(), self.folder.name  # the log's folder holds no CMU file
-        missing = ", ".join(mocap.Capture(empty).missing())
-        with contextlib.redirect_stderr(io.StringIO()) as err, mock.patch.object(probe, "LOG", self.log), \
-                self.assertRaises(SystemExit):
-            probe.mac(["--cmu", empty], runner=board)
-        self.assertIn("not in %s: %s" % (empty, missing), err.getvalue())
-        self.assertIn("09_01.amc", missing)
-        self.assertEqual([["ls", ":"]], board.commands)
         self.assertFalse(os.path.exists(self.log))
 
     def test_a_failed_pack_copy_copies_no_index_and_resets_the_box(self):
@@ -483,6 +624,15 @@ class MacTest(unittest.TestCase):
         self.assertEqual([["ls", ":"], ["cp", board.commands[1][1], ":packs/figures.pak"], ["ls", ":"],
                           ["ls", ":packs"], ["reset"]], board.commands)
         self.assertFalse(os.path.exists(self.log))
+
+    def test_a_box_with_no_packs_folder_fails_the_first_copy_and_the_cleanup_reads_no_packs_folder(self):
+        board = Board(root=("boot.py", "main.py", "app.mpy"))
+        with self.assertRaisesRegex(subprocess.CalledProcessError, "") as caught:
+            self.run_bench(board)
+        self.assertIn(":packs/figures.pak", caught.exception.cmd)
+        self.assertEqual([["ls", ":"], ["cp", board.commands[1][1], ":packs/figures.pak"], ["ls", ":"], ["reset"]],
+                         board.commands)
+        self.assertEqual([], self.sleeps)
 
     def test_a_pack_copy_that_failed_halfway_leaves_its_file_and_the_cleanup_removes_only_it(self):
         board = Board(copy_fails={":packs/figures.pak": "halfway"})
@@ -497,20 +647,37 @@ class MacTest(unittest.TestCase):
         with self.assertRaises(subprocess.CalledProcessError):
             self.run_bench(board)
         self.assertEqual(cleanup(), board.commands[3:])
-        self.assertEqual(({"boot.py", "main.py", "app.mpy", "art_index.mpy", "packs/"}, {"rescue.pak"}),
-                         (board.root, board.packs))
+        self.assertEqual((set(ROOT), {"rescue.pak"}), (board.root, board.packs))
 
-    def test_a_failed_run_is_logged_cleaned_up_and_refused(self):
+    def test_a_failed_board_run_is_logged_cleaned_up_and_refused(self):
         out = "probe p904 counts 0,1,2,4,8,16 seconds 30\ngame figures refused: MemoryError('no PSRAM for the pool')\n"
         board = Board(run_error=subprocess.CalledProcessError(1, ["mpremote", "run"], output=out,
                                                               stderr="Traceback: the board raised\n"))
         said, refused = self.run_bench(board)
         self.assertIn("exit 1", str(refused.code))
+        self.assertIn(self.log, str(refused.code))
         self.assertEqual(out + "Traceback: the board raised\n", self.logged())
         self.assertEqual(cleanup(), board.commands[6:])
         self.assertNotIn("art_index.py", board.root)
 
-    def test_a_timed_out_run_is_logged_from_its_bytes_cleaned_up_and_refused(self):
+    def test_a_failed_cleanup_says_the_first_error_what_may_be_left_and_the_recovery(self):
+        run_error = subprocess.CalledProcessError(1, ["mpremote", "run"], output="probe p904 counts\n", stderr="")
+        for case, board, first in (
+                ("a failed board run", Board(run_error=run_error, broken={"ls :"}), "the board run failed with exit 1"),
+                ("a failed copy", Board(copy_fails={":art_index.py": "before"}, broken={"ls :"}),
+                 "mpremote cp %s :art_index.py failed: no space left")):
+            with self.subTest(case=case):
+                said, refused = self.run_bench(board)
+                text = str(refused.code)
+                if "%s" in first:
+                    first = first % board.commands[2][1]
+                self.assertIn(first, text)
+                self.assertIn("the cleanup failed: mpremote ls : failed: could not enter raw repl", text)
+                self.assertIn(":art_index.py and :packs/figures.pak may still be on the box", text)
+                for line in RECOVERY:
+                    self.assertIn(line, text)
+
+    def test_a_timed_out_board_run_is_logged_from_its_bytes_cleaned_up_and_refused(self):
         out = b"probe p904 counts 0,1,2,4,8,16 seconds 30\npack pool 2463997\ncount 0 starts\ncount 1 starts\n"
         board = Board(run_error=subprocess.TimeoutExpired(["mpremote", "run"], LIMIT, output=out, stderr=None))
         said, refused = self.run_bench(board)
@@ -519,7 +686,7 @@ class MacTest(unittest.TestCase):
         self.assertIn("count 1 starts", said)
         self.assertEqual(cleanup(), board.commands[6:])
 
-    def test_a_run_that_did_not_end_with_done_is_logged_and_refused(self):
+    def test_a_board_run_that_did_not_end_with_done_is_logged_and_refused(self):
         out = "probe p904 counts 0,1,2,4,8,16 seconds 30\npack heap 2463997\ncount 0 starts\n"
         board = Board(said=out)
         said, refused = self.run_bench(board)
@@ -527,6 +694,12 @@ class MacTest(unittest.TestCase):
         self.assertIn("count 0 starts", str(refused.code))
         self.assertEqual(out, self.logged())
         self.assertEqual(cleanup(), board.commands[6:])
+
+    def test_done_inside_another_line_is_no_done(self):
+        out = "probe p904 counts 0,1,2,4,8,16 seconds 30\ngame figures refused: abandoned\nundone\n"
+        said, refused = self.run_bench(Board(said=out))
+        self.assertIsNotNone(refused)
+        self.assertIn("did not end with done", str(refused.code))
 
     def test_the_wait_and_the_cleanup_try_again_while_the_board_reboots_or_the_probe_still_runs(self):
         board = Board(fails=["exec pass", "exec pass", "ls :packs", "rm :art_index.py :packs/figures.pak"])
@@ -544,15 +717,81 @@ class MacTest(unittest.TestCase):
             said, refused = self.run_bench(box.Mpremote(True))
         run.assert_not_called()
         self.assertIsNone(refused)
-        lines = said.splitlines()
-        self.assertEqual(10, len(lines), lines)
-        self.assertEqual("mpremote ls :", lines[0])
-        self.assertRegex(lines[1], r"^mpremote cp \S+/packs/figures\.pak :packs/figures\.pak$")
-        self.assertRegex(lines[2], r"^mpremote cp \S+/art_index\.py :art_index\.py$")
-        self.assertEqual(["mpremote reset", "mpremote exec pass"], lines[3:5])
-        self.assertRegex(lines[5], r"^mpremote run \S+/probe904_figures\.py$")
-        self.assertEqual(["mpremote ls :", "mpremote ls :packs", "mpremote rm :art_index.py :packs/figures.pak",
-                          "mpremote reset"], lines[6:])
+        self.assertEqual(dry_lines(), [dry_line(line) for line in said.splitlines()])
+        self.assertFalse(os.path.exists(self.log))
+
+
+def dry_lines():
+    """A dry run's lines, each temporary path as TMP."""
+    return ["mpremote ls :", "mpremote cp TMP/packs/figures.pak :packs/figures.pak",
+            "mpremote cp TMP/art_index.py :art_index.py", "mpremote reset", "mpremote exec pass",
+            "mpremote run TMP/probe904_figures.py", "mpremote ls :", "mpremote ls :packs",
+            "mpremote rm :art_index.py :packs/figures.pak", "mpremote reset"]
+
+
+def dry_line(line):
+    import re
+
+    return re.sub(r"\S+(/packs/figures\.pak|/art_index\.py|/probe904_figures\.py)", r"TMP\1", line)
+
+
+def cmu_folder(folder):
+    """folder with an empty file of each name the cast's cycles need: open_capture finds them; nothing reads them."""
+    for name in mocap.Capture(folder).missing():
+        open(os.path.join(folder, name), "w").close()
+    return folder
+
+
+class MacMainTest(unittest.TestCase):
+    """mac(): its refusals and its error lines, and its dry run, with a stand-in for art/figures.py: no paint."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.log = os.path.join(self.folder.name, "run-p904-2c.log")
+        patch = mock.patch.object(probe, "LOG", self.log)
+        patch.start()
+        self.addCleanup(patch.stop)
+
+    def mac(self, argv, runner):
+        """mac(argv) with runner and the stand-in art: what it printed, what it said on stderr, and its SystemExit."""
+        with contextlib.redirect_stdout(io.StringIO()) as said, contextlib.redirect_stderr(io.StringIO()) as err:
+            try:
+                probe.mac(argv, runner=runner, art=StandInArt())
+            except SystemExit as e:
+                return said.getvalue(), err.getvalue(), e
+        return said.getvalue(), err.getvalue(), None
+
+    def test_missing_cmu_files_are_refused_with_the_captures_message_before_any_copy(self):
+        board, empty = Board(), self.folder.name  # the log's folder holds no CMU file
+        missing = ", ".join(mocap.Capture(empty).missing())
+        said, err, refused = self.mac(["--cmu", empty], board)
+        self.assertEqual(2, refused.code)
+        self.assertIn("not in %s: %s" % (empty, missing), err)
+        self.assertIn("09_01.amc", missing)
+        self.assertEqual([["ls", ":"]], board.commands)
+        self.assertFalse(os.path.exists(self.log))
+
+    def test_a_failed_command_is_said_as_box_main_says_it(self):
+        board = Board(copy_fails={":art_index.py": "before"})
+        said, err, refused = self.mac(["--cmu", cmu_folder(self.folder.name)], board)
+        self.assertEqual("mpremote cp %s :art_index.py failed: no space left" % board.commands[2][1], refused.code)
+        self.assertEqual([["ls", ":"], ["ls", ":packs"], ["rm", ":packs/figures.pak"], ["reset"]], board.commands[3:])
+
+    def test_a_missing_mpremote_is_said_as_box_main_says_it(self):
+        def run(args, timeout=None):
+            raise FileNotFoundError(2, "No such file or directory", "mpremote")
+
+        said, err, refused = self.mac(["--cmu", cmu_folder(self.folder.name)], types.SimpleNamespace(
+            dry_run=False, run=run))
+        self.assertEqual("no mpremote: [Errno 2] No such file or directory: 'mpremote'", refused.code)
+
+    def test_its_dry_run_prints_every_command_and_runs_none(self):
+        with mock.patch.object(box.subprocess, "run") as run:
+            said, err, refused = self.mac(["--dry-run", "--cmu", cmu_folder(self.folder.name)], None)
+        run.assert_not_called()
+        self.assertIsNone(refused)
+        self.assertEqual(dry_lines(), [dry_line(line) for line in said.splitlines()])
         self.assertFalse(os.path.exists(self.log))
 
 

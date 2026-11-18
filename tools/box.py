@@ -96,8 +96,7 @@ def engine_reference(value):
 
 class Tool:
     """Runs one command of a tool from the repository root and answers its output; with dry_run it prints the command
-    and runs nothing. timeout: the seconds the command may take, or None for no limit; past it subprocess.run kills the
-    command and raises TimeoutExpired, whose output is the bytes read so far (P904: a probe's run)."""
+    and runs nothing."""
 
     name = None
 
@@ -105,6 +104,8 @@ class Tool:
         self.dry_run = dry_run
 
     def run(self, args, timeout=None):
+        """timeout: the seconds the command may take, or None for no limit. Past it subprocess.run kills the command
+        and raises TimeoutExpired, whose output is the bytes read so far (P904: a probe's board run)."""
         if self.dry_run:
             print(" ".join([self.name] + args))
             return ""
@@ -443,6 +444,14 @@ def serial_port(name=None):
     return open_port
 
 
+def failure(e):
+    """The line that says a tool's command failed (a CalledProcessError) or that the tool is missing (a
+    FileNotFoundError: mpremote or mpy-cross)."""
+    if isinstance(e, FileNotFoundError):
+        return "no %s: %s" % (e.filename or "mpremote", e)
+    return "%s failed: %s" % (" ".join(e.cmd), (e.stderr or "").strip() or "exit %d" % e.returncode)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -498,12 +507,9 @@ def main(argv=None):
     except Refused as e:
         print("refused:", e)
         return 1
-    except subprocess.CalledProcessError as e:
-        print("%s failed: %s" % (" ".join(e.cmd), (e.stderr or "").strip() or "exit %d" % e.returncode))
-        return 1
-    except FileNotFoundError as e:
-        print("no %s:" % (e.filename or "mpremote"), e)  # mpremote or mpy-cross
-        if e.filename == MpyCross.name:
+    except (subprocess.CalledProcessError, FileNotFoundError) as e:
+        print(failure(e))
+        if isinstance(e, FileNotFoundError) and e.filename == MpyCross.name:
             print("install it:", MPY_CROSS_PIP)
         return 1
     return 0
