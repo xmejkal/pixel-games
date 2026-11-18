@@ -307,13 +307,44 @@ class Hair(Headwear):
 
 
 @dataclass(frozen=True)
+class Proportions:
+    """A character's limbs against the capture's: leg, the share of each thigh and shin; arm, of each upper arm and
+    forearm. fit(pose) gives a pose these proportions; a child's are shorter than an adult's."""
+
+    leg: float = 1.0
+    arm: float = 1.0
+    LEG, FOOT = ("hipjoint", "femur", "tibia"), ("foot", "toes")  # a limb's joints, and those that follow its end
+    ARM, HAND = ("clavicle", "humerus", "radius"), ("wrist", "hand", "fingers", "thumb")
+    FEET = ("lfoot", "ltoes", "rfoot", "rtoes")
+
+    def fit(self, pose):
+        """The pose with each limb's two pieces scaled by its share in all three coordinates, a foot or a hand
+        following its limb's end unchanged, then moved up or down so that its lowest foot joint is as high as before:
+        a planted foot stays on the ground, a flight keeps its height. With both shares 1, the pose itself."""
+        if (self.leg, self.arm) == (1, 1):
+            return pose
+        out = dict(pose)
+        for share, limb, follow in ((self.leg, self.LEG, self.FOOT), (self.arm, self.ARM, self.HAND)):
+            for side in "lr":
+                joints = [side + n for n in limb]
+                for a, b in zip(joints, joints[1:]):
+                    out[b] = tuple(o + (q - p) * share for o, p, q in zip(out[a], pose[a], pose[b]))
+                end = joints[-1]
+                for n in (side + n for n in follow if side + n in pose):
+                    out[n] = tuple(o + q - p for o, p, q in zip(out[end], pose[end], pose[n]))
+        lift = min(pose[n][1] for n in self.FEET) - min(out[n][1] for n in self.FEET)
+        return {n: (f, u + lift, d) for n, (f, u, d) in out.items()}
+
+
+@dataclass(frozen=True)
 class Character:
     """How a character looks on the detailed painter. scale: its height as a share of the painter's; head: its
     head's radius in body heights. The colours of its skin, its top, its legs, its boots and its hands (None: bare
     hands). sleeve and trouser: the share of the arm and of the leg in cloth, from the shoulder and the hip, the rest
     bare. shaft: a tall boot's or a sock's colour from the boot up the shin (None: a shoe). hem: how far down the
-    thighs its top hangs, a share of them. bands: reflective bands on its top and trousers. Its headwear (a Headwear)
-    and its gear (Gear, in paint order). The defaults are the fireman's. It is not art/sets/rescue.py's Look, which
+    thighs its top hangs, a share of them. bands: reflective bands on its top and trousers. Its headwear (a Headwear),
+    its gear (Gear, in paint order) and its limbs' proportions (Proportions). The defaults are the fireman's. It is
+    not art/sets/rescue.py's Look, which
     is how Rescue's 25 px people look."""
 
     name: str = "fireman"
@@ -330,7 +361,8 @@ class Character:
     hem: float = 0.4
     bands: bool = True
     headwear: Headwear = Helmet()
-    gear: tuple = (Tank(), Collar(), Strap(), Belt())  # the tank is under; the collar before the strap: his bytes
+    gear: tuple = (Tank(), Collar(), Strap(), Belt())  # the strap after the collar, or his 12 turned poses change
+    proportions: Proportions = Proportions()
 
 
 FIREMAN = Character()
@@ -340,9 +372,9 @@ PARAMEDIC = Character("paramedic", skin=(246, 204, 176), top=RED, legs=RED, boot
 FOOTBALLER = Character("footballer", skin=(150, 100, 68), top=(40, 160, 80), legs=(236, 236, 236), boots=(24, 24, 26),
                        hands=None, sleeve=0.45, trouser=0.45, shaft=(40, 160, 80), hem=0.0, bands=False,
                        headwear=Hair((26, 22, 24)), gear=())
-CHILD = Character("child", scale=0.62, head=0.085, skin=(240, 194, 158), top=(250, 210, 60), legs=(60, 100, 200),
+CHILD = Character("child", scale=0.75, head=0.095, skin=(240, 194, 158), top=(250, 210, 60), legs=(60, 100, 200),
                   boots=(210, 50, 50), hands=None, sleeve=0.3, trouser=0.35, shaft=None, hem=0.0, bands=False,
-                  headwear=Hair((150, 104, 60)), gear=())
+                  headwear=Hair((150, 104, 60)), gear=(), proportions=Proportions(leg=0.75, arm=0.85))
 CAST = ((FIREMAN, "run"), (PARAMEDIC, "woman"), (FOOTBALLER, "dogman"), (CHILD, "child"))  # each with its cycle
 
 
@@ -372,6 +404,7 @@ class DetailedFigure(Figure):
         return (self.w / 2 + self.HIPS + x * self.PX, self.h - (self.SOLE + y) * self.PX)
 
     def paint(self, pose):
+        pose = self.character.proportions.fit(pose)
         s = Sprite(self.w, self.h)
         self.bands = Image.new("L", s.size, 0)
         p = {n: self.at(v) for n, v in pose.items()}
@@ -479,9 +512,10 @@ class DetailedFigure(Figure):
         band = None if far or not c.bands else self.band(s, knee, ankle, 0.42)
         self.limb(s, (self.taper(s, hip, knee, self.THIGH), self.taper(s, knee, ankle, self.SHIN)), (hip, knee, ankle),
                   (self.THIGH, self.SHIN), c.trouser, cloth, skin, band)
-        if c.shaft is not None:
+        shaft = c.shaft  # None: a shoe
+        if shaft is not None:
             self.part(s, self.taper(s, along(knee, ankle, 0.62), ankle, (self.SHAFT_W, self.SHAFT_W)),
-                      shade(c.shaft) if far else c.shaft)
+                      shade(shaft) if far else shaft)
         self.part(s, s.shape("line", ankle, ball, toe, width=self.FOOT_W * self.PX), boot)
         ux, uy = unit(ankle, toe)  # the sole: under the foot, on the side away from the knee
         down = 1 if (ankle[0] - knee[0]) * -uy + (ankle[1] - knee[1]) * ux >= 0 else -1
@@ -589,7 +623,7 @@ class RunPictures:
         self.pictures = [q565(img.crop((x0, y0, x1, img.height))) for img in painted]
         self.left = [ImageOps.mirror(img) for img in self.pictures]  # as CapturedPictures.add in art/sets/rescue.py
         self.size = self.pictures[0].size
-        self.stride = round(capture.stride(self.cycle) * figure.PX)
+        self.stride = round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)  # the feet keep still
         self.speed = self.stride * self.cycle.fps / capture.loop(self.cycle)[1]
 
     def figure(self, rim=None):
@@ -724,32 +758,52 @@ class CharacterSheet:
 
 class CharacterClip:
     """characters.webp's frames: each runner over Rescue's street on its own row from TOP to BOTTOM (the row its soles
-    are on), every second one running left on its left pictures, each at its own speed and round again when it has
-    crossed, a frame of the game apart. The farther runner is pasted first, so the nearer one is over it."""
+    are on), every second one running left on its left pictures, each at its own speed, a frame of the game apart.
+    The smaller a runner's picture, the farther up the street its row, whatever order the runners come in. The farther
+    runner is pasted first, so the nearer one is over it. The clip lasts as long as the slowest runner takes to cross
+    the street once; each runner goes round a lap that its run over the clip fills a whole number of times, so every
+    runner is at its start place again when the clip starts again (its place loops, its pose need not)."""
 
     W, TOP, BOTTOM = 320, 200, 238
 
     def __init__(self, runners, street):
         self.runners, self.street = runners, street
         n = len(runners)
-        self.rows = [self.TOP + (self.BOTTOM - self.TOP) * k // max(1, n - 1) for k in range(n)]
+        rank = sorted(range(n), key=lambda k: runners[k].size[1])  # the smallest picture first
+        self.rows = [0] * n
+        for place, k in enumerate(rank):
+            self.rows[k] = self.TOP + (self.BOTTOM - self.TOP) * place // max(1, n - 1)
         self.runs_left = [k % 2 == 1 for k in range(n)]
+        slow = min(runners, key=lambda run: run.speed)
+        self.count = int((self.W + slow.size[0]) / slow.speed * 1000 / FRAME_MS) + 1
+        self.laps = [self.lap(run) for run in runners]
+
+    def ran(self, run, i):
+        """px a runner has run at frame i."""
+        return int(run.speed * i * FRAME_MS / 1000)
+
+    def lap(self, run):
+        """px a runner goes round in: its run over the clip, or the shortest whole share of it that is at least the
+        street and its picture wide, so that it waits off the street and is back at its start when the clip ends."""
+        whole = self.ran(run, self.count)
+        laps = max(1, whole // (self.W + run.size[0]))
+        while whole % laps:
+            laps -= 1
+        return whole // laps
 
     def places(self, i):
         """Frame i's runners, the farthest first: (x, row, picture) each, x the picture's left column."""
         n, out = len(self.runners), []
         for row, k in sorted(zip(self.rows, range(n))):
-            run, w = self.runners[k], self.runners[k].size[0]
-            ran = int(run.speed * i * FRAME_MS / 1000)
-            lap = (k * (self.W + w) // n + ran) % (self.W + w)  # each starts its own share of the way along
-            out.append((self.W - lap if self.runs_left[k] else lap - w, row, run.picture(ran, self.runs_left[k])))
+            run, w, lap = self.runners[k], self.runners[k].size[0], self.laps[k]
+            ran = self.ran(run, i)
+            at = (k * lap // n + ran) % lap  # each starts its own share of the way round
+            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran, self.runs_left[k])))
         return out
 
     def frames(self):
-        """As many frames as the slowest runner needs to cross the street once."""
-        slow = min(self.runners, key=lambda run: run.speed)
         out = []
-        for i in range(int((self.W + slow.size[0]) / slow.speed * 1000 / FRAME_MS) + 1):
+        for i in range(self.count):
             frame = self.street.copy()
             for x, row, img in self.places(i):
                 frame.paste(img, (x, row - img.height + 1), img)
