@@ -24,7 +24,7 @@ e.g. `- Split: Feasibility says a day, Risks says a week · Q4` -->
 - Agree: the tech lead, the PO assistant and the user lens each name the art memory as the first blocker, with 1.9 MB, 1.95 MB and 1.08 MB for different cuts. The brief uses the tech lead's cut, which was recomputed here <!-- REQUIRED:agree-split -->
 - Agree: the tech lead and the user lens both find no free input for the switch (★C5)
 - Split: the PO assistant says the board spike comes before any design, and the facilitator puts a Mac picture before it · Q2
-- Split: the tools survey offers poses painted on the board in C, and the tech lead finds no measured hot spot that asks for C · Q4
+- Split: the tools survey offers poses painted on the board in C, and the tech lead finds no measured hot spot that asks for C · Q4, settled for the first mission by D26
 - Split: the user lens computes about 220 px a second for the run, and the brief computes 207, from 96/26 and not from a factor of 4 · Q3
 
 - Split: the refuter finds the pass line of A1 invented in two of its three parts, and the facilitator had proposed it · Q1, with a new line that names its source for each part
@@ -35,4 +35,10 @@ e.g. `- Split: Feasibility says a day, Risks says a week · Q4` -->
 - Split: D13's words describe one motion, which fits today's pool, and the test needs a pack bigger than the pool · settled by D21, whose question named the 2 MB pack
 - Third pass (2026-11-18, after the spike's results): the refuter judged "Ready for: an experiment" refuted, because no D chose the next test · Q15, and the header now says collecting evidence
 - Third pass: the refuter judged "A1 is retired" only partly supported: "with enough poses" and a game's own frame were not tested · A10 is new, and the facilitator proposes it as the riskiest · Q1
-- Third pass: the refuter found the reason for Q4's first option circular (it ran on the board because the plan chose it first) · the opinion now names its two reasons, and Q4 is asked
+- Third pass: the refuter found the reason for Q4's first option circular (it ran on the board because the plan chose it first) · the opinion now names its two reasons, and Q4 is asked (answered D26)
+- Fourth pass (2026-11-18, after D26): the refuter refuted no changed sentence and judged eight partly supported. D26 now names the two options by their words, says that he was asked two choices and not Q4's other options, and carries the condition of its cost sentence (A10, untested)
+- Fourth pass: the refuter found the count's pass line still the facilitator's, and Q1's status stale · Q15 is asked with A10's pass line, and Q1 names A2 to A10
+- Fourth pass: the refuter found A10's remedy cell wrong for a rate under 19 fps, because no other maker is shown to paint faster (C27) · the cell now names the PO's new decision on D26 for the bytes and P907 for the frame
+- Fourth pass: stale lines outside the diff are corrected. The two chosen options are marked, the Collection plan has rows for the count and for the fifteen games beside the bigger pool, the Budgets line names ★C24 and ★C26, items.md proposes the count's item, and the journey's Q3 cell names D14
+- Fourth pass, raised and not fixed here: the check's design gate matches the words frame, jobs, direction and risk anywhere in the D rows (`discovery.py`, step 15, re-read by the facilitator). So D26's word "direction" and D3's "everyday jobs" already satisfy two of its four words · destination: a card on the skill, not filed yet
+- Fourth pass, open: whether a test chosen after D26 makes the folder "an experiment". The readiness rule says "before choosing an option", and D26 chose an option for the art only · decided with Q15's answer

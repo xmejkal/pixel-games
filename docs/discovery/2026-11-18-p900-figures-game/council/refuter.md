@@ -668,3 +668,89 @@ lines the brief says. D25's words have no pointer, so I did not find them.
 ## Searches
 
 None on the web. Local reads and `gh` reads only, as listed at the top of this pass. No scratch file was made.
+
+# Fourth pass, 2026-11-18: the sections changed after D26
+
+The refuter, fourth pass, on the uncommitted diff of brief.md, risks-and-tests.md and story-map.md at `91a3555`, in the worktree of the branch `p900-figures-discovery` (the facilitator left the worktree's path out here, because the repository is public). I wrote no file and made no scratch file.
+
+## 1. D26 (brief.md:157)
+- "Q4's first option and its third option together": partly. It holds by the Options list (brief.md:80, :82). By the Questions line (brief.md:114, "a bigger pool, a mirror flag in C, or poses painted on the board"), the third option would be the C painter. Change it to: "Q4's option "both facings as pictures and a bigger pool" and its option "one picture source with several makers behind it" together".
+- "By the first option's cost cell the art of the first mission then needs no C change, and a hard reset once": partly. Three problems:
+  - It drops the cell's third part, "each move of the fireman adds 254,592 to 328,032 bytes".
+  - It holds only if the count passes. A10's own cell sends a bigger pack to "another maker of Q4", and the cutout and the C painter need a flash (brief.md:81, :84).
+  - "once" holds only while the pack does not grow. `games/pictures.py:43-45` says the pool "is made once, as big as the largest pack".
+  Change it to: "By the first option's cost cell, and only if the first mission's pack fits the pool (A10, untested), its art needs no C change and a hard reset each time the largest pack grows. Each move of the fireman adds 254,592 to 328,032 bytes (★C26: painted on the Mac)."
+- "the pool holds that PSRAM for every game": partly. "that PSRAM" has no size, because D26 itself says his words name no pool size. Change it to: "the pool, as big as the largest pack, holds its PSRAM for every game (★C2)".
+- "names no other maker, no pool size, no interface ... and no card that builds it": holds. P901's body (#1280) names no picture source either.
+- The link, "as in D25" and "options, as asked": hold against the comment.
+- Rival: his answer repeats the facilitator's opinion on brief.md:114 word for word. The question offered two of the eight Options. So D26 confirms the proposal as it was framed. It is no sign that he weighed the mirror flag, fewer moves, the palette or figures outside play.
+
+## 2. The header lines
+- "Ready for: collecting evidence": holds. The rule on brief.md:5 needs a D that chooses a test, and no D after D13 does. Design also needs the jobs and the risk, and no D confirms them.
+- "D26 confirms a direction for the art": holds as worded, but it opens a gap in the check. `discovery.py:462` only matches the words "frame", "jobs", "direction" and "risk" anywhere in the D rows.
+  - D26 is the first D with "direction". At HEAD, 0 D rows had it.
+  - "jobs" is matched only by D3's "everyday jobs".
+  - So any later D that contains "risk" passes the design gate on words alone, while the jobs are unconfirmed.
+  Keep "for the art" wherever it appears, and file the word match as a finding for the skill.
+- "Decision needed" starting with Q15: partly. D26 names no pool size, so the count's pass line, "2,464,000 bytes or less" (brief.md:103), is still only the facilitator's. Q1's status, "the pass line is answered (D20), the importance of A1 to A9", is stale. D20 was A1's pass line, and A10 is new. Change the start of Decision needed to "Q15, with A10's pass line". In Q1, change "A1 to A9" to "A2 to A10".
+
+## 3. Q4, Q14, Q15 and the Riskiest line
+- Q4 "answered D26": holds. Its "options: as in Options" is stale, because he was asked two options. Change it to "options: two, as asked in comment 6992953082".
+- Q14's added words: hold. None of the three items in items.md names a picture source. The line misses ★C10, though. `tests/test_engine_boundary.py:27` `DIRECTION` lists no `pictures` module. Add: "and ★C10 keeps a source that imports `pictures` out of `games/engine/` until the plan's stages 3c and 4".
+- Q15's unblocks cell: partly. The count compares bytes with 2,464,000, which is one run's pool. C28 shows a largest free block of 4,718,592 bytes at the end of step 2d. The frame's half waits for P906. Change the cell to: "the count tells whether the first mission's whole pictures fit 2,464,000 bytes (A10's bytes half)".
+- The Riskiest sentence: holds. "are counted" reads as if the count already ran. Change it to "so the count of A10's bytes is for that maker".
+
+## 4. Board actions
+- The comment at "23:04 Prague": holds. `created_at` is 2026-11-18T22:04:08Z, which is 23:04:08 CET.
+- The waiting line: partly.
+  - `board.py status` lists "(#1279) since 2026-11-18, 0 d" under "waits on the PO". That part holds.
+  - The project fields set Waiting on "the PO" at 22:04:57Z and Waiting since at 22:04:58Z, so 23:04:57 Prague. "asked the spark session for it at 23:05 Prague" has no pointer.
+  - The line names no D, against brief.md:167, "None is taken without a D".
+  - "It stays set while Q15 waits for him", but Q15 is "queued" (brief.md:125).
+  Change it to: "set 2026-11-18, 23:04 Prague (the fields' times) · his standing rule "It moves as the work moves", as in D9". Then either ask Q15 now and mark it asked with a pointer, or the flag claims a wait he does not have.
+
+## 5. A10's cell (risks-and-tests.md:41)
+Partly. Three faults:
+- (a) If another maker joins for the first mission, that reverses D26. That is his choice again.
+- (b) The cutout and the C painter each bring a firmware flash, and a flash is what Q4 "decides".
+- (c) No remedy in the cell answers "under 19 fps". C27 says the other makers' "frame time is unknown", and a bigger pool adds nothing to the frame rate.
+
+Also missing is fewer moves (brief.md:85), which keeps D26. Change the cell to: "the pack is bigger: the PO decides again on D26: fewer moves, another maker behind the picture source (a firmware flash for cutout parts or a C painter), or a test of a bigger pool. The rate is under 19 fps: the frame's cost is the question (P907), since no other maker is shown to paint faster (C27)".
+
+## 6. Slice 0
+Holds. A10's test reads "the walking skeleton's log", and A2 is the switch. Two notes. The tag drops A1's caveat "in the probe's scene". And "one action of both" also rests on A7, which the tag did not name before the change either.
+
+## 7. The Hand-off
+Partly. "the fourth pass" points at a pass that is not yet in refuter.md, and the line does not say what was applied. It also drops the fact that the frame's decision is still open: the parts and their order are Q8 and Q14. Given point 2, that matters. Change the start to: "not yet: the jobs, the parts and their order (Q8, Q14) and the importance of the assumptions are unconfirmed ... A direction for the art only is confirmed (D26)". End the line with "(the fourth pass, applied: <which>)".
+
+## 8. Stale, and not touched by the diff
+- verification.md:27, "· Q4": add "settled for the first mission by D26". verification.md:38, "and Q4 is asked": add "answered D26".
+- brief.md:80 and :82: mark both options "chosen D26".
+- The Collection plan has no row for the count (Q15, A10). It also has no row for D26's caveat set against the frame's "must not get worse: the fifteen games" (brief.md:21). The spike ran "lineup 1: figures". Add a row: "Do the fifteen games load and hold their rate beside the first mission's pool? | D26, the frame | the board, his bench | start each game once | before the pack joins the product's index".
+- risks-and-tests.md:64, "★C3 against ★C4", predates ★C24 and ★C26.
+- items.md has no item for the count. Filing needs a D that names items.md (items.md:2). Propose the item before asking Q15.
+- jobs-and-journeys.md:47 still asks Q3, which D14 answered. That is not caused by D26.
+- The Frame's "Open questions" (brief.md:19): nothing there is stale because of D26.
+
+## 9. Numbers
+- "read at 23:15 Prague" (D26): no pointer.
+- "23:05 Prague" (the waiting line): the fields read 23:04:57.
+- "a hard reset once" (D26): true only while the pack does not grow (point 1).
+
+## Searches
+None on the web. I read the diff, every file in the folder and refuter.md's third pass. Also:
+- comment 6992953082: its body and `created_at`
+- the project fields of #1279, through `gh api graphql`
+- `tools/board.py status`
+- the body of #1280
+- `games/pictures.py:40-52`
+- `tests/test_engine_boundary.py:20-31`
+- `discovery.py:20,458-464`
+- the skill's council.md and SKILL.md
+
+## What stayed open
+- D26's time and the words "after a clear": the session cannot be read.
+- Who set the board fields: the fields show the time, not who made the change.
+- Whether the picture source must import `pictures`: it is not designed.
+- The fifteen games beside a 2.46 MB pool: not measured.
+- Whether a test chosen after D26 counts as "an experiment". brief.md:5 says "before choosing an option", and Q15 claims it decides "the readiness".

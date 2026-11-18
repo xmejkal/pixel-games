@@ -37,6 +37,18 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games <!-- REQUIRED:spark-process:slice -->
 <!-- EXTEND:item-fields -->
 
+## Nobody counted what the first mission's whole pictures weigh → a count on the Mac: each move of each character of the first mission painted, and the bytes summed with the street against the pool size that the board showed
+- type: spike <!-- REQUIRED:item-type -->
+- needed by: "Q4: whole pictures first, behind one picture source." (the PO, 2026-11-18, D26) <!-- REQUIRED:needed-by -->
+- value proven by: a table he can read, one row for each character and move, with the sum against the pass line <!-- REQUIRED:value-proven-by -->
+- depends on: his choice of the test (Q15) and a pass line that is his. The list of the first mission's characters and moves is not fixed: only the example of D1's question exists (the fireman holds a ladder, the grandma climbs, https://github.com/xmejkal/spark/issues/1279#issuecomment-6972668412) <!-- REQUIRED:depends-on -->
+- status: proposed <!-- REQUIRED:item-status -->
+- label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
+- parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->
+- slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games <!-- REQUIRED:spark-process:slice -->
+<!-- EXTEND:item-fields -->
+
 ## Board actions
 <!-- Each action, taken or pending, with its D. e.g. `- move the item to Discovery · pending` -->
 - file the three items above · taken 2026-11-18 · D21: P904 #1283, P905 #1284 (the switch prototype), P906 #1285 (the walking skeleton) <!-- REQUIRED:board-actions -->
+- file the count's item · pending: no D names it

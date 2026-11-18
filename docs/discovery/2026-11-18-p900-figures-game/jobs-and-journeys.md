@@ -44,7 +44,7 @@ flowchart LR
 ### The PO — plays a mission with two figures
 | step | what they do | evidence | friction or harm | today | open question |
 | --- | --- | --- | --- | --- | --- |
-| 1 | sees two 96 px figures and a goal on one screen | calculated ★C3, ★C11 | about three figures fit across the screen (H council/user.md USER-12) | not yet | Is 96 px the figure or the picture? (Q3) |
+| 1 | sees two 96 px figures and a goal on one screen | calculated ★C3, ★C11 | about three figures fit across the screen (H council/user.md USER-12) | not yet | 96 px is the figure, from sole to head (Q3, answered D14) |
 | 2 | sees which figure he holds | — | no mark exists | not yet | — |
 | 3 | moves the held figure to its place | E ★C6 | at the captured speed it crosses the screen in about 1.5 s | not yet | — |
 | 4 | switches to the other figure | E ★C5 | no free button; a long hold of PICK can power an older board off (★C7) | not yet | Which input? (Q5) |
