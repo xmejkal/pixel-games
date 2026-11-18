@@ -44,8 +44,8 @@
  {
   "file": "art/makers.py",
   "name": "the turn goes the other way: clockwise for a step past the upright one",
-  "find": "        return UPRIGHT[kind] - step * 360 / self.ANGLES",
-  "replace": "        return step * 360 / self.ANGLES - UPRIGHT[kind]"
+  "find": "        return KINDS[kind].upright - step * 360 / self.STEPS",
+  "replace": "        return step * 360 / self.STEPS - KINDS[kind].upright"
  },
  {
   "file": "art/makers.py",
@@ -56,14 +56,14 @@
  {
   "file": "art/makers.py",
   "name": "an angle is rounded down to a step, not to the nearest",
-  "find": "        return round(degrees * self.ANGLES / 360) % self.ANGLES",
-  "replace": "        return int(degrees * self.ANGLES / 360) % self.ANGLES"
+  "find": "        return round(degrees * self.STEPS / 360) % self.STEPS",
+  "replace": "        return int(degrees * self.STEPS / 360) % self.STEPS"
  },
  {
   "file": "art/makers.py",
   "name": "an angle does not wrap, so 355 degrees is a step past the last",
-  "find": "        return round(degrees * self.ANGLES / 360) % self.ANGLES",
-  "replace": "        return round(degrees * self.ANGLES / 360)"
+  "find": "        return round(degrees * self.STEPS / 360) % self.STEPS",
+  "replace": "        return round(degrees * self.STEPS / 360)"
  },
  {
   "file": "art/makers.py",
@@ -92,8 +92,8 @@
  {
   "file": "art/makers.py",
   "name": "a far leg is painted in the near shade",
-  "find": "            painter.leg(s, p, side, far)",
-  "replace": "            painter.leg(s, p, side, False)"
+  "find": "    painter.leg(s, p, side, far)",
+  "replace": "    painter.leg(s, p, side, False)"
  },
  {
   "file": "art/makers.py",
@@ -110,8 +110,8 @@
  {
   "file": "art/makers.py",
   "name": "fill() paints half the steps",
-  "find": "                for step in range(self.ANGLES):",
-  "replace": "                for step in range(self.ANGLES // 2):"
+  "find": "                for step in range(self.STEPS):",
+  "replace": "                for step in range(self.STEPS // 2):"
  },
  {
   "file": "art/makers.py",
@@ -122,8 +122,8 @@
  {
   "file": "art/makers.py",
   "name": "the foot is upright straight down, not forward",
-  "find": "\"shin\": 90, \"foot\": 0,",
-  "replace": "\"shin\": 90, \"foot\": 90,"
+  "find": "Kind(\"foot\", (\"tibia\", \"foot\", \"toes\"), 0, leg,",
+  "replace": "Kind(\"foot\", (\"tibia\", \"foot\", \"toes\"), 90, leg,"
  },
  {
   "file": "art/makers.py",
@@ -140,8 +140,8 @@
  {
   "file": "art/makers.py",
   "name": "the cutout's poses' bytes count two 16-bit numbers a part",
-  "find": "len(placed), parts, len(placed) * parts * 6)),",
-  "replace": "len(placed), parts, len(placed) * parts * 4)),"
+  "find": "len(placed), parts, len(placed) * parts * 6),",
+  "replace": "len(placed), parts, len(placed) * parts * 4),"
  },
  {
   "file": "art/makers.py",
@@ -160,5 +160,125 @@
   "name": "paint cuts without the cut hook, so the flat maker's cut is not used",
   "find": "        return self.edge.apply(self, self.cut(s), ahead >= 0)",
   "replace": "        return self.edge.apply(self, self.banded(s.cut(outline=False)), ahead >= 0)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the flat bands are cut by the whole painter's banded(), a pixel 40 % band, not the middle sample",
+  "find": "        out.paste(STRIPE + (255,), (0, 0) + size, ImageChops.multiply(self.bands.resize(size, nearest),\n                                                                       out.getchannel(\"A\")))\n        return out",
+  "replace": "        return self.banded(out)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "a capsule is 0.7 times as wide, so it cuts into a limb across its bone",
+  "find": "            half = (kind.half + self.MARGIN) * painter.PX  # the capsule's half width, px",
+  "replace": "            half = 0.7 * (kind.half + self.MARGIN) * painter.PX  # the capsule's half width, px"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the sprite reaches 0.38 body heights, so the torso is clipped at its edge",
+  "find": "    REACH = 0.45",
+  "replace": "    REACH = 0.38"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "a far arm is painted in the near shade",
+  "find": "    painter.arm(s, p, side, far)",
+  "replace": "    painter.arm(s, p, side, False)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the far and the near sides are swapped",
+  "find": "    return {False: near, True: \"l\" if near == \"r\" else \"r\"}",
+  "replace": "    return {True: near, False: \"l\" if near == \"r\" else \"r\"}"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the far leg is pasted after the near leg",
+  "find": "PARTS = (tuple((kind, True) for kind in LIMBS) + ((\"back gear\", False),) + tuple((kind, False) for kind in LEG) +",
+  "replace": "PARTS = (tuple((kind, True) for kind in ARM) + ((\"back gear\", False),) + tuple((kind, False) for kind in LEG) +\n         tuple((kind, True) for kind in LEG) +"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the near arm is pasted before the head",
+  "find": "         ((\"torso\", False), (\"head\", False)) + tuple((kind, False) for kind in ARM))",
+  "replace": "         ((\"torso\", False),) + tuple((kind, False) for kind in ARM) + ((\"head\", False),))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "a bone's length is taken on the screen, so a limb toward the viewer is short",
+  "find": "            d = math.dist(pose[before], pose[n])",
+  "replace": "            d = math.dist(pose[before][:2], pose[n][:2])"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the upright pose puts a joint at its straight distance from the part's joint in the first pose, as before",
+  "find": "            d = math.dist(pose[before], pose[n])",
+  "replace": "            d = math.dist(pose[joints[0]], pose[n]) - math.dist(pose[joints[0]], pose[before])"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the whole line counts the poses twice",
+  "find": "2 * count, whole.size[0], whole.size[1], count, whole.size_bytes(), again),",
+  "replace": "2 * count, whole.size[0], whole.size[1], 2 * count, whole.size_bytes(), again),"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the run's part pictures are the atlas's cache, not the keys the run's parts use",
+  "find": "    used = [atlas.picture(key) for key in {part.key for parts in placed for part in parts}]",
+  "replace": "    used = list(atlas.pictures.values())"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the worst miss is each pose's last, not its largest",
+  "find": "max(cutout.painter.misses(pose)) for pose in cutout.poses())]",
+  "replace": "cutout.painter.misses(pose)[-1] for pose in cutout.poses())]"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the sheet's pose row shows pose 4",
+  "find": "on_dark([run.pictures[self.POSE] for run in runs.values()], self.ZOOM)",
+  "replace": "on_dark([run.pictures[self.POSE + 1] for run in runs.values()], self.ZOOM)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the sheet's thigh row shows the far thigh",
+  "find": "on_dark([atlas.picture((\"thigh\", False, step)).image for step in self.THIGH], zoom)",
+  "replace": "on_dark([atlas.picture((\"thigh\", True, step)).image for step in self.THIGH], zoom)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the sheet's parts row shows each part at step 0",
+  "find": "parts = [atlas.picture(atlas.key(kind, far, KINDS[kind].upright)).image for kind, far in PARTS]",
+  "replace": "parts = [atlas.picture(atlas.key(kind, far, 0)).image for kind, far in PARTS]"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the clip's panels are in the other order",
+  "find": "                frame.paste(panel, (k * pw, 0))",
+  "replace": "                frame.paste(panel, ((len(self.runs) - 1 - k) * pw, 0))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the clip shows every second pose twice",
+  "find": "                panel, img = back.copy(), run.pictures[i]",
+  "replace": "                panel, img = back.copy(), run.pictures[i // 2 * 2]"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the clip's street is a row off, so the soles are not on its FEET row",
+  "find": "        back = self.street.crop((x, FEET + m + 1 - ph, x + pw, FEET + m + 1))",
+  "replace": "        back = self.street.crop((x, FEET + m - ph, x + pw, FEET + m))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the head takes the torso's angle",
+  "find": "            key = self.atlas.key(name, far, math.degrees(math.atan2(end[1] - joint[1], end[0] - joint[0])))",
+  "replace": "            key = self.atlas.key(name, far, math.degrees(math.atan2(end[1] - joint[1], end[0] - joint[0])) if name != \"head\" else math.degrees(math.atan2(p[\"lowerneck\"][1] - p[HIPS][1], p[\"lowerneck\"][0] - p[HIPS][0])))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "an angle half way between two steps goes to the higher step, not to the even one",
+  "find": "        return round(degrees * self.STEPS / 360) % self.STEPS",
+  "replace": "        return math.floor(degrees * self.STEPS / 360 + 0.5) % self.STEPS"
  }
 ]

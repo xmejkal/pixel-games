@@ -1,14 +1,15 @@
 """The three makers (P904 step 2b, art/makers.py): the same run made whole, flat and from turned parts (cutout). On
 the standing pose and on bent(), the standing pose with each arm and each leg turned at the shoulder, the elbow, the
-hip and the knee by known angles and the body leant forward, so no part hangs on a whole step of the atlas; and on
-stand-in pictures for the sheet, the clip and the printed lines: these hold without the CMU files. And, only when the
-CMU files are downloaded, the fireman's run made by each maker. Run from the repository root: python3 -m unittest
-discover tests."""
+hip and the knee by known angles, the body leant forward and the neck bent, so no part hangs on a whole step of the
+atlas; on two other poses of the same skeleton, twisted() and reaching(); and on stand-in pictures for the sheet, the
+clip and the printed lines: these hold without the CMU files. And, only when the CMU files are downloaded, the
+fireman's run made by each maker. Run from the repository root: python3 -m unittest discover tests."""
 
 import dataclasses
 import functools
 import math
 import os
+import re
 import sys
 import unittest
 from collections import Counter
@@ -20,18 +21,33 @@ sys.path.insert(0, os.path.join(REPO, "tests"))
 import detailed  # noqa: E402
 import makers  # noqa: E402
 import mocap  # noqa: E402
-from brush import rnd  # noqa: E402
+from brush import Sprite, rnd  # noqa: E402
 from PIL import Image  # noqa: E402
-from sets.rescue import STRIPE, along, leant  # noqa: E402
+from sets.rescue import FEET, STRIPE, along, leant  # noqa: E402
 from test_detailed_figure import opaque_rows, standing  # noqa: E402
 
-SMALL = 48  # px: the two atlas tests that paint the most pictures paint at this height, so they run fast
-LEAN = 8  # degrees bent() leans the body forward
+SMALL = 48  # px: the atlas tests that paint the most pictures paint at this height, so they run fast
+LEAN, NECK = 8, -17  # degrees bent() leans the body forward, and bends the neck forward more
 # degrees bent() turns each side at the shoulder, the elbow, the hip and the knee (positive: the lower end forward);
 # r is the standing pose's near side
 TURNS = {"r": (37, 41, 29, -54), "l": (-23, 28, -19, -33)}
 ARM_JOINTS = ("humerus", "radius", "wrist", "hand", "fingers", "thumb")  # each a side's, below its clavicle
 LEG_JOINTS = ("femur", "tibia", "foot", "toes")  # each a side's, below its hip joint
+# each kind's joints from its joint to its end as DetailedFigure paints them, a limb's without its side's letter
+CHAINS = {"upper arm": ("clavicle", "humerus"), "forearm": ("humerus", "radius"),
+          "hand": ("radius", "wrist", "hand", "fingers"), "thigh": ("hipjoint", "femur"), "shin": ("femur", "tibia"),
+          "foot": ("tibia", "foot", "toes"), "back gear": ("hips", "lowerback", "upperback", "thorax", "lowerneck"),
+          "torso": ("hips", "lowerback", "upperback", "thorax", "lowerneck"),
+          "head": ("lowerneck", "upperneck", "head")}
+LIMB_KINDS = ("upper arm", "forearm", "hand", "thigh", "shin", "foot")
+UPRIGHT = {"upper arm": 90, "forearm": 90, "hand": 90, "thigh": 90, "shin": 90, "foot": 0, "back gear": 270,
+           "torso": 270, "head": 270}  # each kind's upright angle: hanging down, the foot forward, the rest up
+SIDE = {True: "l", False: "r"}  # the standing pose's far side and near side
+# DetailedFigure.paint's order: the far arm, the far leg, the gear under, the near leg, the torso and the gear over,
+# the head, the near arm
+PAINT_ORDER = (("upper arm", True), ("forearm", True), ("hand", True), ("thigh", True), ("shin", True), ("foot", True),
+               ("back gear", False), ("thigh", False), ("shin", False), ("foot", False), ("torso", False),
+               ("head", False), ("upper arm", False), ("forearm", False), ("hand", False))
 
 
 def swung(pose, about, joints, degrees):
@@ -46,15 +62,15 @@ def swung(pose, about, joints, degrees):
 
 
 def bent():
-    """The standing pose leant LEAN degrees forward, each arm and leg turned by TURNS: each part's angle on the screen
-    is 1.7 to 4.8 degrees off the nearest whole step of 11.25."""
+    """The standing pose leant LEAN degrees forward, each arm and leg turned by TURNS and the neck bent by NECK: each
+    part's angle on the screen is 1.7 to 4.8 degrees off the nearest whole step of 11.25."""
     pose = leant(standing(), LEAN)
     for side, (shoulder, elbow, hip, knee) in TURNS.items():
         pose = swung(pose, side + "clavicle", [side + n for n in ARM_JOINTS], shoulder)
         pose = swung(pose, side + "humerus", [side + n for n in ARM_JOINTS[1:]], elbow)
         pose = swung(pose, side + "hipjoint", [side + n for n in LEG_JOINTS], hip)
         pose = swung(pose, side + "femur", [side + n for n in LEG_JOINTS[1:]], knee)
-    return pose
+    return swung(pose, "lowerneck", ["upperneck", "head", "nose"], NECK)
 
 
 def twisted():
@@ -71,7 +87,18 @@ def twisted():
     return swung(pose, "rwrist", ["rhand", "rfingers", "rthumb"], 40)
 
 
-POSES = {"standing": standing, "bent": bent, "twisted": twisted}
+def reaching():
+    """bent() with the near forearm and hand turned 50 degrees toward the viewer at the elbow: out of the picture's
+    plane, so on the screen the forearm is shorter than its bone."""
+    pose, c, k = bent(), math.cos(math.radians(50)), math.sin(math.radians(50))
+    ef, _, ed = pose["rhumerus"]
+    for n in ["r" + j for j in ARM_JOINTS[1:]]:
+        f, u, d = pose[n]
+        pose[n] = (ef + (f - ef) * c - (d - ed) * k, u, ed + (f - ef) * k + (d - ed) * c)
+    return pose
+
+
+POSES = {"standing": standing, "bent": bent, "twisted": twisted, "reaching": reaching}
 
 
 def opaque(img):
@@ -80,7 +107,9 @@ def opaque(img):
 
 
 def iou(a, b, shift=(0, 0)):
-    """The IoU of two pictures' opaque masks, b moved by shift: the pixels both cover over the pixels either covers."""
+    """The IoU of two pictures' opaque masks, b moved by shift: the pixels both cover over the pixels either covers.
+    It is the Jaccard index, "also called intersection over union (IoU)" (Wikipedia, Jaccard index,
+    https://en.wikipedia.org/wiki/Jaccard_index)."""
     first, second = opaque(a), {(x + shift[0], y + shift[1]) for x, y in opaque(b)}
     return len(first & second) / len(first | second)
 
@@ -98,12 +127,30 @@ def made(maker, pose_name):
     return painted(maker, pose_name)
 
 
-def bone(pose, kind, far):
-    """A part's joint and end in 3D in the pose: a limb's on the far side (l) or the near side (r)."""
-    chain = makers.KINDS[kind].chain
-    side = ("l" if far else "r") if kind in makers.LIMBS else ""
+def chain(pose, kind, far):
+    """A part's joints in 3D in the pose, from its joint to its end, a limb's on its side; the hips' middle as hips."""
+    side = SIDE[far] if kind in LIMB_KINDS else ""
     places = dict(pose, hips=tuple((a + b) / 2 for a, b in zip(pose["lhipjoint"], pose["rhipjoint"])))
-    return places[side + chain[0]], places[side + chain[-1]]
+    return [places[side + n] for n in CHAINS[kind]]
+
+
+def length(pose, kind, far):
+    """A part's 3D length: the sum of its bones' lengths."""
+    joints = chain(pose, kind, far)
+    return sum(math.dist(a, b) for a, b in zip(joints, joints[1:]))
+
+
+def on_screen(figure, pose, kind, far):
+    """The painter's own places (DetailedFigure.at) of a part's joint and its end: the hips' middle is between the
+    places of the two hip joints."""
+    side = SIDE[far] if kind in LIMB_KINDS else ""
+
+    def at(n):
+        if n == "hips":
+            return along(figure.at(pose["lhipjoint"]), figure.at(pose["rhipjoint"]), 0.5)
+        return figure.at(pose[side + n])
+
+    return at(CHAINS[kind][0]), at(CHAINS[kind][-1])
 
 
 def covered(figure, part):
@@ -168,8 +215,21 @@ class CoarseCutout(makers.CutoutFigure):
     ATLAS = Coarse
 
 
+class Wide(makers.Atlas):
+    """An atlas whose capsules are wider than any limb, so nothing across a bone is masked."""
+
+    MARGIN = 0.3
+
+
+class WideCutout(makers.CutoutFigure):
+    """A cutout figure whose atlas does not mask a limb across its bone."""
+
+    ATLAS = Wide
+
+
 class FlatTest(unittest.TestCase):
-    """The flat maker on the standing pose at 96 px with no rim, beside the whole painter's picture."""
+    """The flat maker on the standing pose at 96 px with no rim (and once with the outline), beside the whole
+    painter's picture."""
 
     def test_every_opaque_pixel_is_a_colour_that_part_or_detail_got_or_the_bands(self):
         rnd.seed(1)
@@ -195,12 +255,28 @@ class FlatTest(unittest.TestCase):
         self.assertGreaterEqual(len(bands), 30)
         self.assertEqual({STRIPE + (255,)}, {img.getpixel(q) for q in bands})
 
+    def test_a_band_pixel_is_where_the_bands_cover_the_pixels_middle(self):
+        """The bands are sampled as the colours are: at the 8x pixel nearest the pixel's middle."""
+        rnd.seed(1)
+        figure = makers.FlatFigure(detailed.box(detailed.TALL), detailed.TALL, detailed.NoRim())
+        img, s = figure.paint(standing()), Sprite.S
+        middle = {(x, y) for x, y in opaque(img) if figure.bands.getpixel((x * s + s // 2, y * s + s // 2))}
+        self.assertGreaterEqual(len(middle), 30)
+        self.assertEqual(middle, {q for q in opaque(img) if img.getpixel(q)[:3] == STRIPE})
+
+    def test_with_the_outline_its_edge_is_one_px_all_round_the_flat_shape(self):
+        rnd.seed(1)
+        img = makers.FlatFigure(detailed.box(detailed.TALL), detailed.TALL).paint(standing())
+        shape = opaque(made(makers.FlatFigure, "standing")[1])
+        ring = {(x + dx, y + dy) for x, y in shape for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))} - shape
+        self.assertEqual({q for q in ring if 0 <= q[0] < img.width and 0 <= q[1] < img.height}, opaque(img) - shape)
+
 
 class CutoutTest(unittest.TestCase):
     """The cutout maker on the standing pose and on bent() at 96 px with no rim, beside the whole painter's picture;
-    its atlas on bent(), and filled at 48 px."""
+    its atlas on bent(), twisted() and reaching(), some at 48 px."""
 
-    BENT = 0.86  # the IoU with the whole painter's on bent(): measured 0.874, and 0.569 with the turn reversed
+    BENT = 0.86  # the IoU with the whole painter's on bent(): measured 0.878, and 0.525 with the turn reversed
 
     def test_standing_its_shape_agrees_with_the_whole_painters(self):
         self.assertGreaterEqual(iou(made(detailed.DetailedFigure, "standing")[1],
@@ -211,24 +287,35 @@ class CutoutTest(unittest.TestCase):
         self.assertGreaterEqual(iou(whole, made(makers.CutoutFigure, "bent")[1]), self.BENT)
         self.assertLess(iou(whole, painted(ReversedCutout, "bent")[1]), self.BENT)
 
-    def test_each_parts_pivot_lands_on_its_joint_and_its_end_near_the_poses(self):
-        """The end: within the angle step's error, plus the 3D length less the screen length, plus 0.71 px."""
+    def test_the_soles_are_within_a_row_of_the_last_row(self):
+        """Not on it: the upright foot is straight from the ankle to the toes, and the standing pose's ball is 0.7 px
+        under that line, so the sole lands a row higher."""
+        img = made(makers.CutoutFigure, "standing")[1]
+        self.assertIn(opaque_rows(img)[-1], (img.height - 2, img.height - 1))
+
+    def test_the_parts_come_in_the_paint_order_and_each_pivot_lands_on_the_painters_joint(self):
+        """The joint: DetailedFigure.at of the pose's joint, a far limb's on the far side. The end: within half a
+        step's chord, plus the 3D length less the screen length, plus 0.71 px; and misses() is that distance."""
         figure, pose = made(makers.CutoutFigure, "bent")[0], bent()
         parts = figure.placed(pose)
-        self.assertEqual([(kind, far) for kind, far in makers.PARTS], [part.key[:2] for part in parts])
-        for part in parts:
+        self.assertEqual(list(PAINT_ORDER), [part.key[:2] for part in parts])
+        for part, miss in zip(parts, figure.misses(pose)):
+            kind, far = part.key[:2]
             with self.subTest(part=part.key):
+                joint, end = on_screen(figure, pose, kind, far)
                 picture, (x, y) = figure.atlas.picture(part.key), part.place
-                self.assertLessEqual(math.dist((x + picture.pivot[0], y + picture.pivot[1]), part.joint), 0.71)
-                length = math.dist(*bone(pose, *part.key[:2])) * figure.PX
-                chord = length * 2 * math.sin(math.radians(180 / figure.atlas.STEPS) / 2)  # half a step's
-                bound = chord + length - math.dist(part.joint, part.end) + 0.71
-                self.assertLessEqual(math.dist((x + picture.end[0], y + picture.end[1]), part.end), bound)
+                self.assertLessEqual(math.dist((x + picture.pivot[0], y + picture.pivot[1]), joint), 0.71)
+                bone = length(pose, kind, far) * figure.PX
+                chord = bone * 2 * math.sin(math.radians(180 / figure.atlas.STEPS) / 2)  # half a step's
+                landed = math.dist((x + picture.end[0], y + picture.end[1]), end)
+                self.assertLessEqual(landed, chord + bone - math.dist(joint, end) + 0.71)
+                self.assertAlmostEqual(landed, miss)
 
-    def test_an_angle_rounds_to_the_nearest_step_and_wraps(self):
+    def test_an_angle_rounds_to_the_nearest_step_wraps_and_takes_a_half_step_to_the_even_step(self):
         atlas = made(makers.CutoutFigure, "bent")[0].atlas
         self.assertEqual(32, atlas.STEPS)
         self.assertEqual([0, 0, 2, 30, 8], [atlas.step(a) for a in (5, 355, 17, -17, 92)])
+        self.assertEqual([0, 2], [atlas.step(a) for a in (5.625, 16.875)])
         self.assertEqual(("thigh", True, 2), atlas.key("thigh", True, 17))
 
     def test_the_turn_takes_the_upright_picture_to_the_steps_angle_counter_clockwise(self):
@@ -239,7 +326,7 @@ class CutoutTest(unittest.TestCase):
     def test_the_near_arm_is_pasted_over_the_torso(self):
         figure, img = made(makers.CutoutFigure, "bent")
         parts = figure.placed(bent())
-        torso, upper = (makers.PARTS.index(k) for k in (("torso", False), ("upper arm", False)))
+        torso, upper = (PAINT_ORDER.index(k) for k in (("torso", False), ("upper arm", False)))
         over = visible(figure, parts, upper) & covered(figure, parts[torso])
         self.assertGreaterEqual(len(over), 20)
         x, y = parts[upper].place
@@ -249,32 +336,44 @@ class CutoutTest(unittest.TestCase):
 
     def test_a_far_limb_has_the_far_shade(self):
         """The far thigh's pixels that show are darker than the near thigh's: shade() is 0.7 of the trousers' colour.
-        (In bent() the far arm hangs behind the body and the tank, and a far boot is lighter, not darker.)"""
+        (In bent() the far arm shows 4 pixels in the cutout's picture, all of its hand, and 1 in the whole
+        painter's; and a far boot is lighter, not darker.)"""
         figure, img = made(makers.CutoutFigure, "bent")
         parts = figure.placed(bent())
-        far, near = (visible(figure, parts, makers.PARTS.index(("thigh", f))) for f in (True, False))
+        far, near = (visible(figure, parts, PAINT_ORDER.index(("thigh", f))) for f in (True, False))
         self.assertGreaterEqual(min(len(far), len(near)), 10)
         self.assertLess(sum(mean(img, far)), 0.85 * sum(mean(img, near)))
 
-    def test_with_8_angles_the_worst_end_miss_is_larger_than_with_32(self):
+    def test_in_the_atlas_a_far_upper_arm_is_darker_than_a_near_one_at_the_same_step(self):
+        atlas = made(makers.CutoutFigure, "bent")[0].atlas
+        for step in (8, 11):
+            with self.subTest(step=step):
+                far, near = (atlas.picture(("upper arm", f, step)).image for f in (True, False))
+                self.assertLess(sum(mean(far, opaque(far))), 0.85 * sum(mean(near, opaque(near))))
+
+    def test_with_8_steps_the_worst_end_miss_is_larger_than_with_32(self):
         rnd.seed(1)
         coarse = CoarseCutout(detailed.box(detailed.TALL), detailed.TALL, detailed.NoRim())
         self.assertGreater(max(coarse.misses(bent())), max(made(makers.CutoutFigure, "bent")[0].misses(bent())))
 
     def test_the_same_pose_painted_twice_adds_no_picture_and_the_bytes_are_the_sum(self):
         figure, _ = painted(makers.CutoutFigure, "bent", SMALL)
-        keys = set(figure.atlas.pictures)
-        self.assertEqual(len(makers.PARTS), len(keys))
+        keys, upright = set(figure.atlas.pictures), figure.atlas.upright
+        joints = dict(upright.joints)
+        self.assertEqual(len(PAINT_ORDER), len(keys))
         figure.paint(bent())
         self.assertEqual(keys, set(figure.atlas.pictures))
         self.assertEqual(sum(p.image.width * p.image.height * 2 for p in figure.atlas.pictures.values()),
                          figure.atlas.size_bytes())
+        figure.paint(twisted())
+        self.assertIs(upright, figure.atlas.upright)
+        self.assertEqual(joints, figure.atlas.upright.joints)
 
     def test_two_first_poses_of_one_skeleton_give_the_same_part_pictures(self):
         """The upright pose is built from the bone lengths alone: each part at its upright step and three steps on."""
         first, other = (painted(makers.CutoutFigure, name, SMALL)[0].atlas for name in ("standing", "twisted"))
-        for kind, far in makers.PARTS:
-            for degrees in (makers.KINDS[kind].upright, makers.KINDS[kind].upright + 3 * 360 / first.STEPS):
+        for kind, far in PAINT_ORDER:
+            for degrees in (UPRIGHT[kind], UPRIGHT[kind] + 3 * 360 / first.STEPS):
                 with self.subTest(kind=kind, far=far, degrees=degrees):
                     a, b = (atlas.picture(atlas.key(kind, far, degrees)) for atlas in (first, other))
                     self.assertEqual((a.image.size, a.image.tobytes(), a.pivot), (b.image.size, b.image.tobytes(),
@@ -282,48 +381,93 @@ class CutoutTest(unittest.TestCase):
                     for u, v in zip(a.end, b.end):
                         self.assertAlmostEqual(u, v, places=6)
 
-    def test_after_fill_each_limb_kind_has_every_angle_in_each_shade_and_the_others_keep_theirs(self):
+    def test_a_parts_bone_is_its_3d_length_also_when_it_points_toward_the_viewer(self):
+        """reaching() is measured first: its near forearm is shorter on the screen than its bone."""
+        figure, pose = painted(makers.CutoutFigure, "reaching", SMALL)[0], reaching()
+        screen = math.dist(*(figure.at(pose["r" + n]) for n in ("humerus", "radius")))
+        self.assertLess(screen, 0.7 * length(pose, "forearm", False) * figure.PX)
+        for kind, far in (("forearm", False), ("hand", False), ("forearm", True)):
+            with self.subTest(kind=kind, far=far):
+                picture = figure.atlas.picture(figure.atlas.key(kind, far, UPRIGHT[kind]))
+                self.assertAlmostEqual(length(pose, kind, far) * figure.PX, math.dist(picture.pivot, picture.end))
+
+    def test_after_fill_each_limb_kind_has_every_step_in_each_shade_and_the_others_keep_theirs(self):
         figure, _ = painted(makers.CutoutFigure, "bent", SMALL)
-        others = {key for key in figure.atlas.pictures if key[0] not in makers.LIMBS}
+        others = {key for key in figure.atlas.pictures if key[0] not in LIMB_KINDS}
         figure.atlas.fill()
-        counts = Counter(key[:2] for key in figure.atlas.pictures if key[0] in makers.LIMBS)
-        self.assertEqual({(kind, far): figure.atlas.STEPS for kind in makers.LIMBS for far in (True, False)},
+        counts = Counter(key[:2] for key in figure.atlas.pictures if key[0] in LIMB_KINDS)
+        self.assertEqual({(kind, far): figure.atlas.STEPS for kind in LIMB_KINDS for far in (True, False)},
                          dict(counts))
-        self.assertEqual(others, {key for key in figure.atlas.pictures if key[0] not in makers.LIMBS})
+        self.assertEqual(others, {key for key in figure.atlas.pictures if key[0] not in LIMB_KINDS})
 
     def test_a_band_on_a_turned_part_is_the_bands_colour_at_the_turned_place(self):
         """The near forearm turns from hanging down to forward: its band is across it at 0.62 of the way from the
         elbow, as the whole painter puts it, in the band's colour in RGB565 (the atlas's pictures are)."""
         figure, img = made(makers.CutoutFigure, "bent")
         elbow, wrist = (figure.at(bent()["r" + n]) for n in ("humerus", "radius"))
-        length, (ux, uy) = math.dist(elbow, wrist), ((wrist[0] - elbow[0]), (wrist[1] - elbow[1]))
+        bone, (ux, uy) = math.dist(elbow, wrist), ((wrist[0] - elbow[0]), (wrist[1] - elbow[1]))
         on = []
         for x, y in opaque(img):
             if img.getpixel((x, y))[:3] != in565(STRIPE):
                 continue
             dx, dy = x + 0.5 - elbow[0], y + 0.5 - elbow[1]
-            ahead, across = (dx * ux + dy * uy) / length, abs(dx * uy - dy * ux) / length
-            if 0.3 * length <= ahead <= 0.9 * length and across <= figure.FORE[0] * figure.PX / 2 + 1:
+            ahead, across = (dx * ux + dy * uy) / bone, abs(dx * uy - dy * ux) / bone
+            if 0.3 * bone <= ahead <= 0.9 * bone and across <= figure.FORE[0] * figure.PX / 2 + 1:
                 on.append((x + 0.5, y + 0.5))
         self.assertGreaterEqual(len(on), 4)
         middle = (sum(x for x, _ in on) / len(on), sum(y for _, y in on) / len(on))
         self.assertLessEqual(math.dist(middle, along(elbow, wrist, 0.62)), 2)
 
     def test_a_limb_part_is_masked_to_a_capsule_round_its_bone(self):
-        """At its upright angle, a limb part's picture is along its bone no longer than the bone and two of the
+        """At its upright step, a limb part's picture is along its bone no longer than the bone and two of the
         capsule's half widths, and across it no wider than two; and it covers its bone."""
         figure = made(makers.CutoutFigure, "bent")[0]
         atlas = figure.atlas
-        for kind in makers.LIMBS:
+        for kind in LIMB_KINDS:
             for far in (True, False):
                 with self.subTest(kind=kind, far=far):
-                    picture = atlas.picture(atlas.key(kind, far, makers.KINDS[kind].upright))
+                    picture = atlas.picture(atlas.key(kind, far, UPRIGHT[kind]))
                     w, h = picture.image.size
-                    along_, across = (w, h) if makers.KINDS[kind].upright == 0 else (h, w)
-                    bone_px, half = math.dist(picture.pivot, picture.end), makers.KINDS[kind].capsule * figure.PX
-                    self.assertGreaterEqual(along_, bone_px)
-                    self.assertLessEqual(along_, bone_px + 2 * half + 2)
-                    self.assertLessEqual(across, 2 * half + 2)
+                    along_, across = (w, h) if UPRIGHT[kind] == 0 else (h, w)
+                    bone, half = math.dist(picture.pivot, picture.end), (makers.KINDS[kind].half + atlas.MARGIN)
+                    self.assertGreaterEqual(along_, bone)
+                    self.assertLessEqual(along_, bone + 2 * half * figure.PX + 2)
+                    self.assertLessEqual(across, 2 * half * figure.PX + 2)
+
+    def test_a_limb_part_is_as_wide_across_its_bone_as_the_whole_painters_limb(self):
+        """Across the middle of its bone, at its upright step, it covers the pixels that the same part with no
+        capsule across it (Wide) covers."""
+        narrow, wide = made(makers.CutoutFigure, "bent")[0].atlas, painted(WideCutout, "bent")[0].atlas
+        for kind in LIMB_KINDS:
+            for far in (True, False):
+                with self.subTest(kind=kind, far=far):
+                    widths = []
+                    for atlas in (narrow, wide):
+                        picture = atlas.picture(atlas.key(kind, far, UPRIGHT[kind]))
+                        (px, py), (ex, ey), img = picture.pivot, picture.end, picture.image
+                        mx, my = int((px + ex) / 2), int((py + ey) / 2)
+                        line = ([(mx, y) for y in range(img.height)] if UPRIGHT[kind] == 0 else
+                                [(x, my) for x in range(img.width)])
+                        widths.append(sum(1 for q in line if img.getpixel(q)[3]))
+                    self.assertGreaterEqual(widths[0], 4)
+                    self.assertEqual(widths[1], widths[0])
+
+    def test_no_part_reaches_its_sprites_edge_at_any_step(self):
+        """Each part's upright painting, before the cut, lies inside the circle that the sprite holds round its
+        middle, so a turn about the joint there never takes a pixel off the sprite."""
+        atlas = made(makers.CutoutFigure, "bent")[0].atlas
+        r = atlas.reach
+        for (kind, far), (sprite, _) in atlas.uprights.items():
+            with self.subTest(kind=kind, far=far):
+                cover = sprite.alpha.resize((sprite.w, sprite.h), Image.Resampling.BOX)
+                corners = [math.dist((x + i, y + j), (r, r)) for y in range(cover.height) for x in range(cover.width)
+                           if cover.getpixel((x, y)) for i in (0, 1) for j in (0, 1)]
+                self.assertLessEqual(max(corners), r)
+
+    def test_a_character_with_no_back_gear_has_an_empty_back_gear_part(self):
+        figure, img = painted(makers.CutoutFigure, "standing", SMALL, detailed.FOOTBALLER)
+        self.assertEqual((0, 0), figure.atlas.picture(figure.atlas.key("back gear", False, 270)).image.size)
+        self.assertIn(opaque_rows(img)[-1], (img.height - 2, img.height - 1))
 
 
 class StandRun(detailed.Pictures):
@@ -340,19 +484,30 @@ class StandRun(detailed.Pictures):
         return [{"j%d" % k: (i, 0.0, 0.0) for k in range(7)} for i in range(12)]
 
 
+USED = (("thigh", False, 0), ("thigh", False, 1), ("thigh", False, 2))  # the stand-in run's part keys
+
+
 class StandAtlas:
-    """A stand-in for Atlas: a plain picture for any key, of the kind's width; fill() adds two."""
+    """A stand-in for Atlas: for any key a plain picture 9 px high, of its own colour (its kind, its shade and its
+    step) and as wide as 3 px and its kind's index in CHAINS. Its cache holds the run's three keys and one more;
+    fill() adds two."""
 
     STEPS = 32
 
     def __init__(self):
-        self.pictures = {("thigh", False, k): self.picture(("thigh", False, k)) for k in range(3)}
+        self.pictures = {key: self.picture(key) for key in USED + (("head", False, 24),)}
 
     def key(self, kind, far, degrees):
-        return (kind, far, 0)
+        return (kind, far, round(degrees * self.STEPS / 360) % self.STEPS)
+
+    @staticmethod
+    def colour(key):
+        kind, far, step = key
+        return (20 + 20 * list(CHAINS).index(kind), 200 if far else 100, 1 + 7 * step)
 
     def picture(self, key):
-        return makers.PartPicture(Image.new("RGBA", (3 + len(key[0]), 9), (90, 90, 90, 255)), (0, 0), (0, 0))
+        img = Image.new("RGBA", (3 + list(CHAINS).index(key[0]), 9), self.colour(key) + (255,))
+        return makers.PartPicture(img, (0, 0), (0, 0))
 
     def size_bytes(self):
         return sum(p.image.width * p.image.height * 2 for p in self.pictures.values())
@@ -363,17 +518,18 @@ class StandAtlas:
 
 
 class StandCutout:
-    """A stand-in for CutoutFigure: its atlas, fifteen parts a pose, and an end that misses by a quarter of the pose's
-    index."""
+    """A stand-in for CutoutFigure: its atlas, fifteen parts a pose, each with one of the three keys of USED, and
+    three misses a pose, whose worst over the run, 3.0, is the middle one of pose 5."""
 
     def __init__(self):
         self.atlas = StandAtlas()
 
     def placed(self, pose):
-        return [None] * 15
+        return [makers.Placed(USED[k % 3], (0, 0), (0, 0), (0, 0)) for k in range(15)]
 
     def misses(self, pose):
-        return [0.5, pose["j0"][0] / 4]
+        i = pose["j0"][0]
+        return [0.5, 3.0 if i == 5 else i / 8, 0.25]
 
 
 def stand_runs():
@@ -381,62 +537,98 @@ def stand_runs():
             "cutout": StandRun((0, 0), (34, 52), 15, StandCutout())}
 
 
-class MakerSheetTest(unittest.TestCase):
-    """MakerSheet on stand-in runs of three sizes and a stand-in atlas."""
+def bottom_left(widths, k, height, zoom):
+    """Where on_dark puts the bottom left pixel of the k-th of pictures of these widths, in a row of this height, at
+    zoom: (x, y) in the zoomed row."""
+    gap = detailed.GAP
+    return (gap * (k + 1) + sum(widths[:k])) * zoom, (height - gap - 1) * zoom
 
-    def test_a_row_of_twelve_poses_per_maker_then_pose_3_by_each_then_the_parts_and_the_thigh(self):
-        runs = stand_runs()
-        rows = makers.MakerSheet(runs).rows()
-        self.assertEqual(6, len(rows))
-        gap, zoom, parts = detailed.GAP, makers.MakerSheet.ZOOM, makers.MakerSheet.PARTS_ZOOM
-        for (name, run), (label, img) in zip(runs.items(), rows):
-            with self.subTest(maker=name):
-                self.assertTrue(label.startswith(name))
-                self.assertEqual(12 * run.size[0] + 13 * gap, img.width)
-        self.assertEqual((sum(run.size[0] for run in runs.values()) + 4 * gap) * zoom, rows[3][1].width)
-        atlas = runs["cutout"].painter.atlas
-        widths = [atlas.picture(atlas.key(kind, far, makers.KINDS[kind].upright)).image.width
-                  for kind, far in makers.PARTS]
-        self.assertEqual((sum(widths) + (len(widths) + 1) * gap) * parts, rows[4][1].width)
-        self.assertEqual(((3 + len("thigh")) * 8 + 9 * gap) * parts, rows[5][1].width)
+
+class MakerSheetTest(unittest.TestCase):
+    """MakerSheet on stand-in runs of three sizes, each picture its own colour, and a stand-in atlas whose picture's
+    colour tells its key: every row's label, and each picture's colour at its place."""
+
+    def setUp(self):
+        self.runs = stand_runs()
+        self.rows = makers.MakerSheet(self.runs).rows()
+        self.atlas = self.runs["cutout"].painter.atlas
+
+    def test_six_rows_and_their_labels(self):
+        self.assertEqual(["whole: the run's twelve poses at 96 px, each 30 by 50 px",
+                          "flat: the run's twelve poses at 96 px, each 28 by 48 px",
+                          "cutout: the run's twelve poses at 96 px, each 34 by 52 px",
+                          "pose 3 by each maker at 3x: whole, flat, cutout",
+                          "the cutout's 15 parts of a pose at their upright angles, in paste order (far, then near), "
+                          "at 2x", "the near thigh at 8 of the 32 steps, 45 degrees apart, at 2x"],
+                         [label for label, _ in self.rows])
+
+    def test_each_makers_row_holds_its_twelve_poses_in_order(self):
+        for (name, run), (_, img) in zip(self.runs.items(), self.rows):
+            for i in range(12):
+                with self.subTest(maker=name, pose=i):
+                    x, y = bottom_left([run.size[0]] * 12, i, img.height, 1)
+                    self.assertEqual(run.pictures[i].getpixel((0, run.size[1] - 1))[:3], img.getpixel((x, y)))
+
+    def test_the_pose_row_holds_pose_3_of_each_maker_in_order(self):
+        img, zoom = self.rows[3][1], makers.MakerSheet.ZOOM
+        runs = list(self.runs.values())
+        for k, run in enumerate(runs):
+            with self.subTest(maker=k):
+                x, y = bottom_left([r.size[0] for r in runs], k, img.height // zoom, zoom)
+                self.assertEqual(run.pictures[3].getpixel((0, run.size[1] - 1))[:3], img.getpixel((x, y)))
+
+    def test_the_parts_row_holds_each_part_at_its_upright_step_and_the_thigh_row_the_near_thigh(self):
+        zoom, height = makers.MakerSheet.PARTS_ZOOM, 9 + 2 * detailed.GAP
+        keys = [self.atlas.key(kind, far, UPRIGHT[kind]) for kind, far in PAINT_ORDER]
+        thighs = [("thigh", False, step) for step in range(0, 32, 4)]
+        for row, row_keys in ((self.rows[4][1], keys), (self.rows[5][1], thighs)):
+            widths = [self.atlas.picture(key).image.width for key in row_keys]
+            for k, key in enumerate(row_keys):
+                with self.subTest(key=key):
+                    self.assertEqual(StandAtlas.colour(key), row.getpixel(bottom_left(widths, k, height, zoom)))
 
 
 class MakerClipTest(unittest.TestCase):
-    """MakerClip on stand-in runs of three sizes and pivots over a plain street."""
+    """MakerClip on stand-in runs of three sizes and pivots, each picture its own colour, over a plain street whose
+    FEET row is marked."""
 
-    def test_twelve_frames_of_three_panels_of_one_size_each_pivot_at_one_place(self):
+    FEET_MARK = (250, 10, 10)
+
+    def test_twelve_frames_of_three_panels_of_one_size_each_pose_in_its_panel_on_the_feet_row(self):
         runs = stand_runs()
-        clip = makers.MakerClip(runs, Image.new("RGB", (detailed.CharacterClip.W, 240), (40, 40, 40)))
+        street = Image.new("RGB", (detailed.CharacterClip.W, 240), (40, 40, 40))
+        for x in range(street.width):
+            street.putpixel((x, FEET), self.FEET_MARK)
+        clip = makers.MakerClip(runs, street)
         frames, (pw, ph), zoom = clip.frames(), clip.panel, makers.MakerClip.ZOOM
         self.assertEqual(12, len(frames))
         self.assertEqual({(3 * pw * zoom, ph * zoom)}, {frame.size for frame in frames})
         x, y = makers.MakerClip.MARGIN + max(run.pivot[0] for run in runs.values()), ph - makers.MakerClip.MARGIN - 1
-        for i in (0, 7):
+        for i, frame in enumerate(frames):
             for k, run in enumerate(runs.values()):
                 with self.subTest(frame=i, panel=k):
-                    self.assertEqual((255, 255, 255), frames[i].getpixel(((k * pw + x) * zoom, y * zoom)))
+                    self.assertEqual((255, 255, 255), frame.getpixel(((k * pw + x) * zoom, y * zoom)))
+                    self.assertEqual(run.pictures[i].getpixel((run.pivot[0] - 1, run.size[1] - 1))[:3],
+                                     frame.getpixel(((k * pw + x - 1) * zoom, y * zoom)))
+                    self.assertEqual(self.FEET_MARK, frame.getpixel(((k * pw + 1) * zoom, y * zoom)))
+                    self.assertEqual((40, 40, 40), frame.getpixel(((k * pw + 1) * zoom, (y - 1) * zoom)))
 
 
 class MakerCostsTest(unittest.TestCase):
-    """maker_costs on stand-in runs: each number in a line is its source's."""
+    """maker_costs on stand-in runs: every number in each line, in order, is its source's."""
 
-    def test_each_number_in_a_line_is_its_sources(self):
+    def test_every_number_in_each_line_is_its_sources(self):
         runs = stand_runs()
         atlas = runs["cutout"].painter.atlas
-        used = (len(atlas.pictures), atlas.size_bytes())
+        used = sum(atlas.picture(key).image.width * 9 * 2 for key in USED)
         lines = makers.maker_costs(runs)
-        filled = (len(atlas.pictures), atlas.size_bytes())
         self.assertEqual(4, len(lines))
-        whole, flat, cutout, miss = lines
-        for part in ("24 pictures", "30 by 50 px", " %d bytes" % runs["whole"].size_bytes()):
-            self.assertIn(part, whole)
-        for part in ("12 poses", "7 joints", " %d bytes" % (12 * 7 * 4)):
-            self.assertIn(part, flat)
-        for part in (" %d part pictures, %d bytes" % used, " %d pictures, %d bytes" % filled, "15 parts",
-                     " %d bytes" % (12 * 15 * 6), "mirrors"):
-            self.assertIn(part, cutout)
-        self.assertEqual((3, 5), (used[0], filled[0]))
-        self.assertIn("2.75 px", miss)
+        numbers = [re.findall(r"\d+(?:\.\d+)?", line) for line in lines]
+        self.assertEqual([["24", "30", "50", "12", str(runs["whole"].size_bytes())],
+                          ["12", "7", "16", str(12 * 7 * 4)],
+                          ["3", str(used), "6", str(atlas.size_bytes()), "12", "15", "16", str(12 * 15 * 6)],
+                          ["3.00"]], numbers)
+        self.assertIn("mirrors", lines[2])
 
 
 @functools.lru_cache(maxsize=None)

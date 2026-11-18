@@ -24,16 +24,17 @@ import sys
 from collections import namedtuple
 from dataclasses import dataclass
 
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageDraw, ImageFont
 
 import mocap
 from brush import Sprite
-from detailed import (CLOSE_MS, FIREMAN, TALL, CharacterClip, Committed, DetailedFigure, NoRim, RunPictures,
-                      on_dark, write_clip)
+from detailed import (CLOSE_MS, DARK, FIREMAN, GAP, TALL, CharacterClip, Committed, DetailedFigure, NoRim,
+                      RunPictures, on_dark, write_clip)
 from export import Sheet, q565
 from sets.rescue import FEET, STRIPE, Figure, along
 
 HIPS = "hips"  # the middle of the two hip joints: the joint of the torso and of the back gear
+NAME_INK, NAME_H = (226, 220, 236), 16  # the names on the sheet's parts row and in the clip: light ink, px a line
 
 
 def arm(painter, s, p, side, far):
@@ -66,18 +67,18 @@ def head(painter, s, p, side, far):
 class Kind:
     """A kind of part: its name; its chain, its joint (which is its pivot) and the joints after it to its end, a
     limb's without its side's letter; its upright angle; group, the function that paints its group with the
-    painter's own method (painter, sprite, places, side, far); and capsule, a limb's capsule's half width in body
-    heights (None: not a limb, not masked)."""
+    painter's own method (painter, sprite, places, side, far); and half, a limb's half width, the most that the whole
+    painter paints on either side of its bone, in body heights (None: not a limb, not masked to a capsule)."""
 
     name: str
     chain: tuple
     upright: float
     group: object
-    capsule: float | None = None
+    half: float | None = None
 
     @property
     def limb(self):
-        return self.capsule is not None
+        return self.half is not None
 
     def joints(self, side):
         """Its chain's joint names on a side: a limb's with the side's letter, the others' as they are."""
@@ -85,13 +86,16 @@ class Kind:
 
 
 SPINE = (HIPS, "lowerback", "upperback", "thorax", "lowerneck")
-# each limb's capsule's half width: past the half width of what the whole painter paints on its bone
+D = DetailedFigure  # each limb's half width, from the whole painter's widths: the foot's holds the sole under it
 KINDS = {kind.name: kind for kind in (
-    Kind("upper arm", ("clavicle", "humerus"), 90, arm, 0.055), Kind("forearm", ("humerus", "radius"), 90, arm, 0.05),
-    Kind("hand", ("radius", "wrist", "hand", "fingers"), 90, arm, 0.05),
-    Kind("thigh", ("hipjoint", "femur"), 90, leg, 0.068), Kind("shin", ("femur", "tibia"), 90, leg, 0.058),
-    Kind("foot", ("tibia", "foot", "toes"), 0, leg, 0.05), Kind("back gear", SPINE, 270, back_gear),
-    Kind("torso", SPINE, 270, torso), Kind("head", ("lowerneck", "upperneck", "head"), 270, head))}
+    Kind("upper arm", ("clavicle", "humerus"), 90, arm, max(D.UPPER) / 2),
+    Kind("forearm", ("humerus", "radius"), 90, arm, max(D.FORE) / 2),
+    Kind("hand", ("radius", "wrist", "hand", "fingers"), 90, arm, D.GLOVE_W / 2),
+    Kind("thigh", ("hipjoint", "femur"), 90, leg, max(D.THIGH) / 2),
+    Kind("shin", ("femur", "tibia"), 90, leg, max(D.SHIN + (D.SHAFT_W,)) / 2),
+    Kind("foot", ("tibia", "foot", "toes"), 0, leg, D.FOOT_W / 2 + D.SOLE_W * 3 / 4),
+    Kind("back gear", SPINE, 270, back_gear), Kind("torso", SPINE, 270, torso),
+    Kind("head", ("lowerneck", "upperneck", "head"), 270, head))}
 ARM, LEG = ("upper arm", "forearm", "hand"), ("thigh", "shin", "foot")
 LIMBS = ARM + LEG  # the six limb kinds, each on both sides
 # a pose's parts in paste order, (kind, far) each, as DetailedFigure.paint paints them: the far arm and leg, the gear
@@ -162,15 +166,21 @@ class UprightPose:
 
 class Atlas:
     """The part pictures of one character, by key (kind, far, step): a kind's name, far for the far shade, and the step
-    nearest to the part's angle. It holds a whole painter with no rim and the upright pose (UprightPose) of the bone
-    lengths of the first pose it measures (3D, after Proportions.fit). Then the painter's own group paints each part once, alone, upright,
-    on a sprite with the part's joint at its middle; a limb part and its bands are masked to a capsule round its bone,
-    so two parts both keep a round end at their joint. A key's picture is that painting turned and cut at the first
-    request for it: Sprite.turn turns the sprite about the joint, the same rotation turns the bands, and the painter's
-    cut cuts it."""
+    nearest to the part's angle. It is a texture atlas: "an image containing multiple smaller images" (Wikipedia,
+    Texture atlas, https://en.wikipedia.org/wiki/Texture_atlas), kept here as one picture a key. It holds a whole
+    painter with no rim and the upright pose (UprightPose) of the bone lengths of the first pose it measures (3D, after
+    Proportions.fit).
+
+    Each part is painted once, upright, when the first pose is measured: the painter's own group paints it alone on a
+    sprite with the part's joint at its middle. A limb part and its bands are masked to a capsule round its bone, so
+    two parts both keep a round end at their joint: a capsule, "a cylinder with hemispherical ends" (Wikipedia, Capsule
+    (geometry), https://en.wikipedia.org/wiki/Capsule_(geometry)), here its 2D form, a stadium. A key's picture only
+    turns and cuts that painting, at the first request for the key: Sprite.turn turns the sprite about the joint, the
+    same rotation turns the bands, and the painter's cut cuts it."""
 
     STEPS = 32  # a kind has a picture every 11.25 degrees
     REACH = 0.45  # body heights from a part's joint to the sprite's edge: the fireman's torso reaches 0.40
+    MARGIN = 0.01  # body heights a capsule's half width is past its kind's half width
 
     def __init__(self, painter):
         self.painter, self.pictures = painter, {}
@@ -201,7 +211,8 @@ class Atlas:
         kind.group(painter, s, p, side, far)
         if kind.limb:
             joints = kind.joints(side)
-            capsule = s.shape("line", p[joints[0]], p[joints[-1]], width=2 * kind.capsule * painter.PX)
+            half = (kind.half + self.MARGIN) * painter.PX  # the capsule's half width, px
+            capsule = s.shape("line", p[joints[0]], p[joints[-1]], width=2 * half)
             s.alpha = ImageChops.multiply(s.alpha, capsule)
             painter.bands = ImageChops.multiply(painter.bands, capsule)
         return s, painter.bands
@@ -310,10 +321,22 @@ class CutoutFigure(DetailedFigure):
 MAKERS = {"whole": DetailedFigure, "flat": FlatFigure, "cutout": CutoutFigure}  # by name, in the sheet's order
 
 
+def named(strip, xs, names):
+    """The strip with each name under its picture, x px from the strip's left, on one of three lines in turn so that
+    two long names side by side do not meet: light ink on the street's dark, as on_dark's strip."""
+    font = ImageFont.load_default(size=14)
+    out = Image.new("RGB", (strip.width, strip.height + 3 * NAME_H + 4), DARK)
+    out.paste(strip, (0, 0))
+    draw = ImageDraw.Draw(out)
+    for k, (x, name) in enumerate(zip(xs, names)):
+        draw.text((x, strip.height + k % 3 * NAME_H), name, fill=NAME_INK, font=font)
+    return out
+
+
 class MakerSheet:
     """makers-sheet.png: the run's twelve poses by each maker, a row each; pose POSE by each maker at ZOOM; then the
-    cutout's parts at PARTS_ZOOM, a pose's at their upright angles in paste order, and the near thigh at the steps of
-    THIGH; on the street's dark."""
+    cutout's parts at PARTS_ZOOM, a pose's at their upright angles in paste order with each kind's name under it, and
+    the near thigh at the steps of THIGH; on the street's dark."""
 
     ZOOM, PARTS_ZOOM, POSE = 3, 2, 3
     THIGH = range(0, Atlas.STEPS, Atlas.STEPS // 8)  # the thigh row's steps: eight, 45 degrees apart
@@ -323,17 +346,18 @@ class MakerSheet:
 
     def rows(self):
         """Each row's label and picture."""
-        runs, atlas = self.runs, self.runs["cutout"].painter.atlas
+        runs, atlas, zoom = self.runs, self.runs["cutout"].painter.atlas, self.PARTS_ZOOM
         rows = [("%s: the run's twelve poses at %d px, each %d by %d px" % ((name, run.height) + run.size),
                  on_dark(run.pictures)) for name, run in runs.items()]
         rows.append(("pose %d by each maker at %dx: %s" % (self.POSE, self.ZOOM, ", ".join(runs)),
                      on_dark([run.pictures[self.POSE] for run in runs.values()], self.ZOOM)))
         parts = [atlas.picture(atlas.key(kind, far, KINDS[kind].upright)).image for kind, far in PARTS]
-        rows.append(("the cutout's %d parts of a pose at their upright angles, in paste order, at %dx" % (
-            len(parts), self.PARTS_ZOOM), on_dark(parts, self.PARTS_ZOOM)))
+        xs = [(GAP * (k + 1) + sum(img.width for img in parts[:k])) * zoom for k in range(len(parts))]
+        rows.append(("the cutout's %d parts of a pose at their upright angles, in paste order (far, then near), at %dx"
+                     % (len(parts), zoom), named(on_dark(parts, zoom), xs, [kind for kind, _ in PARTS])))
         rows.append(("the near thigh at %d of the %d steps, %g degrees apart, at %dx" % (
-            len(self.THIGH), atlas.STEPS, 360 / atlas.STEPS * self.THIGH.step, self.PARTS_ZOOM),
-            on_dark([atlas.picture(("thigh", False, step)).image for step in self.THIGH], self.PARTS_ZOOM)))
+            len(self.THIGH), atlas.STEPS, 360 / atlas.STEPS * self.THIGH.step, zoom),
+            on_dark([atlas.picture(("thigh", False, step)).image for step in self.THIGH], zoom)))
         return rows
 
     def image(self):
@@ -347,21 +371,22 @@ class MakerSheet:
 
 class MakerClip:
     """makers.webp's frames: the run in place over Rescue's street at ZOOM, a pose a frame, a panel per maker side by
-    side. The panels are of one size, and each picture's pivot is at one place in its panel, MARGIN px over its
-    bottom, on the street's FEET row."""
+    side with the maker's name at its top left. The panels are of one size, and each picture's pivot is at one place
+    in its panel, MARGIN px over its bottom, on the street's FEET row."""
 
     ZOOM, MARGIN = 2, 10
 
     def __init__(self, runs, street):
-        self.runs, self.street = list(runs.values()), street
+        self.names, self.runs, self.street = list(runs), list(runs.values()), street
         self.left = max(run.pivot[0] for run in self.runs)  # the most px left of a pivot
         right = max(run.size[0] - run.pivot[0] for run in self.runs)
         self.panel = (self.left + right + 2 * self.MARGIN, max(run.size[1] for run in self.runs) + 2 * self.MARGIN)
 
     def frames(self):
-        (pw, ph), m = self.panel, self.MARGIN
+        (pw, ph), m, zoom = self.panel, self.MARGIN, self.ZOOM
         x = (CharacterClip.W - pw) // 2
         back = self.street.crop((x, FEET + m + 1 - ph, x + pw, FEET + m + 1))
+        font = ImageFont.load_default(size=14)
         out = []
         for i in range(len(self.runs[0].pictures)):
             frame = Image.new("RGB", (len(self.runs) * pw, ph))
@@ -369,28 +394,36 @@ class MakerClip:
                 panel, img = back.copy(), run.pictures[i]
                 panel.paste(img, (m + self.left - run.pivot[0], ph - m - run.size[1]), img)
                 frame.paste(panel, (k * pw, 0))
-            out.append(frame.resize((frame.width * self.ZOOM, frame.height * self.ZOOM), Image.Resampling.NEAREST))
+            frame = frame.resize((frame.width * zoom, frame.height * zoom), Image.Resampling.NEAREST)
+            draw = ImageDraw.Draw(frame)
+            for k, name in enumerate(self.names):
+                draw.text((k * pw * zoom + 6, 4), name, fill=NAME_INK, font=font)
+            out.append(frame)
         return out
 
 
 def maker_costs(runs):
     """The lines main prints for the run made by each maker (runs: a maker's name to its RunPictures): what each
-    costs the board in bytes, then the cutout's worst miss over the run's poses. It fills the cutout's atlas."""
+    costs the board in bytes, then the cutout's worst miss over the run's poses. The flat maker's cost is its poses
+    only: its code and its time on the board are not measured. The cutout's bytes are its pictures' pixels, with no
+    header. It fills the cutout's atlas."""
     whole, flat, cutout = runs["whole"], runs["flat"], runs["cutout"]
     atlas, poses = cutout.painter.atlas, flat.poses()
-    used = (len(atlas.pictures), atlas.size_bytes())
-    atlas.fill()
     placed = [cutout.painter.placed(pose) for pose in cutout.poses()]
+    used = [atlas.picture(key) for key in {part.key for parts in placed for part in parts}]
+    atlas.fill()
     count, joints, parts = len(whole.pictures), len(poses[0]), len(placed[0])
     again = "; a second move costs the same again"
     return ["whole: %d pictures of %d by %d px (%d poses, both facings), %d bytes%s" % (
                 2 * count, whole.size[0], whole.size[1], count, whole.size_bytes(), again),
-            "flat: %d poses of %d joints at two 16-bit numbers a joint, %d bytes%s" % (
-                len(poses), joints, len(poses) * joints * 4, again),
-            "cutout: the run uses %d part pictures, %d bytes, for one facing (the board mirrors a part for the other); "
-            "after fill(), %d pictures, %d bytes; %d poses of %d parts at three 16-bit numbers a part (its place and "
-            "its picture), %d bytes; a second move costs its poses and the pictures of the angles that it adds" % (
-                used + (len(atlas.pictures), atlas.size_bytes(), len(placed), parts, len(placed) * parts * 6)),
+            "flat, the poses only (no code, no time): %d poses of %d joints at two 16-bit numbers a joint, %d "
+            "bytes%s" % (len(poses), joints, len(poses) * joints * 4, again),
+            "cutout, the pixels only: the run uses %d part pictures, %d bytes, for one facing (the board mirrors a "
+            "part for the other); with every step of the six limb kinds, %d pictures, %d bytes; %d poses of %d parts "
+            "at three 16-bit numbers a part (its place and its picture), %d bytes; a second move costs its poses and "
+            "the pictures of the steps that it adds" % (
+                len(used), sum(p.image.width * p.image.height * 2 for p in used), len(atlas.pictures),
+                atlas.size_bytes(), len(placed), parts, len(placed) * parts * 6),
             "cutout: the worst miss from where a part's end lands to the pose's joint there, %.2f px" % max(
                 max(cutout.painter.misses(pose)) for pose in cutout.poses())]
 
