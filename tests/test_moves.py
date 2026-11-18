@@ -354,6 +354,17 @@ class MoveClipTest(unittest.TestCase):
         self.assertEqual({img.getpixel((0, 0))[:3]}, {frame.getpixel(q) for q in under})
         self.assertIn(moves.Ladder.COLOUR, {frame.getpixel((q[0], q[1] - img.height)) for q in box})
 
+    def test_a_rung_lies_under_the_climbers_soles_in_pose_0_and_the_next_half_an_advance_up(self):
+        """The rows that the ladder crosses with a rung's length (a rung's RAIL rows), from the soles up past the
+        next rung."""
+        x, y, img = self.clip.places(0)[0]
+        under, half = y + img.height, self.climber.advance[1] // 2
+        rungs = [r for r in range(under - half - 1, under + moves.Ladder.RAIL + 1)
+                 if sum(1 for q in range(self.clip.W) if self.clip.ground.getpixel((q, r)) == moves.Ladder.COLOUR)
+                 >= moves.Ladder.RUNG]
+        self.assertEqual([under - half + k for k in range(moves.Ladder.RAIL)] +
+                         [under + k for k in range(moves.Ladder.RAIL)], rungs)
+
     def test_each_mover_plays_a_whole_number_of_times(self):
         """Its poses start at the first, end at the last, and go round as many times as its plays."""
         for k, (move, _, _) in enumerate(self.clip.movers):
