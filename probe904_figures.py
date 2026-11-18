@@ -70,7 +70,8 @@ GAITS = None  # the Mac part sends a copy with each character's gait row (name, 
 WIDTH, FEET = 320, 214  # the screen's width (gfx.WIDTH) and the row the soles stand on (games/rescue.py's FEET)
 POSES = 12  # a run's poses
 NIGHT = "figures_night"  # the still street
-LIMIT_S = len(COUNTS) * SECONDS + 120  # the board run's time limit: the counts, the boot, the load and the lines
+SPARE_S = 120  # the board run's time beside its counts: the boot, the load and the lines
+LIMIT_S = len(COUNTS) * SECONDS + SPARE_S  # the board run's time limit with COUNTS (Bench.limit_s with others)
 PACK, INDEX = "packs/figures.pak", "art_index.py"  # where the copies go on the board
 WAIT = ["exec", "pass"]  # a cheap command: the board answers it once it is back from the hard reset
 RECOVERY = "`mpremote rm :%s :%s`, then `mpremote reset`" % (INDEX, PACK)
@@ -270,15 +271,18 @@ def free_log(path):
 class Bench:
     """The Mac part's work on the box, through runner (a box.Mpremote, or a test's): check() is step 1; run() has
     art (art/figures.py, or a test's) paint and write the set (step 3), then steps 4 to 7. log: the first log's path
-    (free_log picks the one written); sleep: the pause between two tries."""
+    (free_log picks the one written); sleep: the pause between two tries; counts: the copy's COUNTS, which set the
+    board run's time limit."""
 
-    def __init__(self, runner, art, log, sleep=None):
+    def __init__(self, runner, art, log, sleep=None, counts=COUNTS):
         import time
 
         import box
 
         self.runner, self.art, self.log, self.box = runner, art, log, box
         self.sleep, self.logged = sleep or time.sleep, None
+        self.counts = tuple(counts)
+        self.limit_s = len(self.counts) * SECONDS + SPARE_S
 
     def tried(self, args, tries=None):
         """The runner's answer to args, tried again while mpremote cannot reach the board."""
@@ -305,7 +309,7 @@ class Bench:
             with open(__file__) as f:
                 source = f.read()
             with open(copy, "w") as f:
-                f.write(filled(source, self.art.gaits(capture)))
+                f.write(filled(source, self.art.gaits(capture), self.counts))
             try:
                 self.runner.run(["cp", pack, ":" + PACK])  # the pack first: a failed copy leaves no index naming it
                 self.runner.run(["cp", index, ":" + INDEX])
@@ -336,11 +340,11 @@ class Bench:
         return repr(e)
 
     def board_run(self, copy):
-        """The copy run on the board once, within LIMIT_S: its output, and why it failed or None."""
+        """The copy run on the board once, within limit_s: its output, and why it failed or None."""
         import subprocess
 
         try:
-            return self.runner.run(["run", copy], timeout=LIMIT_S), None
+            return self.runner.run(["run", copy], timeout=self.limit_s), None
         except subprocess.TimeoutExpired as e:
             return text(e.stdout) + text(e.stderr), "the board run took over %d s" % e.timeout
         except subprocess.CalledProcessError as e:
@@ -378,12 +382,34 @@ class Bench:
                 "; the log is %s" % self.logged if self.logged else ""))
 
 
-def filled(source, rows):
-    """This file's source with GAITS filled in with the gait rows, for the board (as probe844_import.py fills SET)."""
-    copy = source.replace("\nGAITS = None", "\nGAITS = %r" % (tuple(rows),), 1)
-    if copy == source:
-        raise ValueError("no GAITS = None line in the probe")
-    return copy
+def filled(source, rows, counts):
+    """This file's source with GAITS filled in with the gait rows and COUNTS with counts, for the board (as
+    probe844_import.py fills SET). Each line's start is replaced, so its comment stays. The default counts give the same
+    COUNTS line, so the guard counts the lines and does not compare the copy with the source."""
+    for old, new in (("\nGAITS = None", "\nGAITS = %r" % (tuple(rows),)),
+                     ("\nCOUNTS = %r" % (COUNTS,), "\nCOUNTS = %r" % (tuple(counts),))):
+        if source.count(old) != 1:
+            raise ValueError("not one %s line in the probe" % old.strip())
+        source = source.replace(old, new)
+    return source
+
+
+def counts_arg(text):
+    """--counts' value as a tuple: whole numbers of 0 or more by commas, at least one, no repeat, in the order given.
+    The start rule (game_class) needs a largest count n of 2 or more (it divides by n - 1) and not a multiple of 5 (then
+    i * 5 mod n repeats start places)."""
+    import argparse
+    import re
+
+    if not re.fullmatch(r"[0-9]+(,[0-9]+)*", text):
+        raise argparse.ArgumentTypeError("not whole numbers of 0 or more by commas: %r" % text)
+    counts = tuple(int(n) for n in text.split(","))
+    if len(set(counts)) < len(counts):
+        raise argparse.ArgumentTypeError("a count repeats: %s" % text)
+    if max(counts) < 2 or max(counts) % 5 == 0:
+        raise argparse.ArgumentTypeError("the largest count, %d, is under 2 or a multiple of 5: the start places "
+                                         "(i * 5 mod n) / (n - 1) need neither" % max(counts))
+    return counts
 
 
 LOG = "logs/run-p904-2c.log"  # from the repository root: the first log's path (free_log)
@@ -404,10 +430,12 @@ def mac(argv, runner=None, art=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="print each board command, run none")
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
+    parser.add_argument("--counts", type=counts_arg, default=COUNTS, metavar="A,B,...",
+                        help="the counts of figures, in this order (%s)" % ",".join("%d" % n for n in COUNTS))
     args = parser.parse_args(argv)
     if art is None:
         import figures as art
-    bench = Bench(runner or box.Mpremote(args.dry_run), art, os.path.join(here, LOG))
+    bench = Bench(runner or box.Mpremote(args.dry_run), art, os.path.join(here, LOG), counts=args.counts)
     try:
         bench.check()
         bench.run(mocap.open_capture(parser, args.cmu))
