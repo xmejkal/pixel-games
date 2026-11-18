@@ -133,36 +133,37 @@ class FlatFigure(DetailedFigure):
 
 
 class UprightPose:
-    """One upright pose with every joint the painter reads, from a pose: the spine and the head straight up, the arms
-    and the legs straight down, the ball and the toes level and forward of the ankle. A gear that reads the knees
-    finds them there. joints: each joint's (forward, up, 0) in body heights, the middle of the hips (HIPS) at 0."""
+    """One upright pose with every joint the painter reads, from a pose's bone lengths alone, so every pose of one
+    skeleton gives the same one: the spine and the head straight up from the middle of the hips, both hip joints there
+    and both clavicles at the lower neck, the arms and the legs straight down, the ball and the toes level and forward
+    of the ankle. Each joint is a bone's length (3D) from the one before it in its kind's chain. A gear that reads the
+    knees finds them there. joints: each joint's (forward, up, 0) in body heights, the middle of the hips (HIPS) at 0.
+    """
 
     def __init__(self, pose):
         pose = dict(pose, hips=tuple((a + b) / 2 for a, b in zip(pose["lhipjoint"], pose["rhipjoint"])))
         self.joints = {HIPS: (0.0, 0.0, 0.0)}
-        for name in ("torso", "head"):
-            self.lay(pose, KINDS[name], "")
+        self.lay(pose, KINDS["torso"], "")
+        self.lay(pose, KINDS["head"], "")
         for side in "lr":
-            for joint, spine in (("hipjoint", HIPS), ("clavicle", "lowerneck")):  # where they are against the spine
-                self.joints[side + joint] = tuple(u + a - b for u, a, b in zip(self.joints[spine], pose[side + joint],
-                                                                               pose[spine]))
+            self.joints[side + "hipjoint"], self.joints[side + "clavicle"] = self.joints[HIPS], self.joints["lowerneck"]
             for name in LIMBS:
                 self.lay(pose, KINDS[name], side)
 
     def lay(self, pose, kind, side):
-        """Puts the kind's joints after its joint on its upright way, each at its 3D distance from it in the pose."""
-        start, *after = kind.joints(side)
+        """Puts the joints after the kind's joint on its upright way, each a bone's length from the one before it."""
+        joints = kind.joints(side)
         a = math.radians(kind.upright)
         forward, rise = math.cos(a), -math.sin(a)
-        for n in after:
-            d = math.dist(pose[start], pose[n])
-            self.joints[n] = (self.joints[start][0] + forward * d, self.joints[start][1] + rise * d, 0.0)
+        for before, n in zip(joints, joints[1:]):
+            d = math.dist(pose[before], pose[n])
+            self.joints[n] = (self.joints[before][0] + forward * d, self.joints[before][1] + rise * d, 0.0)
 
 
 class Atlas:
     """The part pictures of one character, by key (kind, far, step): a kind's name, far for the far shade, and the step
-    nearest to the part's angle. It holds a whole painter with no rim and the upright pose (UprightPose) of the first
-    pose it measures (3D, after Proportions.fit). Then the painter's own group paints each part once, alone, upright,
+    nearest to the part's angle. It holds a whole painter with no rim and the upright pose (UprightPose) of the bone
+    lengths of the first pose it measures (3D, after Proportions.fit). Then the painter's own group paints each part once, alone, upright,
     on a sprite with the part's joint at its middle; a limb part and its bands are masked to a capsule round its bone,
     so two parts both keep a round end at their joint. A key's picture is that painting turned and cut at the first
     request for it: Sprite.turn turns the sprite about the joint, the same rotation turns the bands, and the painter's

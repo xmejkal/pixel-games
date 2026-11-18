@@ -57,7 +57,21 @@ def bent():
     return pose
 
 
-POSES = {"standing": standing, "bent": bent}
+def twisted():
+    """The standing pose with the pelvis and the legs turned 30 degrees about the up axis, the body above the thorax
+    bent 20 degrees forward at it, and the near hand bent 40 degrees at the wrist: each bone keeps its length, while
+    the hip joints move against the spine, the spine bends and the hand bends."""
+    pose, c, k = standing(), math.cos(math.radians(30)), math.sin(math.radians(30))
+    hf, _, hd = (sum(pose[s + "hipjoint"][i] for s in "lr") / 2 for i in range(3))
+    for n in [s + j for s in "lr" for j in ("hipjoint",) + LEG_JOINTS]:
+        f, u, d = pose[n]
+        pose[n] = (hf + (f - hf) * c - (d - hd) * k, u, hd + (f - hf) * k + (d - hd) * c)
+    above = ["lowerneck", "upperneck", "head", "nose"] + [s + j for s in "lr" for j in ("clavicle",) + ARM_JOINTS]
+    pose = swung(pose, "thorax", above, -20)
+    return swung(pose, "rwrist", ["rhand", "rfingers", "rthumb"], 40)
+
+
+POSES = {"standing": standing, "bent": bent, "twisted": twisted}
 
 
 def opaque(img):
@@ -255,6 +269,18 @@ class CutoutTest(unittest.TestCase):
         self.assertEqual(keys, set(figure.atlas.pictures))
         self.assertEqual(sum(p.image.width * p.image.height * 2 for p in figure.atlas.pictures.values()),
                          figure.atlas.size_bytes())
+
+    def test_two_first_poses_of_one_skeleton_give_the_same_part_pictures(self):
+        """The upright pose is built from the bone lengths alone: each part at its upright step and three steps on."""
+        first, other = (painted(makers.CutoutFigure, name, SMALL)[0].atlas for name in ("standing", "twisted"))
+        for kind, far in makers.PARTS:
+            for degrees in (makers.KINDS[kind].upright, makers.KINDS[kind].upright + 3 * 360 / first.STEPS):
+                with self.subTest(kind=kind, far=far, degrees=degrees):
+                    a, b = (atlas.picture(atlas.key(kind, far, degrees)) for atlas in (first, other))
+                    self.assertEqual((a.image.size, a.image.tobytes(), a.pivot), (b.image.size, b.image.tobytes(),
+                                                                                  b.pivot))
+                    for u, v in zip(a.end, b.end):
+                        self.assertAlmostEqual(u, v, places=6)
 
     def test_after_fill_each_limb_kind_has_every_angle_in_each_shade_and_the_others_keep_theirs(self):
         figure, _ = painted(makers.CutoutFigure, "bent", SMALL)
