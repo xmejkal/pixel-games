@@ -69,7 +69,7 @@ class MovePictures(Pictures):
         return index, (plays * af + f, plays * au + u)
 
 
-def plays(clip_ms, play_ms):
+def nearest_plays(clip_ms, play_ms):
     """The whole number of plays nearest to a clip's length, at least one."""
     return max(1, round(clip_ms / play_ms))
 
@@ -113,8 +113,8 @@ class MoveSheet:
 
     FLOOR = (96, 80, 92)  # the floor line: lighter than the dark
 
-    def __init__(self, moves):
-        self.moves = moves
+    def __init__(self, move_pictures):
+        self.move_pictures = move_pictures
 
     def strip(self, move):
         """The move's poses on the dark, GAP px apart, each at its lift over the floor line, and the floor line's row."""
@@ -129,7 +129,7 @@ class MoveSheet:
 
     def rows(self):
         """Each move's label and strip."""
-        return [(move_line(move), self.strip(move)[0]) for move in self.moves]
+        return [(move_line(move), self.strip(move)[0]) for move in self.move_pictures]
 
     def image(self):
         rows = self.rows()
@@ -164,7 +164,7 @@ class MoveClip:
         movers = sorted(movers, key=lambda m: m.row)  # the farther first
         n, self.count = self.crossing(next(m for m in movers if m.crosses))
         ms = self.count * FRAME_MS
-        self.movers = [m._replace(plays=n if m.crosses else plays(ms, m.move.play_ms)) for m in movers]
+        self.movers = [m._replace(plays=n if m.crosses else nearest_plays(ms, m.move.play_ms)) for m in movers]
         self.ground = street.copy()
         for mover in self.movers:
             if mover.move.advance[1] > 0:

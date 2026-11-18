@@ -227,9 +227,9 @@ class Cycle:
                     best = (d, s, p)
         return best[1:]
 
-    def frame(self, i, period):
-        """The frame of pose i in a loop of period frames, i from 0 to poses: the poses evenly spaced over the loop."""
-        return i * period / self.poses
+    def frame(self, i, length):
+        """The frame of pose i in a loop of length frames, i from 0 to poses: the poses evenly spaced over the loop."""
+        return i * length / self.poses
 
     def settle(self, poses, first, last):
         """The poses as the cycle keeps them, given the loop's first and last view: as they are."""
@@ -267,9 +267,10 @@ class OneShot(Cycle):
     def loop(self, views):
         return (0, len(views) - 1)
 
-    def frame(self, i, period):
-        """The poses from the first frame to the last, i up to poses; past the last pose, the last frame."""
-        return min(period, i * period / (self.poses - 1))
+    def frame(self, i, length):
+        """The poses from the first frame to the last of a span of length frames, i up to poses; past the last pose,
+        the last frame."""
+        return min(length, i * length / (self.poses - 1))
 
 
 CYCLES = (
@@ -334,8 +335,8 @@ class Capture:
         return self.loops[cycle.name]
 
     def window(self, cycle):
-        """The loop's frames of 3D joints, from its first to its last, the way the body faces over them, the floor and
-        the body height."""
+        """A play's frames of 3D joints (a loop, or a one-shot's whole span), from its first to its last, the way the
+        body faces over them, the floor and the body height."""
         skeleton, joints, floor = self.span(cycle)
         start, period = self.loop(cycle)
         window = joints[start:start + period + 1]
@@ -365,7 +366,7 @@ class Capture:
 
     def root_motion(self, cycle):
         """The root's place along the way the body faces at the frame of each pose, and of one more after the last
-        (Cycle.frame), from the loop's first frame, in body heights: the body's own way through the world. For a loop
+        (Cycle.frame), from the play's first frame, in body heights: the body's own way through the world. For a loop
         the last number is the forward part of the stride."""
         window, (fx, fz), _, height = self.window(cycle)
         period = len(window) - 1
@@ -384,7 +385,7 @@ class Capture:
         return out
 
     def rise(self, cycle):
-        """How far the root goes up over one loop, in body heights (Cycle.rise): 0 but for a rising loop."""
+        """How far the root goes up over one play, in body heights (Cycle.rise): 0 but for a rising loop."""
         window, way, floor, height = self.window(cycle)
         return cycle.rise(side(window[0], way, floor, height), side(window[-1], way, floor, height))
 

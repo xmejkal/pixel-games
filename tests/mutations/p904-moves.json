@@ -2,8 +2,8 @@
  {
   "file": "art/mocap.py",
   "name": "a one-shot's poses are spread as a loop's, so its last pose is not the span's last frame",
-  "find": "        return min(period, i * period / (self.poses - 1))",
-  "replace": "        return min(period, i * period / self.poses)"
+  "find": "        return min(length, i * length / (self.poses - 1))",
+  "replace": "        return min(length, i * length / self.poses)"
  },
  {
   "file": "art/mocap.py",

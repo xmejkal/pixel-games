@@ -260,7 +260,7 @@ class PlaysTest(unittest.TestCase):
         for clip_ms, play_ms, plays in ((1000, 1000, 1), (1000, 450, 2), (1000, 300, 3), (1000, 260, 4),
                                         (7636, 1463.6, 5), (7636, 2408, 3), (100, 3000, 1)):
             with self.subTest(clip_ms=clip_ms, play_ms=play_ms):
-                self.assertEqual(plays, moves.plays(clip_ms, play_ms))
+                self.assertEqual(plays, moves.nearest_plays(clip_ms, play_ms))
 
 
 class LadderTest(unittest.TestCase):
