@@ -1,7 +1,8 @@
 """Detailed characters at 96 px (P904's spike): the runs of art/mocap.py painted with a face, hands, clothes, a
 headwear and gear, to see whether the detail shows at that size. The fireman has a turnout coat, gloves, a helmet
 and an air tank; CAST holds him and the other characters, each a Character record with its own cycle. It is in no
-game and in no art set: art/paint.py does not call it, and the packs stay as they are.
+game and in no art set: art/paint.py does not call it, and the packs stay as they are. art/moves.py paints the moves
+with the same painter (Pictures).
 
 One number, the height in px from the soles to the helmet's top, sets the size; a character's scale is its share
 of it, and its headwear sits on top of its head. Every width and offset is a share of the body height, so the same

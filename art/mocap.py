@@ -205,8 +205,8 @@ def blend(a, b, t):
 class Cycle:
     """One cycle: a trial, the frames it may loop in, the loop's length in frames (least, most), its poses, the
     degrees the body turns over the cycle (the turn), and the degrees it is turned toward the viewer throughout. A loop
-    that travels forward on the floor: a run or a walk. Capture asks it four things: its loop, the frame of a pose,
-    the poses as it keeps them, and how far it rises."""
+    on the floor: a run, a walk, the spray or the wave. Capture asks it four things: its loop, the frame of a pose, the
+    poses as it keeps them, and how far it rises."""
 
     def __init__(self, name, trial, fps, frames, period, poses, turn=0, view=0):
         self.name, self.trial, self.fps, self.frames = name, trial, fps, frames
@@ -248,8 +248,8 @@ class Rising(Cycle):
     def settle(self, poses, first, last):
         """Pose i less i / poses of the gap between the last view, lowered by the rise, and the first."""
         up = self.rise(first, last)
-        gap = {n: (lf - ff, lu - up - fu, ld - fd) for n, ((ff, fu, fd), (lf, lu, ld)) in
-               ((n, (first[n], last[n])) for n in first)}
+        lowered = {n: (f, u - up, d) for n, (f, u, d) in last.items()}
+        gap = {n: tuple(b - a for a, b in zip(first[n], lowered[n])) for n in first}
         return [{n: tuple(v - g * i / self.poses for v, g in zip(pose[n], gap[n])) for n in pose}
                 for i, pose in enumerate(poses)]
 
