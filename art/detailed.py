@@ -318,7 +318,10 @@ PARAMEDIC = Character("paramedic", skin=(246, 204, 176), top=RED, legs=RED, boot
 FOOTBALLER = Character("footballer", skin=(150, 100, 68), top=(40, 160, 80), legs=(236, 236, 236), boots=(24, 24, 26),
                        hands=None, sleeve=0.45, trouser=0.45, shaft=(40, 160, 80), hem=0.0, bands=False,
                        headwear=Hair((26, 22, 24)), gear=())
-CAST = ((FIREMAN, "run"), (PARAMEDIC, "woman"), (FOOTBALLER, "dogman"))  # each with the cycle of art/mocap.py it runs
+CHILD = Character("child", scale=0.62, head=0.085, skin=(240, 194, 158), top=(250, 210, 60), legs=(60, 100, 200),
+                  boots=(210, 50, 50), hands=None, sleeve=0.3, trouser=0.35, shaft=None, hem=0.0, bands=False,
+                  headwear=Hair((150, 104, 60)), gear=())
+CAST = ((FIREMAN, "run"), (PARAMEDIC, "woman"), (FOOTBALLER, "dogman"), (CHILD, "child"))  # each with its cycle
 
 
 class DetailedFigure(Figure):

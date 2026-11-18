@@ -442,6 +442,15 @@ class CharacterTest(unittest.TestCase):
                 skin = [q for q in coloured(img, c.skin) if abs(q[1] - knee) <= 2]
                 self.assertEqual(trouser < 1, bool(skin))
 
+    def test_bare_hands_are_skin_below_the_wrist_and_gloves_are_not(self):
+        for hands in (None, detailed.GLOVE):
+            with self.subTest(hands=hands):
+                c = dataclasses.replace(detailed.FIREMAN, hands=hands)
+                figure, img = drawn(c)
+                wrist = figure.at(standing()["rradius"])[1]
+                skin = [q for q in coloured(img, c.skin) if q[1] > wrist + 1]
+                self.assertEqual(hands is None, len(skin) >= 8)
+
     def test_no_reflective_band_is_on_skin(self):
         """A band pixel is one that the bands change; under it, with no bands, there is no skin. Also with short
         sleeves, short trousers and bare hands, where the bands would lie on bare skin."""
