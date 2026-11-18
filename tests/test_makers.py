@@ -135,6 +135,8 @@ class Reversed(makers.Atlas):
 
 
 class ReversedCutout(makers.CutoutFigure):
+    """A cutout figure whose atlas turns each part the wrong way."""
+
     ATLAS = Reversed
 
 
@@ -145,6 +147,8 @@ class Coarse(makers.Atlas):
 
 
 class CoarseCutout(makers.CutoutFigure):
+    """A cutout figure with a part picture every 45 degrees."""
+
     ATLAS = Coarse
 
 
