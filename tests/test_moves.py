@@ -22,12 +22,13 @@ sys.path.insert(0, os.path.join(REPO, "tests"))
 import detailed  # noqa: E402
 import mocap  # noqa: E402
 import moves  # noqa: E402
+from brush import H  # noqa: E402
 from PIL import Image, ImageOps  # noqa: E402
 from test_detailed_figure import opaque_rows, standing  # noqa: E402
 
-JUMP, FORWARD_JUMP, CLIMB = (next(c for c in mocap.MOVES if c.name == name) for name in ("jump", "forward jump", "climb"))
+JUMP, FORWARD_JUMP, CLIMB = (mocap.named(name) for name in ("jump", "forward jump", "climb"))
 JUMP_FRAMES, AHEAD, FLIGHT = 23, 0.02, 0.2  # the jumper's frames, its root's way forward a frame, its highest lift
-CLIMB_FRAMES, PERIOD, RISE, LEAN = 300, 288, 0.3, 0.1  # the climber's frames, its loop, and its way up and forward a loop
+CLIMB_FRAMES, PERIOD, RISE, LEAN = 300, 288, 0.3, 0.1  # the climber's frames, its loop, its way up and forward a loop
 WAVE, DRIFT = 0.05, 0.02  # how far the climber's hands wave, and how far its left thumb drifts forward a loop
 SMALL = 48  # px: the stand-in moves are painted at this height, so the tests run fast
 
@@ -184,7 +185,8 @@ class MissingTest(unittest.TestCase):
 
     def test_the_moves_ask_for_subject_13_and_their_three_trials(self):
         with tempfile.TemporaryDirectory() as folder:
-            self.assertEqual(["13.asf", "13_11.amc", "13_33.amc", "13_39.amc"], mocap.Capture(folder).missing(mocap.MOVES))
+            missing = mocap.Capture(folder).missing(mocap.MOVES)
+        self.assertEqual(["13.asf", "13_11.amc", "13_33.amc", "13_39.amc"], missing)
 
     def test_open_capture_ends_with_the_parsers_error_naming_a_missing_file(self):
         parser = argparse.ArgumentParser(prog="moves")
@@ -268,7 +270,8 @@ class LadderTest(unittest.TestCase):
         img = Image.new("RGB", (60, 120), (0, 0, 0))
         base, (af, au), step = (10, 110), (9, 25), 13.3
         moves.Ladder(base, (af, au), step).draw(img)
-        on = [(x, y) for y in range(img.height) for x in range(img.width) if img.getpixel((x, y)) == moves.Ladder.COLOUR]
+        on = [(x, y) for y in range(img.height) for x in range(img.width)
+              if img.getpixel((x, y)) == moves.Ladder.COLOUR]
         rows = {}
         for x, y in on:
             rows.setdefault(y, []).append(x)
@@ -319,7 +322,8 @@ class MoveSheetTest(unittest.TestCase):
 
     def test_a_pose_with_a_lift_of_k_px_stands_k_px_over_the_floor_line(self):
         move = self.moves[0]
-        img, floor = moves.MoveSheet(self.moves).strip(move)
+        img = moves.MoveSheet(self.moves).strip(move)
+        floor = img.height - detailed.GAP
         w = move.size[0]
         for i in range(3):
             with self.subTest(pose=i):
@@ -338,7 +342,7 @@ class MoveClipTest(unittest.TestCase):
         self.crosser = StandMove((200, 0), [(2 * i, 0) for i in range(12)], (24, 0), 50, (20, 30), cycle=FORWARD_JUMP)
         self.climber = StandMove((0, 200), [(0, i) for i in range(12)], (4, 12), 110, toes=(0, -3), cycle=CLIMB)
         self.jumper = StandMove((0, 0), [(0, 3 if 3 < i < 8 else 0) for i in range(12)], (1, 0), 70)
-        self.street = Image.new("RGB", (moves.MoveClip.W, 240), (40, 40, 40))
+        self.street = Image.new("RGB", (moves.MoveClip.W, H), (40, 40, 40))
         self.clip = moves.MoveClip([moves.Mover(self.crosser, 238, None), moves.Mover(self.climber, 200, 40),
                                     moves.Mover(self.jumper, 220, 150)], self.street)
 
@@ -393,7 +397,7 @@ class MoveLinesTest(unittest.TestCase):
         climb = StandMove((0, 200), [(0, i) for i in range(12)], (4, 12), 110, toes=(0, -3), cycle=CLIMB)
         crosser = StandMove((0, 0), [(2 * i, 0) for i in range(12)], (24, 0), 50, (20, 30), cycle=FORWARD_JUMP)
         clip = moves.MoveClip([moves.Mover(climb, 200, 40), moves.Mover(crosser, 238, None)],
-                              Image.new("RGB", (moves.MoveClip.W, 240)))
+                              Image.new("RGB", (moves.MoveClip.W, H)))
         lines = moves.move_lines([jump, climb], clip)
         self.assertEqual(2 + 2 + 1, len(lines))
         for move, line in zip((jump, climb), lines):
@@ -466,7 +470,8 @@ class MovesFromCaptureTest(unittest.TestCase):
         for i in range(clip.count):
             x, y, img = clip.places(i)[k]
             with self.subTest(frame=i):
-                self.assertTrue(0 <= x and 0 <= y and x + img.width <= clip.W and y + img.height <= 240)
+                self.assertTrue(0 <= x and 0 <= y)
+                self.assertTrue(x + img.width <= clip.W and y + img.height <= clip.ground.height)
 
 
 if __name__ == "__main__":

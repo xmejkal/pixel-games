@@ -22,13 +22,15 @@ from collections import namedtuple
 from PIL import Image, ImageDraw
 
 import mocap
-from detailed import (ACROBAT, CHILD, DARK, FIREMAN, FOOTBALLER, FRAME_MS, GAP, SEED, TALL, Committed, Pictures,
-                      write_clip)
+from detailed import (ACROBAT, CHILD, DARK, FIREMAN, FOOTBALLER, FRAME_MS, GAP, SEED, TALL, CharacterClip, Committed,
+                      Pictures, write_clip)
 from export import Sheet
 from sets.rescue import snapped
 
-MOVERS = ((FIREMAN, "climb", 200, 50), (FOOTBALLER, "jump", 216, 150), (CHILD, "jump", 228, 250),
-          (ACROBAT, "forward jump", 238, None))  # character, move, the row its soles start on, its pivot's column
+# each mover's character, its move, the row of its lift 0 (its span's floor) and the column its pivot starts at (None:
+# it crosses the street), from the farthest row to the nearest
+MOVERS = ((FIREMAN, "climb", CharacterClip.TOP, 50), (FOOTBALLER, "jump", 216, 150), (CHILD, "jump", 228, 250),
+          (ACROBAT, "forward jump", CharacterClip.BOTTOM, None))
 
 
 class MovePictures(Pictures):
@@ -117,7 +119,7 @@ class MoveSheet:
         self.move_pictures = move_pictures
 
     def strip(self, move):
-        """The move's poses on the dark, GAP px apart, each at its lift over the floor line, and the floor line's row."""
+        """The move's poses on the dark, GAP px apart, each at its lift over the floor line, GAP px over the bottom."""
         w, h = move.size
         top = max(up for _, up in move.travel)
         strip = Image.new("RGB", (len(move.pictures) * (w + GAP) + GAP, h + top + 2 * GAP), DARK)
@@ -125,11 +127,11 @@ class MoveSheet:
         ImageDraw.Draw(strip).line((0, floor, strip.width - 1, floor), fill=self.FLOOR)
         for i, (img, (_, up)) in enumerate(zip(move.pictures, move.travel)):
             strip.paste(img, (GAP + i * (w + GAP), floor - h - up), img)
-        return strip, floor
+        return strip
 
     def rows(self):
         """Each move's label and strip."""
-        return [(move_line(move), self.strip(move)[0]) for move in self.move_pictures]
+        return [(move_line(move), self.strip(move)) for move in self.move_pictures]
 
     def image(self):
         rows = self.rows()
@@ -158,7 +160,7 @@ class MoveClip:
     (ground) before any mover. When the clip starts again, every mover starts its first play again from its start
     place."""
 
-    W = 320
+    W = CharacterClip.W
 
     def __init__(self, movers, street):
         movers = sorted(movers, key=lambda m: m.row)  # the farther first
@@ -235,8 +237,8 @@ def painted(capture):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Paint the moves at %d px: a sheet of the fireman's and a clip of four "
-                                                 "characters on Rescue's street." % TALL)
+    parser = argparse.ArgumentParser(description="Paint the moves at %d px: a sheet of the fireman's and a clip of "
+                                                 "four characters on Rescue's street." % TALL)
     parser.add_argument("--out", required=True, metavar="DIR", help="the folder the two pictures are written to")
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args()
