@@ -368,9 +368,9 @@ class Capture:
 
     def root_motion(self, cycle):
         """The root motion, the body's own way through the world kept apart from its poses (Unity's manual,
-        https://docs.unity3d.com/Manual/RootMotion.html): the root's place along the way the body faces at the frame of
-        each pose, and of one more after the last (Cycle.frame), from the play's first frame, in body heights. For a loop
-        the last number is the forward part of the stride."""
+        https://docs.unity3d.com/Manual/RootMotion.html): the root's place along the way the body faces at the frame
+        of each pose, and of one more after the last (Cycle.frame), from the play's first frame, in body heights. For a
+        loop the last number is the forward part of the stride."""
         window, (fx, fz), _, height = self.window(cycle)
         period = len(window) - 1
         x0, _, z0 = window[0]["root"]
