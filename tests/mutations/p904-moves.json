@@ -110,13 +110,13 @@
  {
   "file": "art/moves.py",
   "name": "the movers are pasted in the order they come, so a nearer one can be under a farther one",
-  "find": "        self.movers = sorted(movers, key=lambda m: m[1])  # the farther first",
-  "replace": "        self.movers = list(movers)"
+  "find": "        movers = sorted(movers, key=lambda m: m.row)  # the farther first",
+  "replace": "        movers = list(movers)"
  },
  {
   "file": "art/moves.py",
   "name": "the crosser starts with its picture on the street, so it pops up when the clip starts again",
-  "find": "        start = move.pivot[0] - move.size[0] if column is None else column",
-  "replace": "        start = 0 if column is None else column"
+  "find": "        start = move.pivot[0] - move.size[0] if mover.crosses else mover.column",
+  "replace": "        start = 0 if mover.crosses else mover.column"
  }
 ]

@@ -17,6 +17,7 @@ import argparse
 import math
 import os
 import sys
+from collections import namedtuple
 
 from PIL import Image, ImageDraw
 
@@ -139,59 +140,66 @@ class MoveSheet:
         return sheet.image
 
 
+class Mover(namedtuple("Mover", "move row column plays", defaults=(1,))):
+    """One mover of the clip: a MovePictures, the row of its lift 0 (its span's floor), the column its pivot starts at,
+    and how many times it plays in the clip. The crosser has column None: its picture starts just off the street's
+    left edge, and it crosses the street."""
+
+    @property
+    def crosses(self):
+        return self.column is None
+
+
 class MoveClip:
-    """moves.webp's frames: the movers on Rescue's street, a frame of the game apart, each facing right, the farther
-    pasted first. A mover is (pictures, row, column): a MovePictures, the row its soles stand on when it starts and
-    the column its pivot starts at. The crosser, column None, starts with its picture just off the street's left edge,
-    and the clip lasts the least whole number of its plays that takes its picture off the right edge by the last
-    frame. Every other mover plays the whole number of times nearest to the clip's length, its time stretched to fill
-    it. A mover that goes up climbs a ladder, drawn on the street (ground) before any mover. When the clip starts
-    again, every mover starts its first play again from its start place."""
+    """moves.webp's frames: the movers (each a Mover) on Rescue's street, a frame of the game apart, each facing
+    right, the farther pasted first. The clip lasts the least whole number of the crosser's plays that takes its
+    picture off the street's right edge by the last frame. Every other mover plays the whole number of times nearest
+    to the clip's length, its time stretched to fill it. A mover that goes up climbs a ladder, drawn on the street
+    (ground) before any mover. When the clip starts again, every mover starts its first play again from its start
+    place."""
 
     W = 320
 
     def __init__(self, movers, street):
-        self.movers = sorted(movers, key=lambda m: m[1])  # the farther first
-        crosser = next(m for m in self.movers if m[2] is None)
-        crossing, self.count = self.crossing(crosser)
+        movers = sorted(movers, key=lambda m: m.row)  # the farther first
+        n, self.count = self.crossing(next(m for m in movers if m.crosses))
         ms = self.count * FRAME_MS
-        self.plays = [crossing if m is crosser else plays(ms, m[0].play_ms) for m in self.movers]
-        self.stretch = [ms / (k * m[0].play_ms) for k, m in zip(self.plays, self.movers)]
+        self.movers = [m._replace(plays=n if m.crosses else plays(ms, m.move.play_ms)) for m in movers]
         self.ground = street.copy()
         for mover in self.movers:
-            if mover[0].advance[1] > 0:
+            if mover.move.advance[1] > 0:
                 self.ladder(mover).draw(self.ground)
 
-    def at(self, mover, plays, count, i):
-        """Where a mover's picture is pasted at frame i of a clip of count frames over which it plays plays times (its
-        pivot on its place), and the picture."""
-        move, row, column = mover
-        start = move.pivot[0] - move.size[0] if column is None else column
-        index, (f, u) = move.pose_at(i * plays * move.play_ms / count)
-        return start + f - move.pivot[0], row - u - move.pivot[1], move.pictures[index]
+    def at(self, mover, count, i):
+        """Where a mover's picture is pasted at frame i of a clip of count frames (its pivot on its place), and the
+        picture."""
+        move = mover.move
+        start = move.pivot[0] - move.size[0] if mover.crosses else mover.column
+        index, (f, u) = move.pose_at(i * mover.plays * move.play_ms / count)
+        return start + f - move.pivot[0], mover.row - u - move.pivot[1], move.pictures[index]
 
     def crossing(self, mover):
         """The crosser's plays, and the clip's frames for them."""
         for n in range(1, self.W + 1):
-            count = max(1, round(n * mover[0].play_ms / FRAME_MS))
-            if self.at(mover, n, count, count - 1)[0] >= self.W:
+            count = max(1, round(n * mover.move.play_ms / FRAME_MS))
+            if self.at(mover._replace(plays=n), count, count - 1)[0] >= self.W:
                 return n, count
         raise ValueError("the crosser does not cross the street")
 
     def ladder(self, mover):
         """The ladder of a mover that goes up: its rail leans along the advance through the middle between the toes of
         pose 0, a rung lies under the lowest foot then and one every half advance, and its foot is a rung lower."""
-        move, row, column = mover
+        move = mover.move
         (f, u), (af, au) = move.travel[0], move.advance
         dx, dy = move.toes()
-        tx, ty = column + f + dx, row - u + dy
-        y = row - u + 1  # the row under the soles in pose 0
+        tx, ty = mover.column + f + dx, mover.row - u + dy
+        y = mover.row - u + 1  # the row under the soles in pose 0
         x = tx + (ty - y) * af / au
         return Ladder((x - af / 2, y + au / 2), (af, au), math.hypot(af, au) / 2)
 
     def places(self, i):
         """Frame i's movers, the farthest first: (x, y, picture) each, (x, y) where the picture is pasted."""
-        return [self.at(m, k, self.count, i) for m, k in zip(self.movers, self.plays)]
+        return [self.at(m, self.count, i) for m in self.movers]
 
     def frames(self):
         out = []
@@ -205,11 +213,11 @@ class MoveClip:
 
 def move_lines(moves, clip):
     """The lines main prints: each move's (move_line), then each mover's plays in the clip and the stretch of its
-    time, then the clip's frames."""
+    time, the clip's length over that of its plays, then the clip's frames."""
     lines = [move_line(move) for move in moves]
-    lines += ["%s's %s on row %d: %d plays, its time stretched by %.3f" % (move.character.name, move.cycle.name, row,
-                                                                           k, stretch)
-              for (move, row, _), k, stretch in zip(clip.movers, clip.plays, clip.stretch)]
+    lines += ["%s's %s on row %d: %d plays, its time stretched by %.3f" % (
+        m.move.character.name, m.move.cycle.name, m.row, m.plays, clip.count * FRAME_MS / (m.plays * m.move.play_ms))
+        for m in clip.movers]
     return lines + ["the clip: %d frames of %d ms" % (clip.count, FRAME_MS)]
 
 
@@ -223,7 +231,7 @@ def painted(capture):
         return made[character, name]
 
     return ([move(FIREMAN, c.name) for c in mocap.MOVES],
-            [(move(c, name), row, column) for c, name, row, column in MOVERS])
+            [Mover(move(c, name), row, column) for c, name, row, column in MOVERS])
 
 
 def main():

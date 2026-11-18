@@ -339,12 +339,12 @@ class MoveClipTest(unittest.TestCase):
         self.climber = StandMove((0, 200), [(0, i) for i in range(12)], (4, 12), 110, toes=(0, -3), cycle=CLIMB)
         self.jumper = StandMove((0, 0), [(0, 3 if 3 < i < 8 else 0) for i in range(12)], (1, 0), 70)
         self.street = Image.new("RGB", (moves.MoveClip.W, 240), (40, 40, 40))
-        self.clip = moves.MoveClip([(self.crosser, 238, None), (self.climber, 200, 40), (self.jumper, 220, 150)],
-                                   self.street)
+        self.clip = moves.MoveClip([moves.Mover(self.crosser, 238, None), moves.Mover(self.climber, 200, 40),
+                                    moves.Mover(self.jumper, 220, 150)], self.street)
 
     def test_the_farther_mover_is_pasted_first(self):
         places = self.clip.places(0)
-        self.assertEqual([self.climber, self.jumper, self.crosser], [m for m, _, _ in self.clip.movers])
+        self.assertEqual([self.climber, self.jumper, self.crosser], [m.move for m in self.clip.movers])
         self.assertEqual([0, 0, 0], [index_of(move.pictures, img) for (_, _, img), move
                                      in zip(places, (self.climber, self.jumper, self.crosser))])
 
@@ -370,22 +370,21 @@ class MoveClipTest(unittest.TestCase):
 
     def test_each_mover_plays_a_whole_number_of_times(self):
         """Its poses start at the first, end at the last, and go round as many times as its plays."""
-        for k, (move, _, _) in enumerate(self.clip.movers):
+        for k, mover in enumerate(self.clip.movers):
+            move = mover.move
             with self.subTest(move=move.cycle.name):
                 shown = [index_of(move.pictures, self.clip.places(i)[k][2]) for i in range(self.clip.count)]
                 self.assertEqual((0, len(move.pictures) - 1), (shown[0], shown[-1]))
-                self.assertEqual(self.clip.plays[k] - 1, sum(1 for a, b in zip(shown, shown[1:]) if b < a))
-                self.assertAlmostEqual(self.clip.count * detailed.FRAME_MS,
-                                       self.clip.plays[k] * move.play_ms * self.clip.stretch[k])
+                self.assertEqual(mover.plays - 1, sum(1 for a, b in zip(shown, shown[1:]) if b < a))
 
     def test_the_crossers_picture_is_off_the_street_in_the_first_and_the_last_frame_with_the_least_plays(self):
-        k = [m for m, _, _ in self.clip.movers].index(self.crosser)
+        k = [m.move for m in self.clip.movers].index(self.crosser)
         first, last = self.clip.places(0)[k], self.clip.places(self.clip.count - 1)[k]
         self.assertLessEqual(first[0] + first[2].width, 0)
         self.assertGreaterEqual(last[0], moves.MoveClip.W)
-        fewer = self.clip.plays[k] - 1
+        fewer = self.clip.movers[k].plays - 1
         count = round(fewer * self.crosser.play_ms / detailed.FRAME_MS)
-        self.assertLess(self.clip.at(self.clip.movers[k], fewer, count, count - 1)[0], moves.MoveClip.W)
+        self.assertLess(self.clip.at(self.clip.movers[k]._replace(plays=fewer), count, count - 1)[0], moves.MoveClip.W)
 
 
 class MoveLinesTest(unittest.TestCase):
@@ -393,7 +392,8 @@ class MoveLinesTest(unittest.TestCase):
         jump = StandMove((200, 0), [(0, 0)] * 12, pose_ms=122.4)
         climb = StandMove((0, 200), [(0, i) for i in range(12)], (4, 12), 110, toes=(0, -3), cycle=CLIMB)
         crosser = StandMove((0, 0), [(2 * i, 0) for i in range(12)], (24, 0), 50, (20, 30), cycle=FORWARD_JUMP)
-        clip = moves.MoveClip([(climb, 200, 40), (crosser, 238, None)], Image.new("RGB", (moves.MoveClip.W, 240)))
+        clip = moves.MoveClip([moves.Mover(climb, 200, 40), moves.Mover(crosser, 238, None)],
+                              Image.new("RGB", (moves.MoveClip.W, 240)))
         lines = moves.move_lines([jump, climb], clip)
         self.assertEqual(2 + 2 + 1, len(lines))
         for move, line in zip((jump, climb), lines):
@@ -401,9 +401,10 @@ class MoveLinesTest(unittest.TestCase):
                 for part in (move.cycle.name, "%d by %d px" % move.size, " %d bytes" % move.size_bytes(),
                              " %d ms" % round(move.pose_ms)):
                     self.assertIn(part, line)
-        for (move, row, _), plays, stretch, line in zip(clip.movers, clip.plays, clip.stretch, lines[2:]):
-            with self.subTest(mover=move.cycle.name):
-                for part in (move.cycle.name, "row %d" % row, " %d plays" % plays, "%.3f" % stretch):
+        for mover, line in zip(clip.movers, lines[2:]):
+            stretch = clip.count * detailed.FRAME_MS / (mover.plays * mover.move.play_ms)
+            with self.subTest(mover=mover.move.cycle.name):
+                for part in (mover.move.cycle.name, "row %d" % mover.row, " %d plays" % mover.plays, "%.3f" % stretch):
                     self.assertIn(part, line)
         self.assertIn("%d frames" % clip.count, lines[-1])
 
@@ -429,7 +430,7 @@ class MovesFromCaptureTest(unittest.TestCase):
         cls.by_name = {move.cycle.name: move for move in cls.moves}
 
     def test_each_move_has_twelve_poses_in_one_box_none_cut_and_each_left_picture_is_the_mirror(self):
-        for move in self.moves + [m for m, _, _ in self.movers]:
+        for move in self.moves + [m.move for m in self.movers]:
             with self.subTest(character=move.character.name, move=move.cycle.name):
                 self.assertEqual(12, len(move.pictures))
                 self.assertEqual({move.size}, {img.size for img in move.pictures + move.left})
@@ -461,7 +462,7 @@ class MovesFromCaptureTest(unittest.TestCase):
 
     def test_in_the_clip_the_climbers_picture_is_inside_the_frame_in_every_frame(self):
         clip = moves.MoveClip(self.movers, detailed.Committed().street)
-        k = [m.cycle.name for m, _, _ in clip.movers].index("climb")
+        k = [m.move.cycle.name for m in clip.movers].index("climb")
         for i in range(clip.count):
             x, y, img = clip.places(i)[k]
             with self.subTest(frame=i):
