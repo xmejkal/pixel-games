@@ -45,7 +45,7 @@ def facing_left():
 
 def painted(height, pose=None, rim=None, seed=1):
     rnd.seed(seed)
-    figure = detailed.DetailedFireman(detailed.box(height), height, rim or detailed.NoRim())
+    figure = detailed.DetailedFigure(detailed.box(height), height, rim or detailed.NoRim())
     return figure, figure.paint(pose or standing())
 
 
@@ -196,7 +196,7 @@ class RimTest(unittest.TestCase):
 
     def test_the_names_and_the_default(self):
         self.assertEqual(["outline", "none", "lit"], list(detailed.RIMS))
-        self.assertIsInstance(detailed.DetailedFireman(detailed.box(48), 48).edge, detailed.Outline)
+        self.assertIsInstance(detailed.DetailedFigure(detailed.box(48), 48).edge, detailed.Outline)
 
     def test_no_rim_leaves_the_shape(self):
         self.assertEqual([], self.added(painted(detailed.TALL, rim=detailed.NoRim())[1]))
@@ -324,7 +324,7 @@ class RunFromCaptureTest(unittest.TestCase):
 
     def test_the_stride_and_the_speed_are_the_26_px_firemans_at_this_height(self):
         """games/rescue.py: 41 px a cycle and 56 px a second at 24.07 px a body height."""
-        px = detailed.DetailedFireman(detailed.box(detailed.TALL), detailed.TALL).PX
+        px = detailed.DetailedFigure(detailed.box(detailed.TALL), detailed.TALL).PX
         self.assertIsInstance(self.captured.stride, int)
         self.assertLessEqual(abs(self.captured.stride / px - 41 / 24.07), 0.02)
         self.assertLessEqual(abs(self.captured.speed / px - 56 / 24.07), 0.03)
@@ -452,9 +452,10 @@ class CharacterTest(unittest.TestCase):
                 plain = drawn(dataclasses.replace(c, bands=False))[1]
                 bands = changed_by(banded, plain)
                 self.assertGreaterEqual(len(bands), 8)
-                skins = (c.skin, detailed.darker(c.skin))
-                on_skin = [q for q in bands if any(sum(abs(a - b) for a, b in zip(plain.getpixel(q), s)) < 40
-                                                   for s in skins)]
+                skin = set(changed_by(plain, drawn(dataclasses.replace(c, bands=False, skin=other(c.skin)))[1]))
+                near = (c.skin, detailed.shade(c.skin))  # and mostly skin: not a pixel at a skin part's edge
+                on_skin = [q for q in bands if q in skin and any(
+                    sum(abs(a - b) for a, b in zip(plain.getpixel(q), s)) < 40 for s in near)]
                 self.assertEqual([], on_skin)
 
     def test_the_childs_head_is_wider_for_its_height_than_the_firemans(self):
