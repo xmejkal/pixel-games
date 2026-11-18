@@ -281,8 +281,7 @@ class Bench:
 
         self.runner, self.art, self.log, self.box = runner, art, log, box
         self.sleep, self.logged = sleep or time.sleep, None
-        self.counts = tuple(counts)
-        self.limit_s = len(self.counts) * SECONDS + SPARE_S
+        self.counts, self.limit_s = counts, len(counts) * SECONDS + SPARE_S
 
     def tried(self, args, tries=None):
         """The runner's answer to args, tried again while mpremote cannot reach the board."""
