@@ -114,6 +114,8 @@ def index_of(pictures, img):
 
 
 class PoseTest(unittest.TestCase):
+    """A test case that compares two poses joint by joint, to 9 places."""
+
     def assertPose(self, expected, pose):
         self.assertEqual(set(expected), set(pose))
         for joint in expected:
@@ -197,7 +199,8 @@ class RisingTest(PoseTest):
 
 
 class MissingTest(unittest.TestCase):
-    """The files a capture asks for, and open_capture, on an empty folder."""
+    """The files a capture asks for with no argument and for the moves, and open_capture's error and capture, on a
+    temporary folder: empty, or with an empty file of each name."""
 
     def test_with_no_argument_it_asks_for_the_files_of_the_cycles_and_the_crowd_only(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -299,6 +302,8 @@ class MovePicturesTest(unittest.TestCase):
 
 
 class PlaysTest(unittest.TestCase):
+    """nearest_plays on a table of clip and play lengths, two of them the clip's: the nearest whole number, never 0."""
+
     def test_the_nearest_whole_number_of_plays_and_never_none(self):
         for clip_ms, play_ms, plays in ((1000, 1000, 1), (1000, 450, 2), (1000, 300, 3), (1000, 260, 4),
                                         (7636, 1463.6, 5), (7636, 2408, 3), (100, 3000, 1)):
@@ -307,6 +312,9 @@ class PlaysTest(unittest.TestCase):
 
 
 class LadderTest(unittest.TestCase):
+    """Ladder drawn on a black picture with the climb's lean and a rung every 13.3 px: the rail's pixels and the
+    rungs'."""
+
     def test_the_rail_follows_the_lean_and_the_rungs_are_the_step_apart(self):
         img = Image.new("RGB", (60, 120), (0, 0, 0))
         base, (af, au), step = (10, 110), (9, 25), 13.3
@@ -348,6 +356,8 @@ class StandMove(moves.MovePictures):
 
 
 class MoveSheetTest(unittest.TestCase):
+    """MoveSheet on two stand-in moves, one with a pose lifted 7 px: its labels, and the lift over the floor line."""
+
     def setUp(self):
         self.moves = [StandMove((200, 0), [(0, 7 if i == 1 else 0) for i in range(12)]),
                       StandMove((0, 200), [(0, 0)] * 12, cycle=CLIMB)]
@@ -458,6 +468,8 @@ class MoveClipTest(unittest.TestCase):
 
 
 class MoveLinesTest(unittest.TestCase):
+    """move_lines on two stand-in moves and a clip of two stand-in movers: each number in a line is its source's."""
+
     def test_each_number_in_a_line_is_its_sources(self):
         jump = StandMove((200, 0), [(0, 0)] * 12, pose_ms=122.4)
         climb = StandMove((0, 200), [(0, i) for i in range(12)], (4, 12), 110, toes=(0, -3), cycle=CLIMB)
@@ -490,7 +502,9 @@ def captured():
 
 
 class MovesFromCaptureTest(unittest.TestCase):
-    """The moves painted from the CMU files: skipped without them, and a skip is not a pass."""
+    """The fireman's three moves and the clip's four movers painted from the CMU files at 96 px: their boxes, the
+    jumps' lifts and travel, the climb's advance, the run's loop, and the climber in the frame. Skipped without the
+    files, and a skip is not a pass."""
 
     @classmethod
     def setUpClass(cls):
