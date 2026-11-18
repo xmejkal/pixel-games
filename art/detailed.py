@@ -39,6 +39,7 @@ SEAM = (74, 62, 52)  # round the near arm where it lies on the body
 TANK, STRAP, BUCKLE = (108, 124, 152), (44, 42, 52), (214, 190, 120)
 SHIELD = (206, 48, 40)  # the helmet's front shield
 FRAME_MS = 40  # one frame of the game
+GAP, DARK = 6, (30, 16, 40)  # the sheets' gap between pictures; DARK: the street's sky at its middle (NIGHT)
 CLOSE_MS = 120  # a pose of run-close.webp: about half the captured speed (a pose is 61 ms of the capture)
 
 
@@ -54,6 +55,9 @@ def darker(colour, k=0.7):
 def shade(colour):
     """A far limb's colour: darker, or lighter for a colour near black, which the dark street would swallow."""
     return darker(colour, 1.5 if max(colour) < 64 else 0.7)
+
+
+COAT_DARK = darker(COAT, 0.62)  # the collar and the helmet's neck flap
 
 
 def unit(a, b):
@@ -114,7 +118,8 @@ RIMS = {"outline": Outline, "none": NoRim, "lit": LitRim}  # --rim's names; the 
 
 class Gear:
     """Something a character carries, painted at two hooks of DetailedFigure.paint: under, after the far leg and
-    before the near leg and the torso (on the back), and over, after the torso (on the body). Each does nothing here."""
+    before the near leg and the torso (on the back), and over, after the torso (on the body). ahead: 1 facing right,
+    -1 left, 0 at us. Each does nothing here."""
 
     def under(self, figure, s, p, ahead):
         pass
@@ -143,7 +148,7 @@ class Tank(Gear):
 class Collar(Gear):
     """A turned-up collar round the neck."""
 
-    colour: tuple = darker(COAT, 0.62)
+    colour: tuple = COAT_DARK
 
     def over(self, figure, s, p, ahead):
         figure.detail(s, s.shape("line", p["lowerneck"], along(p["lowerneck"], p["upperneck"], 0.3),
@@ -151,28 +156,39 @@ class Collar(Gear):
 
 
 @dataclass(frozen=True)
+class Strap(Gear):
+    """The tank's strap over the shoulder and down the chest."""
+
+    colour: tuple = STRAP
+    W = 0.022  # its width, in body heights
+
+    def over(self, figure, s, p, ahead):
+        _, torso, front = figure.trunk(s, p, ahead)
+        px, shoulder, chest = figure.PX, p["lowerneck"], p["upperback"]
+        strap = s.shape("line", (shoulder[0] - front * 0.5, shoulder[1] + self.W * px),
+                        (chest[0] + front * 0.12, chest[1]), (p["lowerback"][0] + front * 0.2, p["lowerback"][1]),
+                        width=self.W * px)
+        figure.detail(s, ImageChops.multiply(strap, torso), self.colour)
+
+
+@dataclass(frozen=True)
 class Belt(Gear):
-    """The tank's strap over the shoulder and down the chest, the belt, its buckle and a pouch."""
+    """The belt round the waist, its buckle and a pouch."""
 
     colour: tuple = STRAP
     buckle: tuple = BUCKLE
     pouch: tuple = darker(STRAP, 1.5)
-    STRAP_W, W = 0.022, 0.034  # the strap's and the belt's width, in body heights
+    W = 0.034  # its width, in body heights
 
     def over(self, figure, s, p, ahead):
-        hips, coat = figure.spine(s, p)
+        hips, torso, front = figure.trunk(s, p, ahead)
         px = figure.PX
-        front = ahead * figure.TORSO * px
-        shoulder, chest = p["lowerneck"], p["upperback"]
-        strap = s.shape("line", (shoulder[0] - front * 0.5, shoulder[1] + self.STRAP_W * px),
-                        (chest[0] + front * 0.12, chest[1]), (p["lowerback"][0] + front * 0.2, p["lowerback"][1]),
-                        width=self.STRAP_W * px)
         waist = along(hips, p["lowerback"], 0.75)
         ux, uy = unit(hips, p["lowerback"])
         half = figure.TORSO * px
         belt = s.shape("line", (waist[0] - uy * half, waist[1] + ux * half), (waist[0] + uy * half, waist[1] - ux * half),
                        width=self.W * px)
-        figure.detail(s, ImageChops.multiply(union(strap, belt), coat), self.colour)
+        figure.detail(s, ImageChops.multiply(belt, torso), self.colour)
         r = self.W * px * 0.42
         bx, by = waist[0] + front * 0.34, waist[1]
         figure.detail(s, s.shape("rect", bx - r, by - r, bx + r, by + r, r * 0.3), self.buckle)
@@ -189,9 +205,8 @@ class Bag(Gear):
     W, H, STRAP_W = 0.11, 0.085, 0.018  # its width and height, and its strap's width, in body heights
 
     def over(self, figure, s, p, ahead):
-        hips, torso = figure.spine(s, p)
+        hips, torso, front = figure.trunk(s, p, ahead)
         px = figure.PX
-        front = ahead * figure.TORSO * px
         cx, cy = hips[0] - front * 0.3, hips[1] - self.H * px * 0.2
         strap = s.shape("line", (p["lowerneck"][0] - front * 0.4, p["lowerneck"][1]), (cx + front * 0.2, cy),
                         width=self.STRAP_W * px)
@@ -203,18 +218,32 @@ class Bag(Gear):
                                s.shape("line", (cx, cy - arm), (cx, cy + arm), width=thick)), self.cross)
 
 
+class HeadView:
+    """Where the head is and how it is turned, for the headwear's hooks: at(a, b), a place a head radii toward the
+    screen's right of the head's up and b up; r, its radius in px; ahead, 1 facing right, -1 left, 0 at us; way, the
+    side it faces (1 right, -1 left); frontal, how much it faces the viewer (0 in profile, 1 full face)."""
+
+    def __init__(self, at, r, ahead):
+        self.at, self.r, self.ahead = at, r, ahead
+        self.way, self.frontal = (1 if ahead >= 0 else -1), 1 - abs(ahead)
+
+
 class Headwear:
-    """What a character wears on its head, painted at three hooks of DetailedFigure.head: under, before the head's
-    skin (behind the head); nape, after the skin and before the face; over, after the face. at, r, ahead and side
-    are the head's (DetailedFigure.head). Each hook does nothing here."""
+    """What a character wears on its head: rise, its top over the head joint; and three hooks of
+    DetailedFigure.head, each given the HeadView: under, before the head's skin (behind the head); nape, after the
+    skin and before the face; over, after the face. Each hook does nothing here."""
 
-    def under(self, figure, s, at, r, ahead, side):
+    def rise(self, head):
+        """Its top over the head joint, in body heights, on a head of that radius (body heights)."""
+        raise NotImplementedError
+
+    def under(self, figure, s, view):
         pass
 
-    def nape(self, figure, s, at, r, ahead, side):
+    def nape(self, figure, s, view):
         pass
 
-    def over(self, figure, s, at, r, ahead, side):
+    def over(self, figure, s, view):
         pass
 
 
@@ -227,65 +256,54 @@ class Helmet(Headwear):
     light: tuple = HELMET_L
     shield: tuple = SHIELD
     tail: float = 2.15
-    flap: tuple = darker(COAT, 0.62)
+    flap: tuple = COAT_DARK
 
     def rise(self, head):
-        """The dome's top over the head joint, in body heights, on a head of that radius."""
         return HELMET_TOP
 
-    def nape(self, figure, s, at, r, ahead, side):
-        back = -1 if ahead >= 0 else 1
-        if side < 0.7:  # the neck flap, over the back of the head and down to the collar
+    def nape(self, figure, s, view):
+        at, ahead, back = view.at, view.ahead, -view.way
+        if view.frontal < 0.7:  # the neck flap, over the back of the head and down to the collar
             figure.detail(s, s.shape("poly", at(back * 0.25, 0.1), at(back * 1.7 * abs(ahead), -0.1),
                                      at(back * 1.3 * abs(ahead), -1.5), at(back * 0.1, -1.4)), self.flap)
 
-    def over(self, figure, s, at, r, ahead, side):
+    def over(self, figure, s, view):
+        at, r, ahead, way, frontal = view.at, view.r, view.ahead, view.way, view.frontal
         top = self.rise(figure.HEAD) / figure.HEAD  # the dome's top, in head radii above the head joint
         dome = s.shape("poly", *[at(1.22 * c, 0.12 + (top - 0.12) * v) for c, v in
                                  ((-1.0, 0.0), (-0.92, 0.45), (-0.7, 0.78), (-0.38, 0.95), (0.0, 1.0), (0.38, 0.95),
                                   (0.7, 0.78), (0.92, 0.45), (1.0, 0.0))])
-        way = 1 if ahead >= 0 else -1
-        peak, tail = abs(ahead) * 1.75 + side * 1.4, abs(ahead) * self.tail + side * 1.4
-        brim = s.shape("line", at(way * peak, 0.08), at(0.0, 0.2), at(-way * tail, -0.12 * abs(ahead) + 0.08 * side),
+        peak, tail = abs(ahead) * 1.75 + frontal * 1.4, abs(ahead) * self.tail + frontal * 1.4
+        brim = s.shape("line", at(way * peak, 0.08), at(0.0, 0.2), at(-way * tail, -0.12 * abs(ahead) + 0.08 * frontal),
                        width=r * 0.34)
         lx, ly = at(ahead * 0.5, top * 0.7)
-        s.part(union(dome, brim), self.colour, light=(lx, ly, r * 0.9, self.light), rim=0.4, grain=0)
-        figure.bands = ImageChops.subtract(figure.bands, union(dome, brim))
+        figure.detail(s, union(dome, brim), self.colour, light=(lx, ly, r * 0.9, self.light), rim=0.4)
         sx, sy = at(ahead * 0.78, 0.62)
         figure.detail(s, s.shape("ellipse", sx - r * 0.3, sy - r * 0.36, sx + r * 0.3, sy + r * 0.36), self.shield)
 
 
 @dataclass(frozen=True)
 class Hair(Headwear):
-    """Hair: a cap over the top and the back of the head, down head radii of it hanging behind the neck (0: short
-    hair), and a bun of bun head radii at the back of the head (0: none)."""
+    """Hair: a cap over the top and the back of the head, and down head radii of it hanging behind the neck (0: short
+    hair)."""
 
     colour: tuple = (70, 50, 36)
     down: float = 0.0
-    bun: float = 0.0
     TOP = 1.3  # the cap's top over the head joint, in head radii
     CAP = ((1.0, 0.42), (0.9, 0.85), (0.55, 1.18), (0.0, TOP), (-0.6, 1.2), (-1.02, 0.78), (-1.14, 0.1),
            (-0.98, -0.62), (-0.5, -0.66), (-0.2, -0.1), (0.35, 0.36))  # across and up in head radii, facing right
 
     def rise(self, head):
-        """The cap's top over the head joint, in body heights, on a head of that radius."""
         return head * self.TOP
 
-    def under(self, figure, s, at, r, ahead, side):
+    def under(self, figure, s, view):
         if self.down:  # behind the head and the neck, so the head's skin is over its front
-            back = -1 if ahead >= 0 else 1
+            at, back = view.at, -view.way
             figure.part(s, s.shape("poly", at(back * 0.2, 0.9), at(back * 1.1, 0.4), at(back * 1.2, -self.down),
                                    at(back * 0.25, -self.down * 0.92)), self.colour)
 
-    def nape(self, figure, s, at, r, ahead, side):
-        way = 1 if ahead >= 0 else -1
-        figure.part(s, s.shape("poly", *[at(way * a, b) for a, b in self.CAP]), self.colour)
-
-    def over(self, figure, s, at, r, ahead, side):
-        if self.bun:
-            bx, by = at((-1 if ahead >= 0 else 1) * 0.85, 0.85)
-            k = self.bun * r
-            figure.part(s, s.shape("ellipse", bx - k, by - k, bx + k, by + k), self.colour)
+    def nape(self, figure, s, view):
+        figure.part(s, s.shape("poly", *[view.at(view.way * a, b) for a, b in self.CAP]), self.colour)
 
 
 @dataclass(frozen=True)
@@ -312,7 +330,7 @@ class Character:
     hem: float = 0.4
     bands: bool = True
     headwear: Headwear = Helmet()
-    gear: tuple = (Tank(), Collar(), Belt())  # the tank is under, then the collar before the belt: his bytes
+    gear: tuple = (Tank(), Collar(), Strap(), Belt())  # the tank is under; the collar before the strap: his bytes
 
 
 FIREMAN = Character()
@@ -388,9 +406,10 @@ class DetailedFigure(Figure):
         if band is not None:
             self.bands = ImageChops.lighter(self.bands, ImageChops.multiply(mask, band))
 
-    def detail(self, s, mask, colour):
-        """A small flat part: an eye, a mouth, a buckle."""
-        s.part(mask, colour, rim=0, grain=0)
+    def detail(self, s, mask, colour, light=None, rim=0):
+        """A part with no grain: a small flat one (an eye, a mouth, a buckle), or one with a light and a rim (the
+        helmet's dome, light and rim as brush.Sprite.part takes them). It hides the bands under it."""
+        s.part(mask, colour, light=light, rim=rim, grain=0)
         self.bands = ImageChops.subtract(self.bands, mask)
 
     def taper(self, s, a, b, widths, square=False):
@@ -434,6 +453,11 @@ class DetailedFigure(Figure):
         hips = along(p["lhipjoint"], p["rhipjoint"], 0.5)
         return hips, s.shape("line", hips, p["lowerback"], p["upperback"], p["thorax"], p["lowerneck"],
                              width=self.TORSO * self.PX)
+
+    def trunk(self, s, p, ahead):
+        """The middle of the hips, the torso's mask, and front: px from the spine toward the side it faces."""
+        hips, torso = self.spine(s, p)
+        return hips, torso, ahead * self.TORSO * self.PX
 
     # --- the body ------------------------------------------------------------------------------------------------
 
@@ -520,44 +544,44 @@ class DetailedFigure(Figure):
         c = self.character
         centre, r = p["head"], self.HEAD * self.PX
         ux, uy = unit(p["upperneck"], centre)  # the head's up, on the screen
-        side = 1 - abs(ahead)
 
         def at(a, b):
             """A place on the head: a head radii toward the screen's right of its up, b up."""
             return (centre[0] - uy * a * r + ux * b * r, centre[1] + ux * a * r + uy * b * r)
 
+        view = HeadView(at, r, ahead)
         self.part(s, s.shape("line", p["lowerneck"], centre, width=self.NECK * self.PX), darker(c.skin, 0.85))
-        c.headwear.under(self, s, at, r, ahead, side)
+        c.headwear.under(self, s, view)
         cx, cy = centre
         self.part(s, s.shape("ellipse", cx - r, cy - r * 1.12, cx + r, cy + r * 1.12), c.skin)
-        c.headwear.nape(self, s, at, r, ahead, side)
-        if toward or side < 0.5:
-            self.face(s, at, r, ahead, side)
-        c.headwear.over(self, s, at, r, ahead, side)
+        c.headwear.nape(self, s, view)
+        if toward or view.frontal < 0.5:
+            self.face(s, view)
+        c.headwear.over(self, s, view)
 
-    def face(self, s, at, r, ahead, side):
+    def face(self, s, view):
         """An eye (two as it turns to us), a nose past the head's edge and a mouth."""
+        at, r, ahead, frontal = view.at, view.r, view.ahead, view.frontal
         e = r * 0.17
-        for k in ((-1, 1) if side > 0.15 else (0,)):
-            ex, ey = at(ahead * 0.5 + k * side * 0.42, -0.02)
+        for k in ((-1, 1) if frontal > 0.15 else (0,)):
+            ex, ey = at(ahead * 0.5 + k * frontal * 0.42, -0.02)
             self.detail(s, s.shape("ellipse", ex - e, ey - e * 1.25, ex + e, ey + e * 1.25), EYE)
-        self.detail(s, s.shape("poly", at(ahead * 0.86, 0.02), at(ahead * 1.24 + (0.18 if ahead >= 0 else -0.18) * side,
-                                                                    -0.34), at(ahead * 0.8, -0.44)),
-                    darker(self.character.skin, 0.9))
-        wide = 0.2 + 0.2 * side
+        self.detail(s, s.shape("poly", at(ahead * 0.86, 0.02), at(ahead * 1.24 + 0.18 * view.way * frontal, -0.34),
+                               at(ahead * 0.8, -0.44)), darker(self.character.skin, 0.9))
+        wide = 0.2 + 0.2 * frontal
         self.detail(s, s.shape("line", at(ahead * 0.62 - wide, -0.62), at(ahead * 0.62 + wide, -0.62), width=max(1.0, r * 0.14)),
                     MOUTH)
 
 
 class RunPictures:
-    """A character's run (cycle: a name in mocap.CYCLES or mocap.CROWD), its twelve poses from the capture, each
+    """A character's run (cycle_name: a name in mocap.CYCLES or mocap.CROWD), its twelve poses from the capture, each
     painted on its own picture and all cut to the one box they use: pictures (RGBA, in the board's RGB565 colours)
     facing right and left, each the mirror of the right one, size, stride (px a cycle) and speed (px a second), both
     the capture's."""
 
-    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle="run"):
+    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
         self.capture, self.height, self.rim, self.seed, self.character = capture, height, rim, seed, character
-        self.cycle = next(c for c in mocap.CYCLES + mocap.CROWD if c.name == cycle)
+        self.cycle = next(c for c in mocap.CYCLES + mocap.CROWD if c.name == cycle_name)
         figure = self.figure()
         painted = [figure.paint(pose) for pose in capture.poses(self.cycle)]
         used = [img.getchannel("A").getbbox() for img in painted]
@@ -608,9 +632,6 @@ class Committed:
         return self.run[pose_index(ran, self.STRIDE_PX, self.RUN_POSES)]
 
 
-GAP, DARK = 6, (30, 16, 40)  # DARK: the street's sky at its middle (art/sets/rescue.py's NIGHT)
-
-
 def on_dark(pictures, zoom=1):
     """The pictures in a row on the street's dark, GAP px apart, their bottoms on one line, at zoom: so they read as
     on the board."""
@@ -648,8 +669,8 @@ class FigureSheet:
 
 
 class RunClip:
-    """The fireman's clips' frames. frames(): both firemen run left to right over Rescue's street, each at its captured speed,
-    a frame of the game apart. close(): the big run in place over the street at 2x, a pose a frame."""
+    """The fireman's clips' frames. frames(): both firemen run left to right over Rescue's street, each at its
+    captured speed, a frame of the game apart. close(): the big run in place over the street at 2x, a pose a frame."""
 
     W = 320
 
@@ -712,7 +733,7 @@ class CharacterClip:
         self.runners, self.street = runners, street
         n = len(runners)
         self.rows = [self.TOP + (self.BOTTOM - self.TOP) * k // max(1, n - 1) for k in range(n)]
-        self.left = [k % 2 == 1 for k in range(n)]
+        self.runs_left = [k % 2 == 1 for k in range(n)]
 
     def places(self, i):
         """Frame i's runners, the farthest first: (x, row, picture) each, x the picture's left column."""
@@ -721,7 +742,7 @@ class CharacterClip:
             run, w = self.runners[k], self.runners[k].size[0]
             ran = int(run.speed * i * FRAME_MS / 1000)
             lap = (k * (self.W + w) // n + ran) % (self.W + w)  # each starts its own share of the way along
-            out.append((self.W - lap if self.left[k] else lap - w, row, run.picture(ran, self.left[k])))
+            out.append((self.W - lap if self.runs_left[k] else lap - w, row, run.picture(ran, self.runs_left[k])))
         return out
 
     def frames(self):
@@ -760,8 +781,8 @@ def main():
     capture = mocap.Capture(args.cmu)
     if capture.missing():
         parser.error("not in %s: %s" % (args.cmu, ", ".join(capture.missing())))
-    runners = [RunPictures(capture, TALL, RIMS[args.rim](), character=c, cycle=cycle) for c, cycle in CAST]
-    run, old = runners[0], Committed()  # the fireman's run
+    runners = [RunPictures(capture, TALL, RIMS[args.rim](), character=c, cycle_name=name) for c, name in CAST]
+    run, old = next(r for r in runners if r.character == FIREMAN), Committed()
     os.makedirs(args.out, exist_ok=True)
     FigureSheet(run, old).image().save(os.path.join(args.out, "figure-sheet.png"))
     clip = RunClip(run, old)
@@ -769,9 +790,7 @@ def main():
     write_clip(clip.close(), os.path.join(args.out, "run-close.webp"), CLOSE_MS)
     CharacterSheet(runners).image().save(os.path.join(args.out, "characters-sheet.png"))
     write_clip(CharacterClip(runners, old.street).frames(), os.path.join(args.out, "characters.webp"), FRAME_MS)
-    w, h = run.size
-    print("the run at %d px, rim %s: 12 poses of %d by %d px, %d bytes with both facings" % (
-        TALL, args.rim, w, h, run.size_bytes()))
+    print("the rim: %s" % args.rim)
     print("\n".join(cast_bytes(runners)))
 
 

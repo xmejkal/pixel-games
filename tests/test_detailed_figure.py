@@ -85,7 +85,7 @@ def other(value):
         return tuple(255 - c for c in value)
     if isinstance(value, tuple):
         return value[:-1] if value else (detailed.Tank(),)
-    return detailed.Hair((60, 40, 30), 1.0, 0) if isinstance(value, detailed.Helmet) else detailed.Helmet()
+    return detailed.Hair((60, 40, 30), 1.0) if isinstance(value, detailed.Helmet) else detailed.Helmet()
 
 
 def bytes_of(img):
@@ -470,7 +470,7 @@ class CharacterClipTest(unittest.TestCase):
 
     def test_each_runner_has_a_row_from_200_to_238_and_every_second_runs_left(self):
         self.assertEqual([200, 219, 238], self.clip.rows)
-        self.assertEqual([False, True, False], self.clip.left)
+        self.assertEqual([False, True, False], self.clip.runs_left)
 
     def test_the_runners_are_pasted_in_the_order_of_their_rows(self):
         places = self.clip.places(0)
@@ -480,13 +480,13 @@ class CharacterClipTest(unittest.TestCase):
         for i in (0, 5):
             for k, (x, y, img) in zip((0, 1, 2), self.clip.places(i)):
                 with self.subTest(frame=i, runner=k):
-                    self.assertIs(img, self.runners[k].picture(0, self.clip.left[k]))
+                    self.assertIs(img, self.runners[k].picture(0, self.clip.runs_left[k]))
 
     def test_each_runner_advances_by_its_own_speed(self):
         for k, run in enumerate(self.runners):
             with self.subTest(runner=k):
                 x0, x1 = self.clip.places(0)[k][0], self.clip.places(25)[k][0]
-                way, lap = -1 if self.clip.left[k] else 1, detailed.CharacterClip.W + run.size[0]  # round again
+                way, lap = -1 if self.clip.runs_left[k] else 1, detailed.CharacterClip.W + run.size[0]  # round again
                 self.assertEqual(int(run.speed * 25 * detailed.FRAME_MS / 1000) % lap, (x1 - x0) * way % lap)
 
     def test_a_frame_is_the_street_with_each_runner_pasted_at_its_place(self):
@@ -507,7 +507,7 @@ class CastFromCaptureTest(unittest.TestCase):
         capture = mocap.Capture()
         if capture.missing():
             raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
-        cls.runners = [detailed.RunPictures(capture, detailed.TALL, character=c, cycle=cycle)
+        cls.runners = [detailed.RunPictures(capture, detailed.TALL, character=c, cycle_name=cycle)
                        for c, cycle in detailed.CAST]
 
     def test_twelve_poses_in_one_box_and_each_left_picture_is_the_mirror(self):
