@@ -7,7 +7,7 @@ the remaining risk (D rows). An extension may tighten these. Next: design, or a 
 → the design skill the facts name, with this file; otherwise none, and the collection plan says who runs it.
 Stands on: the assumptions not retired in risks-and-tests.md; of which those the decider rated high, or — while any
 is unrated. check computes both. -->
-**Ready for:** collecting evidence <!-- REQUIRED:ready -->
+**Ready for:** an experiment (D13: the board spike that tests A1, chosen before any option of Q4) <!-- REQUIRED:ready -->
 **Stands on:** 9 H, — of which would change the decision <!-- REQUIRED:debt -->
 **Decision needed:** Q1: how important is each assumption, and which pass line must the spike meet? <!-- REQUIRED:decision-needed -->
 
@@ -90,14 +90,14 @@ account, n = 1) · status: queued | asked <date> | answered D<n>.
 If the decider cannot be asked, the queue stays here, and whatever rests on it stays H. -->
 - Q0 · Is this frame right: the decision, the start and reach, the extensions and the depth? · decides: the frame · status: answered D10 <!-- REQUIRED:q0 -->
 - Q1 · How important is each assumption, and what pass line must the riskiest test meet? · decides: importance and pass lines · status: queued <!-- REQUIRED:q1 -->
-- Q2 · What comes first: a picture on the Mac, a spike on the board, or the parts on an old game? · decides: the first card · options: as in Options · unblocks: everything · opinion (the facilitator's): the picture, then the spike · kind: decision · status: queued
-- Q3 · Is "96 px" the figure from sole to head, or the height of its picture? · decides: the art bytes, by about a quarter · options: the figure, the picture · unblocks: the spike's sizes · opinion (none) · kind: decision · status: queued
+- Q2 · What comes first: a picture on the Mac, a spike on the board, or the parts on an old game? · decides: the first card · options: as in Options · unblocks: everything · opinion (the facilitator's): the picture, then the spike · kind: decision · status: answered D13
+- Q3 · Is "96 px" the figure from sole to head, or the height of its picture? · decides: the art bytes, by about a quarter · options: the figure, the picture · unblocks: the spike's sizes · opinion (none) · kind: decision · status: answered D14
 - Q4 · How does the art fit: a bigger pool, a mirror flag in C, or poses painted on the board? · decides: whether a firmware flash is in the plan · options: as in Options · unblocks: the design of the figure's drawing · opinion (the facilitator's): decide after the spike · kind: decision · status: queued
 - Q5 · How do you switch figures: the stick's up and down, PICK or the knob? · decides: whether the app changes before the game · options: as in Options · unblocks: A2's test · opinion (the facilitator's): the stick first · kind: decision · status: queued
 - Q6 · When you held the stick in Rescue, which hand was free, and for which button? · decides: the switch's binding · unblocks: Q5 · kind: account · status: queued
 - Q7 · What does a figure do when you do not hold it: stand and breathe, or do its own job by a rule? · decides: the AI's first behaviour and the idle poses · options: as in Options · unblocks: the first mission · opinion (the facilitator's): stand first · kind: decision · status: queued
 - Q8 · Which older game proves the parts: Rescue or Meteors? · decides: which stage of the engine plan P900 sits beside · options: as in Options · unblocks: P901's plan · opinion (the facilitator's): Meteors · kind: decision · status: queued
-- Q9 · Which tools from the survey do you want looked at more closely: your own capture with MediaPipe, the 100STYLE set, Box2D for the car, a phone as a remote controller? · decides: which spikes are added later · options: each, or none · unblocks: nothing in the first mission · opinion (none) · kind: decision · status: queued
+- Q9 · Which tools from the survey do you want looked at more closely: your own capture with MediaPipe, the 100STYLE set, Box2D for the car, a phone as a remote controller? · decides: which spikes are added later · options: each, or none · unblocks: nothing in the first mission · opinion (none) · kind: decision · status: answered D15
 - Q10 · How much time is the first mission worth to you? · decides: the appetite · unblocks: design · kind: decision · status: queued
 - Q11 · Do I file the items in items.md? · decides: the filing · unblocks: the first card · kind: decision · status: queued
 
@@ -118,6 +118,10 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 - D10 · the frame is right: the scope, the out-of-scope list (the remote player, the car simulator P902, the old games P903 beyond one game that proves the parts) and the outcome sentence. The depth is TRIO: three lenses, then the refuter · the PO · 2026-11-18 · in the session, Q0 · options for the frame: yes, add the car, parts first, game first · options for the depth: three lenses, one lens, full council
 - D11 · the open things are finished first: P900 goes back to Idea, the agents that run finish and their reports stay on the branch, and the discovery goes on at his word. "Before we start with it and refine it, lets first finish the open things, please." · the PO · 2026-11-18 · in the session · options: back to Idea, stop the agents too, keep it in Discovery
 - D12 · the discovery goes on while he reads the overview of P896: "i'm reading, go on". The facilitator read this as the word D11 waits for. The card stays in Idea until the board has a free place, because P892 takes the fourth place in flight · the PO · 2026-11-18 · in the session · options: none offered
+- D13 · the first step is the spike on the board: one 96 px motion loaded, two figures moving over Rescue's street, with the memory and the frame rate in the log. This chooses the test of A1 before any option of Q4 · the PO · 2026-11-18 · in the session · options: a picture on the Mac, a spike on the board, the parts first
+- D14 · "about 96 px" is the figure itself, from sole to head. Its picture box is about 111 px · the PO · 2026-11-18 · in the session · options: the figure, the picture box, show me both
+- D15 · two tools get a closer look later, outside the first mission: his own motion capture from a phone video with MediaPipe Pose, and Box2D for the car simulator P902 · the PO · 2026-11-18 · in the session · options: own capture, the 100STYLE set, Box2D for the car, a phone as a controller
+- D16 · he ordered a rewrite of this branch to remove the home path from its history ("yes"). It was not done: the session's permission system denied the force-push · the PO · 2026-11-18 · in the session · options: none offered
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
