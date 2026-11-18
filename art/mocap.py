@@ -3,9 +3,9 @@ do the moves that art/moves.py paints (P904).
 
 It reads a CMU skeleton (.asf) and its motion (.amc), runs the forward kinematics, looks at the body from the side
 (Y up, the way the body faces forward), cuts one loop of the motion, or a move's whole span, and resamples it to the
-poses a cycle has. Each pose is a dict of joint name to (forward, up, near) in body heights: the floor at up 0, the hips at forward 0, and
-near the depth toward the viewer, who stands at the body's right. A nose joint says the way the face looks. Standard
-library only; it writes nothing. The data comes from the CMU Graphics Lab Motion Capture Database,
+poses a cycle has. Each pose is a dict of joint name to (forward, up, near) in body heights: the floor at up 0, the
+hips at forward 0, and near the depth toward the viewer, who stands at the body's right. A nose joint says the way the
+face looks. Standard library only; it writes nothing. The data comes from the CMU Graphics Lab Motion Capture Database,
 http://mocap.cs.cmu.edu, downloaded once into CMU_DIR (never into the repository: "The motion capture data may be
 copied, modified, or redistributed without permission", and the database asks for this line: "The data used in this
 project was obtained from mocap.cs.cmu.edu. The database was created with funding from NSF EIA-0196217.").
