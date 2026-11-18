@@ -176,8 +176,8 @@
  {
   "file": "probe904_figures.py",
   "name": "the board run's time limit is 12 s over the counts, not 120 s",
-  "find": "LIMIT_S = len(COUNTS) * SECONDS + 120",
-  "replace": "LIMIT_S = len(COUNTS) * SECONDS + 12"
+  "find": "SPARE_S = 120  #",
+  "replace": "SPARE_S = 12  #"
  },
  {
   "file": "probe904_figures.py",
@@ -194,14 +194,14 @@
  {
   "file": "probe904_figures.py",
   "name": "the board run has no time limit",
-  "find": "            return self.runner.run([\"run\", copy], timeout=LIMIT_S), None\n",
+  "find": "            return self.runner.run([\"run\", copy], timeout=self.limit_s), None\n",
   "replace": "            return self.runner.run([\"run\", copy]), None\n"
  },
  {
   "file": "probe904_figures.py",
   "name": "the wait has the board run's time limit too",
   "find": "                self.tried(WAIT, self.box.RESET_TRIES)\n",
-  "replace": "                self.runner.run(WAIT, timeout=LIMIT_S)\n"
+  "replace": "                self.runner.run(WAIT, timeout=self.limit_s)\n"
  },
  {
   "file": "probe904_figures.py",
@@ -268,6 +268,84 @@
   "name": "the copy sends only the first character's gait row",
   "find": "\"\\nGAITS = %r\" % (tuple(rows),)",
   "replace": "\"\\nGAITS = %r\" % (tuple(rows)[:1],)"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the board run's time limit follows COUNTS, not the given counts",
+  "find": "        self.counts, self.limit_s = counts, len(counts) * SECONDS + SPARE_S\n",
+  "replace": "        self.counts, self.limit_s = counts, len(COUNTS) * SECONDS + SPARE_S\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the copy keeps the default counts",
+  "find": "\"\\nCOUNTS = %r\" % (tuple(counts),)",
+  "replace": "\"\\nCOUNTS = %r\" % (COUNTS,)"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the copy writes the counts as given, so a list stays a list on the board",
+  "find": "\"\\nCOUNTS = %r\" % (tuple(counts),)",
+  "replace": "\"\\nCOUNTS = %r\" % (counts,)"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the guard compares the copy with the source, so the default counts are refused",
+  "find": "        if source.count(old) != 1:\n",
+  "replace": "        if source.replace(old, new) == source:\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the guard lets two lines through and fills both",
+  "find": "        if source.count(old) != 1:\n",
+  "replace": "        if source.count(old) < 1:\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the parse sorts the counts",
+  "find": "    counts = tuple(int(n) for n in text.split(\",\"))\n",
+  "replace": "    counts = tuple(sorted(int(n) for n in text.split(\",\")))\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the parse matches only the start, so a trailing comma or text gets through to int",
+  "find": "re.fullmatch(",
+  "replace": "re.match("
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a count that repeats is not refused",
+  "find": "    if len(set(counts)) < len(counts):\n",
+  "replace": "    if False:\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a largest count that is a multiple of 5 is not refused, so start places repeat",
+  "find": "max(counts) < 2 or max(counts) % 5 == 0",
+  "replace": "max(counts) < 2"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a largest count of 1 is not refused, so the start rule divides by zero",
+  "find": "max(counts) < 2 or max(counts) % 5 == 0",
+  "replace": "max(counts) < 1 or max(counts) % 5 == 0"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "--counts is read without its refusals",
+  "find": "type=counts_arg, ",
+  "replace": "type=lambda text: tuple(int(n) for n in text.split(\",\")), "
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "without --counts the board runs other counts than COUNTS",
+  "find": "default=COUNTS, metavar=",
+  "replace": "default=(0, 1, 2, 4, 8), metavar="
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "mac() does not pass the counts on, so the board runs COUNTS",
+  "find": ", counts=args.counts)\n",
+  "replace": ")\n"
  },
  {
   "file": "art/figures.py",

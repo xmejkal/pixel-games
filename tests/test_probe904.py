@@ -5,6 +5,7 @@ tests/test_box.py's FakeRunner) and a stand-in for art/figures.py, mac() and its
 are downloaded, the probe's game on the stand-in display (tests/drawing_tft.py) with the set's written pack: skipped
 without them, and a skip is not a pass. Run from the repository root: python3 -B -m unittest tests.test_probe904."""
 
+import argparse
 import contextlib
 import io
 import os
@@ -135,6 +136,35 @@ class CountTest(unittest.TestCase):
                 self.assertEqual(count, probe.count_at(k * 30000 + 29999))
         self.assertIsNone(probe.count_at(180000))
         self.assertIsNone(probe.count_at(9876543))
+
+
+class CountsArgTest(unittest.TestCase):
+    """--counts' value (counts_arg): whole numbers of 0 or more, at least one, no repeat, in the order given."""
+
+    def test_the_counts_come_as_a_tuple_in_the_order_given(self):
+        for text, counts in (("16,20,24,28,32,36,40,48,64", (16, 20, 24, 28, 32, 36, 40, 48, 64)),
+                             ("24,0,7", (24, 0, 7)), ("2", (2,)), ("3,08", (3, 8))):
+            with self.subTest(text=text):
+                self.assertEqual(counts, probe.counts_arg(text))
+
+    def test_anything_but_whole_numbers_of_0_or_more_by_commas_is_refused(self):
+        for text in ("", ",", "4,", ",4", "4,,8", "-1,4", "+4", "4.0", " 4", "4, 8", "four", "0x10", "4;8", "٣"):
+            with self.subTest(text=text), self.assertRaisesRegex(argparse.ArgumentTypeError, "whole numbers"):
+                probe.counts_arg(text)
+
+    def test_a_count_that_repeats_is_refused(self):
+        for text in ("4,8,4", "0,0,2", "3,03"):
+            with self.subTest(text=text), self.assertRaisesRegex(argparse.ArgumentTypeError, "repeat"):
+                probe.counts_arg(text)
+
+    def test_a_largest_count_under_2_or_a_multiple_of_5_is_refused(self):
+        # the start rule: figure i's share is i * 5 % n / (n - 1), n the largest count
+        for text in ("0", "1", "1,0", "5", "0,10", "64,3,80", "15,7"):
+            with self.subTest(text=text), self.assertRaisesRegex(argparse.ArgumentTypeError, "largest count"):
+                probe.counts_arg(text)
+        for text in ("1,2", "0,4", "64,3,40"):  # a smaller count may be any
+            with self.subTest(text=text):
+                self.assertEqual(tuple(int(n) for n in text.split(",")), probe.counts_arg(text))
 
 
 class Clock:
@@ -558,6 +588,29 @@ class RealAppBoardTest(unittest.TestCase):
             with self.subTest(count=n):  # 30 s of 40 ms frames: 6 lines of 125 frames in 5 s, each 25 fps
                 self.assertEqual(["fps figures 25"] * 6, [line for line in lines[a:b] if line.startswith("fps ")])
 
+    def test_the_copy_with_other_counts_says_them_and_gives_each_its_seconds(self):
+        # the copy for the board, filled with counts in no order and a largest count over 16 (3 counts: 2,250 frames,
+        # under CAP_40); its own board() on the real App
+        counts = (24, 0, 7)
+        with open(os.path.join(REPO, "probe904_figures.py")) as f:
+            copy = probe.filled(f.read(), self.rows, counts)
+        module, error = {"__name__": "copy"}, None
+        with real_board(self.rows), contextlib.redirect_stdout(io.StringIO()) as said:
+            exec(compile(copy, "copy", "exec"), module)
+            try:
+                module["board"]()
+            except Exception as e:  # noqa: BLE001  the test reads which one
+                error = e
+        lines = said.getvalue().splitlines()
+        self.assertIsNone(error)
+        self.assertEqual("probe p904 counts 24,0,7 seconds 30", lines[0])
+        self.assertEqual(["count %d starts" % n for n in counts], [line for line in lines if line.startswith("count ")])
+        starts = [lines.index("count %d starts" % n) for n in counts] + [len(lines) - 3]
+        for n, a, b in zip(counts, starts, starts[1:]):
+            with self.subTest(count=n):
+                self.assertEqual(["fps figures 25"] * 6, [line for line in lines[a:b] if line.startswith("fps ")])
+        self.assertEqual("done", lines[-1])
+
     def test_a_draw_that_answers_false_leaves_board_as_the_error_with_no_done(self):
         missing = {"figures_paramedic_%s%d" % (side, i) for side in "rl" for i in range(12)}
         lines, error = self.board(missing)
@@ -667,14 +720,14 @@ class MacTest(unittest.TestCase):
         self.art, self.sleeps = StandInArt(), []
         self.capture = object()
 
-    def bench(self, board):
-        return probe.Bench(board, self.art, self.log, sleep=self.sleeps.append)
+    def bench(self, board, **counts):
+        return probe.Bench(board, self.art, self.log, sleep=self.sleeps.append, **counts)
 
-    def run_bench(self, board):
+    def run_bench(self, board, **counts):
         """check() then run(), as mac() calls them: what it printed, and the SystemExit it raised or None."""
         with contextlib.redirect_stdout(io.StringIO()) as said:
             try:
-                bench = self.bench(board)
+                bench = self.bench(board, **counts)
                 bench.check()
                 bench.run(self.capture)
             except SystemExit as e:
@@ -732,6 +785,35 @@ class MacTest(unittest.TestCase):
         module = {"__name__": "copy"}
         exec(compile(board.copy, "copy", "exec"), module)
         self.assertEqual(STAND_IN_ROWS, module["GAITS"])
+
+    def test_the_time_limit_follows_the_counts(self):
+        board = Board()
+        self.run_bench(board, counts=(16, 20, 24, 28, 32, 36, 40, 48, 64))
+        self.assertEqual([None] * 5 + [9 * 30 + 120] + [None] * 4, board.limits)
+
+    def test_the_copy_holds_the_given_counts_as_a_tuple_and_its_counts_line_keeps_its_comment(self):
+        board = Board()
+        self.run_bench(board, counts=[24, 0, 7])
+        with open(os.path.join(REPO, "probe904_figures.py")) as f:
+            source = f.read().splitlines()
+        copy = board.copy.splitlines()
+        self.assertEqual(len(source), len(copy))
+        differ = [(a, b) for a, b in zip(source, copy) if a != b]
+        self.assertEqual(["COUNTS = (24, 0, 7)  # figures at once, one count after the other"],
+                         [b for a, b in differ if a.startswith("COUNTS = ")])
+        self.assertEqual(["COUNTS", "GAITS"], sorted(a.split(" = ")[0] for a, _ in differ))
+        module = {"__name__": "copy"}
+        exec(compile(board.copy, "copy", "exec"), module)
+        self.assertEqual(((24, 0, 7), STAND_IN_ROWS), (module["COUNTS"], module["GAITS"]))
+
+    def test_filled_refuses_a_source_without_exactly_one_gaits_line_and_one_counts_line(self):
+        with open(os.path.join(REPO, "probe904_figures.py")) as f:
+            source = f.read()
+        for old in ("\nGAITS = None", "\nCOUNTS = (0, 1, 2, 4, 8, 16)"):
+            for case, broken in (("none", source.replace(old, "\n# gone", 1)),
+                                 ("two", source.replace(old, old * 2, 1))):
+                with self.subTest(line=old.strip(), case=case), self.assertRaises(ValueError):
+                    probe.filled(broken, STAND_IN_ROWS, (24, 0, 7))
 
     def test_a_box_with_an_art_index_is_refused_before_any_copy_naming_both_kinds(self):
         board = Board(root=("boot.py", "main.py", "art_index.py", "packs/"))
@@ -924,6 +1006,43 @@ class MacMainTest(unittest.TestCase):
         self.assertIsNone(refused)
         self.assertEqual(dry_lines(), [dry_line(line) for line in said.splitlines()])
         self.assertFalse(os.path.exists(self.log))
+
+    def test_its_dry_run_with_counts_prints_the_same_commands(self):
+        with mock.patch.object(box.subprocess, "run") as run:
+            said, err, refused = self.mac(["--dry-run", "--counts", "16,20,24,28,32,36,40,48,64", "--cmu",
+                                           cmu_folder(self.folder.name)], None)
+        run.assert_not_called()
+        self.assertIsNone(refused)
+        self.assertEqual(dry_lines(), [dry_line(line) for line in said.splitlines()])
+
+    def test_without_counts_the_copy_holds_counts_and_the_time_limit_is_theirs(self):
+        board = Board()
+        said, err, refused = self.mac(["--cmu", cmu_folder(self.folder.name)], board)
+        self.assertIsNone(refused)
+        self.assertEqual([None] * 5 + [LIMIT] + [None] * 4, board.limits)
+        module = {"__name__": "copy"}
+        exec(compile(board.copy, "copy", "exec"), module)
+        self.assertEqual(probe.COUNTS, module["COUNTS"])
+
+    def test_the_counts_go_to_the_copy_and_to_the_time_limit(self):
+        board = Board()
+        said, err, refused = self.mac(["--counts", "24,0,7", "--cmu", cmu_folder(self.folder.name)], board)
+        self.assertIsNone(refused)
+        self.assertEqual([None] * 5 + [3 * 30 + 120] + [None] * 4, board.limits)
+        module = {"__name__": "copy"}
+        exec(compile(board.copy, "copy", "exec"), module)
+        self.assertEqual(((24, 0, 7), STAND_IN_ROWS), (module["COUNTS"], module["GAITS"]))
+
+    def test_counts_it_refuses_stop_it_before_any_board_command(self):
+        for text, why in (("0,20", "largest count"), ("4,8,4", "repeat"), ("4,x", "whole numbers")):
+            with self.subTest(counts=text):
+                board = Board()
+                said, err, refused = self.mac(["--counts", text, "--cmu", cmu_folder(self.folder.name)], board)
+                self.assertEqual(2, refused.code)
+                self.assertIn("argument --counts: ", err)
+                self.assertIn(why, err)
+                self.assertEqual([], board.commands)
+                self.assertFalse(os.path.exists(self.log))
 
 
 if __name__ == "__main__":

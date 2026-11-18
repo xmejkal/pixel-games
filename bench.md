@@ -1864,3 +1864,91 @@ Not measured:
   are not told apart.
 - The sound by ear: the run recorded no sound.
 - More than one run: one run gives one verdict.
+
+## P904 (#1283) step 2d, 2026-11-18: where the rate falls with more 96 px figures
+
+- The game code: nothing was deployed for this run. Step 2c deployed fca0ee4, and
+  `git diff --stat fca0ee4 origin/master -- games` printed nothing before the run. What the box held was not read
+  back. The firmware and `:_crackle.mpy` are the box's own, and the log does not name the firmware's build. The log's
+  first line is step 2c's: `engine sum=viper volume=viper native=_engine,_crackle.mpy`. Log:
+  `logs/run-p904-2c-2.log`, the board's lines of one run of
+  `python3 probe904_figures.py --counts 16,20,24,28,32,36,40,48,64` from branch p904-counts (4da7f07). The run took
+  from 22:26:04 to 22:40:55 Prague, with the painting on the Mac, and ended with exit 0. The board printed `done`.
+- The scene and the set are step 2c's, with other counts: 16, 20, 24, 28, 32, 36, 40, 48 and 64 figures, each count
+  for 30 s. The probe makes as many figures as the largest count (`game_class`). So the board held 64 figure objects
+  at every count, where step 2c's run held 16. The start rule takes the largest count as n, so the figures start at
+  other places than in step 2c's run. Line 13 says `switch figures 2318 ms, load 2139 ms, import 0 ms`. The load is
+  step 2c's (2,138 ms there), and the switch took 107 ms more (2,211 ms there). Line 14 says `pack pool 2464000`.
+- After the run, `python3 tools/box.py log --seconds 20` showed `lineup 15` and
+  `switch marshmallow 630 ms, load 154 ms`, with 23 fps and no `art:` line. The other 14 games were not started in
+  those 20 s. Seen at the bench, not kept as a log.
+- The reading was fixed before the run (the plan on #1283 and its amendment of 22:03 Prague). This run has no pass
+  line. It measures. Every `fps figures` line of a count is read, the first left out, and the last count's lines end
+  at `done`. When each read line says 24 or more, the count holds 24. When each read line says 19 or more, it
+  holds 19. Between two counts the run says nothing.
+
+| figures | lines read | fps | step, ms | paint, ms | send, ms | gc, ms | worst gap, ms | slowest, ms | holds 24 | holds 19 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 16 | 4 | 23 | 1.7 | 19.9 | 7.8 to 8.2 | 4.0 | 60 to 62 | 42 to 43 | no | yes |
+| 20 | 4 | 22 | 1.8 | 22.1 to 22.2 | 7.7 to 8.8 | 3.9 to 4.1 | 72 to 93 | 44 to 46 | no | yes |
+| 24 | 4 | 22 | 1.9 | 24.5 to 24.7 | 8.3 to 9.1 | 4.0 | 68 to 74 | 48 to 49 | no | yes |
+| 28 | 4 | 21 | 2.1 | 26.9 to 27.0 | 7.8 to 8.1 | 4.1 | 68 to 98 | 48 to 50 | no | yes |
+| 32 | 4 | 20 to 21 | 2.3 | 29.7 to 29.9 | 7.1 to 8.5 | 3.9 to 4.1 | 71 to 89 | 52 to 55 | no | yes |
+| 36 | 4 | 19 to 20 | 2.3 to 2.4 | 32.0 to 32.2 | 7.9 to 8.9 | 4.0 to 4.1 | 76 to 82 | 57 to 58 | no | yes |
+| 40 | 4 | 18 | 2.4 to 2.5 | 34.3 to 34.6 | 8.8 to 10.7 | 3.9 to 4.0 | 80 to 90 | 61 | no | no |
+| 48 | 4 | 16 to 17 | 2.7 to 2.8 | 39.0 to 39.2 | 8.7 to 11.2 | 4.0 to 4.1 | 83 to 112 | 66 to 67 | no | no |
+| 64 | 4 | 14 | 3.3 to 3.4 | 48.7 to 48.9 | 9.2 to 10.1 | 3.8 to 3.9 | 93 to 99 | 77 | no | no |
+
+What the run says:
+
+- No count of this run holds 24. The smallest count, 16, says `fps figures 23` in each read line (lines 21, 26, 31
+  and 36).
+- The highest count that holds 19 is 36. Its read lines say 19, 20, 20 and 20 (lines 151, 156, 161 and 166).
+- The first count that does not hold 19 is 40. Each of its read lines says 18 (lines 177, 182, 187 and 192).
+- No larger count holds a bar that a smaller count missed.
+- The left-out first `fps` lines say 23, 23, 22, 21, 21, 20, 18, 16 and 14 (lines 16, 42, 68, 94, 120, 146, 172, 198
+  and 224). With them read too, no verdict of the table changes.
+
+Count 16 against step 2c's run, a rough tie and not a repeat:
+
+- Step 2c's run says 24 fps with 16 figures in each read line. This run says 23.
+- Step, paint and send agree: step 1.7 ms in both, paint 19.8 to 19.9 ms there and 19.9 ms here, send 7.7 to 8.9 ms
+  there and 7.8 to 8.2 ms here.
+- The gc column differs: 2.5 ms a frame there, 4.0 ms here. The App's `heap` lines say 159,328 to 161,456 bytes
+  allocated there, and 229,248 to 235,680 bytes in all 45 sets here.
+- The board held 64 figure objects here and 16 there. So 48 more figure objects come with about 70,000 more bytes
+  allocated and about 1.5 ms more collection a frame. The log does not prove the cause: the start places differ
+  too, and each number is from one run.
+
+Logged, with no pass line:
+
+- The paint mean rises from 19.9 ms with 16 figures to 48.7 to 48.9 ms with 64. That is about 0.6 ms a figure,
+  worked out from 28.9 ms over 48 figures. The paint of the `avg` lines, the figures' own drawing, rises from 10.6 to
+  10.7 ms to 39.6 to 39.7 ms.
+- The send is 7.1 to 9.1 ms up to 36 figures and 8.7 to 11.2 ms from 40 on. The step rises from 1.7 ms to 3.3 to
+  3.4 ms. The gc column is 3.8 to 4.1 ms a frame at every count.
+- One collection takes about 19 to 20.5 ms, worked out from the gc column times `GC_FRAMES`. With 16, 24, 36, 40
+  and 64 figures the slowest frame plus one collection comes within 9 ms of the worst gap in every set read. With
+  20, 28, 32 and 48 figures the worst gap lies well above that sum in at least one set: 93 ms (line 58), 98 ms
+  (line 115), 89 ms (line 141) and 112 ms (line 214). The log does not say what fills those gaps.
+- The game's clock counts at most 60 ms for a frame (`games/gfx.py:383`). A worst gap over 60 ms shows at every
+  count of this run. With 16 figures it is 61 and 62 ms (lines 27 and 22). From 40 figures on the slowest frame
+  alone takes 61 ms or more. After a gap over 60 ms a figure moves less than its speed says. With 64 figures the
+  mean frame takes 67 to 71 ms (14 fps, worked out), so every figure moves slower than its speed. The log does not
+  count the capped frames.
+- The display's `timeout` is 100 (line 5). With "double" it covers the last send and one `show()` call
+  (`engine/driver/src/frame.c:382-387`), not the gap between two frames. The largest send of a slowest frame is
+  19 ms, in ten lines (173, 183 and 199 among them). The run ended with `done` and no traceback.
+- PSRAM: `psram free 8254704 largest 8126464` at the start, `psram free 4764636 largest 4718592` at the end. That is
+  3,490,068 bytes less free, and a largest block 3,407,872 bytes smaller. Step 2c's run ended with 262,148 bytes
+  more free. The log does not say what took the bytes.
+- The heap: `gc free 8149712 alloc 104752` at the start, `gc free 5108384 alloc 122208` at the end.
+
+Not measured:
+
+- 16 to 48 figures with only as many figure objects as the count. Step 2c's run is the only one with 16 objects,
+  and it says 24 fps with 16 figures.
+- The counts between two counts of the list, and any count over 64.
+- What the box held: the game code was not read back.
+- As in step 2c: a figure that crosses the screen's edge, the loading card, a game's own play, figures that overlap
+  against figures apart, the sound by ear, and more than one run. One run gives one verdict.

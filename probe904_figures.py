@@ -1,22 +1,24 @@
 """
-P904 step 2c (#1283): how many 96 px figures the game box moves at once. Rescue's still street, and over it 0, 1, 2,
-4, 8 and 16 figures (COUNTS), each count for SECONDS on the board's wall clock, in one board run. Figure i is
-character i modulo 8 of art/detailed.py's CAST, so count 2 is the fireman and the paramedic. 96 px is
-detailed.TALL, an adult's standing height from the soles to the top of the fireman's helmet. The pictures are 72 to
-111 px tall and 42 to 67 px wide: the child is smaller, the chef's toque is taller, and a pose in flight adds. The
-pictures are the set figures (art/figures.py), painted whole on the Mac: its pack is 2,464,000 bytes, in no
+P904 steps 2c and 2d (#1283): how many 96 px figures the game box moves at once. Rescue's still street, and over it 0,
+1, 2, 4, 8 and 16 figures (COUNTS) or the counts of --counts, each count for SECONDS on the board's wall clock, in one
+board run. Figure i is character i modulo 8 of art/detailed.py's CAST, so count 2 is the fireman and the paramedic.
+96 px is detailed.TALL, an adult's standing height from the soles to the top of the fireman's helmet. The pictures are
+72 to 111 px tall and 42 to 67 px wide: the child is smaller, the chef's toque is taller, and a pose in flight adds.
+The pictures are the set figures (art/figures.py), painted whole on the Mac: its pack is 2,464,000 bytes, in no
 ART_SETS.
 
 Each figure runs at its captured speed, rounded to a whole px a second (the gait rows keep the captured value), and
 steps in whole px with a carry in thousandths of a px, as games/rescue.py's fireman does. At an edge of the screen it
 turns at once (the fireman plays his turn poses), so its picture stays whole on the screen. Its pose follows the px it
-ran. Figure i starts at (i * 5 mod 16) / 15 of its way between its two edges, facing right when i is even, so the 16
-start places differ and a figure that starts at an edge faces away from it.
+ran. With n the largest count, figure i starts at (i * 5 mod n) / (n - 1) of its way between its two edges, facing
+right when i is even, so no two figures start at the same share of their way (n is 2 or more and not a multiple of 5).
+Figure 0 starts at the left edge and faces away from it. The figure at the right edge faces away from it for n = 16,
+24, 32, 48 and 64, not for every n (for 17 it faces the edge).
 
 Deploy the branch's game code first (`python3 tools/box.py deploy <the lineup>`), close any log, then, from the
 repository root, on the Mac:
 
-    python3 probe904_figures.py [--dry-run] [--cmu DIR]
+    python3 probe904_figures.py [--dry-run] [--cmu DIR] [--counts A,B,...]
 
 The Mac part:
 1. reads `ls :` and refuses when the box has an :art_index.py. It is the box's real index (a deploy with --py:
@@ -24,12 +26,13 @@ The Mac part:
 2. checks the CMU files in DIR (mocap.CMU_DIR by default) and refuses with the capture's own message when they are
    missing;
 3. paints the set (about a minute) and writes its pack and an index of it alone into a temporary folder, with a copy
-   of this file whose GAITS holds each character's gait row (name, pivot x, stride, speed);
+   of this file whose GAITS holds each character's gait row (name, pivot x, stride, speed) and whose COUNTS holds the
+   counts;
 4. copies the pack to :packs/figures.pak, then the index to :art_index.py (the shadow index: the board imports a .py
    before the .mpy of the same name, so the pool is made as big as this pack alone; meanwhile the lineup's games find
    no art and draw their plain shapes);
 5. hard-resets the board, waits with `exec pass` until the board answers, then runs the copy once: the board run,
-   within the counts times SECONDS plus 120 s (LIMIT_S);
+   within the number of counts times SECONDS plus 120 s (SPARE_S);
 6. prints each line of the board run and writes them to the first free log of logs/run-p904-2c.log,
    logs/run-p904-2c-2.log, -3 and on, so a log is never overwritten, also after a failed or a timed-out board run. It
    refuses a board run that did not end with a `done` line, and at its end prints the log's path;
@@ -39,9 +42,11 @@ The Mac part:
    cleanup itself fails, its message holds the first error too, and says that both files may still be on the box.
 --dry-run prints each board command and runs none: the cleanup as for a board that holds both copies, no `done` test
 and no log. It still paints and writes the set in the temporary folder.
+--counts A,B,... gives the counts, in this order, instead of COUNTS: whole numbers of 0 or more, no repeat. It refuses
+a largest count under 2 or a multiple of 5 (the start places above need neither), before any board command.
 
 The lines, from the board:
-- `probe p904 counts 0,1,2,4,8,16 seconds 30`
+- `probe p904 counts 0,1,2,4,8,16 seconds 30`, with the run's counts
 - `psram free <B> largest <B>` and `gc free <B> alloc <B>`, at the start and at the end: PSRAM's free bytes and its
   largest free block (esp32.idf_heap_info), and the heap after a collection
 - the App's `game figures` and `switch figures <ms> ms, load <ms> ms, import <ms> ms`: the load is the pack's read
@@ -70,7 +75,8 @@ GAITS = None  # the Mac part sends a copy with each character's gait row (name, 
 WIDTH, FEET = 320, 214  # the screen's width (gfx.WIDTH) and the row the soles stand on (games/rescue.py's FEET)
 POSES = 12  # a run's poses
 NIGHT = "figures_night"  # the still street
-LIMIT_S = len(COUNTS) * SECONDS + 120  # the board run's time limit: the counts, the boot, the load and the lines
+SPARE_S = 120  # the board run's time beside its counts: the boot, the load and the lines
+LIMIT_S = len(COUNTS) * SECONDS + SPARE_S  # the board run's time limit with COUNTS (Bench.limit_s with others)
 PACK, INDEX = "packs/figures.pak", "art_index.py"  # where the copies go on the board
 WAIT = ["exec", "pass"]  # a cheap command: the board answers it once it is back from the hard reset
 RECOVERY = "`mpremote rm :%s :%s`, then `mpremote reset`" % (INDEX, PACK)
@@ -162,11 +168,11 @@ class CountClock:
 
 
 def game_class(rows):
-    """The probe's game, a gfx.Game: Rescue's still street, and over it the first count of its 16 figures, figure i
-    on rows[i % len(rows)] (gait rows), starting as the docstring says. It starts in play (TITLE_MS 0, as rain.py), and
-    sets covers as Rescue does. A picture that does not draw raises, so an empty scene cannot pass. The count is set
-    from outside (CountClock). play and paint loop by index, so a frame makes no list. The board part calls it, and a
-    Mac test with games/ on the path."""
+    """The probe's game, a gfx.Game: Rescue's still street, and over it the first count of its figures, as many as the
+    largest count, figure i on rows[i % len(rows)] (gait rows), starting as the docstring says. It starts in play
+    (TITLE_MS 0, as rain.py), and sets covers as Rescue does. A picture that does not draw raises, so an empty scene
+    cannot pass. The count is set from outside (CountClock). play and paint loop by index, so a frame makes no list.
+    The board part calls it, and a Mac test with games/ on the path."""
     import gfx
     import pictures
 
@@ -270,15 +276,17 @@ def free_log(path):
 class Bench:
     """The Mac part's work on the box, through runner (a box.Mpremote, or a test's): check() is step 1; run() has
     art (art/figures.py, or a test's) paint and write the set (step 3), then steps 4 to 7. log: the first log's path
-    (free_log picks the one written); sleep: the pause between two tries."""
+    (free_log picks the one written); sleep: the pause between two tries; counts: the copy's COUNTS, which set the
+    board run's time limit."""
 
-    def __init__(self, runner, art, log, sleep=None):
+    def __init__(self, runner, art, log, sleep=None, counts=COUNTS):
         import time
 
         import box
 
         self.runner, self.art, self.log, self.box = runner, art, log, box
         self.sleep, self.logged = sleep or time.sleep, None
+        self.counts, self.limit_s = counts, len(counts) * SECONDS + SPARE_S
 
     def tried(self, args, tries=None):
         """The runner's answer to args, tried again while mpremote cannot reach the board."""
@@ -305,7 +313,7 @@ class Bench:
             with open(__file__) as f:
                 source = f.read()
             with open(copy, "w") as f:
-                f.write(filled(source, self.art.gaits(capture)))
+                f.write(filled(source, self.art.gaits(capture), self.counts))
             try:
                 self.runner.run(["cp", pack, ":" + PACK])  # the pack first: a failed copy leaves no index naming it
                 self.runner.run(["cp", index, ":" + INDEX])
@@ -336,11 +344,11 @@ class Bench:
         return repr(e)
 
     def board_run(self, copy):
-        """The copy run on the board once, within LIMIT_S: its output, and why it failed or None."""
+        """The copy run on the board once, within limit_s: its output, and why it failed or None."""
         import subprocess
 
         try:
-            return self.runner.run(["run", copy], timeout=LIMIT_S), None
+            return self.runner.run(["run", copy], timeout=self.limit_s), None
         except subprocess.TimeoutExpired as e:
             return text(e.stdout) + text(e.stderr), "the board run took over %d s" % e.timeout
         except subprocess.CalledProcessError as e:
@@ -378,12 +386,34 @@ class Bench:
                 "; the log is %s" % self.logged if self.logged else ""))
 
 
-def filled(source, rows):
-    """This file's source with GAITS filled in with the gait rows, for the board (as probe844_import.py fills SET)."""
-    copy = source.replace("\nGAITS = None", "\nGAITS = %r" % (tuple(rows),), 1)
-    if copy == source:
-        raise ValueError("no GAITS = None line in the probe")
-    return copy
+def filled(source, rows, counts):
+    """This file's source with GAITS filled in with the gait rows and COUNTS with counts, for the board (as
+    probe844_import.py fills SET). Each line's start is replaced, so its comment stays. The default counts give the same
+    COUNTS line, so the guard counts the lines and does not compare the copy with the source."""
+    for old, new in (("\nGAITS = None", "\nGAITS = %r" % (tuple(rows),)),
+                     ("\nCOUNTS = %r" % (COUNTS,), "\nCOUNTS = %r" % (tuple(counts),))):
+        if source.count(old) != 1:
+            raise ValueError("not one %s line in the probe" % old.strip())
+        source = source.replace(old, new)
+    return source
+
+
+def counts_arg(text):
+    """--counts' value as a tuple: whole numbers of 0 or more by commas, at least one, no repeat, in the order given.
+    The start rule (game_class) needs a largest count n of 2 or more (it divides by n - 1) and not a multiple of 5 (then
+    i * 5 mod n repeats start places)."""
+    import argparse
+    import re
+
+    if not re.fullmatch(r"[0-9]+(,[0-9]+)*", text):
+        raise argparse.ArgumentTypeError("not whole numbers of 0 or more by commas: %r" % text)
+    counts = tuple(int(n) for n in text.split(","))
+    if len(set(counts)) < len(counts):
+        raise argparse.ArgumentTypeError("a count repeats: %s" % text)
+    if max(counts) < 2 or max(counts) % 5 == 0:
+        raise argparse.ArgumentTypeError("the largest count, %d, is under 2 or a multiple of 5: the start places "
+                                         "(i * 5 mod n) / (n - 1) need neither" % max(counts))
+    return counts
 
 
 LOG = "logs/run-p904-2c.log"  # from the repository root: the first log's path (free_log)
@@ -404,10 +434,12 @@ def mac(argv, runner=None, art=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="print each board command, run none")
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
+    parser.add_argument("--counts", type=counts_arg, default=COUNTS, metavar="A,B,...",
+                        help="the counts of figures, in this order (%s)" % ",".join("%d" % n for n in COUNTS))
     args = parser.parse_args(argv)
     if art is None:
         import figures as art
-    bench = Bench(runner or box.Mpremote(args.dry_run), art, os.path.join(here, LOG))
+    bench = Bench(runner or box.Mpremote(args.dry_run), art, os.path.join(here, LOG), counts=args.counts)
     try:
         bench.check()
         bench.run(mocap.open_capture(parser, args.cmu))

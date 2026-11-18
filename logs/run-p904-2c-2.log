@@ -1,0 +1,251 @@
+engine sum=viper volume=viper native=_engine,_crackle.mpy
+probe p904 counts 16,20,24,28,32,36,40,48,64 seconds 30
+psram free 8254704 largest 8126464
+gc free 8149712 alloc 104752
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 8018112
+frame tft
+lineup 1: figures
+import 1783 ms
+ready
+game figures
+switch figures 2318 ms, load 2139 ms, import 0 ms
+pack pool 2464000
+count 16 starts
+fps figures 23
+time figures step 1.7 paint 19.9 send 8.2 gc 3.9 fps 23 worst 61 slowest 41 = step 1 paint 20 send 18 gc 0
+phases figures static 9 paint 13 fx 0 hud 16 over 0 title 0
+avg figures static 8.1 paint 10.6 fx 0.1 hud 1.0 over 0.0 title 0.0 input 0.6
+heap figures alloc 231968 glyphs 10
+fps figures 23
+time figures step 1.7 paint 19.9 send 8.2 gc 4.0 fps 23 worst 62 slowest 43 = step 1 paint 22 send 18 gc 0
+phases figures static 9 paint 13 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 10.6 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 230608 glyphs 10
+fps figures 23
+time figures step 1.7 paint 19.9 send 8.1 gc 4.0 fps 23 worst 61 slowest 42 = step 1 paint 22 send 17 gc 0
+phases figures static 9 paint 13 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 10.7 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 231328 glyphs 10
+fps figures 23
+time figures step 1.7 paint 19.9 send 7.8 gc 4.0 fps 23 worst 60 slowest 42 = step 1 paint 22 send 17 gc 0
+phases figures static 9 paint 13 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 10.6 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 231248 glyphs 10
+fps figures 23
+time figures step 1.7 paint 19.9 send 8.2 gc 4.0 fps 23 worst 61 slowest 43 = step 1 paint 22 send 18 gc 0
+phases figures static 8 paint 13 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 10.7 fx 0.1 hud 0.9 over 0.0 title 0.0 input 0.6
+heap figures alloc 231248 glyphs 10
+count 20 starts
+fps figures 23
+time figures step 1.8 paint 22.2 send 8.8 gc 4.0 fps 23 worst 64 slowest 46 = step 1 paint 24 send 18 gc 0
+phases figures static 9 paint 16 fx 0 hud 0 over 0 title 0
+avg figures static 16.1 paint 23.7 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.6
+heap figures alloc 230272 glyphs 10
+fps figures 22
+time figures step 1.8 paint 22.2 send 7.7 gc 4.0 fps 22 worst 72 slowest 44 = step 1 paint 24 send 16 gc 0
+phases figures static 9 paint 16 fx 0 hud 0 over 0 title 0
+avg figures static 8.0 paint 13.0 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.7
+heap figures alloc 230272 glyphs 10
+fps figures 22
+time figures step 1.8 paint 22.2 send 8.5 gc 4.1 fps 22 worst 74 slowest 45 = step 2 paint 24 send 17 gc 0
+phases figures static 9 paint 16 fx 0 hud 0 over 0 title 0
+avg figures static 8.1 paint 12.9 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.7
+heap figures alloc 229328 glyphs 10
+fps figures 22
+time figures step 1.8 paint 22.2 send 7.7 gc 4.1 fps 22 worst 93 slowest 46 = step 2 paint 24 send 18 gc 0
+phases figures static 9 paint 15 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 12.9 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 229248 glyphs 10
+fps figures 22
+time figures step 1.8 paint 22.1 send 8.8 gc 3.9 fps 22 worst 91 slowest 46 = step 1 paint 24 send 18 gc 0
+phases figures static 9 paint 15 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 12.9 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 232384 glyphs 10
+count 24 starts
+fps figures 22
+time figures step 1.9 paint 24.6 send 8.9 gc 4.0 fps 22 worst 66 slowest 47 = step 2 paint 27 send 17 gc 0
+phases figures static 9 paint 18 fx 0 hud 1 over 0 title 0
+avg figures static 15.8 paint 28.1 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.6
+heap figures alloc 231792 glyphs 10
+fps figures 22
+time figures step 1.9 paint 24.6 send 8.9 gc 4.0 fps 22 worst 68 slowest 48 = step 2 paint 27 send 17 gc 0
+phases figures static 9 paint 18 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 15.3 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 230176 glyphs 10
+fps figures 22
+time figures step 1.9 paint 24.7 send 8.3 gc 4.0 fps 22 worst 70 slowest 48 = step 2 paint 26 send 18 gc 0
+phases figures static 8 paint 18 fx 0 hud 0 over 0 title 0
+avg figures static 8.1 paint 15.3 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 231104 glyphs 10
+fps figures 22
+time figures step 1.9 paint 24.7 send 8.4 gc 4.0 fps 22 worst 74 slowest 49 = step 2 paint 28 send 18 gc 0
+phases figures static 9 paint 18 fx 0 hud 0 over 0 title 0
+avg figures static 8.1 paint 15.4 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 230944 glyphs 10
+fps figures 22
+time figures step 1.9 paint 24.5 send 9.1 gc 4.0 fps 22 worst 74 slowest 49 = step 2 paint 27 send 18 gc 0
+phases figures static 9 paint 18 fx 0 hud 0 over 0 title 0
+avg figures static 8.1 paint 15.2 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 231264 glyphs 10
+count 28 starts
+fps figures 21
+time figures step 2.1 paint 26.9 send 8.6 gc 4.0 fps 21 worst 69 slowest 50 = step 2 paint 29 send 17 gc 0
+phases figures static 9 paint 21 fx 0 hud 1 over 0 title 0
+avg figures static 16.1 paint 32.6 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.6
+heap figures alloc 230160 glyphs 10
+fps figures 21
+time figures step 2.1 paint 27.0 send 8.1 gc 4.1 fps 21 worst 68 slowest 50 = step 2 paint 29 send 17 gc 0
+phases figures static 9 paint 20 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 17.6 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 229328 glyphs 10
+fps figures 21
+time figures step 2.1 paint 26.9 send 8.1 gc 4.1 fps 21 worst 77 slowest 50 = step 2 paint 29 send 17 gc 0
+phases figures static 8 paint 21 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 17.6 fx 0.1 hud 0.9 over 0.0 title 0.0 input 0.6
+heap figures alloc 229328 glyphs 10
+fps figures 21
+time figures step 2.1 paint 26.9 send 8.0 gc 4.1 fps 21 worst 96 slowest 49 = step 2 paint 29 send 16 gc 0
+phases figures static 9 paint 21 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 17.7 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 229328 glyphs 10
+fps figures 21
+time figures step 2.1 paint 27.0 send 7.8 gc 4.1 fps 21 worst 98 slowest 48 = step 1 paint 26 send 18 gc 0
+phases figures static 9 paint 21 fx 0 hud 0 over 0 title 0
+avg figures static 8.1 paint 17.7 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 229328 glyphs 10
+count 32 starts
+fps figures 21
+time figures step 2.3 paint 29.9 send 8.2 gc 4.0 fps 21 worst 73 slowest 55 = step 2 paint 33 send 18 gc 0
+phases figures static 9 paint 24 fx 0 hud 1 over 0 title 0
+avg figures static 15.9 paint 37.9 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.6
+heap figures alloc 230224 glyphs 10
+fps figures 20
+time figures step 2.3 paint 29.9 send 8.5 gc 3.9 fps 20 worst 74 slowest 55 = step 2 paint 34 send 18 gc 0
+phases figures static 9 paint 24 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 20.5 fx 0.1 hud 0.9 over 0.0 title 0.0 input 0.6
+heap figures alloc 233072 glyphs 10
+fps figures 20
+time figures step 2.3 paint 29.7 send 8.2 gc 4.1 fps 20 worst 71 slowest 53 = step 3 paint 32 send 16 gc 0
+phases figures static 9 paint 24 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 20.5 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 229328 glyphs 10
+fps figures 20
+time figures step 2.3 paint 29.7 send 8.2 gc 4.1 fps 20 worst 87 slowest 55 = step 3 paint 33 send 17 gc 0
+phases figures static 9 paint 24 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 20.4 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 229328 glyphs 10
+fps figures 21
+time figures step 2.3 paint 29.8 send 7.1 gc 4.0 fps 21 worst 89 slowest 52 = step 2 paint 33 send 16 gc 0
+phases figures static 9 paint 24 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 20.5 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 231120 glyphs 10
+count 36 starts
+fps figures 20
+time figures step 2.4 paint 32.0 send 8.4 gc 4.0 fps 20 worst 74 slowest 57 = step 3 paint 34 send 18 gc 0
+phases figures static 9 paint 26 fx 0 hud 1 over 0 title 0
+avg figures static 16.2 paint 43.2 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.6
+heap figures alloc 231328 glyphs 10
+fps figures 19
+time figures step 2.4 paint 32.1 send 8.9 gc 4.1 fps 19 worst 76 slowest 58 = step 2 paint 36 send 18 gc 0
+phases figures static 9 paint 27 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 22.7 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 229328 glyphs 10
+fps figures 20
+time figures step 2.3 paint 32.2 send 8.4 gc 4.0 fps 20 worst 82 slowest 58 = step 2 paint 35 send 18 gc 0
+phases figures static 9 paint 26 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 22.9 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 230288 glyphs 10
+fps figures 20
+time figures step 2.4 paint 32.0 send 8.3 gc 4.0 fps 20 worst 81 slowest 57 = step 2 paint 35 send 18 gc 0
+phases figures static 9 paint 27 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 22.7 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 230288 glyphs 10
+fps figures 20
+time figures step 2.4 paint 32.2 send 7.9 gc 4.0 fps 20 worst 76 slowest 57 = step 2 paint 35 send 18 gc 0
+phases figures static 9 paint 27 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 22.9 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 231328 glyphs 10
+count 40 starts
+fps figures 18
+time figures step 2.5 paint 34.4 send 10.0 gc 4.0 fps 18 worst 78 slowest 62 = step 3 paint 37 send 19 gc 0
+phases figures static 9 paint 29 fx 0 hud 1 over 0 title 0
+avg figures static 16.3 paint 48.3 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.6
+heap figures alloc 230432 glyphs 10
+fps figures 18
+time figures step 2.5 paint 34.5 send 10.7 gc 4.0 fps 18 worst 90 slowest 61 = step 2 paint 39 send 18 gc 0
+phases figures static 9 paint 29 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 25.1 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 231616 glyphs 10
+fps figures 18
+time figures step 2.5 paint 34.3 send 10.6 gc 3.9 fps 18 worst 80 slowest 61 = step 2 paint 38 send 19 gc 0
+phases figures static 9 paint 29 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 25.1 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 232720 glyphs 10
+fps figures 18
+time figures step 2.5 paint 34.4 send 10.5 gc 3.9 fps 18 worst 81 slowest 61 = step 2 paint 37 send 19 gc 0
+phases figures static 9 paint 29 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 25.2 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 232640 glyphs 10
+fps figures 18
+time figures step 2.4 paint 34.6 send 8.8 gc 4.0 fps 18 worst 81 slowest 61 = step 2 paint 39 send 17 gc 0
+phases figures static 9 paint 29 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 25.2 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 230352 glyphs 10
+count 48 starts
+fps figures 16
+time figures step 2.7 paint 39.2 send 10.9 gc 4.0 fps 16 worst 84 slowest 68 = step 2 paint 44 send 19 gc 0
+phases figures static 9 paint 34 fx 0 hud 1 over 0 title 0
+avg figures static 16.3 paint 56.0 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.6
+heap figures alloc 230560 glyphs 10
+fps figures 17
+time figures step 2.7 paint 39.2 send 9.8 gc 4.0 fps 17 worst 83 slowest 67 = step 2 paint 43 send 19 gc 0
+phases figures static 9 paint 34 fx 0 hud 0 over 0 title 0
+avg figures static 8.1 paint 29.9 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 230480 glyphs 10
+fps figures 16
+time figures step 2.7 paint 39.0 send 11.2 gc 4.1 fps 16 worst 83 slowest 67 = step 2 paint 44 send 18 gc 0
+phases figures static 9 paint 34 fx 0 hud 1 over 0 title 0
+avg figures static 8.2 paint 29.6 fx 0.1 hud 0.9 over 0.0 title 0.0 input 0.6
+heap figures alloc 229328 glyphs 10
+fps figures 17
+time figures step 2.7 paint 39.1 send 8.7 gc 4.0 fps 17 worst 112 slowest 66 = step 2 paint 43 send 18 gc 0
+phases figures static 9 paint 34 fx 0 hud 0 over 0 title 0
+avg figures static 8.1 paint 29.8 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 231712 glyphs 10
+fps figures 17
+time figures step 2.8 paint 39.1 send 9.7 gc 4.0 fps 17 worst 83 slowest 67 = step 3 paint 42 send 19 gc 0
+phases figures static 9 paint 34 fx 0 hud 1 over 0 title 0
+avg figures static 8.1 paint 29.8 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 230560 glyphs 10
+count 64 starts
+fps figures 14
+time figures step 3.4 paint 48.7 send 10.8 gc 3.8 fps 14 worst 94 slowest 77 = step 3 paint 53 send 19 gc 0
+phases figures static 9 paint 44 fx 0 hud 1 over 0 title 0
+avg figures static 16.8 paint 72.1 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.6
+heap figures alloc 235680 glyphs 10
+fps figures 14
+time figures step 3.3 paint 48.9 send 9.2 gc 3.8 fps 14 worst 99 slowest 77 = step 3 paint 53 send 19 gc 0
+phases figures static 8 paint 45 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 39.7 fx 0.1 hud 0.9 over 0.0 title 0.0 input 0.6
+heap figures alloc 235440 glyphs 10
+fps figures 14
+time figures step 3.4 paint 48.7 send 9.9 gc 3.9 fps 14 worst 94 slowest 77 = step 3 paint 53 send 19 gc 0
+phases figures static 8 paint 45 fx 0 hud 1 over 0 title 0
+avg figures static 8.0 paint 39.6 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 233952 glyphs 10
+fps figures 14
+time figures step 3.4 paint 48.8 send 9.9 gc 3.9 fps 14 worst 93 slowest 77 = step 3 paint 53 send 19 gc 0
+phases figures static 8 paint 44 fx 0 hud 0 over 0 title 0
+avg figures static 7.9 paint 39.7 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 233952 glyphs 10
+fps figures 14
+time figures step 3.4 paint 48.8 send 10.1 gc 3.9 fps 14 worst 94 slowest 77 = step 4 paint 53 send 18 gc 0
+phases figures static 8 paint 45 fx 0 hud 1 over 0 title 0
+avg figures static 7.9 paint 39.6 fx 0.1 hud 0.8 over 0.0 title 0.0 input 0.6
+heap figures alloc 234112 glyphs 10
+psram free 4764636 largest 4718592
+gc free 5108384 alloc 122208
+done
