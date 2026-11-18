@@ -2,8 +2,8 @@
  {
   "file": "art/detailed.py",
   "name": "the height is no longer the one number: every figure is 96 px",
-  "find": "        self.PX = height / (1 + HELMET_TOP + self.SOLE)",
-  "replace": "        self.PX = TALL / (1 + HELMET_TOP + self.SOLE)"
+  "find": "        self.PX = height * character.scale / (1 + HELMET_TOP + self.SOLE)",
+  "replace": "        self.PX = TALL * character.scale / (1 + HELMET_TOP + self.SOLE)"
  },
  {
   "file": "art/detailed.py",
@@ -14,32 +14,32 @@
  {
   "file": "art/detailed.py",
   "name": "the eye is at the back of the head",
-  "find": "            ex, ey = at(ahead * 0.5 + k * side * 0.42, -0.02)",
-  "replace": "            ex, ey = at(-ahead * 0.5 + k * side * 0.42, -0.02)"
+  "find": "            ex, ey = at(ahead * 0.5 + k * frontal * 0.42, -0.02)",
+  "replace": "            ex, ey = at(-ahead * 0.5 + k * frontal * 0.42, -0.02)"
  },
  {
   "file": "art/detailed.py",
   "name": "the tank is on his chest",
-  "find": "        out = -ahead * self.TANK_OUT * self.PX",
-  "replace": "        out = ahead * self.TANK_OUT * self.PX"
+  "find": "        out = -ahead * self.OUT * figure.PX",
+  "replace": "        out = ahead * self.OUT * figure.PX"
  },
  {
   "file": "art/detailed.py",
   "name": "no glove is painted",
-  "find": "        self.glove(s, p, side, glove)\n",
+  "find": "        self.hand(s, p, side, far)\n",
   "replace": ""
  },
  {
   "file": "art/detailed.py",
   "name": "no helmet is painted",
-  "find": "        self.helmet(s, at, r, ahead, side)\n",
+  "find": "        figure.detail(s, union(dome, brim), self.colour, light=(lx, ly, r * 0.9, self.light), rim=0.4)\n",
   "replace": ""
  },
  {
   "file": "art/detailed.py",
   "name": "the coat has no bands",
-  "find": "        self.part(s, union(torso, hem), COAT, bands)",
-  "replace": "        self.part(s, union(torso, hem), COAT)"
+  "find": "        self.part(s, union(torso, hem), c.top, bands if c.bands else None)",
+  "replace": "        self.part(s, union(torso, hem), c.top)"
  },
  {
   "file": "art/detailed.py",
@@ -68,8 +68,8 @@
  {
   "file": "art/detailed.py",
   "name": "the stride is a fraction of a px, so a pose index is no whole number",
-  "find": "        self.stride = round(capture.stride(self.cycle) * figure.PX)",
-  "replace": "        self.stride = capture.stride(self.cycle) * figure.PX"
+  "find": "        self.stride = round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)  # the feet keep still",
+  "replace": "        self.stride = capture.stride(self.cycle) * figure.PX * character.proportions.leg  # the feet keep still"
  },
  {
   "file": "art/detailed.py",
@@ -92,14 +92,14 @@
  {
   "file": "art/detailed.py",
   "name": "the shin has no band",
-  "find": "        self.part(s, self.taper(s, knee, ankle, self.SHIN), cloth, None if far else self.band(s, knee, ankle, 0.42))",
-  "replace": "        self.part(s, self.taper(s, knee, ankle, self.SHIN), cloth)"
+  "find": "        band = None if far or not c.bands else self.band(s, knee, ankle, 0.42)",
+  "replace": "        band = None"
  },
  {
   "file": "art/detailed.py",
   "name": "the sleeve has no band",
-  "find": "        self.part(s, fore, cloth, None if far else self.band(s, elbow, wrist, 0.62))",
-  "replace": "        self.part(s, fore, cloth)"
+  "find": "        band = None if far or not c.bands else self.band(s, elbow, wrist, 0.62)",
+  "replace": "        band = None"
  },
  {
   "file": "art/detailed.py",
@@ -109,8 +109,140 @@
  },
  {
   "file": "art/detailed.py",
-  "name": "the figure gets two colours of a GIF's palette",
-  "find": "    figure = strip.quantize(FIGURE_COLOURS, method=Image.Quantize.MAXCOVERAGE)",
-  "replace": "    figure = strip.quantize(2, method=Image.Quantize.MAXCOVERAGE)"
+  "name": "a character's scale does not size it: the child is as tall as the fireman",
+  "find": "        self.PX = height * character.scale / (1 + HELMET_TOP + self.SOLE)",
+  "replace": "        self.PX = height / (1 + HELMET_TOP + self.SOLE)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a short sleeve covers the whole arm",
+  "find": "        self.limb(s, (upper, fore), (shoulder, elbow, wrist), (self.UPPER, self.FORE), c.sleeve, cloth, skin, band)",
+  "replace": "        self.limb(s, (upper, fore), (shoulder, elbow, wrist), (self.UPPER, self.FORE), 1, cloth, skin, band)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "short trousers cover the whole leg",
+  "find": "                  (self.THIGH, self.SHIN), c.trouser, cloth, skin, band)",
+  "replace": "                  (self.THIGH, self.SHIN), 1, cloth, skin, band)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "bare hands are painted in the glove's colour",
+  "find": "        colour = c.skin if c.hands is None else c.hands",
+  "replace": "        colour = GLOVE if c.hands is None else c.hands"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a bare limb's skin gets the band",
+  "find": "            self.part(s, union(*pieces), skin)\n",
+  "replace": "            self.part(s, union(*pieces), skin, band)\n"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the headwear is not painted over the face",
+  "find": "        c.headwear.over(self, s, view)\n",
+  "replace": ""
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "no gear part is painted over the body",
+  "find": "            gear.over(self, s, p, ahead)",
+  "replace": "            pass"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the nearer runner is pasted first, under the farther one",
+  "find": "        for row, k in sorted(zip(self.rows, range(n))):",
+  "replace": "        for row, k in sorted(zip(self.rows, range(n)), reverse=True):"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the left pictures are the right ones, not mirrored",
+  "find": "        self.left = [ImageOps.mirror(img) for img in self.pictures]",
+  "replace": "        self.left = list(self.pictures)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a runner going left shows its right pictures",
+  "find": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(at, self.runs_left[k])))",
+  "replace": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(at)))"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a clip is written with loss, so a frame is not the picture",
+  "find": "duration=ms, loop=0, lossless=True)",
+  "replace": "duration=ms, loop=0, lossless=False)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the leg share is ignored: a child's legs are an adult's",
+  "find": "(self.leg, self.LEG, self.FOOT)",
+  "replace": "(1.0, self.LEG, self.FOOT)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the arm share is ignored: a child's arms are an adult's",
+  "find": "(self.arm, self.ARM, self.HAND)",
+  "replace": "(1.0, self.ARM, self.HAND)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a fitted pose is not moved back to the ground",
+  "find": "        lift = min(pose[n][1] for n in self.FEET) - min(out[n][1] for n in self.FEET)",
+  "replace": "        lift = 0"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the stride is not shortened with the legs, so a child's feet slide",
+  "find": "round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)",
+  "replace": "round(capture.stride(self.cycle) * figure.PX)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the rows go in the order the runners come in, not by their size",
+  "find": "        rank = sorted(range(n), key=lambda k: runners[k].size[1])  # the smallest picture first",
+  "replace": "        rank = list(range(n))  # the smallest picture first"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a runner's lap is the street and its width, so the clip jumps where it loops",
+  "find": "        return whole // laps",
+  "replace": "        return self.W + run.size[0]"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a shoe gets a shaft in the boots' colour",
+  "find": "        shaft = c.shaft  # None: a shoe",
+  "replace": "        shaft = c.shaft or c.boots  # None: a shoe"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a bare hand gets the glove's cuff",
+  "find": "        if c.hands is not None:  # the glove's cuff",
+  "replace": "        if True:  # the glove's cuff"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the far shin gets a band too",
+  "find": "        band = None if far or not c.bands else self.band(s, knee, ankle, 0.42)",
+  "replace": "        band = None if not c.bands else self.band(s, knee, ankle, 0.42)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the hair's cap is not mirrored when the head faces left",
+  "find": "view.at(view.way * a, b) for a, b in self.CAP",
+  "replace": "view.at(a, b) for a, b in self.CAP"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the clip's length is the fastest runner's crossing",
+  "find": "        slow = min(runners, key=lambda run: run.speed)",
+  "replace": "        slow = max(runners, key=lambda run: run.speed)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the pose follows the whole run, not the place in the lap, so it jumps where the clip loops",
+  "find": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(at, self.runs_left[k])))",
+  "replace": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran, self.runs_left[k])))"
  }
 ]
