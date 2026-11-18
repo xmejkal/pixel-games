@@ -68,8 +68,8 @@
  {
   "file": "art/detailed.py",
   "name": "the stride is a fraction of a px, so a pose index is no whole number",
-  "find": "        self.stride = round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)  # the feet keep still",
-  "replace": "        self.stride = capture.stride(self.cycle) * figure.PX * character.proportions.leg  # the feet keep still"
+  "find": "        self.stride = round(capture.stride(self.cycle) * self.painter.PX * character.proportions.leg)",
+  "replace": "        self.stride = capture.stride(self.cycle) * self.painter.PX * character.proportions.leg"
  },
  {
   "file": "art/detailed.py",
@@ -194,8 +194,8 @@
  {
   "file": "art/detailed.py",
   "name": "the stride is not shortened with the legs, so a child's feet slide",
-  "find": "round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)",
-  "replace": "round(capture.stride(self.cycle) * figure.PX)"
+  "find": "round(capture.stride(self.cycle) * self.painter.PX * character.proportions.leg)",
+  "replace": "round(capture.stride(self.cycle) * self.painter.PX)"
  },
  {
   "file": "art/detailed.py",
