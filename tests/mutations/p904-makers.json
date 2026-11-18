@@ -1,0 +1,164 @@
+[
+ {
+  "file": "art/makers.py",
+  "name": "the flat part is shaded: a light, a rim and a grain",
+  "find": "    part = Figure.part  # one colour: no light, no rim, no grain",
+  "replace": "    part = DetailedFigure.part  # one colour: no light, no rim, no grain"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "a flat detail keeps its light and its rim, so the helmet's dome is shaded",
+  "find": "        super().detail(s, mask, colour)",
+  "replace": "        super().detail(s, mask, colour, light, rim)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the flat cut blends the 8x pixels of a block, not the middle one's colour",
+  "find": "        out = s.rgb.resize(size, nearest).convert(\"RGBA\")",
+  "replace": "        out = s.rgb.resize(size, Image.Resampling.BOX).convert(\"RGBA\")"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the flat cut's cover is the block's share, so an edge pixel the shape only touches is opaque",
+  "find": "        out.putalpha(s.alpha.resize(size, nearest))",
+  "replace": "        out.putalpha(s.alpha.resize(size, Image.Resampling.BOX))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the flat cut has no bands",
+  "find": "        out.paste(STRIPE + (255,), (0, 0) + size, ImageChops.multiply(self.bands.resize(size, nearest),",
+  "replace": "        out.paste(STRIPE + (255,), (0, 0) + size, ImageChops.multiply(self.bands.resize(size, nearest).point(lambda v: 0),"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "a limb part is not masked to its capsule, so it holds its whole limb",
+  "find": "            s.alpha = ImageChops.multiply(s.alpha, capsule)",
+  "replace": "            s.alpha = s.alpha"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the bands are not turned with the part, so a turned part's band is off it",
+  "find": "            self.painter.bands = bands.rotate(degrees, Image.Resampling.BICUBIC, center=(r * s.S, r * s.S),\n                                              fillcolor=0)",
+  "replace": "            self.painter.bands = bands"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the turn goes the other way: clockwise for a step past the upright one",
+  "find": "        return UPRIGHT[kind] - step * 360 / self.ANGLES",
+  "replace": "        return step * 360 / self.ANGLES - UPRIGHT[kind]"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the sprite turns the other way from its bands and its end",
+  "find": "            s.turn(degrees, (r, r))",
+  "replace": "            s.turn(-degrees, (r, r))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "an angle is rounded down to a step, not to the nearest",
+  "find": "        return round(degrees * self.ANGLES / 360) % self.ANGLES",
+  "replace": "        return int(degrees * self.ANGLES / 360) % self.ANGLES"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "an angle does not wrap, so 355 degrees is a step past the last",
+  "find": "        return round(degrees * self.ANGLES / 360) % self.ANGLES",
+  "replace": "        return round(degrees * self.ANGLES / 360)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the paste place is the joint, not the joint less the pivot",
+  "find": "out.append(Placed(key, (round(joint[0] - pivot[0]), round(joint[1] - pivot[1])), joint, end))",
+  "replace": "out.append(Placed(key, (round(joint[0]), round(joint[1])), joint, end))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the pivot is the sprite's middle, not the joint's place in the cropped picture",
+  "find": "            pivot = (r - x0, r - y0)",
+  "replace": "            pivot = (r, r)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the parts are pasted from the last to the first, so the torso is over the near arm",
+  "find": "        for part in self.placed(pose):\n            picture = self.atlas.picture(part.key).image",
+  "replace": "        for part in reversed(self.placed(pose)):\n            picture = self.atlas.picture(part.key).image"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the near arm is pasted before the torso",
+  "find": "         ((\"torso\", False), (\"head\", False)) + tuple((kind, False) for kind in ARM))",
+  "replace": "         tuple((kind, False) for kind in ARM) + ((\"torso\", False), (\"head\", False)))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "a far leg is painted in the near shade",
+  "find": "            painter.leg(s, p, side, far)",
+  "replace": "            painter.leg(s, p, side, False)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the atlas key has no shade, so a far part gets the near one's picture",
+  "find": "        return (kind, far, self.step(degrees))",
+  "replace": "        return (kind, False, self.step(degrees))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the bytes count three a pixel",
+  "find": "        return sum(p.image.width * p.image.height * 2 for p in self.pictures.values())",
+  "replace": "        return sum(p.image.width * p.image.height * 3 for p in self.pictures.values())"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "fill() paints half the steps",
+  "find": "                for step in range(self.ANGLES):",
+  "replace": "                for step in range(self.ANGLES // 2):"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "a part's end is not turned with its picture",
+  "find": "(pivot[0] + bx * c + by * k, pivot[1] - bx * k + by * c)",
+  "replace": "(pivot[0] + bx, pivot[1] + by)"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the foot is upright straight down, not forward",
+  "find": "\"shin\": 90, \"foot\": 0,",
+  "replace": "\"shin\": 90, \"foot\": 90,"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "a miss is the part's length, from its joint, not from where its end lands",
+  "find": "            out.append(math.dist((part.place[0] + end[0], part.place[1] + end[1]), part.end))",
+  "replace": "            out.append(math.dist(part.joint, part.end))"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the flat poses' bytes count one 16-bit number a joint",
+  "find": "len(poses), joints, len(poses) * joints * 4, again),",
+  "replace": "len(poses), joints, len(poses) * joints * 2, again),"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the cutout's poses' bytes count two 16-bit numbers a part",
+  "find": "len(placed), parts, len(placed) * parts * 6)),",
+  "replace": "len(placed), parts, len(placed) * parts * 4)),"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the clip pastes each picture at the panel's margin, so the pivots are not at one place",
+  "find": "                panel.paste(img, (m + self.left - run.pivot[0], ph - m - run.size[1]), img)",
+  "replace": "                panel.paste(img, (m, ph - m - run.size[1]), img)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the pictures are painted by the whole painter, whatever the maker",
+  "find": "        return self.maker(box(self.height), self.height, rim or self.rim, self.character)",
+  "replace": "        return DetailedFigure(box(self.height), self.height, rim or self.rim, self.character)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "paint cuts without the cut hook, so the flat maker's cut is not used",
+  "find": "        return self.edge.apply(self, self.cut(s), ahead >= 0)",
+  "replace": "        return self.edge.apply(self, self.banded(s.cut(outline=False)), ahead >= 0)"
+ }
+]

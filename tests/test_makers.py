@@ -295,12 +295,14 @@ class CutoutTest(unittest.TestCase):
 
 
 class StandRun(detailed.Pictures):
-    """A stand-in for RunPictures: one plain picture a pose, each its own shade of colour, a pivot, and poses of seven
-    joints whose first number is the pose's index."""
+    """A stand-in for RunPictures: one plain picture a pose, each its own shade of colour with its pivot's pixel white,
+    and poses of seven joints whose first number is the pose's index."""
 
     def __init__(self, colour, size, pivot_x, painter=None, height=detailed.TALL):
         self.size, self.pivot, self.painter, self.height = size, (pivot_x, size[1] - 1), painter, height
         self.pictures = [Image.new("RGBA", size, colour + (10 + 20 * i, 255)) for i in range(12)]
+        for img in self.pictures:
+            img.putpixel(self.pivot, (255, 255, 255, 255))
 
     def poses(self):
         return [{"j%d" % k: (i, 0.0, 0.0) for k in range(7)} for i in range(12)]
@@ -379,8 +381,7 @@ class MakerClipTest(unittest.TestCase):
         for i in (0, 7):
             for k, run in enumerate(runs.values()):
                 with self.subTest(frame=i, panel=k):
-                    self.assertEqual(run.pictures[i].getpixel(run.pivot)[:3],
-                                     frames[i].getpixel(((k * pw + x) * zoom, y * zoom)))
+                    self.assertEqual((255, 255, 255), frames[i].getpixel(((k * pw + x) * zoom, y * zoom)))
 
 
 class MakerCostsTest(unittest.TestCase):
