@@ -1,0 +1,170 @@
+[
+ {
+  "file": "art/mocap.py",
+  "name": "a one-shot's poses are spread as a loop's, so its last pose is not the span's last frame",
+  "find": "        return min(length, i * length / (self.poses - 1))",
+  "replace": "        return min(length, i * length / self.poses)"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the search does not lower the end by the rise, so the climb's loop is the shortest it may be",
+  "find": "                d = distance(views[s], views[s + p], self.rise(views[s], views[s + p]))",
+  "replace": "                d = distance(views[s], views[s + p])"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the climb's poses are not closed, so its last pose does not lead into the next play's first",
+  "find": "tuple(v - g * i / self.poses for v, g in zip(pose[n], gap[n]))",
+  "replace": "tuple(v for v, g in zip(pose[n], gap[n]))"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the gap keeps the rise, so the closing pulls every pose of the climb down",
+  "find": "        lowered = {n: (f, u - up, d) for n, (f, u, d) in last.items()}",
+  "replace": "        lowered = last"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the root motion spaces a one-shot's poses as a loop's, so it is not where the poses are",
+  "find": "            t = cycle.frame(i, period)\n            k = int(t)\n            a, b = ahead(",
+  "replace": "            t = i * period / cycle.poses\n            k = int(t)\n            a, b = ahead("
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the root motion is from the capture's origin, not from the loop's first frame",
+  "find": "        x0, _, z0 = window[0][\"root\"]",
+  "replace": "        x0, _, z0 = 0.0, 0.0, 0.0"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the rise is the loop's first frame against itself, so the climb does not go up",
+  "find": "side(window[-1], way, floor, height))",
+  "replace": "side(window[0], way, floor, height))"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "with no argument the capture asks for the moves' files too, so Rescue's art needs them",
+  "find": "        cycles = CYCLES + CROWD if cycles is None else cycles",
+  "replace": "        cycles = CYCLES + CROWD + MOVES if cycles is None else cycles"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the poses are not snapped, so a pose in flight leaves the picture's last row",
+  "find": "        self.posed = [snapped(pose) for pose in raw]",
+  "replace": "        self.posed = raw"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the travel has no lift, so a jump stays on the floor",
+  "find": "round(lift * px))",
+  "replace": "0)"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the leg share is ignored, so a child's feet slide",
+  "find": "        px, leg = self.painter.PX, character.proportions.leg",
+  "replace": "        px, leg = self.painter.PX, 1.0"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the advance has no rise, so the climber climbs the same rungs again",
+  "find": "round(capture.rise(self.cycle) * px))",
+  "replace": "0)"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "a one-shot's pose lasts its span over all its poses, so its last pose is cut short",
+  "find": "self.pose_ms = self.cycle.frame(1, capture.loop(self.cycle)[1]) * 1000 / self.cycle.fps",
+  "replace": "self.pose_ms = capture.loop(self.cycle)[1] / len(self.pictures) * 1000 / self.cycle.fps"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the place adds no advance a play, so every play starts at the first one's place",
+  "find": "        return index, (plays * af + f, plays * au + u)",
+  "replace": "        return index, (f, u)"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the plays are the clip's length rounded down, not to the nearest whole number",
+  "find": "    return max(1, round(clip_ms / play_ms))",
+  "replace": "    return max(1, int(clip_ms / play_ms))"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the clip's ladder has a rung every whole advance, so none is under the climber's feet",
+  "find": "        return Ladder((x - af / 2, y + au / 2), (af, au), math.hypot(af, au) / 2)",
+  "replace": "        return Ladder((x - af / 2, y + au / 2), (af, au), math.hypot(af, au))"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the ladder draws a rung every second step",
+  "find": "x, y = bx + k * self.step * af / length, round(by - k * self.step * au / length)",
+  "replace": "x, y = bx + 2 * k * self.step * af / length, round(by - 2 * k * self.step * au / length)"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the rail stands upright, not along the lean",
+  "find": "            x = round(bx + (by - y) * af / au - self.RAIL / 2)",
+  "replace": "            x = round(bx - self.RAIL / 2)"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the movers are pasted in the order they come, so a nearer one can be under a farther one",
+  "find": "        movers = sorted(movers, key=lambda m: m.row)  # the farther first",
+  "replace": "        movers = list(movers)"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the crosser starts with its picture on the street, so it pops up when the clip starts again",
+  "find": "        start = move.pivot[0] - move.size[0] if mover.crosses else mover.column",
+  "replace": "        start = 0 if mover.crosses else mover.column"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "a one-shot rises as a rising loop does, so a jump that lands higher goes up a play",
+  "find": "class OneShot(Cycle):",
+  "replace": "class OneShot(Rising):"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the root motion drops the blend between two frames, so a pose between them is placed at the first",
+  "find": "            out.append(a + (b - a) * (t - k))",
+  "replace": "            out.append(a)"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the root motion drops the way's z, so a body that faces off the x axis goes less far",
+  "find": "return ((x - x0) * fx + (z - z0) * fz) / height",
+  "replace": "return (x - x0) * fx / height"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the toes are counted from the painter's box, not from the cut picture",
+  "find": "- x0 - self.pivot[0]",
+  "replace": "- self.pivot[0]"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the toes are the left toe's, not the middle of the two",
+  "find": "(lx + rx) / 2 - x0",
+  "replace": "lx - x0"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the rung under the climber's soles is at its row of lift 0, not under pose 0's soles",
+  "find": "        y = mover.row - u + 1  # the row under the soles in pose 0",
+  "replace": "        y = mover.row + 1  # the row under the soles in pose 0"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the rail goes through the climber's pivot, not the middle of its toes",
+  "find": "        tx, ty = mover.column + f + dx, mover.row - u + dy",
+  "replace": "        tx, ty = mover.column + f, mover.row - u + dy"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the farther mover is pasted last, over the nearer one",
+  "find": "            for x, y, img in self.places(i):",
+  "replace": "            for x, y, img in reversed(self.places(i)):"
+ }
+]

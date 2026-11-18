@@ -1,7 +1,8 @@
 """Detailed characters at 96 px (P904's spike): the runs of art/mocap.py painted with a face, hands, clothes, a
 headwear and gear, to see whether the detail shows at that size. The fireman has a turnout coat, gloves, a helmet
 and an air tank; CAST holds him and the other characters, each a Character record with its own cycle. It is in no
-game and in no art set: art/paint.py does not call it, and the packs stay as they are.
+game and in no art set: art/paint.py does not call it, and the packs stay as they are. art/moves.py paints the moves
+with the same painter, DetailedFigure, through Pictures.
 
 One number, the height in px from the soles to the helmet's top, sets the size; a character's scale is its share
 of it, and its headwear sits on top of its head. Every width and offset is a share of the body height, so the same
@@ -671,35 +672,50 @@ class DetailedFigure(Figure):
                     MOUTH)
 
 
-class RunPictures:
-    """A character's run (cycle_name: a name in mocap.CYCLES or mocap.CROWD), its twelve poses from the capture, each
-    painted on its own picture and all cut to the one box they use: pictures (RGBA, in the board's RGB565 colours)
-    facing right and left, each the mirror of the right one, size, stride (px a cycle) and speed (px a second), both
-    the capture's."""
+class Pictures:
+    """A character's cycle (cycle_name: a name in mocap.CYCLES, mocap.CROWD or mocap.MOVES), its poses (poses()) each
+    painted by painter on its own picture of box(height) and all cut to the one box they use: pictures (RGBA, in the
+    board's RGB565 colours) facing right and left, each the mirror of the right one, size, and pivot, the point that is
+    put on a place (Unity's sprite pivot, https://docs.unity3d.com/ScriptReference/Sprite-pivot.html): the hips' column
+    on the last row."""
 
     def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
         self.capture, self.height, self.rim, self.seed, self.character = capture, height, rim, seed, character
-        self.cycle = next(c for c in mocap.CYCLES + mocap.CROWD if c.name == cycle_name)
-        figure = self.figure()
-        painted = [figure.paint(pose) for pose in capture.poses(self.cycle)]
+        self.cycle = mocap.named(cycle_name)
+        self.painter = self.figure()
+        painted = [self.painter.paint(pose) for pose in self.poses()]
         used = [img.getchannel("A").getbbox() for img in painted]
         x0, y0, x1 = min(b[0] for b in used), min(b[1] for b in used), max(b[2] for b in used)
         self.pictures = [q565(img.crop((x0, y0, x1, img.height))) for img in painted]
-        self.used = (x0, y0, x1)  # the run's first column, top row and end column in its box: at an edge, a pose is cut
+        self.used = (x0, y0, x1)  # the poses' first column, top row and end column in their box: at an edge, one is cut
         self.left = [ImageOps.mirror(img) for img in self.pictures]  # as CapturedPictures.add in art/sets/rescue.py
         self.size = self.pictures[0].size
-        self.stride = round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)  # the feet keep still
-        self.speed = self.stride * self.cycle.fps / capture.loop(self.cycle)[1]
+        self.pivot = (round(self.painter.at((0.0, 0.0, 0.0))[0]) - x0, self.size[1] - 1)
+
+    def poses(self):
+        """The poses to paint: the capture's."""
+        return self.capture.poses(self.cycle)
 
     def figure(self, rim=None):
-        """A painter of this run's height on the run's seed, with the run's rim or another."""
+        """A painter of this height on the seed, with the rim or another."""
         rnd.seed(self.seed)
         return DetailedFigure(box(self.height), self.height, rim or self.rim, self.character)
 
     def size_bytes(self):
-        """The run in a pack: RGB565, both facings."""
+        """The pictures in a pack: RGB565, both facings."""
         w, h = self.size
         return w * h * 2 * len(self.pictures) * 2
+
+
+class RunPictures(Pictures):
+    """A character's run (cycle_name: a name in mocap.CYCLES or mocap.CROWD): its twelve poses' Pictures, stride (px a
+    cycle) and speed (px a second), both the capture's."""
+
+    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
+        super().__init__(capture, height, rim, seed, character, cycle_name)
+        # the feet keep still
+        self.stride = round(capture.stride(self.cycle) * self.painter.PX * character.proportions.leg)
+        self.speed = self.stride * self.cycle.fps / capture.loop(self.cycle)[1]
 
     def picture(self, ran, left=False):
         """The picture after ran px of running, facing right or, with left, left."""
@@ -899,9 +915,7 @@ def main():
                              "cool rim (%(default)s)")
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args()
-    capture = mocap.Capture(args.cmu)
-    if capture.missing():
-        parser.error("not in %s: %s" % (args.cmu, ", ".join(capture.missing())))
+    capture = mocap.open_capture(parser, args.cmu)
     runners = [RunPictures(capture, TALL, RIMS[args.rim](), character=c, cycle_name=name) for c, name in CAST]
     run, old = next(r for r in runners if r.character == FIREMAN), Committed()
     os.makedirs(args.out, exist_ok=True)
