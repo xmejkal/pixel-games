@@ -355,3 +355,141 @@ none
   (`plan.md`), the pixel-engine driver source and the thirteen other games: not read.
 - The comment ids were matched by their time and order, not each by its text.
 - No scratch file was made.
+
+## Second pass
+
+On the diff 9232a27 to 9088322, read on 2026-11-18 from 09:35 Prague time, for about 10 minutes. D13 to D17 are "in the
+session": could not open. I judge the brief's record of them.
+
+### A correction to my first pass
+
+- My "Check first" section put two quotes together as "the problems the PO reported after play". The second one is
+  not about Rescue. `bench.md:1622-1623`: "No the game is not exciting, its still just  not much fun. But its us
+  experimenting and testing spark, so its ok." It stands under the heading at `bench.md:1607`: "## P573 (#778),
+  2026-11-16: cube as SMILE, the PO's play test". The first quote I had taken from PO-21 and not from the card. I read
+  it now, in #1124's comments: `2026-11-13, the PO played the toy on the board: "I dont get the rescue game, it doesnt
+  work. can you fix it and add the victims running around?"`. A fix round followed it (the same card: "made the game
+  readable after the PO's 'I dont get the rescue game'").
+
+### Whether each "sentence to change" was applied
+
+- ★C2 · applied as written ("the Python heap" for "the heap").
+- ★C3 · applied in part. The street, the missing cycles and the man's 92 px are in. The second size (2,239,488 bytes
+  at four times, "2.6 to 3.0 times") is out, on D14. D14 is in the session, and the card's comment still says "four
+  times today's 24 px". The claim names D14 and not the card's other words.
+- ★C4 · applied as written, with the caveat.
+- ★C5 · applied as written. The new second sentence ("FIRE has two bindings") is not in the cited lines
+  `games/app.py:242,334,336`. It is at `games/app.py:461` ("FIRE is BOOT, and the joystick's switch when pins names the
+  stick") and `games/engine/actions.py:5`.
+- ★C6 · applied (the caveat).
+- ★C8 · applied as written, with the third window.
+- ★C9 · applied as written, with the cycles that run on time.
+- ★C11 · applied as written.
+- Not applied, from part 2: the Q2 board option still says "load one 96 px cycle" while the Test line and item 1 now
+  say a pack of about 2 MB. D13 also says "one 96 px motion loaded". So the PO chose the run that fits today's pool
+  (665,088 bytes with the street), and the pass line is written for another run. The mirror flag's "the best ratio
+  of gain to change" beside "not estimated". P555 (#759) for the flip. The three time estimates with no source. The
+  proof command of the outcome. C12, C15, C16 and C19. Meteors "because it is small", though ★C9 now says its
+  formula differs. A1's "under 15 fps" beside a line that is now 19. The send and the window count (PO-6, TECH-7).
+  The lane limit for the items. The question of what a mission is.
+
+### Part 2 again: dropped caveats and claims stronger than their source
+
+- C20 · wrong in one half and stronger in the other. "After play, the PO said other things about Rescue": the second
+  quote is about CubeTiming as SMILE (above). Its pointer is line 1622, not 1623. Its second sentence ("But its us
+  experimenting and testing spark, so its ok") is dropped. The first quote is about "the toy" of 2026-11-13, before
+  the people, the carry and the scoring, and it asked for a fix that was made. "council/refuter.md, which read
+  #1124" was not true of the first pass for this quote. It is true now.
+- C21 · holds against `art/sets/rescue.py:197`. "The head as an ellipse" rests on one line that I saw, `:526`, which
+  paints the hair of a `Person`. I did not read the head's own lines.
+- C22 · stronger than the frame. The frame's "must not get worse" names "each set's load time" of the fifteen games. A
+  new set that loads slower does not make an old set worse. What it breaks is the README's sentence "every set loaded
+  in under 0.6 s". The claim joins the two.
+- C23 · as PO-9 says it. The card's body was read by neither the facilitator nor me.
+- The Test line · "the collection stays near Rescue's 7.5 ms": "near" has no bound, and the log's values are 7.2,
+  7.5 and 7.7 ms. "the pack sits in the pool and not in the heap": no log line says where a pack sits, because
+  `games/pictures.py:50-52` falls back without a word. The spike needs its own print for it. "19 fps (the rate of
+  Rescue's idle windows without the title)": the two windows are 19 and 20. The line still names no worst gap and no
+  window count.
+- risks-and-tests.md, A1 · the result that changes the decision stays "under 15 fps". With a line of 19, a result of
+  15 to 18 is neither. The gap grew by one.
+- Q5, FIRE's two bindings split · "no app change" is stronger than the code. The tuple is built in
+  `games/app.py:477-482` (`fire = (boot, buttons.Button(Pin(pins.JOY_SW, ...`) and the map has one FIRE action. A split
+  needs a new action in `ActionMap` and a change in `app.open_action_map`. "a switch under the thumb that holds the
+  stick": no source. USER-7 says where the hands are "is not written anywhere I read".
+- Q5, a double tap or a hold of FIRE · "no app change" holds for the app. Rescue's tap rule is on the button's path
+  only (`games/rescue.py:93`: "None on the button's path"). With the stick, FIRE held "sprays from its first frame
+  (wait_ms 0)" (`:129-130`). So the stick path has no tap window today. The option's "Rescue already tells a tap from a
+  hold" is narrower than it reads.
+- Q4, fewer cycles · "about 508 KB" is 507,792 bytes without the street, 661,392 with it. The option does not say
+  which.
+- Q4, an 8-bit palette · "half the bytes" leaves out the palette and says nothing of the key colour.
+- verification.md, "Agree: the refuter and the PO assistant both put a test that needs no 96 px art early" · not in
+  the PO assistant's report. PO-20: "A2 is the riskiest on use, and its test needs the first mission, so it comes
+  second". The PO assistant puts the board spike first. This agreement is mine alone.
+- verification.md, "Split: ... the refuter and the user lens point to a button, as the genre does" · USER-23 is from
+  two search snippets ("pages not opened"). "As the genre does" drops that.
+- verification.md · the ★C5 row keeps the pointer 332-341 while the brief cites 242, 334, 336. The ★C3 row holds no
+  line that I quoted.
+- items.md, item 1 · still one card with "two steps with their own gates". Its first step is the Mac picture, and D13
+  chose the board spike over the picture. The item does not say that the picture is now only the spike's input.
+- items.md, item 2 · "P901 follows it, as slice 2". The card P901 says "Needed by P900" (PO-10, from `gh issue view
+  1280`). The item and the card now order the two oppositely, where before the item and the story map did.
+- items.md, item 3 · "each way to switch" is six ways now. Two of them (PICK, the knob) need an app change and a third
+  (the split) needs a new action, so "depends on: —" holds for three of the six. Its proof ("names the one he wants")
+  is not A2's pass line ("10 switches in a row with no wrong figure").
+- D16 · a home path is in the pushed history: commits 5db7260 (5 added lines) and 7383393 (1 added line) are on
+  `origin/p900-figures-discovery`. The files at 9088322 hold none. No question, no board action and no item in the
+  brief carries the open rewrite, and the repository is public.
+
+### Part 3 again: the strongest rival for each new interpretation
+
+- "The first yes is for this point" (D17). Rival: one message asked several things, and "yes,yes,ok, lets go on" is a
+  loose yes to the bundle. Which yes goes with which question is again the facilitator's reading. If the record is
+  true to his words, the discovery's continuation from D17 on is covered.
+- "A bigger figure answers neither" (C20). Rival: the 2026-11-13 complaint was about a goal that he could not read,
+  and bigger figures are easier to read. With the second quote gone, C20 is one remark about an unfinished toy.
+- "Size alone possibly adds no detail" (C21). Rival: at 96 px the motion itself reads better (the stride, the lean,
+  the arm swing), and that is the "realistic figures" of his words. Q12 asks it.
+- "19 fps is Rescue's rate" (the Test line). Rival: it is the rate of an untouched box in an unknown state, on one
+  evening, in two 5 s windows. A steered Rescue is possibly slower, so the spike is held to a line the old game never
+  met in play.
+- "A prototype at today's size shows which switch is good" (item 3). Rival: with two 96 px figures that fill two
+  thirds of the screen the pick is a different act (no doubt about who is near, a mark is easy to see), so a result
+  at 24 px does not carry over.
+- "The spike first tests A1" (D13). Rival: as D13 words it, the run fits today's pool, so it tests the frame rate and
+  not the memory.
+
+### Part 4 again: numbers without unit, population, period or provenance
+
+- "19 fps": two 5 s windows, one run, 2026-11-16, an idle box. No state named for the spike's own measure.
+- "near Rescue's 7.5 ms": no bound. One window's `gc` value of three.
+- "about 2 MB" (the Test line, item 1): which cycles. ★C3's cut is 1,913,952 bytes of figures or 2,067,552 with the
+  street, and it holds none of the mission's cycles.
+- "about 508 KB": with or without the street.
+- "under 15 fps": no source, unchanged.
+- "1.6 to 2.2 s" (C22): calculated from two load rates, one of them with no kept log (548 ms).
+- "a 4 MB picture pool" (C23): P822's number, not re-read.
+- "Its picture box is about 111 px" (D14): the run's box. The spray's is 148 by 111.
+- "half the bytes" (the 8-bit option): of the pictures, before the palette.
+- "about a day", "half a day", "two or three days": unchanged, no source.
+
+### Whether D17 answers part (a)
+
+- In part. Going forward, yes, if the session holds the words as recorded: could not open.
+- Not for the past: D17 says itself that "the work before it ran on the facilitator's reading alone".
+- Still open from part (a): D12 stays in the list as a decision of "the PO", though D17 says it was a reading. The
+  card is in Idea while the discovery runs and reads "Ready for: an experiment". The board action "move #1279 to
+  Discovery again" is pending behind P892, so the board shows three in flight while four are worked on.
+- D17's question was closed ("Whether 'go on' meant this discovery. If not, I stop it"). It was asked after the work
+  was written and the refuter had run, so a no cost him more than a yes.
+
+### Searches
+
+none
+
+### What stayed open
+
+- The session's words for D13 to D17. The head's painting lines for C21. P822's body. Whether the rules ran in the
+  log's idle windows. The parts of the brief that the diff did not touch were not read again.
+- No scratch file was made.

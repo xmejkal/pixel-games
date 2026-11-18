@@ -9,7 +9,7 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - needed by: "we should sell it more and make bigger figures, ours are tiny and one doesn't appreciate the details so much" (the PO, 2026-11-18) <!-- REQUIRED:needed-by -->
 - value proven by: a GIF he can look at, and a board log with the pool, the free PSRAM, the fps and the load time against the pass line <!-- REQUIRED:value-proven-by -->
 - depends on: — <!-- REQUIRED:depends-on -->
-- status: proposed <!-- REQUIRED:item-status -->
+- status: filed D21 <!-- REQUIRED:item-status -->
 - label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games <!-- REQUIRED:spark-process:slice -->
@@ -19,8 +19,8 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - type: story <!-- REQUIRED:item-type -->
 - needed by: "one can pick who to control, and there is some collaboration mission always" (the PO, 2026-11-18) <!-- REQUIRED:needed-by -->
 - value proven by: he plays it on the board (a feel slice: it stops at ready to play) <!-- REQUIRED:value-proven-by -->
-- depends on: the spike. P901 (https://github.com/xmejkal/spark/issues/1280) follows it, as slice 2 of the story map <!-- REQUIRED:depends-on -->
-- status: proposed <!-- REQUIRED:item-status -->
+- depends on: the two spikes. Its order against P901 (https://github.com/xmejkal/spark/issues/1280), whose card says "Needed by P900", is Q14 <!-- REQUIRED:depends-on -->
+- status: filed D21 <!-- REQUIRED:item-status -->
 - label (the repository's type label): story <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games <!-- REQUIRED:spark-process:slice -->
@@ -30,8 +30,8 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - type: spike <!-- REQUIRED:item-type -->
 - needed by: "one can pick who to control, and there is some collaboration mission always" (the PO, 2026-11-18) <!-- REQUIRED:needed-by -->
 - value proven by: he tries each way to switch and names the one he wants (a feel slice) <!-- REQUIRED:value-proven-by -->
-- depends on: — (no 96 px art, no bigger pool and no P901 are needed, council/refuter.md part e) <!-- REQUIRED:depends-on -->
-- status: proposed <!-- REQUIRED:item-status -->
+- depends on: — for the stick's up and down, FIRE's double tap or hold and the automatic switch. PICK, the knob and the split of FIRE each need an app change first <!-- REQUIRED:depends-on -->
+- status: filed D21 <!-- REQUIRED:item-status -->
 - label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->
 - slice (one Slice option of the board, or "ask the decider for a new one"): pixel-games <!-- REQUIRED:spark-process:slice -->
@@ -39,4 +39,4 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 
 ## Board actions
 <!-- Each action, taken or pending, with its D. e.g. `- move the item to Discovery · pending` -->
-- file the two items above · pending, Q11 <!-- REQUIRED:board-actions -->
+- file the three items above · taken 2026-11-18 · D21: P904 #1283, P905 #1284 (the switch prototype), P906 #1285 (the walking skeleton) <!-- REQUIRED:board-actions -->

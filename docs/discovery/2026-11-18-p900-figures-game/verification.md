@@ -27,4 +27,6 @@ e.g. `- Split: Feasibility says a day, Risks says a week · Q4` -->
 - Split: the refuter finds the pass line of A1 invented in two of its three parts, and the facilitator had proposed it · Q1, with a new line that names its source for each part
 - Split: the refuter doubts that size answers what he said after play (C20, C21), and the brief's jobs rest on his words about size · Q12
 - Split: the facilitator proposed the stick's up and down first, and the refuter and the user lens point to a button, as the genre does, and to the climb in his example · Q5, with three more options
-- Agree: the refuter and the PO assistant both put a test that needs no 96 px art early · the third item in items.md
+- The refuter alone puts A2's test early, because it needs no 96 px art. The PO assistant puts it second, after the first mission (PO-20) · the third item in items.md, P905
+- Second pass: the refuter corrected its own grouping of two quotes in C20, and the brief now names each quote's game and date
+- Split: D13's words describe one motion, which fits today's pool, and the test needs a pack bigger than the pool · settled by D21, whose question named the 2 MB pack
