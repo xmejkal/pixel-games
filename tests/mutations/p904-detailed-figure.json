@@ -164,8 +164,8 @@
  {
   "file": "art/detailed.py",
   "name": "a runner going left shows its right pictures",
-  "find": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran, self.runs_left[k])))",
-  "replace": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran)))"
+  "find": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(at, self.runs_left[k])))",
+  "replace": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(at)))"
  },
  {
   "file": "art/detailed.py",
@@ -238,5 +238,11 @@
   "name": "the clip's length is the fastest runner's crossing",
   "find": "        slow = min(runners, key=lambda run: run.speed)",
   "replace": "        slow = max(runners, key=lambda run: run.speed)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the pose follows the whole run, not the place in the lap, so it jumps where the clip loops",
+  "find": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(at, self.runs_left[k])))",
+  "replace": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran, self.runs_left[k])))"
  }
 ]
