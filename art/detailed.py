@@ -312,7 +312,10 @@ class Character:
 
 
 FIREMAN = Character()
-CAST = ((FIREMAN, "run"),)  # each character with the cycle of art/mocap.py it runs
+RED = (200, 40, 44)
+PARAMEDIC = Character("paramedic", skin=(246, 204, 176), top=RED, legs=RED, boots=(28, 26, 30), hands=(70, 130, 200),
+                      shaft=None, hem=0.15, headwear=Hair((92, 56, 34), down=1.6), gear=(Bag(),))
+CAST = ((FIREMAN, "run"), (PARAMEDIC, "woman"))  # each character with the cycle of art/mocap.py it runs
 
 
 class DetailedFigure(Figure):
@@ -595,33 +598,38 @@ class Committed:
         return self.run[pose_index(ran, self.STRIDE_PX, self.RUN_POSES)]
 
 
+GAP, DARK = 6, (30, 16, 40)  # DARK: the street's sky at its middle (art/sets/rescue.py's NIGHT)
+
+
+def on_dark(pictures, zoom=1):
+    """The pictures in a row on the street's dark, GAP px apart, their bottoms on one line, at zoom: so they read as
+    on the board."""
+    w = sum(img.width for img in pictures) + GAP * (len(pictures) + 1)
+    h = max(img.height for img in pictures) + 2 * GAP
+    row, x = Image.new("RGB", (w, h), DARK), GAP
+    for img in pictures:
+        row.paste(img, (x, h - GAP - img.height), img)
+        x += img.width + GAP
+    return row.resize((w * zoom, h * zoom), Image.Resampling.NEAREST)
+
+
 class FigureSheet:
     """figure-sheet.png: the twelve poses in a row with today's fireman at their end, then one run pose and the
-    pose turned toward the viewer at 3x, then that pose with each rim, on the street's dark, so they read as on the
-    board."""
+    pose turned toward the viewer at 3x, then that pose with each rim, on the street's dark."""
 
-    ZOOM, GAP, DARK, POSE = 3, 6, (30, 16, 40), 3  # DARK: the street's sky at its middle (art/sets/rescue.py's NIGHT)
+    ZOOM, POSE = 3, 3
 
     def __init__(self, run, old):
         self.run, self.old = run, old
 
-    def on_dark(self, pictures, zoom=1):
-        w = sum(img.width for img in pictures) + self.GAP * (len(pictures) + 1)
-        h = max(img.height for img in pictures) + 2 * self.GAP
-        row, x = Image.new("RGB", (w, h), self.DARK), self.GAP
-        for img in pictures:
-            row.paste(img, (x, h - self.GAP - img.height), img)
-            x += img.width + self.GAP
-        return row.resize((w * zoom, h * zoom), Image.Resampling.NEAREST)
-
     def image(self):
         run, (w, h) = self.run, self.run.size
         rows = [("the run's twelve poses at %d px, each %d by %d px, and today's 26 px fireman" % (run.height, w, h),
-                 self.on_dark(run.pictures + [self.old.run[0]])),
+                 on_dark(run.pictures + [self.old.run[0]])),
                 ("pose %d of the run, and the same pose turned toward the viewer, at %dx" % (self.POSE, self.ZOOM),
-                 self.on_dark([run.alone(self.POSE), run.alone(self.POSE, turned=True)], self.ZOOM)),
+                 on_dark([run.alone(self.POSE), run.alone(self.POSE, turned=True)], self.ZOOM)),
                 ("the rims (--rim): %s, at %dx" % (", ".join(RIMS), self.ZOOM),
-                 self.on_dark([run.alone(self.POSE, rim()) for rim in RIMS.values()], self.ZOOM))]
+                 on_dark([run.alone(self.POSE, rim()) for rim in RIMS.values()], self.ZOOM))]
         sheet = Sheet(max(img.width for _, img in rows) + 20, sum(img.height + 28 for _, img in rows) + 10)
         y = 6
         for label, img in rows:
