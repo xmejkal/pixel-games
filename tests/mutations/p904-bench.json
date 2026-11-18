@@ -1,0 +1,200 @@
+[
+ {
+  "file": "probe904_figures.py",
+  "name": "the figure moves in whole px, so a frame's fraction of a px is lost",
+  "find": "        px = self.speed * ms / 1000\n",
+  "replace": "        px = self.speed * ms // 1000\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the figure runs right whichever way it faces",
+  "find": "        self.x += px * self.facing\n",
+  "replace": "        self.x += px\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the figure's px run is only its last step's, so its pose does not follow the distance",
+  "find": "        self.ran += px\n",
+  "replace": "        self.ran = px\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "at an edge the figure faces right, so at the right edge it never turns",
+  "find": "            self.facing = 1 if self.x < self.lo else -1\n",
+  "replace": "            self.facing = 1\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "at an edge the figure is not put back, so its picture leaves the screen",
+  "find": "            self.x = self.lo if self.x < self.lo else self.hi\n",
+  "replace": "            pass\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the margin is the pivot alone, so a left picture with its pivot left of its middle leaves the screen",
+  "find": "        margin = max(self.pivot, self.w - 1 - self.pivot)",
+  "replace": "        margin = self.pivot"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the left picture keeps the right one's pivot, so it is not mirrored about the hips",
+  "find": "        pivot = self.pivot if self.facing > 0 else self.w - 1 - self.pivot\n",
+  "replace": "        pivot = self.pivot\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the picture's last row is one over FEET, so the soles float",
+  "find": "        return int(self.x) - pivot, FEET - self.h + 1\n",
+  "replace": "        return int(self.x) - pivot, FEET - self.h\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the pose changes once a stride, not twelve times",
+  "find": "int(self.ran) * POSES // self.stride % POSES)",
+  "replace": "int(self.ran) // self.stride % POSES)"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the figure always shows its right pictures",
+  "find": "\"r\" if self.facing > 0 else \"l\",",
+  "replace": "\"r\","
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a count lasts a tenth of SECONDS",
+  "find": "    k = ms // (SECONDS * 1000)\n",
+  "replace": "    k = ms // (SECONDS * 100)\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the last count is never reached",
+  "find": "    return COUNTS[k] if k < len(COUNTS) else None\n",
+  "replace": "    return COUNTS[k] if k < len(COUNTS) - 1 else None\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a count's start does not start the App's interval, so an fps line mixes two counts",
+  "find": "            app.new_interval()\n",
+  "replace": "            pass\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the pack line says pool when the pool is smaller than the pack",
+  "find": "        return \"pack heap %d\" % size\n",
+  "replace": "        return \"pack pool %d\" % size\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the run time limit is 12 s over the counts, not 120 s",
+  "find": "LIMIT_S = len(COUNTS) * SECONDS + 120",
+  "replace": "LIMIT_S = len(COUNTS) * SECONDS + 12"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a box with its own art_index.py is not refused, so the cleanup deletes its real index",
+  "find": "        if INDEX in self.box.board_names(self.tried([\"ls\", \":\"])):\n",
+  "replace": "        if False and INDEX in self.box.board_names(self.tried([\"ls\", \":\"])):\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the index is copied before the pack, so a failed pack copy leaves an index naming no pack",
+  "find": "                self.runner.run([\"cp\", pack, \":\" + PACK])  # the pack first: a failed copy leaves no index naming it\n                self.runner.run([\"cp\", index, \":\" + INDEX])\n",
+  "replace": "                self.runner.run([\"cp\", index, \":\" + INDEX])\n                self.runner.run([\"cp\", pack, \":\" + PACK])  # the pack first: a failed copy leaves no index naming it\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the run has no time limit",
+  "find": "            return self.runner.run([\"run\", copy], timeout=LIMIT_S), None\n",
+  "replace": "            return self.runner.run([\"run\", copy]), None\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the wait has the run's time limit too",
+  "find": "                self.tried(WAIT, self.box.RESET_TRIES)\n",
+  "replace": "                self.runner.run(WAIT, timeout=LIMIT_S)\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a timed-out run is not caught, so its lines are not logged",
+  "find": "        except subprocess.TimeoutExpired as e:\n            return text(e.stdout) + text(e.stderr), \"the run took over %d s\" % e.timeout\n",
+  "replace": ""
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a timed-out run's bytes are not decoded",
+  "find": "    return out.decode(\"utf-8\", \"replace\") if isinstance(out, bytes) else out or \"\"\n",
+  "replace": "    return out or \"\"\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the cleanup runs only after a run that came back, not after a failed copy",
+  "find": "            finally:\n                self.clean()\n",
+  "replace": "            except BaseException:\n                raise\n            self.clean()\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the cleanup removes both copies whether or not the board holds them",
+  "find": "                 if dry or path.split(\"/\")[-1] in names]\n",
+  "replace": "                 if True]\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "a picture that does not draw goes unnoticed, so an empty scene can pass",
+  "find": "        if not pictures.draw(cv, name, x, y):\n",
+  "replace": "        if not pictures.draw(cv, name, x, y) and False:\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "every figure steps, not only the counted ones",
+  "find": "            for figure in self.figures[:self.count]:\n                figure.step(self.ms)\n",
+  "replace": "            for figure in self.figures:\n                figure.step(self.ms)\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "every figure is the fireman",
+  "find": "                gait = gaits[i % len(gaits)]\n",
+  "replace": "                gait = gaits[0]\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the game shows its title first",
+  "find": "        TITLE_MS = 0\n",
+  "replace": "        TITLE_MS = 1500\n"
+ },
+ {
+  "file": "probe904_figures.py",
+  "name": "the copy sends only the first character's gait",
+  "find": "\"\\nGAITS = %r\" % (tuple(gaits),)",
+  "replace": "\"\\nGAITS = %r\" % (tuple(gaits)[:1],)"
+ },
+ {
+  "file": "art/figures.py",
+  "name": "the street is keyed, so its key-coloured pixels would not draw",
+  "find": "(read_committed([\"rescue_night\"])[\"rescue_night\"], False)",
+  "replace": "(read_committed([\"rescue_night\"])[\"rescue_night\"], True)"
+ },
+ {
+  "file": "art/figures.py",
+  "name": "the right and left pictures are swapped",
+  "find": "((\"r\", run.pictures), (\"l\", run.left))",
+  "replace": "((\"r\", run.left), (\"l\", run.pictures))"
+ },
+ {
+  "file": "art/figures.py",
+  "name": "the gait's pivot is the pivot's row, not its column",
+  "find": "(run.character.name, run.pivot[0], run.stride, run.speed)",
+  "replace": "(run.character.name, run.pivot[1], run.stride, run.speed)"
+ },
+ {
+  "file": "art/figures.py",
+  "name": "the written index has no owner of its layers, so write_index refuses",
+  "find": "functools.partial(paint_figures, capture), index_layers=True)",
+  "replace": "functools.partial(paint_figures, capture))"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the runner drops the time limit",
+  "find": "        limit = {} if timeout is None else {\"timeout\": timeout}",
+  "replace": "        limit = {}"
+ }
+]
