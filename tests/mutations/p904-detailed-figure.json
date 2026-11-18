@@ -268,5 +268,23 @@
   "name": "the toque is not painted",
   "find": "        figure.part(s, union(band, puff), self.colour)",
   "replace": "        pass"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the apron is painted under the body",
+  "find": "    def over(self, figure, s, p, ahead):\n        hips, _, front = figure.trunk(s, p, ahead)",
+  "replace": "    def under(self, figure, s, p, ahead):\n        hips, _, front = figure.trunk(s, p, ahead)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the builder runs the man's cycle",
+  "find": "(BUILDER, \"dogman\")",
+  "replace": "(BUILDER, \"man\")"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the hard hat has the fireman's shield and neck flap",
+  "find": "headwear=Helmet((240, 240, 236), light=(255, 255, 255), shield=None, tail=1.2, flap=None),",
+  "replace": "headwear=Helmet((240, 240, 236), light=(255, 255, 255), shield=SHIELD, tail=1.2, flap=COAT_DARK),"
  }
 ]
