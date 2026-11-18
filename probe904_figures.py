@@ -48,9 +48,12 @@ The lines, from the board:
   (the probe's one game builds at once, with no loading card)
 - `pack pool <B>` or `pack heap <B>`, after the load: whether s3lcd's pool holds the pack's size (the size the loader
   asked it for), or the pool was smaller and the pack went into the heap
-- `count <N> starts` at each count; the App's `fps`, `time`, `phases`, `avg` and `heap` lines every 5 s between them.
-  In this scene `avg`'s paint is the figures'. The App starts its interval at each count, but not its `avg` sums, so
-  the first lines of each count are left out
+- `count <N> starts` at each count; the App's `fps`, `time`, `phases`, `avg` and `heap` lines every 5 s
+  (app.FPS_EVERY_MS) between them: 6 a count on an even 40 ms clock, 5 or 6 on the board. Every `fps figures` line
+  between two count lines is that count's, because the count starts the App's interval (new_interval), which clears
+  the counters of the `fps` and `time` lines. It does not clear gfx's phase sums (PHASES, PHASE_SUM), which only the
+  frame of an `fps` line clears, so a count's first `phases` and `avg` lines can hold frames of the count before. The
+  first set of lines of each count is left out. In this scene `avg`'s paint is the figures'
 - `done`, after the last count. `game figures refused: ...` and no `done` when the box cannot make the pool, and a
   traceback when a picture does not draw.
 The box's music plays, as for every game.
@@ -358,7 +361,7 @@ class Bench:
     def clean(self, first=None):
         """The copies that the board holds go, then a hard reset, so the box plays its lineup with its own index. A
         dry run's board holds both. When a command of it fails, it refuses with its error, first (the error before
-        it, or None) and what may be left."""
+        it, or None), what may be left, and the log when one was written."""
         box, dry = self.box, self.runner.dry_run
         try:
             root = box.board_names(self.tried(["ls", ":"]))
@@ -370,8 +373,9 @@ class Bench:
                 self.tried(["rm"] + there)
             box.reset(self.runner, sleep=self.sleep)
         except Exception as e:
-            raise SystemExit("refused: the cleanup failed: %s%s; :%s and :%s may still be on the box: run %s" % (
-                self.failure(e), "; before it: " + first if first else "", INDEX, PACK, RECOVERY))
+            raise SystemExit("refused: the cleanup failed: %s%s; :%s and :%s may still be on the box: run %s%s" % (
+                self.failure(e), "; before it: " + first if first else "", INDEX, PACK, RECOVERY,
+                "; the log is %s" % self.logged if self.logged else ""))
 
 
 def filled(source, rows):

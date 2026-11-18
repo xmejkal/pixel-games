@@ -253,6 +253,12 @@
  },
  {
   "file": "probe904_figures.py",
+  "name": "a failed cleanup does not name the log of the board run",
+  "find": "\"; the log is %s\" % self.logged if self.logged else \"\"",
+  "replace": "\"\""
+ },
+ {
+  "file": "probe904_figures.py",
   "name": "mac() lets a missing mpremote out as a traceback",
   "find": "    except (box.subprocess.CalledProcessError, FileNotFoundError) as e:\n        raise SystemExit(box.failure(e))\n",
   "replace": "    except box.subprocess.CalledProcessError as e:\n        raise SystemExit(box.failure(e))\n"

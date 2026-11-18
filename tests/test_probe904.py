@@ -11,6 +11,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 import types
 import unittest
 from unittest import mock
@@ -24,6 +25,7 @@ sys.path.append(REPO)  # the probe, last: the root's engine/ is the submodule, g
 
 from drawing_tft import DrawingTft  # noqa: E402  first: it puts games/ and the stubs on the path
 
+import app  # noqa: E402
 import box  # noqa: E402
 import detailed  # noqa: E402
 import figures  # noqa: E402
@@ -33,6 +35,7 @@ import mocap  # noqa: E402
 import pictures  # noqa: E402
 import probe904_figures as probe  # noqa: E402
 import rescue  # noqa: E402
+from engine.actions import ActionMap  # noqa: E402  no button pressed
 
 # stand-in gait rows (name, pivot x, stride, speed) and picture sizes: none round, none alike, one pivot left of its
 # picture's middle and one right of it, so a mirrored pivot or a margin of the wrong side shows
@@ -206,10 +209,14 @@ PACKS = {"other": ("packs/other.pak", 739213, "aa"), "figures": ("packs/figures.
          "third": ("packs/third.pak", 1507149, "cc")}  # the largest neither first nor last
 
 
+CAP_41 = 180000 // 41 + 100  # frames: a little past the 4,392 that the six counts take at 41 ms a frame
+
+
 def board_modules(fail_at=None):
     """Stand-ins for the modules board() imports, as a dict for sys.modules, and the list of the pool's sizes asked.
     The App's frame prints `frame N` and moves the clock 41 ms; with fail_at, that frame raises a RuntimeError. run()
-    builds the one game and calls frame() until it raises."""
+    builds the one game and calls frame() until it raises, and raises an AssertionError past CAP_41 frames, so a Done
+    that never comes fails the test at once."""
     clock, asked, frees = [7777], [], [6603371, 6402313]
     time_ = types.SimpleNamespace(ticks_ms=lambda: clock[0], ticks_diff=lambda a, b: a - b)
 
@@ -230,8 +237,9 @@ def board_modules(fail_at=None):
     def run(games, knob, speaker):
         print("run %s %s %d" % (knob, speaker, len(games)))
         app = App(games[0]())
-        while True:
+        for _ in range(CAP_41):
             app.frame()
+        raise AssertionError("no Done after %d frames" % CAP_41)
 
     art = {"figures_%s_r0" % row[0]: size + ("figures", 16) for row, size in
            zip(STAND_IN_ROWS, (SIZE_A, SIZE_B, (98, 107)))}
@@ -291,10 +299,22 @@ class BoardTest(unittest.TestCase):
         self.assertEqual(1, len([line for line in lines if line.startswith("psram ")]))
 
 
+WRITTEN = {}  # the set's pack and index, written once for every test of the module that paints
+
+
+def tearDownModule():
+    if "folder" in WRITTEN:
+        WRITTEN["folder"].cleanup()
+
+
 @contextlib.contextmanager
-def figures_art(folder):
-    """pictures reads the set written to folder through its own index, as the board does with the shadow index."""
-    pack, path = figures.write(folder)
+def figures_art():
+    """pictures reads the set through its own index, as the board does with the shadow index: the set written once
+    for the module (figures.write into a temporary folder)."""
+    if "folder" not in WRITTEN:
+        WRITTEN["folder"] = tempfile.TemporaryDirectory()
+        WRITTEN["paths"] = figures.write(WRITTEN["folder"].name)
+    folder, (pack, path) = WRITTEN["folder"].name, WRITTEN["paths"]
     index = types.ModuleType("art_index")
     with open(path) as f:
         exec(f.read(), index.__dict__)
@@ -328,8 +348,7 @@ class GameFromCaptureTest(unittest.TestCase):
     def setUpClass(cls):
         if mocap.Capture().missing():
             raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
-        cls.folder = tempfile.TemporaryDirectory()
-        cls.art = figures_art(cls.folder.name)
+        cls.art = figures_art()
         cls.index = cls.art.__enter__()
         cls.rows = figures.gaits(None)
         cls.Probe = probe.game_class(cls.rows)
@@ -337,7 +356,6 @@ class GameFromCaptureTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.art.__exit__(None, None, None)
-        cls.folder.cleanup()
 
     def setUp(self):
         pictures.load("figures")  # each test's game finds the set loaded, as after the box's build
@@ -438,6 +456,115 @@ class GameFromCaptureTest(unittest.TestCase):
                 self.game.paint(Recorder())
         finally:
             pictures.PICS[name] = kept
+
+
+FRAME_MS = app.FRAME_MS  # 40: the stand-in clock gives every frame exactly this
+CAP_40 = 180000 // FRAME_MS + 100  # frames: a little past the 4,500 that the six counts take at 40 ms a frame
+PSRAM = "psram free %d largest %d" % (6747503 + 2000003, 6553597)
+
+
+class Pool:
+    """s3lcd.pool by the C rules (s3lcd.c's pool): the first call makes the block at its size, a larger size later
+    raises ValueError, a size it holds answers the same block."""
+
+    def __init__(self):
+        self.buf = None
+
+    def pool(self, n):
+        if self.buf is None:
+            self.buf = bytearray(n)
+        elif n > len(self.buf):
+            raise ValueError("the pool is smaller: reset the board")
+        return memoryview(self.buf)[:n]
+
+
+@contextlib.contextmanager
+def real_board(rows, missing=()):
+    """board() on the real App (games/app.py, gfx, pictures, lcd.TftOut on DrawingTft) with only the hardware stood
+    in: a clock whose frames are exactly FRAME_MS apart (app.run's sleep_ms moves it; past CAP_40 frames it raises an
+    AssertionError), s3lcd's pool by the C rules, PSRAM's and the heap's numbers, no knob and no speaker (main), no
+    buttons, no console, and pictures.draw answering whether the picture is loaded and not in missing, with no blit, so
+    the 4,500 frames take seconds. The set is the module's written pack. App.frame, which board() wraps, is put back."""
+    clock = {"ms": 1000, "us": 0, "frames": 0}
+
+    def ticks_us():
+        clock["us"] += 1
+        return clock["ms"] * 1000 + clock["us"] % 1000
+
+    def sleep_ms(ms):
+        clock["frames"] += 1
+        if clock["frames"] > CAP_40:
+            raise AssertionError("no Done after %d frames" % CAP_40)
+        clock["ms"] += ms
+
+    frees = [6603371, 6402313]  # the probe's memory lines, at the start and at the end
+    gc_ = types.SimpleNamespace(collect=lambda: None, mem_free=lambda: frees.pop(0), mem_alloc=lambda: 279361)
+    app_gc = types.SimpleNamespace(collect=lambda: None, disable=lambda: None, mem_free=lambda: 7000003,
+                                   mem_alloc=lambda: 279367)  # the App's own: its mem line and its heap lines
+    poll = types.SimpleNamespace(register=lambda *a: None, poll=lambda ms: [])
+    hardware = {"gc": gc_, "main": types.SimpleNamespace(compose=lambda: (None, None)),
+                "s3lcd": types.SimpleNamespace(pool=Pool().pool),
+                "esp32": types.SimpleNamespace(HEAP_DATA=HEAP_DATA, idf_heap_info=lambda kind: REGIONS),
+                "select": types.SimpleNamespace(poll=lambda: poll, POLLIN=1)}
+
+    def draw(cv, name, x, y, alpha=255):
+        return name in pictures.PICS and name not in missing
+
+    with figures_art(), mock.patch.dict(sys.modules, hardware), mock.patch.object(probe, "GAITS", rows), \
+            mock.patch.object(app.App, "frame", app.App.frame), mock.patch.object(app, "gc", app_gc), \
+            mock.patch.object(app, "open_tft", lambda hz: lcd.TftOut(DrawingTft())), \
+            mock.patch.object(app.encoder, "take_pads", lambda a, b: None), \
+            mock.patch.object(app, "open_action_map", lambda: ActionMap((), ())), \
+            mock.patch.object(pictures, "draw", draw), \
+            mock.patch.object(time, "ticks_ms", lambda: clock["ms"]), mock.patch.object(time, "ticks_us", ticks_us), \
+            mock.patch.object(time, "ticks_diff", lambda a, b: a - b), \
+            mock.patch.object(time, "ticks_add", lambda a, b: a + b, create=True), \
+            mock.patch.object(time, "sleep_ms", sleep_ms, create=True):
+        yield clock
+
+
+class RealAppBoardTest(unittest.TestCase):
+    """board() on games/app.py itself, with only the hardware stood in (real_board) and the set's pack written from
+    the CMU files: skipped without them, and a skip is not a pass."""
+
+    @classmethod
+    def setUpClass(cls):
+        if mocap.Capture().missing():
+            raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
+        cls.rows = figures.gaits(None)
+
+    def board(self, missing=()):
+        """board() on the real App: its lines, and the error it left with or None."""
+        error = None
+        with real_board(self.rows, missing), contextlib.redirect_stdout(io.StringIO()) as said:
+            try:
+                probe.board()
+            except Exception as e:  # noqa: BLE001  the test reads which one
+                error = e
+        return said.getvalue().splitlines(), error
+
+    def test_its_lines_come_in_order_and_each_counts_fps_lines_are_its_own(self):
+        lines, error = self.board()
+        self.assertIsNone(error)
+        kinds = ("probe p904", "psram ", "gc free", "switch figures", "pack ", "count ", "done")
+        said = [line.split(" ", 2)[0] + " " + line.split(" ", 2)[1] if line.startswith("switch ") else line
+                for line in lines if line.startswith(kinds)]
+        self.assertEqual(["probe p904 counts 0,1,2,4,8,16 seconds 30", PSRAM, "gc free 6603371 alloc 279361",
+                          "switch figures", "pack pool 2464000"] + ["count %d starts" % n for n in (0, 1, 2, 4, 8, 16)]
+                         + [PSRAM, "gc free 6402313 alloc 279361", "done"], said)
+        starts = [lines.index("count %d starts" % n) for n in (0, 1, 2, 4, 8, 16)] + [len(lines) - 3]
+        self.assertEqual([], [line for line in lines[:starts[0]] if line.startswith("fps ")])
+        for n, a, b in zip((0, 1, 2, 4, 8, 16), starts, starts[1:]):
+            with self.subTest(count=n):  # 30 s of 40 ms frames: 6 lines of 125 frames in 5 s, each 25 fps
+                self.assertEqual(["fps figures 25"] * 6, [line for line in lines[a:b] if line.startswith("fps ")])
+
+    def test_a_draw_that_answers_false_leaves_board_as_the_error_with_no_done(self):
+        missing = {"figures_paramedic_%s%d" % (side, i) for side in "rl" for i in range(12)}
+        lines, error = self.board(missing)
+        self.assertIsInstance(error, RuntimeError)
+        self.assertRegex(str(error), r"^figures_paramedic_[rl]\d+ did not draw: no art$")
+        self.assertEqual("count 2 starts", [line for line in lines if line.startswith("count ")][-1])
+        self.assertNotIn("done", lines)
 
 
 ROOT = ("boot.py", "main.py", "app.mpy", "art_index.mpy", "packs/")
@@ -676,6 +803,10 @@ class MacTest(unittest.TestCase):
                 self.assertIn(":art_index.py and :packs/figures.pak may still be on the box", text)
                 for line in RECOVERY:
                     self.assertIn(line, text)
+                if case == "a failed board run":  # its lines were logged before the cleanup: the message names the log
+                    self.assertTrue(text.endswith("; the log is %s" % self.log), text)
+                else:
+                    self.assertNotIn("the log is", text)
 
     def test_a_timed_out_board_run_is_logged_from_its_bytes_cleaned_up_and_refused(self):
         out = b"probe p904 counts 0,1,2,4,8,16 seconds 30\npack pool 2463997\ncount 0 starts\ncount 1 starts\n"
