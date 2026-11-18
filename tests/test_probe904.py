@@ -1015,6 +1015,15 @@ class MacMainTest(unittest.TestCase):
         self.assertIsNone(refused)
         self.assertEqual(dry_lines(), [dry_line(line) for line in said.splitlines()])
 
+    def test_without_counts_the_copy_holds_counts_and_the_time_limit_is_theirs(self):
+        board = Board()
+        said, err, refused = self.mac(["--cmu", cmu_folder(self.folder.name)], board)
+        self.assertIsNone(refused)
+        self.assertEqual([None] * 5 + [LIMIT] + [None] * 4, board.limits)
+        module = {"__name__": "copy"}
+        exec(compile(board.copy, "copy", "exec"), module)
+        self.assertEqual(probe.COUNTS, module["COUNTS"])
+
     def test_the_counts_go_to_the_copy_and_to_the_time_limit(self):
         board = Board()
         said, err, refused = self.mac(["--counts", "24,0,7", "--cmu", cmu_folder(self.folder.name)], board)

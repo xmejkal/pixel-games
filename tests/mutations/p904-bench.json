@@ -337,6 +337,12 @@
  },
  {
   "file": "probe904_figures.py",
+  "name": "without --counts the board runs other counts than COUNTS",
+  "find": "default=COUNTS, metavar=",
+  "replace": "default=(0, 1, 2, 4, 8), metavar="
+ },
+ {
+  "file": "probe904_figures.py",
   "name": "mac() does not pass the counts on, so the board runs COUNTS",
   "find": ", counts=args.counts)\n",
   "replace": ")\n"
