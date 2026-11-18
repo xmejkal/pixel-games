@@ -323,9 +323,11 @@ MAKERS = {"whole": DetailedFigure, "flat": FlatFigure, "cutout": CutoutFigure}  
 
 def named(strip, xs, names):
     """The strip with each name under its picture, x px from the strip's left, on one of three lines in turn so that
-    two long names side by side do not meet: light ink on the street's dark, as on_dark's strip."""
+    two long names side by side do not meet: light ink on the street's dark, as on_dark's strip, which is widened
+    when the last name needs it."""
     font = ImageFont.load_default(size=14)
-    out = Image.new("RGB", (strip.width, strip.height + 3 * NAME_H + 4), DARK)
+    width = max([strip.width] + [x + math.ceil(font.getlength(name)) + 2 for x, name in zip(xs, names)])
+    out = Image.new("RGB", (width, strip.height + 3 * NAME_H + 4), DARK)
     out.paste(strip, (0, 0))
     draw = ImageDraw.Draw(out)
     for k, (x, name) in enumerate(zip(xs, names)):
