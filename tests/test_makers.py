@@ -30,7 +30,8 @@ LEAN = 8  # degrees bent() leans the body forward
 # degrees bent() turns each side at the shoulder, the elbow, the hip and the knee (positive: the lower end forward);
 # r is the standing pose's near side
 TURNS = {"r": (37, 41, 29, -54), "l": (-23, 28, -19, -33)}
-ARM, LEG = ("humerus", "radius", "wrist", "hand", "fingers", "thumb"), ("femur", "tibia", "foot", "toes")
+ARM_JOINTS = ("humerus", "radius", "wrist", "hand", "fingers", "thumb")  # each a side's, below its clavicle
+LEG_JOINTS = ("femur", "tibia", "foot", "toes")  # each a side's, below its hip joint
 
 
 def swung(pose, about, joints, degrees):
@@ -49,10 +50,10 @@ def bent():
     is 1.7 to 4.8 degrees off the nearest whole step of 11.25."""
     pose = leant(standing(), LEAN)
     for side, (shoulder, elbow, hip, knee) in TURNS.items():
-        pose = swung(pose, side + "clavicle", [side + n for n in ARM], shoulder)
-        pose = swung(pose, side + "humerus", [side + n for n in ARM[1:]], elbow)
-        pose = swung(pose, side + "hipjoint", [side + n for n in LEG], hip)
-        pose = swung(pose, side + "femur", [side + n for n in LEG[1:]], knee)
+        pose = swung(pose, side + "clavicle", [side + n for n in ARM_JOINTS], shoulder)
+        pose = swung(pose, side + "humerus", [side + n for n in ARM_JOINTS[1:]], elbow)
+        pose = swung(pose, side + "hipjoint", [side + n for n in LEG_JOINTS], hip)
+        pose = swung(pose, side + "femur", [side + n for n in LEG_JOINTS[1:]], knee)
     return pose
 
 
@@ -85,10 +86,10 @@ def made(maker, pose_name):
 
 def bone(pose, kind, far):
     """A part's joint and end in 3D in the pose: a limb's on the far side (l) or the near side (r)."""
-    joint, end = makers.BONES[kind]
+    chain = makers.KINDS[kind].chain
     side = ("l" if far else "r") if kind in makers.LIMBS else ""
     places = dict(pose, hips=tuple((a + b) / 2 for a, b in zip(pose["lhipjoint"], pose["rhipjoint"])))
-    return places[side + joint], places[side + end]
+    return places[side + chain[0]], places[side + chain[-1]]
 
 
 def covered(figure, part):
@@ -107,7 +108,8 @@ def mean(img, pixels):
     return [sum(img.getpixel(q)[i] for q in pixels) / len(pixels) for i in range(3)]
 
 
-def q565(colour):
+def in565(colour):
+    """A colour as the board shows it (export.q565)."""
     return detailed.q565(Image.new("RGBA", (1, 1), tuple(colour) + (255,))).getpixel((0, 0))[:3]
 
 
@@ -143,7 +145,7 @@ class ReversedCutout(makers.CutoutFigure):
 class Coarse(makers.Atlas):
     """An atlas with a picture every 45 degrees."""
 
-    ANGLES = 8
+    STEPS = 8
 
 
 class CoarseCutout(makers.CutoutFigure):
@@ -159,7 +161,7 @@ class FlatTest(unittest.TestCase):
         rnd.seed(1)
         figure = Recording(detailed.box(detailed.TALL), detailed.TALL, detailed.NoRim())
         img = detailed.q565(figure.paint(standing()))
-        given = {q565(c) for c in figure.given} | {q565(STRIPE)}
+        given = {in565(c) for c in figure.given} | {in565(STRIPE)}
         self.assertGreaterEqual(len(figure.given), 12)
         self.assertEqual(set(), {img.getpixel(q)[:3] for q in opaque(img)} - given)
 
@@ -205,13 +207,13 @@ class CutoutTest(unittest.TestCase):
                 picture, (x, y) = figure.atlas.picture(part.key), part.place
                 self.assertLessEqual(math.dist((x + picture.pivot[0], y + picture.pivot[1]), part.joint), 0.71)
                 length = math.dist(*bone(pose, *part.key[:2])) * figure.PX
-                step = length * 2 * math.sin(math.radians(180 / figure.atlas.ANGLES) / 2)
-                bound = step + length - math.dist(part.joint, part.end) + 0.71
+                chord = length * 2 * math.sin(math.radians(180 / figure.atlas.STEPS) / 2)  # half a step's
+                bound = chord + length - math.dist(part.joint, part.end) + 0.71
                 self.assertLessEqual(math.dist((x + picture.end[0], y + picture.end[1]), part.end), bound)
 
     def test_an_angle_rounds_to_the_nearest_step_and_wraps(self):
         atlas = made(makers.CutoutFigure, "bent")[0].atlas
-        self.assertEqual(32, atlas.ANGLES)
+        self.assertEqual(32, atlas.STEPS)
         self.assertEqual([0, 0, 2, 30, 8], [atlas.step(a) for a in (5, 355, 17, -17, 92)])
         self.assertEqual(("thigh", True, 2), atlas.key("thigh", True, 17))
 
@@ -252,14 +254,14 @@ class CutoutTest(unittest.TestCase):
         figure.paint(bent())
         self.assertEqual(keys, set(figure.atlas.pictures))
         self.assertEqual(sum(p.image.width * p.image.height * 2 for p in figure.atlas.pictures.values()),
-                         figure.atlas.bytes())
+                         figure.atlas.size_bytes())
 
     def test_after_fill_each_limb_kind_has_every_angle_in_each_shade_and_the_others_keep_theirs(self):
         figure, _ = painted(makers.CutoutFigure, "bent", SMALL)
         others = {key for key in figure.atlas.pictures if key[0] not in makers.LIMBS}
         figure.atlas.fill()
         counts = Counter(key[:2] for key in figure.atlas.pictures if key[0] in makers.LIMBS)
-        self.assertEqual({(kind, far): figure.atlas.ANGLES for kind in makers.LIMBS for far in (True, False)},
+        self.assertEqual({(kind, far): figure.atlas.STEPS for kind in makers.LIMBS for far in (True, False)},
                          dict(counts))
         self.assertEqual(others, {key for key in figure.atlas.pictures if key[0] not in makers.LIMBS})
 
@@ -271,7 +273,7 @@ class CutoutTest(unittest.TestCase):
         length, (ux, uy) = math.dist(elbow, wrist), ((wrist[0] - elbow[0]), (wrist[1] - elbow[1]))
         on = []
         for x, y in opaque(img):
-            if img.getpixel((x, y))[:3] != q565(STRIPE):
+            if img.getpixel((x, y))[:3] != in565(STRIPE):
                 continue
             dx, dy = x + 0.5 - elbow[0], y + 0.5 - elbow[1]
             ahead, across = (dx * ux + dy * uy) / length, abs(dx * uy - dy * ux) / length
@@ -281,7 +283,7 @@ class CutoutTest(unittest.TestCase):
         middle = (sum(x for x, _ in on) / len(on), sum(y for _, y in on) / len(on))
         self.assertLessEqual(math.dist(middle, along(elbow, wrist, 0.62)), 2)
 
-    def test_a_limb_part_is_cut_to_a_capsule_round_its_bone(self):
+    def test_a_limb_part_is_masked_to_a_capsule_round_its_bone(self):
         """At its upright angle, a limb part's picture is along its bone no longer than the bone and two of the
         capsule's half widths, and across it no wider than two; and it covers its bone."""
         figure = made(makers.CutoutFigure, "bent")[0]
@@ -289,10 +291,10 @@ class CutoutTest(unittest.TestCase):
         for kind in makers.LIMBS:
             for far in (True, False):
                 with self.subTest(kind=kind, far=far):
-                    picture = atlas.picture(atlas.key(kind, far, makers.UPRIGHT[kind]))
+                    picture = atlas.picture(atlas.key(kind, far, makers.KINDS[kind].upright))
                     w, h = picture.image.size
-                    along_, across = (w, h) if makers.UPRIGHT[kind] == 0 else (h, w)
-                    bone_px, half = math.dist(picture.pivot, picture.end), atlas.CAPSULE[kind] * figure.PX
+                    along_, across = (w, h) if makers.KINDS[kind].upright == 0 else (h, w)
+                    bone_px, half = math.dist(picture.pivot, picture.end), makers.KINDS[kind].capsule * figure.PX
                     self.assertGreaterEqual(along_, bone_px)
                     self.assertLessEqual(along_, bone_px + 2 * half + 2)
                     self.assertLessEqual(across, 2 * half + 2)
@@ -315,7 +317,7 @@ class StandRun(detailed.Pictures):
 class StandAtlas:
     """A stand-in for Atlas: a plain picture for any key, of the kind's width; fill() adds two."""
 
-    ANGLES = 32
+    STEPS = 32
 
     def __init__(self):
         self.pictures = {("thigh", False, k): self.picture(("thigh", False, k)) for k in range(3)}
@@ -326,7 +328,7 @@ class StandAtlas:
     def picture(self, key):
         return makers.PartPicture(Image.new("RGBA", (3 + len(key[0]), 9), (90, 90, 90, 255)), (0, 0), (0, 0))
 
-    def bytes(self):
+    def size_bytes(self):
         return sum(p.image.width * p.image.height * 2 for p in self.pictures.values())
 
     def fill(self):
@@ -367,7 +369,8 @@ class MakerSheetTest(unittest.TestCase):
                 self.assertEqual(12 * run.size[0] + 13 * gap, img.width)
         self.assertEqual((sum(run.size[0] for run in runs.values()) + 4 * gap) * zoom, rows[3][1].width)
         atlas = runs["cutout"].painter.atlas
-        widths = [atlas.picture(atlas.key(kind, far, makers.UPRIGHT[kind])).image.width for kind, far in makers.PARTS]
+        widths = [atlas.picture(atlas.key(kind, far, makers.KINDS[kind].upright)).image.width
+                  for kind, far in makers.PARTS]
         self.assertEqual((sum(widths) + (len(widths) + 1) * gap) * parts, rows[4][1].width)
         self.assertEqual(((3 + len("thigh")) * 8 + 9 * gap) * parts, rows[5][1].width)
 
@@ -394,9 +397,9 @@ class MakerCostsTest(unittest.TestCase):
     def test_each_number_in_a_line_is_its_sources(self):
         runs = stand_runs()
         atlas = runs["cutout"].painter.atlas
-        used = (len(atlas.pictures), atlas.bytes())
+        used = (len(atlas.pictures), atlas.size_bytes())
         lines = makers.maker_costs(runs)
-        filled = (len(atlas.pictures), atlas.bytes())
+        filled = (len(atlas.pictures), atlas.size_bytes())
         self.assertEqual(4, len(lines))
         whole, flat, cutout, miss = lines
         for part in ("24 pictures", "30 by 50 px", " %d bytes" % runs["whole"].size_bytes()):
