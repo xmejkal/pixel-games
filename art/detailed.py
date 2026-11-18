@@ -34,6 +34,7 @@ TANK, STRAP, BUCKLE = (108, 124, 152), (44, 42, 52), (214, 190, 120)
 SHIELD = (206, 48, 40)  # the helmet's front shield
 FRAME_MS = 40  # one frame of the game
 CLOSE_MS = 120  # a pose of run-close.gif: about half the captured speed (a pose is 61 ms of the capture)
+FIGURE_COLOURS = 160  # of a GIF's 255 colours, those taken from the figure's own pixels
 
 
 def box(height):
@@ -77,8 +78,9 @@ class NoRim:
 
 
 class Outline:
-    """A 1 px outline all round the shape: each pixel a dark shade of the colours it borders, so the dark boots
-    and gloves keep their shape on a dark street."""
+    """A 1 px outline outside the shape: each pixel a dark shade of the colours it borders, so the dark boots and
+    gloves keep their shape on a dark street. It adds a row over the helmet and a column at each side. Under the
+    soles there is none: they stand on the picture's last row."""
 
     SHADE = 0.35
 
@@ -214,7 +216,7 @@ class DetailedFireman(Figure):
                          self.taper(s, elbow, wrist, tuple(w + seam for w in self.FORE)))
             self.detail(s, ImageChops.multiply(wide, s.alpha), SEAM)
         self.part(s, upper, cloth)
-        self.part(s, fore, cloth, None if far else self.band(s, elbow, wrist, 0.78))
+        self.part(s, fore, cloth, None if far else self.band(s, elbow, wrist, 0.62))
         self.glove(s, p, side, glove)
 
     def glove(self, s, p, side, colour):
@@ -451,14 +453,24 @@ class RunClip:
         return out
 
 
-def write_gif(frames, path, ms):
-    """A looping GIF on one palette, taken from the first, the middle and the last frame side by side, so every
-    colour of the clip is in it and none flickers."""
-    samples = [frames[0], frames[len(frames) // 2], frames[-1]]
-    strip = Image.new("RGB", (sum(f.width for f in samples), samples[0].height))
-    for i, f in enumerate(samples):
-        strip.paste(f, (sum(g.width for g in samples[:i]), 0))
-    palette = strip.quantize(255)
+def gif_palette(frames, figures):
+    """One palette for a clip: FIGURE_COLOURS of it from the figures' own opaque pixels and the rest from the first
+    frame. The street alone has more colours than a GIF holds, and they would push the figure's out. Both parts
+    are picked for coverage (Pillow's MAXCOVERAGE), which bounds the worst pixel and not the average one."""
+    own = [p[:3] for img in figures for p in img.get_flattened_data() if p[3]]
+    strip = Image.new("RGB", (len(own), 1))
+    strip.putdata(own)
+    figure = strip.quantize(FIGURE_COLOURS, method=Image.Quantize.MAXCOVERAGE)
+    kept = len(figure.getcolors())
+    street = frames[0].quantize(255 - kept, method=Image.Quantize.MAXCOVERAGE)
+    palette = Image.new("P", (1, 1))
+    palette.putpalette(figure.getpalette()[:kept * 3] + street.getpalette()[:len(street.getcolors()) * 3])
+    return palette
+
+
+def write_gif(frames, path, ms, figures):
+    """A looping GIF of the frames, ms each, on the one palette that keeps the figures' colours."""
+    palette = gif_palette(frames, figures)
     indexed = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
     indexed[0].save(path, save_all=True, append_images=indexed[1:], duration=ms, loop=0)
 
@@ -478,8 +490,8 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     FigureSheet(run, old).image().save(os.path.join(args.out, "figure-sheet.png"))
     clip = RunClip(run, old)
-    write_gif(clip.frames(), os.path.join(args.out, "run.gif"), FRAME_MS)
-    write_gif(clip.close(), os.path.join(args.out, "run-close.gif"), CLOSE_MS)
+    write_gif(clip.frames(), os.path.join(args.out, "run.gif"), FRAME_MS, run.pictures)
+    write_gif(clip.close(), os.path.join(args.out, "run-close.gif"), CLOSE_MS, run.pictures)
     w, h = run.size
     print("the run at %d px, rim %s: 12 poses of %d by %d px, %d bytes with both facings" % (
         TALL, args.rim, w, h, run.size_bytes()))

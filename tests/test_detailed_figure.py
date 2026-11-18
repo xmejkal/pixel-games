@@ -6,6 +6,7 @@ python3 -m unittest discover tests."""
 
 import os
 import sys
+import tempfile
 import unittest
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -14,7 +15,8 @@ sys.path.insert(0, os.path.join(REPO, "art"))  # the art modules import each oth
 import detailed  # noqa: E402
 import mocap  # noqa: E402
 from brush import rnd  # noqa: E402
-from sets.rescue import STRIPE  # noqa: E402
+from PIL import Image  # noqa: E402
+from sets.rescue import COOL, STRIPE, WARM  # noqa: E402
 
 SIDES = {"r": 0.05, "l": -0.05}  # each side's depth toward the viewer, in body heights
 
@@ -112,8 +114,15 @@ class StandingFigureTest(unittest.TestCase):
                 self.assertGreaterEqual(len(tank), 12)
                 self.assertLess((mean_x(tank) - spine_x) * ahead, 0)
 
-    def test_the_coat_has_its_reflective_bands(self):
-        self.assertGreaterEqual(len(coloured(painted(detailed.TALL)[1], STRIPE, 1)), 20)
+    def test_each_reflective_band_is_on_its_part(self):
+        """Between these heights of the standing pose, in body heights, only that part's band is."""
+        figure, img = painted(detailed.TALL)
+        stripes = coloured(img, STRIPE, 1)
+        for part, (low, high) in (("the coat's chest", (0.72, 0.8)), ("the sleeve", (0.555, 0.61)),
+                                  ("the coat's hem", (0.43, 0.5)), ("the shin", (0.15, 0.24))):
+            with self.subTest(part=part):
+                top, bottom = figure.at((0, high, 0))[1], figure.at((0, low, 0))[1]
+                self.assertGreaterEqual(len([q for q in stripes if top <= q[1] <= bottom]), 4)
 
     def test_a_glove_is_at_the_end_of_the_arm_and_not_above_the_wrist(self):
         figure, img = painted(detailed.TALL)
@@ -163,12 +172,57 @@ class RimTest(unittest.TestCase):
         inside = [(x, y) for y in range(h) for x in range(w) if self.shape.getpixel((x, y))]
         self.assertEqual([self.bare.getpixel(q) for q in inside], [img.getpixel(q) for q in inside])
 
+    def test_the_outline_adds_one_row_over_the_helmet_and_none_under_the_soles(self):
+        img = painted(detailed.TALL, rim=detailed.Outline())[1]
+        bare, outlined = opaque_rows(self.bare), opaque_rows(img)
+        self.assertEqual((bare[0] - 1, bare[-1]), (outlined[0], outlined[-1]))
+
     def test_the_lit_rim_is_left_and_right_of_the_shape_only(self):
         added = self.added(painted(detailed.TALL, rim=detailed.LitRim())[1])
         self.assertTrue(added)
         for x, y in added:
             with self.subTest(x=x, y=y):
                 self.assertTrue(self.touches(x, y, ((1, 0), (-1, 0))))
+
+    def test_the_lit_rim_is_warm_on_the_side_he_faces_and_cool_behind(self):
+        for pose, ahead in ((standing(), WARM), (facing_left(), COOL)):
+            with self.subTest(right_of_the_shape=ahead):
+                shape = painted(detailed.TALL, pose)[1].getchannel("A")
+                img = painted(detailed.TALL, pose, detailed.LitRim())[1]
+                right = [img.getpixel((x, y))[:3] for y in range(img.height) for x in range(1, img.width)
+                         if not shape.getpixel((x, y)) and shape.getpixel((x - 1, y))]
+                self.assertEqual({ahead}, set(right))
+
+
+class GifPaletteTest(unittest.TestCase):
+    """A clip's one palette keeps the figure's colours, though the street alone has more colours than a GIF holds
+    and the figure is not in the first frame."""
+
+    FIGURE, STREET = 16, 24  # the most a channel of a pixel may be off, of 255
+
+    def test_a_written_gif_keeps_the_figures_colours_and_the_streets(self):
+        street = detailed.Committed().street
+        figure = detailed.q565(painted(detailed.TALL, rim=detailed.Outline())[1])
+        place = (120, detailed.FEET - figure.height + 1)
+        with_figure = street.copy()
+        with_figure.paste(figure, place, figure)
+        with tempfile.TemporaryDirectory() as folder:
+            path = os.path.join(folder, "clip.gif")
+            detailed.write_gif([street, with_figure], path, 40, [figure])
+            with Image.open(path) as gif:
+                count, ms = gif.n_frames, gif.info["duration"]
+                gif.seek(1)
+                got = gif.convert("RGB")
+        self.assertEqual((2, 40), (count, ms))
+        off = {True: 0, False: 0}  # the worst channel error on the figure's pixels, and on the street's
+        for y in range(got.height):
+            for x in range(got.width):
+                fx, fy = x - place[0], y - place[1]
+                on = 0 <= fx < figure.width and 0 <= fy < figure.height and figure.getpixel((fx, fy))[3] > 0
+                error = max(abs(a - b) for a, b in zip(got.getpixel((x, y)), with_figure.getpixel((x, y))))
+                off[on] = max(off[on], error)
+        self.assertLessEqual(off[True], self.FIGURE)
+        self.assertLessEqual(off[False], self.STREET)
 
 
 class PoseIndexTest(unittest.TestCase):

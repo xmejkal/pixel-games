@@ -88,5 +88,29 @@
   "name": "the poses keep the unused columns left of the run",
   "find": "q565(img.crop((x0, y0, x1, img.height)))",
   "replace": "q565(img.crop((0, y0, x1, img.height)))"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the shin has no band",
+  "find": "        self.part(s, self.taper(s, knee, ankle, self.SHIN), cloth, None if far else self.band(s, knee, ankle, 0.42))",
+  "replace": "        self.part(s, self.taper(s, knee, ankle, self.SHIN), cloth)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the sleeve has no band",
+  "find": "        self.part(s, fore, cloth, None if far else self.band(s, elbow, wrist, 0.62))",
+  "replace": "        self.part(s, fore, cloth)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the lit rim is warm behind him and cool ahead",
+  "find": "        return Figure.rim(figure, img, right)",
+  "replace": "        return Figure.rim(figure, img, not right)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the figure gets two colours of a GIF's palette",
+  "find": "    figure = strip.quantize(FIGURE_COLOURS, method=Image.Quantize.MAXCOVERAGE)",
+  "replace": "    figure = strip.quantize(2, method=Image.Quantize.MAXCOVERAGE)"
  }
 ]
