@@ -2,7 +2,8 @@
 headwear and gear, to see whether the detail shows at that size. The fireman has a turnout coat, gloves, a helmet
 and an air tank; CAST holds him and the other characters, each a Character record with its own cycle. It is in no
 game and in no art set: art/paint.py does not call it, and the packs stay as they are. art/moves.py paints the moves
-with the same painter, DetailedFigure, through Pictures.
+with the same painter, DetailedFigure, through Pictures, and art/makers.py makes the fireman's run with two other
+makers, each a subclass of it, through RunPictures.
 
 One number, the height in px from the soles to the helmet's top, sets the size; a character's scale is its share
 of it, and its headwear sits on top of its head. Every width and offset is a share of the body height, so the same
@@ -487,7 +488,11 @@ class DetailedFigure(Figure):
             gear.over(self, s, p, ahead)
         self.head(s, p, ahead, toward)
         self.arm(s, p, near, False)
-        return self.edge.apply(self, self.banded(s.cut(outline=False)), ahead >= 0)
+        return self.edge.apply(self, self.cut(s), ahead >= 0)
+
+    def cut(self, s):
+        """The sprite cut to the picture's size (brush.Sprite.cut, no outline), with the bands as whole pixels."""
+        return self.banded(s.cut(outline=False))
 
     # --- the brush -----------------------------------------------------------------------------------------------
 
@@ -674,13 +679,14 @@ class DetailedFigure(Figure):
 
 class Pictures:
     """A character's cycle (cycle_name: a name in mocap.CYCLES, mocap.CROWD or mocap.MOVES), its poses (poses()) each
-    painted by painter on its own picture of box(height) and all cut to the one box they use: pictures (RGBA, in the
-    board's RGB565 colours) facing right and left, each the mirror of the right one, size, and pivot, the point that is
-    put on a place (Unity's sprite pivot, https://docs.unity3d.com/ScriptReference/Sprite-pivot.html): the hips' column
-    on the last row."""
+    painted by painter (maker builds it: DetailedFigure, or one of art/makers.py's) on its own picture of box(height)
+    and all cut to the one box they use: pictures (RGBA, in the board's RGB565 colours) facing right and left, each the
+    mirror of the right one, size, and pivot, the point that is put on a place (Unity's sprite pivot,
+    https://docs.unity3d.com/ScriptReference/Sprite-pivot.html): the hips' column on the last row."""
 
-    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
+    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run", maker=DetailedFigure):
         self.capture, self.height, self.rim, self.seed, self.character = capture, height, rim, seed, character
+        self.maker = maker
         self.cycle = mocap.named(cycle_name)
         self.painter = self.figure()
         painted = [self.painter.paint(pose) for pose in self.poses()]
@@ -699,7 +705,7 @@ class Pictures:
     def figure(self, rim=None):
         """A painter of this height on the seed, with the rim or another."""
         rnd.seed(self.seed)
-        return DetailedFigure(box(self.height), self.height, rim or self.rim, self.character)
+        return self.maker(box(self.height), self.height, rim or self.rim, self.character)
 
     def size_bytes(self):
         """The pictures in a pack: RGB565, both facings."""
@@ -711,8 +717,8 @@ class RunPictures(Pictures):
     """A character's run (cycle_name: a name in mocap.CYCLES or mocap.CROWD): its twelve poses' Pictures, stride (px a
     cycle) and speed (px a second), both the capture's."""
 
-    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
-        super().__init__(capture, height, rim, seed, character, cycle_name)
+    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run", maker=DetailedFigure):
+        super().__init__(capture, height, rim, seed, character, cycle_name, maker)
         # the feet keep still
         self.stride = round(capture.stride(self.cycle) * self.painter.PX * character.proportions.leg)
         self.speed = self.stride * self.cycle.fps / capture.loop(self.cycle)[1]
