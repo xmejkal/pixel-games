@@ -267,9 +267,9 @@ class Helmet(Headwear):
 
     colour: tuple = HELMET
     light: tuple = HELMET_L
-    shield: tuple = SHIELD
+    shield: tuple | None = SHIELD
     tail: float = 2.15
-    flap: tuple = COAT_DARK
+    flap: tuple | None = COAT_DARK
 
     def nape(self, figure, s, view):
         at, ahead, back = view.at, view.ahead, -view.way
@@ -355,6 +355,7 @@ class Toque(Headwear):
         puff = s.shape("poly", *[at(1.45 * a, 1.1 + (self.height - 1.1) * v) for a, v in self.PUFF])
         figure.part(s, union(band, puff), self.colour)
 
+
 @dataclass(frozen=True)
 class Proportions:
     """A character's limbs against the capture's: leg, the share of each thigh and shin; arm, of each upper arm and
@@ -428,10 +429,10 @@ CHILD = Character("child", scale=0.75, head=0.095, skin=(240, 194, 158), top=(25
                   headwear=Hair((150, 104, 60)), gear=(), proportions=Proportions(leg=0.75, arm=0.85))
 NAVY = (36, 44, 84)
 OFFICER = Character("officer", skin=(124, 84, 60), top=NAVY, legs=NAVY, boots=(26, 24, 28), hands=None, shaft=None,
-                    hem=0.12, bands=False, headwear=PeakedCap(), gear=(Belt(),))
+                    hem=0.0, bands=False, headwear=PeakedCap(), gear=(Belt(),))
 BUILDER = Character("builder", skin=(200, 146, 104), top=(240, 130, 30), legs=(60, 80, 130), boots=(150, 110, 60),
                     hands=(150, 150, 156), sleeve=0.35, shaft=(150, 110, 60), hem=0.15,
-                    headwear=Helmet((240, 240, 236), (255, 255, 255), None, 1.2, None),
+                    headwear=Helmet((240, 240, 236), light=(255, 255, 255), shield=None, tail=1.2, flap=None),
                     gear=(Belt((96, 66, 40), (200, 200, 206), (124, 90, 52)),))
 CHEF = Character("chef", skin=(240, 202, 172), top=(236, 236, 230), legs=(70, 70, 80), boots=(26, 24, 28), hands=None,
                  shaft=None, hem=0.25, bands=False, headwear=Toque(), gear=(Apron(),))
@@ -684,6 +685,7 @@ class RunPictures:
         used = [img.getchannel("A").getbbox() for img in painted]
         x0, y0, x1 = min(b[0] for b in used), min(b[1] for b in used), max(b[2] for b in used)
         self.pictures = [q565(img.crop((x0, y0, x1, img.height))) for img in painted]
+        self.used = (x0, y0, x1)  # the run's first column, top row and end column in its box: at an edge, a pose is cut
         self.left = [ImageOps.mirror(img) for img in self.pictures]  # as CapturedPictures.add in art/sets/rescue.py
         self.size = self.pictures[0].size
         self.stride = round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)  # the feet keep still
