@@ -96,18 +96,21 @@ def engine_reference(value):
 
 class Tool:
     """Runs one command of a tool from the repository root and answers its output; with dry_run it prints the command
-    and runs nothing."""
+    and runs nothing. timeout: the seconds the command may take, or None for no limit; past it subprocess.run kills the
+    command and raises TimeoutExpired, whose output is the bytes read so far (P904: a probe's run)."""
 
     name = None
 
     def __init__(self, dry_run=False):
         self.dry_run = dry_run
 
-    def run(self, args):
+    def run(self, args, timeout=None):
         if self.dry_run:
             print(" ".join([self.name] + args))
             return ""
-        return subprocess.run([self.name] + args, cwd=ROOT, check=True, capture_output=True, text=True).stdout
+        limit = {} if timeout is None else {"timeout": timeout}  # no limit: the call as before
+        return subprocess.run([self.name] + args, cwd=ROOT, check=True, capture_output=True, text=True,
+                              **limit).stdout
 
 
 class Mpremote(Tool):

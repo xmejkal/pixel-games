@@ -189,6 +189,18 @@ class DeployTest(unittest.TestCase):
         run.assert_called_once_with(["mpremote", "ls", ":"], cwd=box.ROOT, check=True, capture_output=True,
                                     text=True)
 
+    def test_the_runner_passes_a_time_limit_to_the_command_and_a_dry_run_runs_none(self):
+        with mock.patch.object(box.subprocess, "run") as run:
+            run.return_value.stdout = "out"
+            self.assertEqual("out", box.Mpremote().run(["run", "probe.py"], timeout=317.5))
+        run.assert_called_once_with(["mpremote", "run", "probe.py"], cwd=box.ROOT, check=True, capture_output=True,
+                                    text=True, timeout=317.5)
+        with mock.patch.object(box.subprocess, "run") as run, \
+                contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual("", box.Mpremote(True).run(["run", "probe.py"], timeout=317.5))
+        run.assert_not_called()
+        self.assertEqual("mpremote run probe.py\n", said.getvalue())
+
 
 VERSION = "MicroPython v1.29.0 on 2026-08-29; mpy-cross emitting mpy v6.3\n"
 MODULES = [n[:-3] for n in sorted(os.listdir(box.GAMES)) if n.endswith(".py") and n != "main.py"]
