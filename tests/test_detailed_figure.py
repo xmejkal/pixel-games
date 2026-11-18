@@ -402,7 +402,7 @@ class CharacterTest(unittest.TestCase):
     def test_from_the_soles_on_the_last_row_to_the_head_joint(self):
         """(head + SOLE) x PX - 1 px, PX from the height and the scale alone, head the head joint's height: 1 less
         what the legs lose, (1 - leg) x 0.5 on the standing pose. The picture's top row, the headwear's top, is 1 to
-        1.4 head radii over that joint."""
+        1.4 head radii over that joint; a toque's, its height in head radii within 1 px."""
         for c in self.each():
             figure, img = base(c)
             px = detailed.TALL * c.scale / (1 + detailed.HELMET_TOP + figure.SOLE)
@@ -411,6 +411,9 @@ class CharacterTest(unittest.TestCase):
             self.assertEqual(img.height - 1, rows[-1])
             joint = rows[-1] - ((head + figure.SOLE) * px - 1)  # the head joint's row, from the soles' row
             r = c.head * px
+            if isinstance(c.headwear, detailed.Toque):
+                self.assertLessEqual(abs(joint - rows[0] - c.headwear.height * r), 1)
+                continue
             self.assertLessEqual(r - 1, joint - rows[0])
             self.assertLessEqual(joint - rows[0], 1.4 * r + 1)
 
@@ -436,7 +439,8 @@ class CharacterTest(unittest.TestCase):
                     changed.append((c, "without %s" % type(part).__name__,
                                     dataclasses.replace(c, gear=c.gear[:k - 2] + c.gear[k - 1:])))
         self.assertTrue({detailed.Helmet, detailed.Hair, detailed.Proportions, detailed.Tank, detailed.Collar,
-                         detailed.Strap, detailed.Belt, detailed.Bag} <= seen)
+                         detailed.Strap, detailed.Belt, detailed.Bag, detailed.PeakedCap, detailed.Toque,
+                         detailed.Apron} <= seen)
         for c, name, character in changed:
             with self.subTest(character=c.name, field=name):
                 self.assertNotEqual(bytes_of(base(c)[1]), bytes_of(drawn(character)[1]))
@@ -570,6 +574,61 @@ class CharacterTest(unittest.TestCase):
         self.assertGreater(share["child"], share["fireman"] * 1.1)
 
 
+class NewPartsTest(unittest.TestCase):
+    """The parts of the second four characters on the standing pose, facing right and left: a part's pixels are those
+    that one of its fields changes."""
+
+    FACINGS = ((standing, 1), (facing_left, -1))
+
+    def worn(self, c, pose, **fields):
+        """The pixels the headwear's or the first gear part's fields change, and the figure."""
+        figure, img = drawn(c, pose())
+        if fields.pop("gear", False):
+            moved = dataclasses.replace(c, gear=(dataclasses.replace(c.gear[0], **fields),) + c.gear[1:])
+        else:
+            moved = dataclasses.replace(c, headwear=dataclasses.replace(c.headwear, **fields))
+        return figure, changed_by(img, drawn(moved, pose())[1])
+
+    def test_the_peaked_caps_peak_is_on_the_side_the_nose_is(self):
+        for pose, ahead in self.FACINGS:
+            with self.subTest(ahead=ahead):
+                figure, peak = self.worn(detailed.OFFICER, pose, peak=0.0)
+                self.assertGreaterEqual(len(peak), 3)
+                self.assertGreater((mean_x(peak) - figure.at(pose()["head"])[0]) * ahead, figure.HEAD * figure.PX)
+
+    def test_the_bun_is_behind_the_head(self):
+        for pose, ahead in self.FACINGS:
+            with self.subTest(ahead=ahead):
+                figure, bun = self.worn(detailed.ACROBAT, pose, bun=0.35)  # a part all the same: the grain stays
+                self.assertGreaterEqual(len(bun), 6)
+                self.assertLess((mean_x(bun) - figure.at(pose()["head"])[0]) * ahead, 0)
+
+    def test_the_apron_is_in_front_of_the_body_from_the_chest_to_the_knees(self):
+        for pose, ahead in self.FACINGS:
+            with self.subTest(ahead=ahead):
+                c = detailed.CHEF
+                figure, apron = self.worn(c, pose, gear=True, colour=other(c.gear[0].colour))
+                fitted = c.proportions.fit(pose())
+                self.assertGreaterEqual(len(apron), 30)
+                self.assertGreater((mean_x(apron) - figure.at(fitted["root"])[0]) * ahead, 0)
+                chest, knee = figure.at(fitted["upperback"])[1], figure.at(fitted["rfemur"])[1]
+                self.assertGreaterEqual(min(y for _, y in apron), chest - 1)
+                self.assertLessEqual(max(y for _, y in apron), knee + 1)
+
+    def test_the_toque_rises_higher_over_the_head_joint_than_the_helmet(self):
+        tops = {c.name: opaque_rows(base(c)[1])[0] - base(c)[0].at(c.proportions.fit(standing())["head"])[1]
+                for c in (detailed.FIREMAN, detailed.CHEF)}
+        self.assertLess(tops["chef"], tops["fireman"] - detailed.FIREMAN.head * base(detailed.FIREMAN)[0].PX)
+
+    def test_the_officer_has_a_belt_and_nothing_of_his_gear_crosses_his_chest(self):
+        c = detailed.OFFICER
+        figure, img = base(c)
+        self.assertIsInstance(c.gear[0], detailed.Belt)
+        gear = changed_by(img, drawn(dataclasses.replace(c, gear=()))[1])
+        self.assertGreaterEqual(len(gear), 6)
+        self.assertGreater(min(y for _, y in gear), figure.at(standing()["upperback"])[1])
+
+
 class Stand:
     """A stand-in for RunPictures: one plain picture a facing, so CharacterClip is tested with no CMU file."""
 
@@ -665,6 +724,15 @@ class CastFromCaptureTest(unittest.TestCase):
         if cast_runs() is None:
             raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
         cls.capture, cls.runners = cast_runs()
+
+    def test_no_pose_of_the_chef_touches_the_top_of_the_box(self):
+        """His toque rises over the 96 px; the box the run paints in still holds every pose."""
+        run = next(run for run in self.runners if run.character == detailed.CHEF)
+        figure = run.figure()
+        for i, pose in enumerate(run.capture.poses(run.cycle)):
+            with self.subTest(pose=i):
+                x0, y0, x1, _ = figure.paint(pose).getchannel("A").getbbox()
+                self.assertTrue(x0 > 0 and y0 > 0 and x1 < figure.w)
 
     def test_the_childs_lowest_pose_stands_on_the_last_row_and_no_pose_is_cut(self):
         """Painted on the box the run paints in, no pose of his touches its left, right or top edge."""
