@@ -1766,3 +1766,84 @@ than the control.
 - Not measured yet, P851's board step: the switch's 10 presses counted as 10, with some quick taps among them, the map's poll in the
   `avg` line's `input`, and the `heap` line staying flat with the poll on (the poll allocates nothing by a reading of
   the code, not by a measurement).
+
+## P904 (#1283) step 2c, 2026-11-18: how many 96 px figures the game box moves at once
+
+- The board: branch p904-bench (fca0ee4), deployed with `python3 tools/box.py deploy --all` (the box had no
+  `:lineup.py`, so it plays every game). The log's first line:
+  `engine sum=viper volume=viper native=_engine,_crackle.mpy`. Log: `logs/run-p904-2c.log`, the board's lines of one
+  run of `python3 probe904_figures.py`. The run took from 20:48:41 to 21:01:55 Prague, with the painting on the Mac,
+  and ended with exit 0. The board printed `done`.
+- The scene: Rescue's still street, and over it 0, 1, 2, 4, 8 and 16 figures, each count for 30 s on the board's wall
+  clock, one count after the other. Figure i is character i modulo 8 of `art/detailed.py`'s CAST, so count 2 is the
+  fireman and the paramedic. Each figure runs at its captured speed and turns at an edge at once, so its picture stays
+  whole on the screen. 96 px is `detailed.TALL`, an adult's standing height from the soles to the top of the fireman's
+  helmet. The pictures are 72 to 111 px tall and 42 to 67 px wide: the child is smaller, the chef's toque is taller,
+  and a pose in flight adds.
+- The set: `figures` (`art/figures.py`), 193 pictures painted whole on the Mac, one pack of 2,464,000 bytes, in no
+  `ART_SETS`. The Mac part copies the pack to `:packs/figures.pak` and an index of it alone to `:art_index.py`. This
+  shadow index makes the pool as big as this pack. Then the Mac part hard-resets the board and runs the probe once. At
+  the end it removes both copies and hard-resets the board again. After the run,
+  `python3 tools/box.py log --seconds 20` showed `lineup 15`, `switch marshmallow 616 ms, load 153 ms` and no `art:`
+  line: seen at the bench, not kept as a log.
+- The sound: by the code, the box's music loop plays for every game. The App calls `self.cues.music()`
+  (`games/app.py:247`) unless it printed `sound off:` (`games/app.py:524`), and this log has no such line. No sound
+  was recorded.
+- Each count printed 5 sets of the App's lines, one set every 5 s. The first set of each count is left out, as the
+  probe's docstring says. The count starts the App's interval for the `fps` and `time` lines. But its first `phases`
+  and `avg` lines can hold frames of the count before. So 4 `fps` lines and 4 `time` lines are read for each count.
+  Step, paint, send and gc are the interval's means per frame, from the `time` lines. The App's cap is 25 fps
+  (`FRAME_MS` 40).
+
+| figures | lines read | fps | step, ms | paint, ms | send, ms | gc, ms | worst gap, ms |
+|---|---|---|---|---|---|---|---|
+| 0 | 4 | 25 | 1.2 | 9.1 to 9.2 | 0.8 | 2.6 | 41 to 42 |
+| 1 | 4 | 25 | 1.3 | 9.9 to 10.0 | 3.0 | 2.6 | 42 |
+| 2 | 4 | 24 | 1.3 to 1.4 | 10.4 to 11.0 | 3.3 to 5.6 | 2.6 | 47 to 60 |
+| 4 | 4 | 24 | 1.3 to 1.4 | 11.5 to 12.0 | 5.6 to 7.8 | 2.6 | 45 to 65 |
+| 8 | 4 | 24 | 1.4 to 1.5 | 14.5 to 14.8 | 5.3 to 6.8 | 2.5 to 2.6 | 46 to 68 |
+| 16 | 4 | 24 | 1.7 | 19.8 to 19.9 | 7.7 to 8.9 | 2.5 | 54 to 58 |
+
+The pass lines were set before the run (the plan on #1283, and its amendment of one reading at 20:33 Prague):
+
+- Two moving 96 px figures hold 19 fps: pass. The reading: every `fps figures` line between `count 2 starts` and
+  `count 4 starts`, the first left out, is 19 or more. Lines 73, 78, 83 and 88 of the log each say `fps figures 24`.
+  The first, left out, says `fps figures 25` (line 68).
+- The pack sits in the pool: pass. The reading: the `pack` line says `pool`. Line 14 says `pack pool 2464000`.
+- A load of about 2 s is fine: pass. The reading: the load of the `switch figures` line is 2,500 ms or less. Line 13
+  says `switch figures 2211 ms, load 2138 ms, import 0 ms`. The plan leaned on two estimates, each a smaller pack's
+  load scaled to 2,464,000 bytes: `logs/run-p846-baseline-a.log:84` (`load 638 ms` for Rescue's pack, 660,008 bytes
+  today) gives 2,382 ms, and `bench.md:212` (P567 above: 2,154 ms for 1,507,152 bytes) gives 3,522 ms. The load ran
+  with no loading card, because the probe's one game builds at once.
+- No pass line is missed, so this run asks no change of the art.
+
+Logged, with no pass line:
+
+- PSRAM: `psram free 8254704 largest 8126464` at the start, `psram free 5026784 largest 4980736` at the end. That is
+  3,227,920 bytes less free, and a largest block 3,145,728 bytes smaller. The start lines come before the App's first
+  line (`size 240 320 ...`). The log does not say what took the bytes.
+- The heap: `gc free 8150736 alloc 103728` at the start, `gc free 5115520 alloc 121216` at the end. The App's `heap`
+  lines say 159,328 to 161,456 bytes allocated in all 30 sets. The gc column, the App's timed collections, is 2.5 to
+  2.6 ms a frame at every count.
+- In this scene, the paint of the `avg` lines is the figures' own drawing. It is 0.1 ms with no figure, 0.9 ms with
+  1 and 1.5 to 1.6 ms with 2. It is 2.6 to 2.8 ms with 4, 5.3 to 5.6 ms with 8 and 10.6 to 10.8 ms with 16.
+- The worst gap between two frame starts: 41 to 42 ms with 0 and 1 figures, then up to 60 ms with 2, 65 ms with 4,
+  68 ms with 8, and 54 to 58 ms with 16. In the same sets, the slowest frame (`slowest`) took 21 to 22 ms with 2
+  figures and 31 to 34 ms with 8. So no frame's own time fills those gaps. The log does not say what does.
+- With 16 figures the slowest frame of each set read took 43 to 44 ms, over the 40 ms frame, and each set still says
+  24 fps.
+- The other counts: 25 fps with 0 and 1 figures, 24 with 2, 4, 8 and 16. With 16 figures the paint is 19.8 to 19.9 ms
+  against 9.1 to 9.2 ms with none, and the send 7.7 to 8.9 ms against 0.8 ms. No count fell under 24 fps, so this run
+  does not show the count at which the rate falls.
+
+Not measured:
+
+- A figure that crosses the screen's edge. Here every figure turns at the edge, so each picture is wholly on the
+  screen, and the driver copies it by rows (`engine/driver/src/s3lcd.c:593`, the driver at 68a86b2). A picture partly
+  off the screen goes through the loop below it (line 613), which checks each pixel against the screen's edges and
+  blends it.
+- The loading card: the probe's one game builds at once.
+- Figures that overlap against figures apart: no line says how many figures overlapped in a frame, so the two cases
+  are not told apart.
+- The sound by ear: the run recorded no sound.
+- More than one run: one run gives one verdict.
