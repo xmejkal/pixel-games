@@ -14,8 +14,8 @@
  {
   "file": "art/detailed.py",
   "name": "the eye is at the back of the head",
-  "find": "            ex, ey = at(ahead * 0.5 + k * side * 0.42, -0.02)",
-  "replace": "            ex, ey = at(-ahead * 0.5 + k * side * 0.42, -0.02)"
+  "find": "            ex, ey = at(ahead * 0.5 + k * frontal * 0.42, -0.02)",
+  "replace": "            ex, ey = at(-ahead * 0.5 + k * frontal * 0.42, -0.02)"
  },
  {
   "file": "art/detailed.py",
@@ -32,7 +32,7 @@
  {
   "file": "art/detailed.py",
   "name": "no helmet is painted",
-  "find": "        s.part(union(dome, brim), self.colour, light=(lx, ly, r * 0.9, self.light), rim=0.4, grain=0)\n",
+  "find": "        figure.detail(s, union(dome, brim), self.colour, light=(lx, ly, r * 0.9, self.light), rim=0.4)\n",
   "replace": ""
  },
  {
@@ -68,8 +68,8 @@
  {
   "file": "art/detailed.py",
   "name": "the stride is a fraction of a px, so a pose index is no whole number",
-  "find": "        self.stride = round(capture.stride(self.cycle) * figure.PX)",
-  "replace": "        self.stride = capture.stride(self.cycle) * figure.PX"
+  "find": "        self.stride = round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)  # the feet keep still",
+  "replace": "        self.stride = capture.stride(self.cycle) * figure.PX * character.proportions.leg  # the feet keep still"
  },
  {
   "file": "art/detailed.py",
@@ -140,7 +140,7 @@
  {
   "file": "art/detailed.py",
   "name": "the headwear is not painted over the face",
-  "find": "        c.headwear.over(self, s, at, r, ahead, side)\n",
+  "find": "        c.headwear.over(self, s, view)\n",
   "replace": ""
  },
  {
@@ -164,13 +164,79 @@
  {
   "file": "art/detailed.py",
   "name": "a runner going left shows its right pictures",
-  "find": "            out.append((self.W - lap if self.left[k] else lap - w, row, run.picture(ran, self.left[k])))",
-  "replace": "            out.append((self.W - lap if self.left[k] else lap - w, row, run.picture(ran)))"
+  "find": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran, self.runs_left[k])))",
+  "replace": "            out.append((self.W - at if self.runs_left[k] else at - w, row, run.picture(ran)))"
  },
  {
   "file": "art/detailed.py",
   "name": "a clip is written with loss, so a frame is not the picture",
   "find": "duration=ms, loop=0, lossless=True)",
   "replace": "duration=ms, loop=0, lossless=False)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the leg share is ignored: a child's legs are an adult's",
+  "find": "(self.leg, self.LEG, self.FOOT)",
+  "replace": "(1.0, self.LEG, self.FOOT)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the arm share is ignored: a child's arms are an adult's",
+  "find": "(self.arm, self.ARM, self.HAND)",
+  "replace": "(1.0, self.ARM, self.HAND)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a fitted pose is not moved back to the ground",
+  "find": "        lift = min(pose[n][1] for n in self.FEET) - min(out[n][1] for n in self.FEET)",
+  "replace": "        lift = 0"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the stride is not shortened with the legs, so a child's feet slide",
+  "find": "round(capture.stride(self.cycle) * figure.PX * character.proportions.leg)",
+  "replace": "round(capture.stride(self.cycle) * figure.PX)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the rows go in the order the runners come in, not by their size",
+  "find": "        rank = sorted(range(n), key=lambda k: runners[k].size[1])  # the smallest picture first",
+  "replace": "        rank = list(range(n))  # the smallest picture first"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a runner's lap is the street and its width, so the clip jumps where it loops",
+  "find": "        return whole // laps",
+  "replace": "        return self.W + run.size[0]"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a shoe gets a shaft in the boots' colour",
+  "find": "        shaft = c.shaft  # None: a shoe",
+  "replace": "        shaft = c.shaft or c.boots  # None: a shoe"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a bare hand gets the glove's cuff",
+  "find": "        if c.hands is not None:  # the glove's cuff",
+  "replace": "        if True:  # the glove's cuff"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the far shin gets a band too",
+  "find": "        band = None if far or not c.bands else self.band(s, knee, ankle, 0.42)",
+  "replace": "        band = None if not c.bands else self.band(s, knee, ankle, 0.42)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the hair's cap is not mirrored when the head faces left",
+  "find": "view.at(view.way * a, b) for a, b in self.CAP",
+  "replace": "view.at(a, b) for a, b in self.CAP"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the clip's length is the fastest runner's crossing",
+  "find": "        slow = min(runners, key=lambda run: run.speed)",
+  "replace": "        slow = max(runners, key=lambda run: run.speed)"
  }
 ]
