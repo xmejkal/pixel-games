@@ -25,7 +25,7 @@ from PIL import Image  # noqa: E402
 from sets.rescue import STRIPE, along, leant  # noqa: E402
 from test_detailed_figure import opaque_rows, standing  # noqa: E402
 
-SMALL = 48  # px: the atlas that fill() fills is painted at this height, so the test runs fast
+SMALL = 48  # px: the two atlas tests that paint the most pictures paint at this height, so they run fast
 LEAN = 8  # degrees bent() leans the body forward
 # degrees bent() turns each side at the shoulder, the elbow, the hip and the knee (positive: the lower end forward);
 # r is the standing pose's near side

@@ -2,7 +2,8 @@
 headwear and gear, to see whether the detail shows at that size. The fireman has a turnout coat, gloves, a helmet
 and an air tank; CAST holds him and the other characters, each a Character record with its own cycle. It is in no
 game and in no art set: art/paint.py does not call it, and the packs stay as they are. art/moves.py paints the moves
-with the same painter, DetailedFigure, through Pictures.
+with the same painter, DetailedFigure, through Pictures, and art/makers.py makes the fireman's run with two other
+makers, each a subclass of it, through RunPictures.
 
 One number, the height in px from the soles to the helmet's top, sets the size; a character's scale is its share
 of it, and its headwear sits on top of its head. Every width and offset is a share of the body height, so the same
@@ -678,10 +679,10 @@ class DetailedFigure(Figure):
 
 class Pictures:
     """A character's cycle (cycle_name: a name in mocap.CYCLES, mocap.CROWD or mocap.MOVES), its poses (poses()) each
-    painted by painter on its own picture of box(height) and all cut to the one box they use: pictures (RGBA, in the
-    board's RGB565 colours) facing right and left, each the mirror of the right one, size, and pivot, the point that is
-    put on a place (Unity's sprite pivot, https://docs.unity3d.com/ScriptReference/Sprite-pivot.html): the hips' column
-    on the last row."""
+    painted by painter (maker builds it: DetailedFigure, or one of art/makers.py's) on its own picture of box(height)
+    and all cut to the one box they use: pictures (RGBA, in the board's RGB565 colours) facing right and left, each the
+    mirror of the right one, size, and pivot, the point that is put on a place (Unity's sprite pivot,
+    https://docs.unity3d.com/ScriptReference/Sprite-pivot.html): the hips' column on the last row."""
 
     def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run", maker=DetailedFigure):
         self.capture, self.height, self.rim, self.seed, self.character = capture, height, rim, seed, character

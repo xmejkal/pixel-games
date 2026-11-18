@@ -46,7 +46,7 @@ PARTS = (tuple((kind, True) for kind in LIMBS) + (("back gear", False),) + tuple
 UPRIGHT = {"upper arm": 90, "forearm": 90, "hand": 90, "thigh": 90, "shin": 90, "foot": 0, "back gear": 270,
            "torso": 270, "head": 270}
 # the joints each kind puts on its upright way, each at its 3D distance from the kind's joint; a kind comes after the
-# kind that puts its joint
+# one that puts its joint (Atlas.measure puts the hip joints and the clavicles)
 WAYS = (("torso", ("lowerback", "upperback", "thorax", "lowerneck")), ("head", ("upperneck", "head")),
         ("upper arm", ("humerus",)), ("forearm", ("radius",)), ("hand", ("wrist", "hand", "fingers", "thumb")),
         ("thigh", ("femur",)), ("shin", ("tibia",)), ("foot", ("foot", "toes")))
@@ -99,9 +99,10 @@ class Atlas:
     joint, the same rotation turns the bands, and the painter's cut cuts it."""
 
     ANGLES = 32  # a kind has a picture every 11.25 degrees
-    REACH = 0.45  # body heights from a part's joint to the sprite's edge: the torso and its collar reach 0.41
-    # each limb kind's capsule's half width in body heights: past its own half width (DetailedFigure's THIGH, SHIN,
-    # UPPER, FORE, GLOVE_W, FOOT_W with the sole), so a part keeps its whole width
+    REACH = 0.45  # body heights from a part's joint to the sprite's edge: the fireman's torso reaches 0.40
+    # each limb kind's capsule's half width in body heights: past the half width of what the whole painter paints on
+    # its bone (DetailedFigure's UPPER, FORE, GLOVE_W, THIGH, SHIN and SHAFT_W, FOOT_W and the sole), so a part keeps
+    # its whole width
     CAPSULE = {"upper arm": 0.055, "forearm": 0.05, "hand": 0.05, "thigh": 0.068, "shin": 0.058, "foot": 0.05}
 
     def __init__(self, painter):
