@@ -1,22 +1,24 @@
 """
-P904 step 2c (#1283): how many 96 px figures the game box moves at once. Rescue's still street, and over it 0, 1, 2,
-4, 8 and 16 figures (COUNTS), each count for SECONDS on the board's wall clock, in one board run. Figure i is
-character i modulo 8 of art/detailed.py's CAST, so count 2 is the fireman and the paramedic. 96 px is
-detailed.TALL, an adult's standing height from the soles to the top of the fireman's helmet. The pictures are 72 to
-111 px tall and 42 to 67 px wide: the child is smaller, the chef's toque is taller, and a pose in flight adds. The
-pictures are the set figures (art/figures.py), painted whole on the Mac: its pack is 2,464,000 bytes, in no
+P904 steps 2c and 2d (#1283): how many 96 px figures the game box moves at once. Rescue's still street, and over it 0,
+1, 2, 4, 8 and 16 figures (COUNTS) or the counts of --counts, each count for SECONDS on the board's wall clock, in one
+board run. Figure i is character i modulo 8 of art/detailed.py's CAST, so count 2 is the fireman and the paramedic.
+96 px is detailed.TALL, an adult's standing height from the soles to the top of the fireman's helmet. The pictures are
+72 to 111 px tall and 42 to 67 px wide: the child is smaller, the chef's toque is taller, and a pose in flight adds.
+The pictures are the set figures (art/figures.py), painted whole on the Mac: its pack is 2,464,000 bytes, in no
 ART_SETS.
 
 Each figure runs at its captured speed, rounded to a whole px a second (the gait rows keep the captured value), and
 steps in whole px with a carry in thousandths of a px, as games/rescue.py's fireman does. At an edge of the screen it
 turns at once (the fireman plays his turn poses), so its picture stays whole on the screen. Its pose follows the px it
-ran. Figure i starts at (i * 5 mod 16) / 15 of its way between its two edges, facing right when i is even, so the 16
-start places differ and a figure that starts at an edge faces away from it.
+ran. With n the largest count, figure i starts at (i * 5 mod n) / (n - 1) of its way between its two edges, facing
+right when i is even, so no two figures start at the same share of their way (n is 2 or more and not a multiple of 5).
+Figure 0 starts at the left edge and faces away from it. The figure at the right edge faces away from it for n = 16,
+24, 32, 48 and 64, not for every n (for 17 it faces the edge).
 
 Deploy the branch's game code first (`python3 tools/box.py deploy <the lineup>`), close any log, then, from the
 repository root, on the Mac:
 
-    python3 probe904_figures.py [--dry-run] [--cmu DIR]
+    python3 probe904_figures.py [--dry-run] [--cmu DIR] [--counts A,B,...]
 
 The Mac part:
 1. reads `ls :` and refuses when the box has an :art_index.py. It is the box's real index (a deploy with --py:
@@ -24,12 +26,13 @@ The Mac part:
 2. checks the CMU files in DIR (mocap.CMU_DIR by default) and refuses with the capture's own message when they are
    missing;
 3. paints the set (about a minute) and writes its pack and an index of it alone into a temporary folder, with a copy
-   of this file whose GAITS holds each character's gait row (name, pivot x, stride, speed);
+   of this file whose GAITS holds each character's gait row (name, pivot x, stride, speed) and whose COUNTS holds the
+   counts;
 4. copies the pack to :packs/figures.pak, then the index to :art_index.py (the shadow index: the board imports a .py
    before the .mpy of the same name, so the pool is made as big as this pack alone; meanwhile the lineup's games find
    no art and draw their plain shapes);
 5. hard-resets the board, waits with `exec pass` until the board answers, then runs the copy once: the board run,
-   within the counts times SECONDS plus 120 s (LIMIT_S);
+   within the number of counts times SECONDS plus 120 s (SPARE_S);
 6. prints each line of the board run and writes them to the first free log of logs/run-p904-2c.log,
    logs/run-p904-2c-2.log, -3 and on, so a log is never overwritten, also after a failed or a timed-out board run. It
    refuses a board run that did not end with a `done` line, and at its end prints the log's path;
@@ -39,9 +42,11 @@ The Mac part:
    cleanup itself fails, its message holds the first error too, and says that both files may still be on the box.
 --dry-run prints each board command and runs none: the cleanup as for a board that holds both copies, no `done` test
 and no log. It still paints and writes the set in the temporary folder.
+--counts A,B,... gives the counts, in this order, instead of COUNTS: whole numbers of 0 or more, no repeat. It refuses
+a largest count under 2 or a multiple of 5 (the start places above need neither), before any board command.
 
 The lines, from the board:
-- `probe p904 counts 0,1,2,4,8,16 seconds 30`
+- `probe p904 counts 0,1,2,4,8,16 seconds 30`, with the run's counts
 - `psram free <B> largest <B>` and `gc free <B> alloc <B>`, at the start and at the end: PSRAM's free bytes and its
   largest free block (esp32.idf_heap_info), and the heap after a collection
 - the App's `game figures` and `switch figures <ms> ms, load <ms> ms, import <ms> ms`: the load is the pack's read
@@ -163,11 +168,11 @@ class CountClock:
 
 
 def game_class(rows):
-    """The probe's game, a gfx.Game: Rescue's still street, and over it the first count of its 16 figures, figure i
-    on rows[i % len(rows)] (gait rows), starting as the docstring says. It starts in play (TITLE_MS 0, as rain.py), and
-    sets covers as Rescue does. A picture that does not draw raises, so an empty scene cannot pass. The count is set
-    from outside (CountClock). play and paint loop by index, so a frame makes no list. The board part calls it, and a
-    Mac test with games/ on the path."""
+    """The probe's game, a gfx.Game: Rescue's still street, and over it the first count of its figures, as many as the
+    largest count, figure i on rows[i % len(rows)] (gait rows), starting as the docstring says. It starts in play
+    (TITLE_MS 0, as rain.py), and sets covers as Rescue does. A picture that does not draw raises, so an empty scene
+    cannot pass. The count is set from outside (CountClock). play and paint loop by index, so a frame makes no list.
+    The board part calls it, and a Mac test with games/ on the path."""
     import gfx
     import pictures
 

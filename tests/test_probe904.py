@@ -810,7 +810,8 @@ class MacTest(unittest.TestCase):
         with open(os.path.join(REPO, "probe904_figures.py")) as f:
             source = f.read()
         for old in ("\nGAITS = None", "\nCOUNTS = (0, 1, 2, 4, 8, 16)"):
-            for case, broken in (("none", source.replace(old, "\n# gone", 1)), ("two", source.replace(old, old * 2, 1))):
+            for case, broken in (("none", source.replace(old, "\n# gone", 1)),
+                                 ("two", source.replace(old, old * 2, 1))):
                 with self.subTest(line=old.strip(), case=case), self.assertRaises(ValueError):
                     probe.filled(broken, STAND_IN_ROWS, (24, 0, 7))
 
