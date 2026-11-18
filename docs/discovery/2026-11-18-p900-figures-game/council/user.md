@@ -1,6 +1,6 @@
 # P900 council: the user lens (the PO's journey today and the new job)
 
-Tags: E (pointer), H (source), D (who, when). — is an unknown. Every account is one person, n = 1. Paths are under /Users/petr/Development/pixel-p900 unless noted. Numbers marked "calc" are my arithmetic on the E constants named beside them.
+Tags: E (pointer), H (source), D (who, when). — is an unknown. Every account is one person, n = 1. Paths are under ~/Development/pixel-p900 unless noted. Numbers marked "calc" are my arithmetic on the E constants named beside them.
 
 ## Findings
 

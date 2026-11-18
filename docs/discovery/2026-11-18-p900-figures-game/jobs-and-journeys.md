@@ -28,12 +28,31 @@ e.g. `- Job 1 · paste each task into Slack by hand · E tickets.csv:7` -->
 <!-- One ### per actor and scenario: the table, then a Mermaid flowchart of the same steps. Never a Mermaid
 journey block: it forces a score on every task. "n/a — a one-step job" may replace both.
 e.g. `| 2 | opens the app | E analytics, 90 days | never sees the task | not yet | Do they read email? |` -->
-### ⟨actor⟩ — ⟨scenario⟩ <!-- REQUIRED:journey -->
+### The PO — plays Rescue today <!-- REQUIRED:journey -->
 | step | what they do | evidence | friction or harm | today | open question |
 | --- | --- | --- | --- | --- | --- |
-| 1 | ⟨fill⟩ | ⟨tag and pointer⟩ | ⟨fill⟩ | ⟨works, partly, not yet or —⟩ | ⟨fill or —⟩ |
+| 1 | switches to Rescue with PICK and waits for its art | E ★C5, ★C8 (a load of 638 ms) | — | works | — |
+| 2 | reads the hint on the title | H council/user.md USER-8: one blinking line for under a second | he learns by losing a round | partly | Does he stand by when he shows it? |
+| 3 | runs the fireman left and right with the stick, sprays with FIRE | E ★C6 | the figures are about 24 px tall | works | — |
+| 4 | carries people to the shelter | E `games/rescue.py:90-95` | he holds one figure for the whole game | works | — |
 
 ```mermaid
 flowchart LR
-  s1["⟨step 1⟩"] --> s2["⟨step 2⟩"]
+  s1["switch to Rescue"] --> s2["read the hint"] --> s3["run and spray"] --> s4["carry to the shelter"]
+```
+
+### The PO — plays a mission with two figures
+| step | what they do | evidence | friction or harm | today | open question |
+| --- | --- | --- | --- | --- | --- |
+| 1 | sees two 96 px figures and a goal on one screen | calculated ★C3, ★C11 | about three figures fit across the screen (H council/user.md USER-12) | not yet | Is 96 px the figure or the picture? (Q3) |
+| 2 | sees which figure he holds | — | no mark exists | not yet | — |
+| 3 | moves the held figure to its place | E ★C6 | at the captured speed it crosses the screen in about 1.5 s | not yet | — |
+| 4 | switches to the other figure | E ★C5 | no free button; a long hold of PICK can power an older board off (★C7) | not yet | Which input? (Q5) |
+| 5 | the first figure keeps its place or its job | H A5 | no idle pose exists (H council/user.md USER-20) | not yet | What does it do? (Q7) |
+| 6 | both act, and the mission ends | D1's example | — | not yet | — |
+
+```mermaid
+flowchart LR
+  m1["see two figures and a goal"] --> m2["see who I hold"] --> m3["move"] --> m4["switch"] --> m5["the other keeps its job"] --> m6["finish together"]
+  m4 --> m3
 ```
