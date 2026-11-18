@@ -463,7 +463,7 @@ CAP_40 = 180000 // FRAME_MS + 100  # frames: a little past the 4,500 that the si
 PSRAM = "psram free %d largest %d" % (6747503 + 2000003, 6553597)
 
 
-class Pool:
+class CPool:
     """s3lcd.pool by the C rules (s3lcd.c's pool): the first call makes the block at its size, a larger size later
     raises ValueError, a size it holds answers the same block."""
 
@@ -503,7 +503,7 @@ def real_board(rows, missing=()):
                                    mem_alloc=lambda: 279367)  # the App's own: its mem line and its heap lines
     poll = types.SimpleNamespace(register=lambda *a: None, poll=lambda ms: [])
     hardware = {"gc": gc_, "main": types.SimpleNamespace(compose=lambda: (None, None)),
-                "s3lcd": types.SimpleNamespace(pool=Pool().pool),
+                "s3lcd": types.SimpleNamespace(pool=CPool().pool),
                 "esp32": types.SimpleNamespace(HEAP_DATA=HEAP_DATA, idf_heap_info=lambda kind: REGIONS),
                 "select": types.SimpleNamespace(poll=lambda: poll, POLLIN=1)}
 
