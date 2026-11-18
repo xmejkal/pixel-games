@@ -222,9 +222,11 @@ class MovePicturesTest(unittest.TestCase):
         self.assertEqual((round(AHEAD * (JUMP_FRAMES - 1) * px), 0), self.jump.advance)
 
     def test_the_advance_holds_the_rise(self):
-        px = self.climb.painter.PX
+        """And each pose's lift is its height over the span's floor: the rise up to the loop's start and up to it."""
+        px, start = self.climb.painter.PX, self.climb.capture.loop(CLIMB)[0]
         self.assertEqual((round(LEAN * px), round(RISE * px)), self.climb.advance)
-        self.assertEqual([round(RISE * i / 12 * px) for i in range(12)], [up for _, up in self.climb.travel])
+        self.assertEqual([round(RISE * (start + i * PERIOD // 12) / PERIOD * px) for i in range(12)],
+                         [up for _, up in self.climb.travel])
 
     def test_a_leg_share_of_a_half_halves_the_forward_travel_only(self):
         px = self.jump.painter.PX
