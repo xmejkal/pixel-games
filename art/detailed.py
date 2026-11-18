@@ -315,7 +315,10 @@ FIREMAN = Character()
 RED = (200, 40, 44)
 PARAMEDIC = Character("paramedic", skin=(246, 204, 176), top=RED, legs=RED, boots=(28, 26, 30), hands=(70, 130, 200),
                       shaft=None, hem=0.15, headwear=Hair((92, 56, 34), down=1.6), gear=(Bag(),))
-CAST = ((FIREMAN, "run"), (PARAMEDIC, "woman"))  # each character with the cycle of art/mocap.py it runs
+FOOTBALLER = Character("footballer", skin=(150, 100, 68), top=(40, 160, 80), legs=(236, 236, 236), boots=(24, 24, 26),
+                       hands=None, sleeve=0.45, trouser=0.45, shaft=(40, 160, 80), hem=0.0, bands=False,
+                       headwear=Hair((26, 22, 24)), gear=())
+CAST = ((FIREMAN, "run"), (PARAMEDIC, "woman"), (FOOTBALLER, "dogman"))  # each with the cycle of art/mocap.py it runs
 
 
 class DetailedFigure(Figure):

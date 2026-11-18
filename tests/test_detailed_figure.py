@@ -384,7 +384,7 @@ class CharacterTest(unittest.TestCase):
 
     def test_each_field_of_the_record_and_of_its_parts_changes_the_picture(self):
         for c in self.each():
-            before = drawn(c)[1].tobytes()
+            before = bytes_of(drawn(c)[1])
             changed = [(f.name, dataclasses.replace(c, **{f.name: other(getattr(c, f.name))}))
                        for f in dataclasses.fields(c) if f.name != "name"]
             for k, part in enumerate((c.headwear,) + c.gear):
@@ -398,7 +398,7 @@ class CharacterTest(unittest.TestCase):
                                     dataclasses.replace(c, gear=c.gear[:k - 1] + c.gear[k:])))
             for name, character in changed:
                 with self.subTest(field=name):
-                    self.assertNotEqual(before, drawn(character)[1].tobytes())
+                    self.assertNotEqual(before, bytes_of(drawn(character)[1]))
 
     def test_facing_left_is_the_mirror_of_facing_right(self):
         for c in self.each():
