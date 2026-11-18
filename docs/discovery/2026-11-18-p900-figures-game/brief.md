@@ -91,7 +91,7 @@ and caveat cells. e.g. `- Q2 what first · fix delivery · two weeks · whether 
 
 ## Riskiest assumption and its test
 - Riskiest: A1: two 96 px figures with enough poses fit the art memory and the frame time on the board, beside a background · proposed — the PO assistant's and the facilitator's opinion, pending Q1's rating. Its test and pass line are D13 and D20 <!-- REQUIRED:riskiest -->
-- Test · kind · pass line, dated before any result · proposed | D<n>: the board spike P904 (https://github.com/xmejkal/spark/issues/1283), with a pack that is bigger than today's pool: two figures with two cycles each, about 2 MB, after a hard reset · spike · the pass line, set by the PO on 2026-11-18 before any result (D20, D19): two moving 96 px figures over Rescue's street hold 25 fps, which is the box's own pace of 40 ms a frame and more than Rescue's 19 to 20 fps (★C8: nobody steered); a load of about 2 s is fine with a loading card; the pack sits in the pool and not in the heap, which the spike's log must print because the loader falls back without a word (`games/pictures.py:50-52`). The free PSRAM, the worst gap and the collection time are logged with no line · D20 <!-- REQUIRED:test -->
+- Test · kind · pass line, dated before any result · proposed | D<n>: the board spike P904 (https://github.com/xmejkal/spark/issues/1283), with a pack that is bigger than today's pool: two figures with two cycles each, about 2 MB, after a hard reset · spike · the pass line, set by the PO on 2026-11-18 before any result (D20, D19): two moving 96 px figures over Rescue's street hold 19 fps, as Rescue did (★C8: nobody steered), changed from 25 fps by D22 before any result; a load of about 2 s is fine with a loading card; the pack sits in the pool and not in the heap, which the spike's log must print because the loader falls back without a word (`games/pictures.py:50-52`). The free PSRAM, the worst gap and the collection time are logged with no line · D20, D22 <!-- REQUIRED:test -->
 
 ## Questions
 <!-- A queue; the first open question is asked alone. Each: Q<n> · question · decides: … · options · unblocks ·
@@ -140,6 +140,8 @@ Name what a D confirms in its words: the frame, the jobs, a direction, the remai
 - D19 · a load of about 2 s is fine when the box switches to the new game, with a loading card · the PO · 2026-11-18 · in the session, Q13 · options: about 2 s is fine, stay near 1 s, decide after I see it
 - D20 · the spike passes when two moving 96 px figures hold 25 fps. The facilitator recommended 19 fps, and the option said that Rescue itself does not reach 25 today · the PO · 2026-11-18 · in the session, the pass-line half of Q1 · options: 19 fps, 15 fps, 25 fps
 - D21 · file the three items of items.md. The question described the spike's board step as "loads a 2 MB pack on the board at your bench", so his yes covers the spike with the 2 MB pack, which D13's wording ("one 96 px motion") did not say. Filed as P904 (https://github.com/xmejkal/spark/issues/1283), P905 (https://github.com/xmejkal/spark/issues/1284) and P906 (https://github.com/xmejkal/spark/issues/1285) · the PO · 2026-11-18 · in the session, Q11 · options: each of the three, any set of them
+- D22 · the spike's pass line is 19 fps, not 25, changed before any result: "19 fps, we can postpone optimizations for later card and aim for 25". The aim of 25 fps is the card P907 (https://github.com/xmejkal/spark/issues/1286) · the PO · 2026-11-18 · in the session · options: stay at 25, change to 19
+- D23 · P904 is first: it is ordered into Ready in the pixel-games lane · the PO · 2026-11-18 · in the session ("P904 first, lets go on") · options: P904, P905
 
 ## Found on the way <!-- CLAIMS -->
 <!-- Outside this item's scope. Each is a separate proposal, never folded in. Same line format as What we found. -->
@@ -154,6 +156,8 @@ None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - move #1279 back to Idea · taken 2026-11-18 · D11. The board then holds 3 of 4 in flight
 - move #1279 to Discovery again · pending: the board has one free place and the other session's P892 takes it
 - file P904 #1283, P905 #1284 and P906 #1285 under #1279, in Idea, slice pixel-games · taken 2026-11-18 · D21
+- file P907 #1286 (the aim of 25 fps) under #1279, in Idea · taken 2026-11-18 · D22
+- move P904 #1283 to Ready · taken 2026-11-18 · D23. Its move to Build waits for a free place: the board holds 4 of 4 in flight
 - the home path in the commits 5db7260 and 7383393 of the pushed branch · pending: his force-push (D16), or the squash when the PR merges and the branch is deleted
 - a comment on #1279 that links this brief · pending, after the folder's PR exists
 - Waiting on the PO and Waiting since on #1279 · pending, set only if Q0 waits past this session
