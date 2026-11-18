@@ -10,10 +10,11 @@ show.
 
 Run from the repository root: python3 art/detailed.py --out DIR [--rim outline|none|lit] writes figure-sheet.png
 (the fireman's twelve run poses, today's 26 px fireman beside them, two poses at 3x and one pose with each rim),
-run.gif (both firemen run over Rescue's street at the captured speed), run-close.gif (the run in place at 2x and
-about half speed), characters-sheet.png (each character of CAST in one pose of its run at 2x) and characters.gif
-(all of them run over the street at once), and prints each run's box and bytes and the cast's total. It needs the
-CMU files in mocap.CMU_DIR and paints nothing without them.
+run.webp (both firemen run over Rescue's street at the captured speed), run-close.webp (the run in place at 2x and
+about half speed), characters-sheet.png (each character of CAST in one pose of its run at 2x) and characters.webp
+(all of them run over the street at once), and prints each run's box and bytes and the cast's total. The clips are
+lossless animated WebP: a GIF's 256 colours band the street's night sky. It needs the CMU files in mocap.CMU_DIR
+and paints nothing without them.
 """
 
 import argparse
@@ -38,9 +39,7 @@ SEAM = (74, 62, 52)  # round the near arm where it lies on the body
 TANK, STRAP, BUCKLE = (108, 124, 152), (44, 42, 52), (214, 190, 120)
 SHIELD = (206, 48, 40)  # the helmet's front shield
 FRAME_MS = 40  # one frame of the game
-CLOSE_MS = 120  # a pose of run-close.gif: about half the captured speed (a pose is 61 ms of the capture)
-FIGURE_COLOURS = 160  # of a GIF's 255 colours, those taken from the figure's own pixels
-CAST_COLOURS = 200  # the same for characters.gif: its many figures need more of them
+CLOSE_MS = 120  # a pose of run-close.webp: about half the captured speed (a pose is 61 ms of the capture)
 
 
 def box(height):
@@ -649,7 +648,7 @@ class FigureSheet:
 
 
 class RunClip:
-    """The GIFs' frames. frames(): both firemen run left to right over Rescue's street, each at its captured speed,
+    """The fireman's clips' frames. frames(): both firemen run left to right over Rescue's street, each at its captured speed,
     a frame of the game apart. close(): the big run in place over the street at 2x, a pose a frame."""
 
     W = 320
@@ -703,7 +702,7 @@ class CharacterSheet:
 
 
 class CharacterClip:
-    """characters.gif's frames: each runner over Rescue's street on its own row from TOP to BOTTOM (the row its soles
+    """characters.webp's frames: each runner over Rescue's street on its own row from TOP to BOTTOM (the row its soles
     are on), every second one running left on its left pictures, each at its own speed and round again when it has
     crossed, a frame of the game apart. The farther runner is pasted first, so the nearer one is over it."""
 
@@ -744,31 +743,14 @@ def cast_bytes(runners):
     return lines + ["the cast: %d characters, %d bytes" % (len(runners), sum(run.size_bytes() for run in runners))]
 
 
-def gif_palette(frames, figures, share=FIGURE_COLOURS):
-    """One palette for a clip: share of its 255 colours from the figures' own opaque pixels and the rest from the
-    first frame. The street alone has more colours than a GIF holds, and they would push the figure's out. Both parts
-    are picked for coverage (Pillow's MAXCOVERAGE), which bounds the worst pixel and not the average one."""
-    own = [p[:3] for img in figures for p in img.get_flattened_data() if p[3]]
-    strip = Image.new("RGB", (len(own), 1))
-    strip.putdata(own)
-    figure = strip.quantize(share, method=Image.Quantize.MAXCOVERAGE)
-    kept = len(figure.getcolors())
-    street = frames[0].quantize(255 - kept, method=Image.Quantize.MAXCOVERAGE)
-    palette = Image.new("P", (1, 1))
-    palette.putpalette(figure.getpalette()[:kept * 3] + street.getpalette()[:len(street.getcolors()) * 3])
-    return palette
-
-
-def write_gif(frames, path, ms, figures, share=FIGURE_COLOURS):
-    """A looping GIF of the frames, ms each, on the one palette that keeps the figures' colours (share of them)."""
-    palette = gif_palette(frames, figures, share)
-    indexed = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
-    indexed[0].save(path, save_all=True, append_images=indexed[1:], duration=ms, loop=0)
+def write_clip(frames, path, ms):
+    """A looping animated WebP of the frames, ms each, lossless: every pixel is the frame's."""
+    frames[0].save(path, save_all=True, append_images=frames[1:], duration=ms, loop=0, lossless=True)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Paint the detailed characters' runs at %d px: two sheets and three "
-                                                 "GIFs." % TALL)
+                                                 "clips." % TALL)
     parser.add_argument("--out", required=True, metavar="DIR", help="the folder the five pictures are written to")
     parser.add_argument("--rim", choices=list(RIMS), default=next(iter(RIMS)),
                         help="the figure's edge: outline, a dark 1 px line all round; none; lit, today's warm and "
@@ -783,11 +765,10 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     FigureSheet(run, old).image().save(os.path.join(args.out, "figure-sheet.png"))
     clip = RunClip(run, old)
-    write_gif(clip.frames(), os.path.join(args.out, "run.gif"), FRAME_MS, run.pictures)
-    write_gif(clip.close(), os.path.join(args.out, "run-close.gif"), CLOSE_MS, run.pictures)
+    write_clip(clip.frames(), os.path.join(args.out, "run.webp"), FRAME_MS)
+    write_clip(clip.close(), os.path.join(args.out, "run-close.webp"), CLOSE_MS)
     CharacterSheet(runners).image().save(os.path.join(args.out, "characters-sheet.png"))
-    write_gif(CharacterClip(runners, old.street).frames(), os.path.join(args.out, "characters.gif"), FRAME_MS,
-              [img for r in runners for img in r.pictures], CAST_COLOURS)
+    write_clip(CharacterClip(runners, old.street).frames(), os.path.join(args.out, "characters.webp"), FRAME_MS)
     w, h = run.size
     print("the run at %d px, rim %s: 12 poses of %d by %d px, %d bytes with both facings" % (
         TALL, args.rim, w, h, run.size_bytes()))

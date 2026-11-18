@@ -109,12 +109,6 @@
  },
  {
   "file": "art/detailed.py",
-  "name": "the figure gets two colours of a GIF's palette",
-  "find": "    figure = strip.quantize(share, method=Image.Quantize.MAXCOVERAGE)",
-  "replace": "    figure = strip.quantize(2, method=Image.Quantize.MAXCOVERAGE)"
- },
- {
-  "file": "art/detailed.py",
   "name": "a character's scale does not size it: the child is as tall as the fireman",
   "find": "        self.PX = height * character.scale / (1 + HELMET_TOP + self.SOLE)",
   "replace": "        self.PX = height / (1 + HELMET_TOP + self.SOLE)"
@@ -172,5 +166,11 @@
   "name": "a runner going left shows its right pictures",
   "find": "            out.append((self.W - lap if self.left[k] else lap - w, row, run.picture(ran, self.left[k])))",
   "replace": "            out.append((self.W - lap if self.left[k] else lap - w, row, run.picture(ran)))"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "a clip is written with loss, so a frame is not the picture",
+  "find": "duration=ms, loop=0, lossless=True)",
+  "replace": "duration=ms, loop=0, lossless=False)"
  }
 ]

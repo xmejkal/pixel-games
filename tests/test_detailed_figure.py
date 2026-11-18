@@ -1,7 +1,7 @@
 """The detailed fireman (P904's spike, art/detailed.py): one number sets his size, he stands on the picture's last
 row, he has a face, a helmet, gloves and a tank on his back, facing right or left, and his edge is one of three
 rims. The other characters of CAST: each field of the record shows, skin is where the record says and has no band,
-and characters.gif's clip and palette. On a standing pose written here, so these hold without the CMU files. And,
+and characters.webp's clip. On a standing pose written here, so these hold without the CMU files. And,
 only when the CMU files are downloaded, the run poses painted from them. Run from the repository root:
 python3 -m unittest discover tests."""
 
@@ -237,35 +237,26 @@ class RimTest(unittest.TestCase):
                 self.assertEqual({ahead}, set(right))
 
 
-class GifPaletteTest(unittest.TestCase):
-    """A clip's one palette keeps the figure's colours, though the street alone has more colours than a GIF holds
-    and the figure is not in the first frame."""
+class ClipTest(unittest.TestCase):
+    """A written clip holds every frame as it was painted: no palette stands between the picture and the file."""
 
-    FIGURE, STREET = 16, 24  # the most a channel of a pixel may be off, of 255
-
-    def test_a_written_gif_keeps_the_figures_colours_and_the_streets(self):
+    def test_a_written_clip_reads_back_as_the_same_frames_at_the_same_pace(self):
         street = detailed.Committed().street
         figure = detailed.q565(painted(detailed.TALL, rim=detailed.Outline())[1])
-        place = (120, detailed.FEET - figure.height + 1)
         with_figure = street.copy()
-        with_figure.paste(figure, place, figure)
+        with_figure.paste(figure, (120, detailed.FEET - figure.height + 1), figure)
+        frames = [street, with_figure, street]
         with tempfile.TemporaryDirectory() as folder:
-            path = os.path.join(folder, "clip.gif")
-            detailed.write_gif([street, with_figure], path, 40, [figure])
-            with Image.open(path) as gif:
-                count, ms = gif.n_frames, gif.info["duration"]
-                gif.seek(1)
-                got = gif.convert("RGB")
-        self.assertEqual((2, 40), (count, ms))
-        off = {True: 0, False: 0}  # the worst channel error on the figure's pixels, and on the street's
-        for y in range(got.height):
-            for x in range(got.width):
-                fx, fy = x - place[0], y - place[1]
-                on = 0 <= fx < figure.width and 0 <= fy < figure.height and figure.getpixel((fx, fy))[3] > 0
-                error = max(abs(a - b) for a, b in zip(got.getpixel((x, y)), with_figure.getpixel((x, y))))
-                off[on] = max(off[on], error)
-        self.assertLessEqual(off[True], self.FIGURE)
-        self.assertLessEqual(off[False], self.STREET)
+            path = os.path.join(folder, "clip.webp")
+            detailed.write_clip(frames, path, 40)
+            with Image.open(path) as clip:
+                count, read = clip.n_frames, []
+                for i in range(count):
+                    clip.seek(i)
+                    frame = clip.convert("RGB").tobytes()  # the frame's duration is known once it is loaded
+                    read.append((clip.info["duration"], frame))
+        self.assertEqual(3, count)
+        self.assertEqual([(40, frame.tobytes()) for frame in frames], read)
 
 
 class PoseIndexTest(unittest.TestCase):
@@ -470,7 +461,7 @@ class Stand:
 
 
 class CharacterClipTest(unittest.TestCase):
-    """characters.gif's frames on stand-in pictures: rows, facings, speeds and the paste order."""
+    """characters.webp's frames on stand-in pictures: rows, facings, speeds and the paste order."""
 
     def setUp(self):
         self.runners = [Stand((200, 0, 0), 50), Stand((0, 200, 0), 80), Stand((0, 0, 200), 120)]
@@ -535,34 +526,6 @@ class CastFromCaptureTest(unittest.TestCase):
             with self.subTest(character=c.name):
                 self.assertIn(c.name, line)
                 self.assertIn(" %d bytes" % run.size_bytes(), line)
-
-
-class CastPaletteTest(unittest.TestCase):
-    """characters.gif's one palette, CAST_COLOURS of it from the figures, keeps every character's colours and the
-    street's, within the bounds of GifPaletteTest."""
-
-    def test_a_written_gif_keeps_the_figures_colours_and_the_streets(self):
-        street = detailed.Committed().street
-        figures = [detailed.q565(outlined(c)) for c, _ in detailed.CAST]
-        with_figures, places = street.copy(), []
-        for k, figure in enumerate(figures):
-            places.append((10 + k * 78, 200 + k * 12 - figure.height + 1))
-            with_figures.paste(figure, places[-1], figure)
-        with tempfile.TemporaryDirectory() as folder:
-            path = os.path.join(folder, "cast.gif")
-            detailed.write_gif([street, with_figures], path, 40, figures, detailed.CAST_COLOURS)
-            with Image.open(path) as gif:
-                gif.seek(1)
-                got = gif.convert("RGB")
-        off = {True: 0, False: 0}
-        for y in range(got.height):
-            for x in range(got.width):
-                on = any(0 <= x - px < f.width and 0 <= y - py < f.height and f.getpixel((x - px, y - py))[3]
-                         for f, (px, py) in zip(figures, places))
-                error = max(abs(a - b) for a, b in zip(got.getpixel((x, y)), with_figures.getpixel((x, y))))
-                off[on] = max(off[on], error)
-        self.assertLessEqual(off[True], GifPaletteTest.FIGURE)
-        self.assertLessEqual(off[False], GifPaletteTest.STREET)
 
 
 if __name__ == "__main__":
