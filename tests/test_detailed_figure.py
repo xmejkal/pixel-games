@@ -516,8 +516,8 @@ class CharacterClipTest(unittest.TestCase):
         for k, run in enumerate(self.runners):
             with self.subTest(runner=k):
                 x0, x1 = self.clip.places(0)[k][0], self.clip.places(25)[k][0]
-                way = -1 if self.clip.left[k] else 1
-                self.assertEqual(int(run.speed * 25 * detailed.FRAME_MS / 1000), (x1 - x0) * way)
+                way, lap = -1 if self.clip.left[k] else 1, detailed.CharacterClip.W + run.size[0]  # round again
+                self.assertEqual(int(run.speed * 25 * detailed.FRAME_MS / 1000) % lap, (x1 - x0) * way % lap)
 
     def test_a_frame_is_the_street_with_each_runner_pasted_at_its_place(self):
         frames = self.clip.frames()

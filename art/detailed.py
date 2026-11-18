@@ -1,15 +1,18 @@
-"""A detailed fireman at 96 px (P904's spike): the run of art/mocap.py painted with a face, gloves, a turnout coat
-and an air tank, to see whether the detail shows at that size. It is in no game and in no art set: art/paint.py
-does not call it, and the packs stay as they are.
+"""Detailed characters at 96 px (P904's spike): the runs of art/mocap.py painted with a face, hands, clothes, a
+headwear and gear, to see whether the detail shows at that size. The fireman has a turnout coat, gloves, a helmet
+and an air tank; CAST holds him and the other characters, each a Character record with its own cycle. It is in no
+game and in no art set: art/paint.py does not call it, and the packs stay as they are.
 
 One number, the height in px from the soles to the helmet's top, sets the size. Every width and offset is a share
 of the body height, so the same painter gives any height. The detail needs about 96 px: at 48 px the eye and the
 sole are under 1 px and do not show.
 
 Run from the repository root: python3 art/detailed.py --out DIR [--rim outline|none|lit] writes figure-sheet.png
-(the twelve run poses, today's 26 px fireman beside them, two poses at 3x and one pose with each rim), run.gif (both
-firemen run over Rescue's street at the captured speed) and run-close.gif (the run in place at 2x and about half
-speed), and prints the run's box and bytes. It needs the CMU files in mocap.CMU_DIR and paints nothing without them.
+(the fireman's twelve run poses, today's 26 px fireman beside them, two poses at 3x and one pose with each rim),
+run.gif (both firemen run over Rescue's street at the captured speed), run-close.gif (the run in place at 2x and
+about half speed), characters-sheet.png (each character of CAST in one pose of its run at 2x) and characters.gif
+(all of them run over the street at once), and prints each run's box and bytes and the cast's total. It needs the
+CMU files in mocap.CMU_DIR and paints nothing without them.
 """
 
 import argparse
@@ -36,6 +39,7 @@ SHIELD = (206, 48, 40)  # the helmet's front shield
 FRAME_MS = 40  # one frame of the game
 CLOSE_MS = 120  # a pose of run-close.gif: about half the captured speed (a pose is 61 ms of the capture)
 FIGURE_COLOURS = 160  # of a GIF's 255 colours, those taken from the figure's own pixels
+CAST_COLOURS = 200  # the same for characters.gif: its many figures need more of them
 
 
 def box(height):
@@ -677,14 +681,76 @@ class RunClip:
         return out
 
 
-def gif_palette(frames, figures):
-    """One palette for a clip: FIGURE_COLOURS of it from the figures' own opaque pixels and the rest from the first
-    frame. The street alone has more colours than a GIF holds, and they would push the figure's out. Both parts
+class CharacterSheet:
+    """characters-sheet.png: each runner of the cast in pose POSE of its run at ZOOM on the street's dark, its name
+    under it."""
+
+    ZOOM, POSE = 2, 3
+
+    def __init__(self, runners):
+        self.runners = runners
+
+    def image(self):
+        strip = on_dark([run.pictures[self.POSE] for run in self.runners], self.ZOOM)
+        sheet = Sheet(strip.width + 20, strip.height + 52)
+        y = sheet.put("pose %d of each character's run at %dx" % (self.POSE, self.ZOOM), strip, 10, 6)
+        x = 10 + GAP * self.ZOOM
+        for run in self.runners:
+            sheet.draw.text((x, y + 4), run.character.name, fill=sheet.INK, font=sheet.font)
+            x += (run.size[0] + GAP) * self.ZOOM
+        return sheet.image
+
+
+class CharacterClip:
+    """characters.gif's frames: each runner over Rescue's street on its own row from TOP to BOTTOM (the row its soles
+    are on), every second one running left on its left pictures, each at its own speed and round again when it has
+    crossed, a frame of the game apart. The farther runner is pasted first, so the nearer one is over it."""
+
+    W, TOP, BOTTOM = 320, 200, 238
+
+    def __init__(self, runners, street):
+        self.runners, self.street = runners, street
+        n = len(runners)
+        self.rows = [self.TOP + (self.BOTTOM - self.TOP) * k // max(1, n - 1) for k in range(n)]
+        self.left = [k % 2 == 1 for k in range(n)]
+
+    def places(self, i):
+        """Frame i's runners, the farthest first: (x, row, picture) each, x the picture's left column."""
+        n, out = len(self.runners), []
+        for row, k in sorted(zip(self.rows, range(n))):
+            run, w = self.runners[k], self.runners[k].size[0]
+            ran = int(run.speed * i * FRAME_MS / 1000)
+            lap = (k * (self.W + w) // n + ran) % (self.W + w)  # each starts its own share of the way along
+            out.append((self.W - lap if self.left[k] else lap - w, row, run.picture(ran, self.left[k])))
+        return out
+
+    def frames(self):
+        """As many frames as the slowest runner needs to cross the street once."""
+        slow = min(self.runners, key=lambda run: run.speed)
+        out = []
+        for i in range(int((self.W + slow.size[0]) / slow.speed * 1000 / FRAME_MS) + 1):
+            frame = self.street.copy()
+            for x, row, img in self.places(i):
+                frame.paste(img, (x, row - img.height + 1), img)
+            out.append(frame)
+        return out
+
+
+def cast_bytes(runners):
+    """The lines main prints for the cast: each runner's box and bytes with both facings, then the total."""
+    lines = ["%s (%s) at %d px: 12 poses of %d by %d px, %d bytes with both facings" % (
+        run.character.name, run.cycle.name, run.height, run.size[0], run.size[1], run.size_bytes()) for run in runners]
+    return lines + ["the cast: %d characters, %d bytes" % (len(runners), sum(run.size_bytes() for run in runners))]
+
+
+def gif_palette(frames, figures, share=FIGURE_COLOURS):
+    """One palette for a clip: share of its 255 colours from the figures' own opaque pixels and the rest from the
+    first frame. The street alone has more colours than a GIF holds, and they would push the figure's out. Both parts
     are picked for coverage (Pillow's MAXCOVERAGE), which bounds the worst pixel and not the average one."""
     own = [p[:3] for img in figures for p in img.get_flattened_data() if p[3]]
     strip = Image.new("RGB", (len(own), 1))
     strip.putdata(own)
-    figure = strip.quantize(FIGURE_COLOURS, method=Image.Quantize.MAXCOVERAGE)
+    figure = strip.quantize(share, method=Image.Quantize.MAXCOVERAGE)
     kept = len(figure.getcolors())
     street = frames[0].quantize(255 - kept, method=Image.Quantize.MAXCOVERAGE)
     palette = Image.new("P", (1, 1))
@@ -692,16 +758,17 @@ def gif_palette(frames, figures):
     return palette
 
 
-def write_gif(frames, path, ms, figures):
-    """A looping GIF of the frames, ms each, on the one palette that keeps the figures' colours."""
-    palette = gif_palette(frames, figures)
+def write_gif(frames, path, ms, figures, share=FIGURE_COLOURS):
+    """A looping GIF of the frames, ms each, on the one palette that keeps the figures' colours (share of them)."""
+    palette = gif_palette(frames, figures, share)
     indexed = [f.quantize(palette=palette, dither=Image.Dither.NONE) for f in frames]
     indexed[0].save(path, save_all=True, append_images=indexed[1:], duration=ms, loop=0)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Paint the detailed fireman's run at %d px: a sheet and two GIFs." % TALL)
-    parser.add_argument("--out", required=True, metavar="DIR", help="the folder the three pictures are written to")
+    parser = argparse.ArgumentParser(description="Paint the detailed characters' runs at %d px: two sheets and three "
+                                                 "GIFs." % TALL)
+    parser.add_argument("--out", required=True, metavar="DIR", help="the folder the five pictures are written to")
     parser.add_argument("--rim", choices=list(RIMS), default=next(iter(RIMS)),
                         help="the figure's edge: outline, a dark 1 px line all round; none; lit, today's warm and "
                              "cool rim (%(default)s)")
@@ -710,15 +777,20 @@ def main():
     capture = mocap.Capture(args.cmu)
     if capture.missing():
         parser.error("not in %s: %s" % (args.cmu, ", ".join(capture.missing())))
-    run, old = RunPictures(capture, TALL, RIMS[args.rim]()), Committed()
+    runners = [RunPictures(capture, TALL, RIMS[args.rim](), character=c, cycle=cycle) for c, cycle in CAST]
+    run, old = runners[0], Committed()  # the fireman's run
     os.makedirs(args.out, exist_ok=True)
     FigureSheet(run, old).image().save(os.path.join(args.out, "figure-sheet.png"))
     clip = RunClip(run, old)
     write_gif(clip.frames(), os.path.join(args.out, "run.gif"), FRAME_MS, run.pictures)
     write_gif(clip.close(), os.path.join(args.out, "run-close.gif"), CLOSE_MS, run.pictures)
+    CharacterSheet(runners).image().save(os.path.join(args.out, "characters-sheet.png"))
+    write_gif(CharacterClip(runners, old.street).frames(), os.path.join(args.out, "characters.gif"), FRAME_MS,
+              [img for r in runners for img in r.pictures], CAST_COLOURS)
     w, h = run.size
     print("the run at %d px, rim %s: 12 poses of %d by %d px, %d bytes with both facings" % (
         TALL, args.rim, w, h, run.size_bytes()))
+    print("\n".join(cast_bytes(runners)))
 
 
 if __name__ == "__main__":
