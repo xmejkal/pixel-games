@@ -27,9 +27,14 @@ from PIL import Image, ImageOps  # noqa: E402
 from test_detailed_figure import opaque_rows, standing  # noqa: E402
 
 JUMP, FORWARD_JUMP, CLIMB = (mocap.named(name) for name in ("jump", "forward jump", "climb"))
-JUMP_FRAMES, AHEAD, FLIGHT = 23, 0.02, 0.2  # the jumper's frames, its root's way forward a frame, its highest lift
+JUMP_FRAMES, AHEAD, FLIGHT = 26, 0.02, 0.2  # the jumper's frames, its root's way forward a frame, its highest flight
+LAND = 0.01  # how much higher the jumper lands than it starts
 CLIMB_FRAMES, PERIOD, RISE, LEAN = 300, 288, 0.3, 0.1  # the climber's frames, its loop, its way up and forward a loop
 WAVE, DRIFT = 0.05, 0.02  # how far the climber's hands wave, and how far its left thumb drifts forward a loop
+START, BUMP = 5, 0.05  # the climber's loop starts at frame START: from frame 280 on, but at START + PERIOD, its right
+#                        fingers are BUMP higher, so no other start ends as close
+STEP = (0.03, 0.08)  # the climber's left foot, forward and up of where the standing pose has it
+ORIGIN, WAY = (0.3, 0.3), 30  # where both roots start (x, z), and the degrees from +x of the way both face
 SMALL = 48  # px: the stand-in moves are painted at this height, so the tests run fast
 
 
@@ -40,33 +45,47 @@ class Height:
         return 1.0
 
 
-def flight(t):
-    """The jumper's lift at frame t: off the floor from frame 6 to 16, highest at 11."""
-    return FLIGHT * max(0.0, 1 - abs(t - 11) / 5)
+def jump_frame(i):
+    """The jumper's frame of pose i: its 12 poses from the first frame to the last, most of them between two frames."""
+    return min(i * (JUMP_FRAMES - 1) / 11, JUMP_FRAMES - 1)
+
+
+def lift(t):
+    """The jumper's lift at frame t: off the floor from frame 6 to 16, highest at 11, and LAND higher at its end."""
+    return FLIGHT * max(0.0, 1 - abs(t - 11) / 5) + LAND * t / (JUMP_FRAMES - 1)
 
 
 def jumper(t):
-    """The jumper's side view at frame t: the standing pose lifted by flight(t)."""
-    return {n: (f, u + flight(t), d) for n, (f, u, d) in standing().items()}
+    """The jumper's side view at frame t: the standing pose lifted by lift(t)."""
+    return {n: (f, u + lift(t), d) for n, (f, u, d) in standing().items()}
 
 
 def climber(t):
-    """The climber's side view at frame t: the standing pose risen RISE a loop, the hands waving four times a loop (one
-    a quarter wave after the other, so no start of a loop but its period brings them back), and the left thumb drifting
-    DRIFT forward a loop: the loop's ends are DRIFT apart there and nowhere else."""
+    """The climber's side view at frame t: the standing pose with its left foot a STEP up, risen RISE a loop, the hands
+    waving four times a loop (one a quarter wave after the other, so only the period brings them back), the left thumb
+    drifting DRIFT forward a loop (the loop's ends are DRIFT apart there and nowhere else), and the BUMP."""
     w = 2 * math.pi * 4 * t / PERIOD
     out = {n: (f, u + RISE * t / PERIOD, d) for n, (f, u, d) in standing().items()}
+    for joint in ("lfoot", "ltoes"):
+        f, u, d = out[joint]
+        out[joint] = (f + STEP[0], u + STEP[1], d)
     for joint, wave in (("lhand", math.sin(w)), ("rhand", math.cos(w))):
         f, u, d = out[joint]
         out[joint] = (f, u + WAVE * wave, d)
     f, u, d = out["lthumb"]
     out["lthumb"] = (f + DRIFT * t / PERIOD, u, d)
+    if t >= 280 and t != START + PERIOD:
+        f, u, d = out["rfingers"]
+        out["rfingers"] = (f, u + BUMP, d)
     return out
 
 
-def in_3d(view, x):
-    """A side view as one frame's 3D joints (Y up), the root at x and facing along x; the capture adds the nose."""
-    return {n: (x + f, u, d) for n, (f, u, d) in view.items() if n != "nose"}
+def in_3d(view, ahead):
+    """A side view as one frame's 3D joints (Y up): the root ahead along the way faced from ORIGIN, the way WAY degrees
+    from +x, the near side to the right of it. The capture adds the nose."""
+    fx, fz = math.cos(math.radians(WAY)), math.sin(math.radians(WAY))
+    x0, z0 = ORIGIN[0] + ahead * fx, ORIGIN[1] + ahead * fz
+    return {n: (x0 + f * fx - d * fz, u, z0 + f * fz + d * fx) for n, (f, u, d) in view.items() if n != "nose"}
 
 
 def stand_in():
@@ -103,7 +122,7 @@ class PoseTest(unittest.TestCase):
 
 
 class OneShotTest(PoseTest):
-    """The jump on the stand-in: its loop is its whole span, and pose i is frame 2i of it."""
+    """The jump (a OneShot) on the stand-in jumper: its loop is its whole span, and pose i is at jump_frame(i)."""
 
     def setUp(self):
         self.capture = stand_in()
@@ -117,32 +136,32 @@ class OneShotTest(PoseTest):
         self.assertPose(jumper(0), poses[0])
         self.assertPose(jumper(JUMP_FRAMES - 1), poses[-1])
 
-    def test_a_pose_in_flight_keeps_its_height(self):
+    def test_a_pose_between_two_frames_is_their_blend_and_a_pose_in_flight_keeps_its_height(self):
         pose = self.capture.poses(JUMP)[5]
-        self.assertPose(jumper(10), pose)
-        self.assertAlmostEqual(flight(10), min(pose[n][1] for n in ("ltoes", "rtoes", "lfoot", "rfoot")))
+        self.assertPose(jumper(jump_frame(5)), pose)
+        self.assertAlmostEqual(lift(jump_frame(5)), min(pose[n][1] for n in ("ltoes", "rtoes", "lfoot", "rfoot")))
 
     def test_the_root_motion_is_the_roots_path_with_its_last_two_numbers_equal(self):
         motion = self.capture.root_motion(JUMP)
         self.assertEqual(13, len(motion))
         for i, ahead in enumerate(motion):
             with self.subTest(pose=i):
-                self.assertAlmostEqual(AHEAD * min(2 * i, JUMP_FRAMES - 1), ahead)
+                self.assertAlmostEqual(AHEAD * jump_frame(i), ahead)
         self.assertEqual(motion[-2], motion[-1])
 
-    def test_it_does_not_rise(self):
+    def test_it_does_not_rise_though_it_lands_higher(self):
         self.assertEqual(0, self.capture.rise(JUMP))
 
 
 class RisingTest(PoseTest):
-    """The climb on the stand-in: it rises RISE a loop of PERIOD frames, and its loop's ends are DRIFT apart at the
-    left thumb."""
+    """The climb (a Rising loop) on the stand-in climber: it rises RISE a loop of PERIOD frames from frame START, and
+    its loop's ends are DRIFT apart at the left thumb."""
 
     def setUp(self):
         self.capture = stand_in()
 
-    def test_the_loop_has_the_climbers_period_and_rises_its_rise(self):
-        self.assertEqual(PERIOD, self.capture.loop(CLIMB)[1])
+    def test_the_loop_has_the_climbers_start_and_period_and_rises_its_rise(self):
+        self.assertEqual((START, PERIOD), self.capture.loop(CLIMB))
         self.assertAlmostEqual(RISE, self.capture.rise(CLIMB))
 
     def test_a_plain_cycle_on_the_same_climber_finds_another_period(self):
@@ -151,12 +170,11 @@ class RisingTest(PoseTest):
         self.assertNotEqual(PERIOD, self.capture.loop(plain)[1])
 
     def test_each_pose_is_the_raw_pose_less_its_share_of_the_gap(self):
-        start = self.capture.loop(CLIMB)[0]
         poses = self.capture.poses(CLIMB)
         self.assertEqual(12, len(poses))
         for i, pose in enumerate(poses):
             with self.subTest(pose=i):
-                raw = climber(start + i * PERIOD // 12)
+                raw = climber(START + i * PERIOD // 12)
                 f, u, d = raw["lthumb"]
                 self.assertPose(dict(raw, lthumb=(f - DRIFT * i / 12, u, d)), pose)
 
@@ -166,6 +184,11 @@ class RisingTest(PoseTest):
         for i, ahead in enumerate(motion):
             with self.subTest(pose=i):
                 self.assertAlmostEqual(LEAN * i / 12, ahead)
+
+    def test_the_printed_loop_counts_its_frames_from_the_trials_first(self):
+        self.assertEqual("13:33 at 120 fps, frames %d to %d (2.40 s), 12 poses" % (CLIMB.frames[0] + START,
+                                                                                 CLIMB.frames[0] + START + PERIOD),
+                         mocap.loop_line(self.capture, CLIMB))
 
     def test_a_loop_does_not_rise(self):
         capture = stand_in()
@@ -204,7 +227,8 @@ class MissingTest(unittest.TestCase):
 
 
 class MovePicturesTest(unittest.TestCase):
-    """The stand-in's moves painted at SMALL px."""
+    """MovePictures on the stand-in capture, painted at SMALL px with no rim: the jump, the climb, and the jump with
+    legs half as long."""
 
     @classmethod
     def setUpClass(cls):
@@ -219,22 +243,39 @@ class MovePicturesTest(unittest.TestCase):
 
     def test_the_travel_holds_the_root_motion_and_the_lift(self):
         px = self.jump.painter.PX
-        self.assertEqual([(round(AHEAD * min(2 * i, JUMP_FRAMES - 1) * px), round(flight(2 * i) * px)) for i in range(12)],
+        self.assertEqual([(round(AHEAD * jump_frame(i) * px), round(lift(jump_frame(i)) * px)) for i in range(12)],
                          self.jump.travel)
-        self.assertEqual((round(AHEAD * (JUMP_FRAMES - 1) * px), 0), self.jump.advance)
+
+    def test_a_one_shots_advance_goes_forward_only_though_it_lands_higher(self):
+        self.assertEqual((round(AHEAD * (JUMP_FRAMES - 1) * self.jump.painter.PX), 0), self.jump.advance)
 
     def test_the_advance_holds_the_rise(self):
-        """And each pose's lift is its height over the span's floor: the rise up to the loop's start and up to it."""
-        px, start = self.climb.painter.PX, self.climb.capture.loop(CLIMB)[0]
+        px = self.climb.painter.PX
         self.assertEqual((round(LEAN * px), round(RISE * px)), self.climb.advance)
-        self.assertEqual([round(RISE * (start + i * PERIOD // 12) / PERIOD * px) for i in range(12)],
+
+    def test_a_climbs_lift_is_its_height_over_the_spans_floor(self):
+        """The rise from the span's first frame to the loop's start, and from there to the pose."""
+        px = self.climb.painter.PX
+        self.assertEqual([round(RISE * (START + i * PERIOD // 12) / PERIOD * px) for i in range(12)],
                          [up for _, up in self.climb.travel])
 
-    def test_a_leg_share_of_a_half_halves_the_forward_travel_only(self):
+    def test_a_leg_share_of_a_half_halves_the_forward_travel_and_advance_only(self):
         px = self.jump.painter.PX
-        self.assertEqual([round(AHEAD * min(2 * i, JUMP_FRAMES - 1) * px * 0.5) for i in range(12)],
+        self.assertEqual([round(AHEAD * jump_frame(i) * px * 0.5) for i in range(12)],
                          [ahead for ahead, _ in self.half.travel])
+        self.assertEqual((round(AHEAD * (JUMP_FRAMES - 1) * px * 0.5), 0), self.half.advance)
         self.assertEqual([up for _, up in self.jump.travel], [up for _, up in self.half.travel])
+
+    def test_the_toes_are_the_middle_of_pose_0s_two_toes_in_the_cut_picture_from_the_pivot(self):
+        """Pose 0 is the climber at frame START, snapped: the painter's places of its two toes, which differ."""
+        move, pose = self.climb, climber(START)
+        low = min(pose[n][1] for n in ("ltoes", "rtoes", "lfoot", "rfoot"))
+        (lx, ly), (rx, ry) = (move.painter.at((pose[n][0], pose[n][1] - low, 0)) for n in ("ltoes", "rtoes"))
+        self.assertNotEqual((lx, ly), (rx, ry))
+        x0, y0, _ = move.used
+        middle = ((lx + rx) / 2 - x0 - move.pivot[0], (ly + ry) / 2 - y0 - move.pivot[1])
+        for a, b in zip(middle, move.toes()):
+            self.assertAlmostEqual(a, b, places=6)
 
     def test_a_one_shots_pose_lasts_its_span_over_its_poses_less_one_and_a_loops_its_period_over_its_poses(self):
         self.assertAlmostEqual((JUMP_FRAMES - 1) / 11 / JUMP.fps * 1000, self.jump.pose_ms)
@@ -335,12 +376,12 @@ class MoveSheetTest(unittest.TestCase):
 
 
 class MoveClipTest(unittest.TestCase):
-    """The clip on stand-in pictures: a crosser that jumps forward on the nearest row, a climber on the farthest, and a
-    jumper between them."""
+    """MoveClip on stand-in pictures and a plain street: a crosser that jumps forward on the nearest row, a climber
+    that starts 3 px over the farthest row, and a jumper between them."""
 
     def setUp(self):
         self.crosser = StandMove((200, 0), [(2 * i, 0) for i in range(12)], (24, 0), 50, (20, 30), cycle=FORWARD_JUMP)
-        self.climber = StandMove((0, 200), [(0, i) for i in range(12)], (4, 12), 110, toes=(0, -3), cycle=CLIMB)
+        self.climber = StandMove((0, 200), [(0, 3 + i) for i in range(12)], (4, 12), 110, toes=(2, -3), cycle=CLIMB)
         self.jumper = StandMove((0, 0), [(0, 3 if 3 < i < 8 else 0) for i in range(12)], (1, 0), 70)
         self.street = Image.new("RGB", (moves.MoveClip.W, H), (40, 40, 40))
         self.clip = moves.MoveClip([moves.Mover(self.crosser, 238, None), moves.Mover(self.climber, 200, 40),
@@ -371,6 +412,31 @@ class MoveClipTest(unittest.TestCase):
                  >= moves.Ladder.RUNG]
         self.assertEqual([under - half + k for k in range(moves.Ladder.RAIL)] +
                          [under + k for k in range(moves.Ladder.RAIL)], rungs)
+
+    def test_the_rail_goes_through_the_middle_of_the_climbers_toes(self):
+        """At the row of pose 0's soles, along the lean from the toes' middle."""
+        x, y, img = self.clip.places(0)[0]
+        (dx, dy), (af, au), pivot = self.climber.toes(), self.climber.advance, self.climber.pivot
+        soles = y + img.height - 1
+        tx, ty = x + pivot[0] + dx, y + pivot[1] + dy
+        rail = [q for q in range(self.clip.W) if self.clip.ground.getpixel((q, soles)) == moves.Ladder.COLOUR]
+        self.assertLessEqual(abs(sum(rail) / len(rail) + 0.5 - (tx + (ty - soles) * af / au)), 1)
+
+    def test_where_the_crosser_meets_the_jumper_the_crosser_is_over_it(self):
+        frames, met = self.clip.frames(), 0
+        for i, frame in enumerate(frames):
+            _, (jx, jy, jumper), (cx, cy, crosser) = self.clip.places(i)
+            both = [(q, r) for q in range(max(jx, cx), min(jx + jumper.width, cx + crosser.width))
+                    for r in range(max(jy, cy), min(jy + jumper.height, cy + crosser.height))]
+            met += len(both)
+            for q, r in both:
+                self.assertEqual(crosser.getpixel((q - cx, r - cy))[:3], frame.getpixel((q, r)))
+        self.assertGreater(met, 0)
+
+    def test_a_crosser_that_does_not_cross_the_street_is_an_error(self):
+        still = StandMove((200, 0), [(0, 0)] * 12, (0, 0), 50, cycle=FORWARD_JUMP)
+        with self.assertRaises(ValueError):
+            moves.MoveClip([moves.Mover(still, 238, None)], self.street)
 
     def test_each_mover_plays_a_whole_number_of_times(self):
         """Its poses start at the first, end at the last, and go round as many times as its plays."""
@@ -442,6 +508,9 @@ class MovesFromCaptureTest(unittest.TestCase):
                 self.assertTrue(x0 > 0 and y0 > 0 and x1 < detailed.box(detailed.TALL)[0])
                 for right, left in zip(move.pictures, move.left):
                     self.assertEqual(ImageOps.mirror(right).tobytes(), left.tobytes())
+
+    def test_the_jumps_go_up_no_px_a_play(self):
+        self.assertEqual([0, 0], [self.by_name[name].advance[1] for name in ("jump", "forward jump")])
 
     def test_the_jump_starts_and_ends_on_the_floor_and_flies_in_the_middle(self):
         lifts = [up for _, up in self.by_name["jump"].travel]

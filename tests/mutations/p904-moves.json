@@ -118,5 +118,53 @@
   "name": "the crosser starts with its picture on the street, so it pops up when the clip starts again",
   "find": "        start = move.pivot[0] - move.size[0] if mover.crosses else mover.column",
   "replace": "        start = 0 if mover.crosses else mover.column"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "a one-shot rises as a rising loop does, so a jump that lands higher goes up a play",
+  "find": "class OneShot(Cycle):",
+  "replace": "class OneShot(Rising):"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the root motion drops the blend between two frames, so a pose between them is placed at the first",
+  "find": "            out.append(a + (b - a) * (t - k))",
+  "replace": "            out.append(a)"
+ },
+ {
+  "file": "art/mocap.py",
+  "name": "the root motion drops the way's z, so a body that faces off the x axis goes less far",
+  "find": "return ((x - x0) * fx + (z - z0) * fz) / height",
+  "replace": "return (x - x0) * fx / height"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the toes are counted from the painter's box, not from the cut picture",
+  "find": "- x0 - self.pivot[0]",
+  "replace": "- self.pivot[0]"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the toes are the left toe's, not the middle of the two",
+  "find": "(lx + rx) / 2 - x0",
+  "replace": "lx - x0"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the rung under the climber's soles is at its row of lift 0, not under pose 0's soles",
+  "find": "        y = mover.row - u + 1  # the row under the soles in pose 0",
+  "replace": "        y = mover.row + 1  # the row under the soles in pose 0"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the rail goes through the climber's pivot, not the middle of its toes",
+  "find": "        tx, ty = mover.column + f + dx, mover.row - u + dy",
+  "replace": "        tx, ty = mover.column + f, mover.row - u + dy"
+ },
+ {
+  "file": "art/moves.py",
+  "name": "the farther mover is pasted last, over the nearer one",
+  "find": "            for x, y, img in self.places(i):",
+  "replace": "            for x, y, img in reversed(self.places(i)):"
  }
 ]
