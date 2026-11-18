@@ -754,3 +754,56 @@ None on the web. I read the diff, every file in the folder and refuter.md's thir
 - Whether the picture source must import `pictures`: it is not designed.
 - The fifteen games beside a 2.46 MB pool: not measured.
 - Whether a test chosen after D26 counts as "an experiment". brief.md:5 says "before choosing an option", and Q15 claims it decides "the readiness".
+
+# Fifth pass, 2026-11-19: the sections changed after D27 and D28
+
+The refuter, fifth pass, on `git diff fe00814 c680a93` in the worktree of branch `p900-figures-discovery` (HEAD `c680a93`, the tree is clean). I wrote no file.
+
+## 1. D27 and D28
+- D27's option text, its options cell and "This chooses a test": hold. They match the question and the option word for word.
+- D27 covers the filing: holds. The option says "Your yes also files the count's card under P900", so rule 8 is met. The D names items.md, which items.md:2 asks for. That name is the facilitator's mapping. His yes named "the count's card", not "this list".
+- "names no list of figures and moves (Q16) and no Ready order": holds. The option fixes only "two figures".
+- D28's text, "the question named the pack as all moves of both figures, plus the street", and the options cell: hold.
+- "set before any result": holds for the count. No row of the first mission existed, because Q16 is still open. One caveat. Q15's question put "about 250 to 330 KB for one move of the fireman" in front of him (★C26), so he set the line with the inputs in view. Add "with the fireman's bytes a move (★C26) in the question".
+- Rival: Q15's question said "the board showed room for 2.46 MB". The board showed a pool of that size. C28 shows a largest free block of 4,980,736 bytes after that pool was made. D28's option text ("the only pool size that the board showed, in one run") is accurate. The question that framed it overstated the room.
+
+## 2. "Ready for: an experiment"
+Partly. The label holds, but the reason does not match the rule. brief.md:5 says "before choosing an option", and the Options list holds Q4's options, one of which D26 chose. "No option of the frame's decision is chosen" narrows the rule's words. The record has a better reason. D26 holds "only if the first mission's pack fits the pool (A10, untested)". D28's chosen option says "A bigger number means that you decide again". So the test comes before the art's option is final. Words for the line:
+
+"**Ready for:** an experiment (D27 chose the next test, the count of the first mission's bytes on the Mac, P924, with the PO's pass line D28. The test comes before the art's option is final: D26 holds only if the pack fits the pool, and by D28 a bigger pack means he decides again. The frame's decision is open (Q8, Q14). The count waits for Q16. ...)"
+
+The check's gate (`discovery.py:464`, "test" in any D) already passed on D13's words. So the check is no evidence here.
+
+## 3. Q16
+- It is a real question. No D fixes the first mission. D1's comment gives an example, and D3 mixes the situations.
+- The option text is partly wrong. D1's comment 6972668412 reads "he moves the fireman to the wall, the fireman holds a ladder, then he switches to the grandma and she climbs". Q16 and card #1308 write "a second figure runs and climbs". "runs" adds a move, and the count is about moves. Use D1's words.
+- Q7 is just as urgent. It "decides ... the idle poses", and an idle cycle for each figure is a row of the count. Ask Q7 with Q16, or add "and an idle cycle (Q7)" to Q16.
+
+## 4. Test line, A10, Collection plan, items.md
+- The Test line: holds.
+- A10's pass-line cell: partly. "set by the PO 2026-11-19 (D28)" heads both halves. D22 set 19 fps for the spike's probe, not for the skeleton. Change it to "the bytes half set by the PO 2026-11-19 (D28): ... The frame half, carried by the facilitator from D22's spike line: 19 fps in the skeleton's log". Q1's status already says "A10's bytes" only.
+- The Collection plan row: partly. It blocks "Q15", which is answered. Change the cell to "D26 (by D28 a bigger pack means he decides again), A10". "the painters on the Mac" is a tool, not a person. Change it to "the session that builds P924, with the painters".
+- The items.md block and its board line: hold. P924's fields read back as Status Idea and Slice pixel-games, both set at 00:18 Prague. Its parent is 1279.
+
+## 5. Card #1308
+- "254,592 to 328,032 bytes" and "a pool of 2,464,000 bytes in one run": neither has a pointer. Add PRs #109 and #110 for the first, and bench.md#L1819-L1828 at `4949c73` for the second.
+- "a second figure runs and climbs": see point 3.
+- The items.md link points at the branch `p900-figures-discovery`, which is deleted when the PR squashes (brief.md, Board actions). Link to the commit `c680a93` instead.
+- The rest holds: his quote, "said yes to this card", Done when, and the remedy, which matches D28's option.
+
+## 6. Numbers and times
+- "00:18 Prague" (D27, D28, the board action): holds. `createdAt` is 23:18:47Z, which is 00:18:47 CET.
+- "Stands on: 9 H": holds (A2 to A10).
+- #1279 still has Waiting on "the PO" since 2026-11-18. Q16 is "queued", so the flag claims a wait for a question he has not been asked yet.
+
+## Searches
+None on the web. I read:
+- the diff
+- items.md, lines 36 to 54
+- the body, labels, `createdAt` and project fields of #1308
+- the project fields of #1279
+- the line in comment 6972668412 that holds D1's example
+
+## What stayed open
+- The session where the options tool ran cannot be read. So the question and option texts rest on the coordinator's copy.
+- Whether the "Needed by" convention means a board field: no such field shows on #1279 or #1308.
