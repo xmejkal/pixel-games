@@ -1,8 +1,9 @@
-"""Motion capture to side-view poses (P800): the fireman's cycles in art/sets/rescue.py move as a person moved.
+"""Motion capture to side-view poses (P800): the fireman's cycles in art/sets/rescue.py move as a person moved, and so
+do the moves that art/moves.py paints (P904).
 
 It reads a CMU skeleton (.asf) and its motion (.amc), runs the forward kinematics, looks at the body from the side
-(Y up, the way the body faces forward), cuts one loop of the motion and resamples it to the poses a cycle has. Each
-pose is a dict of joint name to (forward, up, near) in body heights: the floor at up 0, the hips at forward 0, and
+(Y up, the way the body faces forward), cuts one loop of the motion, or a move's whole span, and resamples it to the
+poses a cycle has. Each pose is a dict of joint name to (forward, up, near) in body heights: the floor at up 0, the hips at forward 0, and
 near the depth toward the viewer, who stands at the body's right. A nose joint says the way the face looks. Standard
 library only; it writes nothing. The data comes from the CMU Graphics Lab Motion Capture Database,
 http://mocap.cs.cmu.edu, downloaded once into CMU_DIR (never into the repository: "The motion capture data may be
@@ -23,9 +24,16 @@ The people's cycles, as CROWD lists them (pictures rescue_<who>_run and rescue_<
     dogman  subject 35, trial 22 ("run/jog")
     wave    subject 13, trial 27 ("direct traffic, wave, point"), frames 1850 to 2030: the right arm up over the head,
             waving, seen turned VIEW degrees toward the viewer, so the wave across the body shows; every person's.
+The moves, as MOVES lists them: a Cycle loops on the floor, a Rising loop also goes up, and a OneShot plays once.
+    jump          subject 13, trial 39 ("jump"), 120 fps, a one-shot: frames 86 to 247, from the crouch to the crouch
+                  after the landing.
+    forward jump  subject 13, trial 11 ("forward jump"), 120 fps, a one-shot: frames 200 to 320, the flight.
+    climb         subject 13, trial 33 ("climb ladder"), 120 fps, a rising loop: one climbing cycle in frames 240 to
+                  740, the loop with the closest ends once the rise is taken out.
 Subject 77 is at 60 fps, the others at 120 (the CMU site).
 
-Run from the repository root: python3 art/mocap.py [--cmu DIR] prints each cycle's source, its loop and its stride.
+Run from the repository root: python3 art/mocap.py [--cmu DIR] prints each cycle's source, its loop and its stride,
+and each move's source, its frames and how far its root goes forward and up a play.
 """
 
 import argparse
@@ -185,9 +193,9 @@ def with_nose(joints, height):
     return dict(joints, nose=(hx + 0.1 * height * fx, hy, hz + 0.1 * height * fz))
 
 
-def distance(a, b):
-    """How far two side views are apart: the sum of the squared joint distances."""
-    return sum((a[n][0] - b[n][0]) ** 2 + (a[n][1] - b[n][1]) ** 2 for n in a)
+def distance(a, b, up=0):
+    """How far two side views are apart, the second lowered by up: the sum of the squared joint distances."""
+    return sum((a[n][0] - b[n][0]) ** 2 + (a[n][1] - (b[n][1] - up)) ** 2 for n in a)
 
 
 def blend(a, b, t):
@@ -196,7 +204,9 @@ def blend(a, b, t):
 
 class Cycle:
     """One cycle: a trial, the frames it may loop in, the loop's length in frames (least, most), its poses, the
-    degrees the body turns over the cycle (the turn), and the degrees it is turned toward the viewer throughout."""
+    degrees the body turns over the cycle (the turn), and the degrees it is turned toward the viewer throughout. A loop
+    that travels forward on the floor: a run or a walk. Capture asks it four things: its loop, the frame of a pose,
+    the poses as it keeps them, and how far it rises."""
 
     def __init__(self, name, trial, fps, frames, period, poses, turn=0, view=0):
         self.name, self.trial, self.fps, self.frames = name, trial, fps, frames
@@ -205,6 +215,61 @@ class Cycle:
     def source(self):
         subject, trial = self.trial.split("_")
         return "%d:%d at %d fps" % (int(subject), int(trial), self.fps)
+
+    def loop(self, views):
+        """The loop's first view and its length in views: within its period, the loop whose last view, lowered by the
+        rise, comes closest to its first."""
+        best = None
+        for p in range(self.period[0], self.period[1] + 1):
+            for s in range(0, len(views) - p):
+                d = distance(views[s], views[s + p], self.rise(views[s], views[s + p]))
+                if best is None or d < best[0]:
+                    best = (d, s, p)
+        return best[1:]
+
+    def frame(self, i, period):
+        """The frame of pose i in a loop of period frames, i from 0 to poses: the poses evenly spaced over the loop."""
+        return i * period / self.poses
+
+    def settle(self, poses, first, last):
+        """The poses as the cycle keeps them, given the loop's first and last view: as they are."""
+        return poses
+
+    def rise(self, first, last):
+        """How far the root goes up from the first view to the last: a loop on the floor does not rise."""
+        return 0
+
+
+class Rising(Cycle):
+    """A loop where the body also goes up: the climb. Its loop is found with the end lowered by the root's rise, and
+    its poses are closed: the gap between the loop's ends, the rise taken out, is spread over them, so that after one
+    loop every joint is one rise higher."""
+
+    def settle(self, poses, first, last):
+        """Pose i less i / poses of the gap between the last view, lowered by the rise, and the first."""
+        up = self.rise(first, last)
+        gap = {n: (lf - ff, lu - up - fu, ld - fd) for n, ((ff, fu, fd), (lf, lu, ld)) in
+               ((n, (first[n], last[n])) for n in first)}
+        return [{n: tuple(v - g * i / self.poses for v, g in zip(pose[n], gap[n])) for n in pose}
+                for i, pose in enumerate(poses)]
+
+    def rise(self, first, last):
+        return last["root"][1] - first["root"][1]
+
+
+class OneShot(Cycle):
+    """A move that plays once and does not loop: a jump. It takes no period: its loop is its whole span, and its first
+    and last poses are the span's ends."""
+
+    def __init__(self, name, trial, fps, frames, poses):
+        super().__init__(name, trial, fps, frames, None, poses)
+
+    def loop(self, views):
+        return (0, len(views) - 1)
+
+    def frame(self, i, period):
+        """The poses from the first frame to the last, i up to poses; past the last pose, the last frame."""
+        return min(period, i * period / (self.poses - 1))
 
 
 CYCLES = (
@@ -222,6 +287,11 @@ CROWD = (
     Cycle("dogman", "35_22", 120, (0, 160), (60, 110), 12),
     Cycle("wave", "13_27", 120, (1850, 2030), (120, 170), 12, view=VIEW),
 )
+MOVES = (
+    OneShot("jump", "13_39", 120, (86, 248), 12),
+    OneShot("forward jump", "13_11", 120, (200, 321), 12),
+    Rising("climb", "13_33", 120, (240, 740), (250, 330), 12),
+)
 
 
 class Capture:
@@ -232,9 +302,9 @@ class Capture:
         self.spans = {}  # (trial, frames): (skeleton, the 3D joints of those frames, the floor under them)
         self.loops = {}  # cycle name: (first frame in its span, length in frames)
 
-    def missing(self):
-        """The files the cycles need that are not in the folder."""
-        cycles = CYCLES + CROWD
+    def missing(self, cycles=None):
+        """The files the cycles need (None: those of CYCLES and CROWD) that are not in the folder."""
+        cycles = CYCLES + CROWD if cycles is None else cycles
         names = sorted({c.trial[:2] + ".asf" for c in cycles} | {c.trial + ".amc" for c in cycles})
         return [n for n in names if not os.path.exists(os.path.join(self.folder, n))]
 
@@ -250,40 +320,68 @@ class Capture:
         return self.spans[key]
 
     def loop(self, cycle):
-        """The cycle's first frame in its span and its length in frames: within its period, the loop whose last frame
-        comes closest to its first."""
+        """The cycle's first frame in its span and its length in frames, as the cycle finds them in the span's side
+        views (Cycle.loop); found once per cycle."""
         if cycle.name not in self.loops:
             skeleton, joints, floor = self.span(cycle)
             way, height = forward(joints), skeleton.height()
-            views = [side(j, way, floor, height) for j in joints]
-            best = None
-            for p in range(cycle.period[0], cycle.period[1] + 1):
-                for s in range(0, len(views) - p):
-                    d = distance(views[s], views[s + p])
-                    if best is None or d < best[0]:
-                        best = (d, s, p)
-            self.loops[cycle.name] = best[1:]
+            self.loops[cycle.name] = cycle.loop([side(j, way, floor, height) for j in joints])
         return self.loops[cycle.name]
 
-    def poses(self, cycle):
-        """The cycle's poses: its loop resampled to cycle.poses evenly spaced side views, turned if it turns."""
+    def window(self, cycle):
+        """The loop's frames of 3D joints, from its first to its last, the way the body faces over them, the floor and
+        the body height."""
         skeleton, joints, floor = self.span(cycle)
         start, period = self.loop(cycle)
         window = joints[start:start + period + 1]
-        way, height = forward(window), skeleton.height()
+        return window, forward(window), floor, skeleton.height()
+
+    def poses(self, cycle):
+        """The cycle's poses: its loop resampled to cycle.poses side views at the cycle's frames, turned if it turns,
+        as the cycle keeps them (Cycle.settle)."""
+        window, way, floor, height = self.window(cycle)
+        period = len(window) - 1
+
+        def view(joints, degrees=0):
+            """One frame's side view, turned by degrees and by the cycle's view, with a nose."""
+            if degrees:
+                joints = turned(joints, degrees)
+            if cycle.view:
+                joints = turned(joints, cycle.view)
+            return side(with_nose(joints, height), way, floor, height)
+
         out = []
         for i in range(cycle.poses):
-            t = i * period / cycle.poses
+            t = cycle.frame(i, period)
             k = int(t)
-            a, b = window[k], window[min(k + 1, period)]
-            if cycle.turn:
-                degrees = cycle.turn * (i + 0.5) / cycle.poses
-                a, b = turned(a, degrees), turned(b, degrees)
-            if cycle.view:
-                a, b = turned(a, cycle.view), turned(b, cycle.view)
-            a, b = with_nose(a, height), with_nose(b, height)
-            out.append(blend(side(a, way, floor, height), side(b, way, floor, height), t - k))
+            degrees = cycle.turn * (i + 0.5) / cycle.poses
+            out.append(blend(view(window[k], degrees), view(window[min(k + 1, period)], degrees), t - k))
+        return cycle.settle(out, view(window[0]), view(window[period]))
+
+    def root_motion(self, cycle):
+        """The root's place along the way the body faces at the frame of each pose, and of one more after the last
+        (Cycle.frame), from the loop's first frame, in body heights: the body's own way through the world. For a loop
+        the last number is the forward part of the stride."""
+        window, (fx, fz), _, height = self.window(cycle)
+        period = len(window) - 1
+        x0, _, z0 = window[0]["root"]
+
+        def ahead(joints):
+            x, _, z = joints["root"]
+            return ((x - x0) * fx + (z - z0) * fz) / height
+
+        out = []
+        for i in range(cycle.poses + 1):
+            t = cycle.frame(i, period)
+            k = int(t)
+            a, b = ahead(window[k]), ahead(window[min(k + 1, period)])
+            out.append(a + (b - a) * (t - k))
         return out
+
+    def rise(self, cycle):
+        """How far the root goes up over one loop, in body heights (Cycle.rise): 0 but for a rising loop."""
+        window, way, floor, height = self.window(cycle)
+        return cycle.rise(side(window[0], way, floor, height), side(window[-1], way, floor, height))
 
     def stride(self, cycle):
         """How far the root travels over one loop, in body heights."""
@@ -293,18 +391,28 @@ class Capture:
         return math.hypot(bx - ax, bz - az) / skeleton.height()
 
 
+def loop_line(capture, cycle):
+    """The cycle's source and its loop's frames, length and poses, as main prints them."""
+    start, period = capture.loop(cycle)
+    start += cycle.frames[0]
+    return "%s, frames %d to %d (%.2f s), %d poses" % (cycle.source(), start, start + period, period / cycle.fps,
+                                                       cycle.poses)
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Print each cycle's source, loop and stride from the CMU files.")
+    parser = argparse.ArgumentParser(description="Print each cycle's and each move's source, loop and way from the "
+                                                 "CMU files.")
     parser.add_argument("--cmu", default=CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args()
     capture = Capture(args.cmu)
-    if capture.missing():
-        parser.error("not in %s: %s" % (args.cmu, ", ".join(capture.missing())))
+    missing = capture.missing(CYCLES + CROWD + MOVES)
+    if missing:
+        parser.error("not in %s: %s" % (args.cmu, ", ".join(missing)))
     for cycle in CYCLES + CROWD:
-        start, period = capture.loop(cycle)
-        start += cycle.frames[0]
-        print("%-6s %s, frames %d to %d (%.2f s), %d poses, stride %.3f body heights" % (
-            cycle.name, cycle.source(), start, start + period, period / cycle.fps, cycle.poses, capture.stride(cycle)))
+        print("%-6s %s, stride %.3f body heights" % (cycle.name, loop_line(capture, cycle), capture.stride(cycle)))
+    for move in MOVES:
+        print("%-12s %s, %.3f body heights forward and %.3f up a play" % (
+            move.name, loop_line(capture, move), capture.root_motion(move)[-1], capture.rise(move)))
 
 
 if __name__ == "__main__":
