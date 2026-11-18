@@ -487,7 +487,11 @@ class DetailedFigure(Figure):
             gear.over(self, s, p, ahead)
         self.head(s, p, ahead, toward)
         self.arm(s, p, near, False)
-        return self.edge.apply(self, self.banded(s.cut(outline=False)), ahead >= 0)
+        return self.edge.apply(self, self.cut(s), ahead >= 0)
+
+    def cut(self, s):
+        """The sprite cut to the picture's size (brush.Sprite.cut, no outline), with the bands as whole pixels."""
+        return self.banded(s.cut(outline=False))
 
     # --- the brush -----------------------------------------------------------------------------------------------
 
@@ -679,8 +683,9 @@ class Pictures:
     put on a place (Unity's sprite pivot, https://docs.unity3d.com/ScriptReference/Sprite-pivot.html): the hips' column
     on the last row."""
 
-    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
+    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run", maker=DetailedFigure):
         self.capture, self.height, self.rim, self.seed, self.character = capture, height, rim, seed, character
+        self.maker = maker
         self.cycle = mocap.named(cycle_name)
         self.painter = self.figure()
         painted = [self.painter.paint(pose) for pose in self.poses()]
@@ -699,7 +704,7 @@ class Pictures:
     def figure(self, rim=None):
         """A painter of this height on the seed, with the rim or another."""
         rnd.seed(self.seed)
-        return DetailedFigure(box(self.height), self.height, rim or self.rim, self.character)
+        return self.maker(box(self.height), self.height, rim or self.rim, self.character)
 
     def size_bytes(self):
         """The pictures in a pack: RGB565, both facings."""
@@ -711,8 +716,8 @@ class RunPictures(Pictures):
     """A character's run (cycle_name: a name in mocap.CYCLES or mocap.CROWD): its twelve poses' Pictures, stride (px a
     cycle) and speed (px a second), both the capture's."""
 
-    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run"):
-        super().__init__(capture, height, rim, seed, character, cycle_name)
+    def __init__(self, capture, height, rim=None, seed=SEED, character=FIREMAN, cycle_name="run", maker=DetailedFigure):
+        super().__init__(capture, height, rim, seed, character, cycle_name, maker)
         # the feet keep still
         self.stride = round(capture.stride(self.cycle) * self.painter.PX * character.proportions.leg)
         self.speed = self.stride * self.cycle.fps / capture.loop(self.cycle)[1]
