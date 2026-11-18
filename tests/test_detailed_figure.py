@@ -85,9 +85,11 @@ class StandingFigureTest(unittest.TestCase):
     def test_a_glove_starts_at_the_wrist_and_no_higher(self):
         figure, img = painted(detailed.TALL)
         _, wrist_row = figure.at(standing()["rradius"])
-        gloves = coloured(img, detailed.GLOVE)
+        gloves = coloured(img, detailed.GLOVE, 24)
         self.assertGreaterEqual(len(gloves), 12)
-        self.assertGreaterEqual(min(y for _, y in gloves), wrist_row - figure.GLOVE_W * figure.PX)
+        top = min(y for _, y in gloves)
+        self.assertGreaterEqual(top, wrist_row - figure.GLOVE_W * figure.PX)
+        self.assertLessEqual(top, wrist_row)
 
     def test_the_same_seed_paints_the_same_bytes(self):
         self.assertEqual(painted(detailed.TALL)[1].tobytes(), painted(detailed.TALL)[1].tobytes())
@@ -101,33 +103,33 @@ class RunFromCaptureTest(unittest.TestCase):
         capture = mocap.Capture()
         if capture.missing():
             raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
-        cls.run = detailed.RunPictures(capture, detailed.TALL)
+        cls.captured = detailed.RunPictures(capture, detailed.TALL)
 
     def test_twelve_poses_and_none_is_empty(self):
-        self.assertEqual(12, len(self.run.pictures))
-        for i, img in enumerate(self.run.pictures):
+        self.assertEqual(12, len(self.captured.pictures))
+        for i, img in enumerate(self.captured.pictures):
             with self.subTest(pose=i):
                 self.assertTrue(opaque_rows(img))
 
     def test_every_pose_has_the_one_box_and_no_column_or_top_row_of_it_is_unused(self):
-        w, h = self.run.size
-        self.assertEqual({(w, h)}, {img.size for img in self.run.pictures})
-        used = [img.getchannel("A").getbbox() for img in self.run.pictures]
+        w, h = self.captured.size
+        self.assertEqual({(w, h)}, {img.size for img in self.captured.pictures})
+        used = [img.getchannel("A").getbbox() for img in self.captured.pictures]
         self.assertEqual((0, 0, w), (min(b[0] for b in used), min(b[1] for b in used), max(b[2] for b in used)))
 
     def test_the_lowest_pose_stands_on_the_last_row_and_a_flight_lifts_no_pose_by_a_tenth(self):
-        h = self.run.size[1]
-        lowest = [opaque_rows(img)[-1] for img in self.run.pictures]
+        h = self.captured.size[1]
+        lowest = [opaque_rows(img)[-1] for img in self.captured.pictures]
         self.assertEqual(h - 1, max(lowest))
         self.assertGreater(min(lowest), h - 1 - detailed.TALL // 10)
 
     def test_the_bytes_are_two_a_pixel_for_each_pose_and_both_facings(self):
-        w, h = self.run.size
-        self.assertEqual(w * h * 2 * 12 * 2, self.run.bytes())
+        w, h = self.captured.size
+        self.assertEqual(w * h * 2 * 12 * 2, self.captured.bytes())
 
     def test_the_stride_is_a_whole_number_of_px(self):
-        self.assertIsInstance(self.run.stride, int)
-        self.assertLessEqual(abs(self.run.stride - 1.698 * self.run.figure.PX), 1.5)
+        self.assertIsInstance(self.captured.stride, int)
+        self.assertLessEqual(abs(self.captured.stride - 1.698 * self.captured.figure.PX), 1.5)
 
 
 if __name__ == "__main__":
