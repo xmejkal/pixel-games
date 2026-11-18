@@ -900,16 +900,6 @@ def cast_bytes(runners):
     return lines + ["the cast: %d characters, %d bytes" % (len(runners), sum(run.size_bytes() for run in runners))]
 
 
-def open_capture(parser, folder, cycles=None):
-    """The capture in folder, or the parser's error that names the files the cycles need and the folder lacks (cycles
-    None: those of mocap.CYCLES and mocap.CROWD)."""
-    capture = mocap.Capture(folder)
-    missing = capture.missing(cycles)
-    if missing:
-        parser.error("not in %s: %s" % (folder, ", ".join(missing)))
-    return capture
-
-
 def write_clip(frames, path, ms):
     """A looping animated WebP of the frames, ms each, lossless: every pixel is the frame's."""
     frames[0].save(path, save_all=True, append_images=frames[1:], duration=ms, loop=0, lossless=True)
@@ -924,7 +914,7 @@ def main():
                              "cool rim (%(default)s)")
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args()
-    capture = open_capture(parser, args.cmu)
+    capture = mocap.open_capture(parser, args.cmu)
     runners = [RunPictures(capture, TALL, RIMS[args.rim](), character=c, cycle_name=name) for c, name in CAST]
     run, old = next(r for r in runners if r.character == FIREMAN), Committed()
     os.makedirs(args.out, exist_ok=True)

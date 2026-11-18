@@ -396,6 +396,16 @@ class Capture:
         return math.hypot(bx - ax, bz - az) / skeleton.height()
 
 
+def open_capture(parser, folder, cycles=None):
+    """The capture in folder, or the parser's error that names the files the cycles need and the folder lacks (cycles
+    None: those of CYCLES and CROWD)."""
+    capture = Capture(folder)
+    missing = capture.missing(cycles)
+    if missing:
+        parser.error("not in %s: %s" % (folder, ", ".join(missing)))
+    return capture
+
+
 def loop_line(capture, cycle):
     """The cycle's source and its loop's frames, length and poses, as main prints them."""
     start, period = capture.loop(cycle)
@@ -409,10 +419,7 @@ def main():
                                                  "CMU files.")
     parser.add_argument("--cmu", default=CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args()
-    capture = Capture(args.cmu)
-    missing = capture.missing(CYCLES + CROWD + MOVES)
-    if missing:
-        parser.error("not in %s: %s" % (args.cmu, ", ".join(missing)))
+    capture = open_capture(parser, args.cmu, CYCLES + CROWD + MOVES)
     for cycle in CYCLES + CROWD:
         print("%-6s %s, stride %.3f body heights" % (cycle.name, loop_line(capture, cycle), capture.stride(cycle)))
     for move in MOVES:

@@ -22,7 +22,7 @@ from PIL import Image, ImageDraw
 
 import mocap
 from detailed import (ACROBAT, CHILD, DARK, FIREMAN, FOOTBALLER, FRAME_MS, GAP, SEED, TALL, Committed, Pictures,
-                      open_capture, write_clip)
+                      write_clip)
 from export import Sheet
 from sets.rescue import snapped
 
@@ -232,7 +232,7 @@ def main():
     parser.add_argument("--out", required=True, metavar="DIR", help="the folder the two pictures are written to")
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args()
-    fireman, movers = painted(open_capture(parser, args.cmu, mocap.MOVES))
+    fireman, movers = painted(mocap.open_capture(parser, args.cmu, mocap.MOVES))
     clip = MoveClip(movers, Committed().street)
     os.makedirs(args.out, exist_ok=True)
     MoveSheet(fireman).image().save(os.path.join(args.out, "moves-sheet.png"))

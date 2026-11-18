@@ -190,14 +190,14 @@ class MissingTest(unittest.TestCase):
         parser = argparse.ArgumentParser(prog="moves")
         with tempfile.TemporaryDirectory() as folder, contextlib.redirect_stderr(io.StringIO()) as err:
             with self.assertRaises(SystemExit):
-                detailed.open_capture(parser, folder, mocap.MOVES)
+                mocap.open_capture(parser, folder, mocap.MOVES)
         self.assertIn("13_39.amc", err.getvalue())
 
     def test_open_capture_gives_the_capture_when_the_files_are_there(self):
         with tempfile.TemporaryDirectory() as folder:
             for name in mocap.Capture(folder).missing(mocap.MOVES):
                 open(os.path.join(folder, name), "w").close()
-            capture = detailed.open_capture(argparse.ArgumentParser(prog="moves"), folder, mocap.MOVES)
+            capture = mocap.open_capture(argparse.ArgumentParser(prog="moves"), folder, mocap.MOVES)
             self.assertEqual(folder, capture.folder)
 
 
