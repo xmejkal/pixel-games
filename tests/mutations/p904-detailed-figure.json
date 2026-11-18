@@ -1,0 +1,44 @@
+[
+ {
+  "file": "art/detailed.py",
+  "name": "the height is no longer the one number: every figure is 96 px",
+  "find": "        self.PX = height / (1 + HELMET_TOP + self.SOLE)",
+  "replace": "        self.PX = TALL / (1 + HELMET_TOP + self.SOLE)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the soles stand one row above the picture's last row",
+  "find": "self.h - (self.SOLE + y) * self.PX)",
+  "replace": "self.h - 1 - (self.SOLE + y) * self.PX)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the neck flap hangs over the face, not over the back of the head",
+  "find": "        back = -1 if ahead >= 0 else 1\n        if side < 0.7:",
+  "replace": "        back = 1 if ahead >= 0 else -1\n        if side < 0.7:"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the glove starts in the palm, so the wrist is coat",
+  "find": "s.shape(\"line\", wrist, palm, hand, tip, width=self.GLOVE_W * self.PX)",
+  "replace": "s.shape(\"line\", palm, hand, tip, width=self.GLOVE_W * self.PX)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the stride is a fraction of a px, so a pose index is no whole number",
+  "find": "        self.stride = round(STRIDE * self.figure.PX)",
+  "replace": "        self.stride = STRIDE * self.figure.PX"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the run's bytes count one facing",
+  "find": "        return w * h * 2 * len(self.pictures) * 2",
+  "replace": "        return w * h * 2 * len(self.pictures)"
+ },
+ {
+  "file": "art/detailed.py",
+  "name": "the poses keep the unused columns left of the run",
+  "find": "q565(img.crop((x0, y0, x1, img.height)))",
+  "replace": "q565(img.crop((0, y0, x1, img.height)))"
+ }
+]
