@@ -248,8 +248,8 @@
  {
   "file": "art/makers.py",
   "name": "the sheet's parts row shows each part at step 0",
-  "find": "parts = [atlas.picture(atlas.key(kind, far, KINDS[kind].upright)).image for kind, far in PARTS]",
-  "replace": "parts = [atlas.picture(atlas.key(kind, far, 0)).image for kind, far in PARTS]"
+  "find": "atlas.picture(atlas.key(kind, far, KINDS[kind].upright)).image for kind, far in PARTS]",
+  "replace": "atlas.picture(atlas.key(kind, far, 0)).image for kind, far in PARTS]"
  },
  {
   "file": "art/makers.py",
@@ -280,5 +280,29 @@
   "name": "an angle half way between two steps goes to the higher step, not to the even one",
   "find": "        return round(degrees * self.STEPS / 360) % self.STEPS",
   "replace": "        return math.floor(degrees * self.STEPS / 360 + 0.5) % self.STEPS"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the upright pose's hips are the left hip joint, not the hips' middle, so the torso's bone is too long",
+  "find": "        pose = dict(pose, hips=tuple((a + b) / 2 for a, b in zip(pose[\"lhipjoint\"], pose[\"rhipjoint\"])))",
+  "replace": "        pose = dict(pose, hips=pose[\"lhipjoint\"])"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the clip's maker names are in the other order",
+  "find": "        return [((k * self.panel[0] * self.ZOOM + 6, 4), name) for k, name in enumerate(self.makers)]",
+  "replace": "        return [((k * self.panel[0] * self.ZOOM + 6, 4), name) for k, name in enumerate(reversed(self.makers))]"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the parts' names are in the other order",
+  "find": "                for k, (kind, _) in enumerate(PARTS)]",
+  "replace": "                for k, (kind, _) in enumerate(reversed(PARTS))]"
+ },
+ {
+  "file": "art/makers.py",
+  "name": "the run's part pictures are its first pose's keys alone",
+  "find": "    used = [atlas.picture(key) for key in {part.key for parts in placed for part in parts}]",
+  "replace": "    used = [atlas.picture(key) for key in {part.key for part in placed[0]}]"
  }
 ]

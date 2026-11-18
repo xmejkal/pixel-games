@@ -369,8 +369,9 @@ class CutoutTest(unittest.TestCase):
         self.assertIs(upright, figure.atlas.upright)
         self.assertEqual(joints, figure.atlas.upright.joints)
 
-    def test_two_first_poses_of_one_skeleton_give_the_same_part_pictures(self):
-        """The upright pose is built from the bone lengths alone: each part at its upright step and three steps on."""
+    def test_two_first_poses_with_the_same_bone_lengths_give_the_same_part_pictures(self):
+        """The upright pose is built from the bone lengths alone: standing() and twisted() at 48 px, each part at its
+        upright step and three steps on, byte for byte."""
         first, other = (painted(makers.CutoutFigure, name, SMALL)[0].atlas for name in ("standing", "twisted"))
         for kind, far in PAINT_ORDER:
             for degrees in (UPRIGHT[kind], UPRIGHT[kind] + 3 * 360 / first.STEPS):
@@ -381,12 +382,13 @@ class CutoutTest(unittest.TestCase):
                     for u, v in zip(a.end, b.end):
                         self.assertAlmostEqual(u, v, places=6)
 
-    def test_a_parts_bone_is_its_3d_length_also_when_it_points_toward_the_viewer(self):
-        """reaching() is measured first: its near forearm is shorter on the screen than its bone."""
+    def test_each_parts_bone_is_its_3d_length_also_when_it_points_toward_the_viewer(self):
+        """reaching() is measured first: its near forearm is shorter on the screen than its bone, and its hip joints
+        are off the hips' middle, toward and away from the viewer, so the torso's bone starts at the middle."""
         figure, pose = painted(makers.CutoutFigure, "reaching", SMALL)[0], reaching()
         screen = math.dist(*(figure.at(pose["r" + n]) for n in ("humerus", "radius")))
         self.assertLess(screen, 0.7 * length(pose, "forearm", False) * figure.PX)
-        for kind, far in (("forearm", False), ("hand", False), ("forearm", True)):
+        for kind, far in PAINT_ORDER:
             with self.subTest(kind=kind, far=far):
                 picture = figure.atlas.picture(figure.atlas.key(kind, far, UPRIGHT[kind]))
                 self.assertAlmostEqual(length(pose, kind, far) * figure.PX, math.dist(picture.pivot, picture.end))
@@ -485,6 +487,7 @@ class StandRun(detailed.Pictures):
 
 
 USED = (("thigh", False, 0), ("thigh", False, 1), ("thigh", False, 2))  # the stand-in run's part keys
+LATE = ("thigh", False, 3)  # the key that only pose 7 of the stand-in run uses
 
 
 class StandAtlas:
@@ -518,14 +521,16 @@ class StandAtlas:
 
 
 class StandCutout:
-    """A stand-in for CutoutFigure: its atlas, fifteen parts a pose, each with one of the three keys of USED, and
-    three misses a pose, whose worst over the run, 3.0, is the middle one of pose 5."""
+    """A stand-in for CutoutFigure: its atlas, fifteen parts a pose, each with one of the three keys of USED, and in
+    pose 7 one of four, with LATE; and three misses a pose, whose worst over the run, 3.0, is the middle one of pose
+    5."""
 
     def __init__(self):
         self.atlas = StandAtlas()
 
     def placed(self, pose):
-        return [makers.Placed(USED[k % 3], (0, 0), (0, 0), (0, 0)) for k in range(15)]
+        keys = USED + (LATE,) if pose["j0"][0] == 7 else USED
+        return [makers.Placed(keys[k % len(keys)], (0, 0), (0, 0), (0, 0)) for k in range(15)]
 
     def misses(self, pose):
         i = pose["j0"][0]
@@ -577,6 +582,15 @@ class MakerSheetTest(unittest.TestCase):
                 x, y = bottom_left([r.size[0] for r in runs], k, img.height // zoom, zoom)
                 self.assertEqual(run.pictures[3].getpixel((0, run.size[1] - 1))[:3], img.getpixel((x, y)))
 
+    def test_the_parts_row_names_each_part_under_it_in_paste_order(self):
+        """On one of three lines in turn, under the strip."""
+        zoom, height = makers.MakerSheet.PARTS_ZOOM, 9 + 2 * detailed.GAP
+        keys = [self.atlas.key(kind, far, UPRIGHT[kind]) for kind, far in PAINT_ORDER]
+        widths = [self.atlas.picture(key).image.width for key in keys]
+        sheet = makers.MakerSheet(self.runs)
+        self.assertEqual([((bottom_left(widths, k, height, zoom)[0], height * zoom + k % 3 * makers.NAME_H), kind)
+                          for k, (kind, _) in enumerate(PAINT_ORDER)], sheet.labels(sheet.parts()))
+
     def test_the_parts_row_holds_each_part_at_its_upright_step_and_the_thigh_row_the_near_thigh(self):
         zoom, height = makers.MakerSheet.PARTS_ZOOM, 9 + 2 * detailed.GAP
         keys = [self.atlas.key(kind, far, UPRIGHT[kind]) for kind, far in PAINT_ORDER]
@@ -594,7 +608,7 @@ class MakerClipTest(unittest.TestCase):
 
     FEET_MARK = (250, 10, 10)
 
-    def test_twelve_frames_of_three_panels_of_one_size_each_pose_in_its_panel_on_the_feet_row(self):
+    def test_twelve_frames_of_three_panels_of_one_size_each_named_each_pose_in_its_panel_on_the_feet_row(self):
         runs = stand_runs()
         street = Image.new("RGB", (detailed.CharacterClip.W, 240), (40, 40, 40))
         for x in range(street.width):
@@ -603,6 +617,8 @@ class MakerClipTest(unittest.TestCase):
         frames, (pw, ph), zoom = clip.frames(), clip.panel, makers.MakerClip.ZOOM
         self.assertEqual(12, len(frames))
         self.assertEqual({(3 * pw * zoom, ph * zoom)}, {frame.size for frame in frames})
+        self.assertEqual([((k * pw * zoom + 6, 4), name) for k, name in enumerate(("whole", "flat", "cutout"))],
+                         clip.labels())
         x, y = makers.MakerClip.MARGIN + max(run.pivot[0] for run in runs.values()), ph - makers.MakerClip.MARGIN - 1
         for i, frame in enumerate(frames):
             for k, run in enumerate(runs.values()):
@@ -620,13 +636,13 @@ class MakerCostsTest(unittest.TestCase):
     def test_every_number_in_each_line_is_its_sources(self):
         runs = stand_runs()
         atlas = runs["cutout"].painter.atlas
-        used = sum(atlas.picture(key).image.width * 9 * 2 for key in USED)
+        used = sum(atlas.picture(key).image.width * 9 * 2 for key in USED + (LATE,))
         lines = makers.maker_costs(runs)
         self.assertEqual(4, len(lines))
         numbers = [re.findall(r"\d+(?:\.\d+)?", line) for line in lines]
         self.assertEqual([["24", "30", "50", "12", str(runs["whole"].size_bytes())],
                           ["12", "7", "16", str(12 * 7 * 4)],
-                          ["3", str(used), "6", str(atlas.size_bytes()), "12", "15", "16", str(12 * 15 * 6)],
+                          ["4", str(used), "6", "5", "1", str(atlas.size_bytes()), "12", "15", "16", str(12 * 15 * 6)],
                           ["3.00"]], numbers)
         self.assertIn("mirrors", lines[2])
 
