@@ -401,16 +401,18 @@ class CharacterTest(unittest.TestCase):
 
     def test_from_the_soles_on_the_last_row_to_the_head_joint(self):
         """(head + SOLE) x PX - 1 px, PX from the height and the scale alone, head the head joint's height: 1 less
-        what the legs lose, (1 - leg) x 0.5 on the standing pose. The head joint is measured down from the picture's
-        top row by the headwear's rise."""
+        what the legs lose, (1 - leg) x 0.5 on the standing pose. The picture's top row, the headwear's top, is 1 to
+        1.4 head radii over that joint."""
         for c in self.each():
-            figure, img = drawn(c)
+            figure, img = base(c)
             px = detailed.TALL * c.scale / (1 + detailed.HELMET_TOP + figure.SOLE)
             head = 1 - (1 - c.proportions.leg) * 0.5
             rows = opaque_rows(img)
             self.assertEqual(img.height - 1, rows[-1])
-            joint = rows[0] + c.headwear.rise(c.head) * px
-            self.assertLessEqual(abs(rows[-1] - joint - ((head + figure.SOLE) * px - 1)), 1)
+            joint = rows[-1] - ((head + figure.SOLE) * px - 1)  # the head joint's row, from the soles' row
+            r = c.head * px
+            self.assertLessEqual(r - 1, joint - rows[0])
+            self.assertLessEqual(joint - rows[0], 1.4 * r + 1)
 
     def test_each_field_of_the_record_and_of_its_parts_changes_the_picture(self):
         """The record's fields on the fireman; each part's fields, and the gear without it, on the first character of
@@ -505,13 +507,21 @@ class CharacterTest(unittest.TestCase):
                 self.assertEqual(hands is None, len(skin) >= 8)
 
     def test_a_shoe_has_no_shaft(self):
-        """With shaft None, the boots' colour changes no pixel above the shoe."""
-        c = dataclasses.replace(detailed.FIREMAN, shaft=None)
-        figure, img = drawn(c)
-        ankle = figure.at(standing()["rtibia"])[1]
+        """With shaft None and bare shins (the child), the boots' colour changes no pixel above the shoe, and the near
+        shin is skin in every row from where a shaft would start down to the shoe."""
+        c = detailed.CHILD
+        self.assertIsNone(c.shaft)
+        self.assertLess(c.trouser, 1)
+        figure, img = base(c)
+        pose = c.proportions.fit(standing())
+        knee, ankle = figure.at(pose["rfemur"]), figure.at(pose["rtibia"])
+        shoe = ankle[1] - figure.FOOT_W * figure.PX / 2
         changed = changed_by(img, drawn(dataclasses.replace(c, boots=other(c.boots)))[1])
         self.assertGreaterEqual(len(changed), 12)
-        self.assertGreater(min(y for _, y in changed), ankle - figure.FOOT_W * figure.PX / 2 - 1)
+        self.assertGreater(min(y for _, y in changed), shoe - 1)
+        skin = {y for x, y in coloured(img, c.skin) if abs(x - ankle[0]) <= figure.SHIN[0] * figure.PX}
+        top = round(knee[1] + (ankle[1] - knee[1]) * 0.62)
+        self.assertLessEqual(set(range(top, int(shoe) - 1)), skin)
 
     def test_a_bare_hand_has_no_cuff(self):
         """The cuff is the glove's colour at 0.6: a bare hand has no pixel of the skin's at 0.6 at its wrist."""
@@ -565,8 +575,9 @@ class Stand:
 
     def __init__(self, colour, speed, size=(10, 20), stride=40):
         self.size, self.speed, self.stride = size, speed, stride
-        self.pictures = [Image.new("RGBA", size, colour + (255,))] * 12
-        self.left = [Image.new("RGBA", size, tuple(255 - c for c in colour) + (255,))] * 12
+        self.pictures = [Image.new("RGBA", size, colour[:2] + (i * 20,) + (255,)) for i in range(12)]
+        self.left = [Image.new("RGBA", size, tuple(255 - c for c in colour[:2]) + (i * 20,) + (255,))
+                     for i in range(12)]
 
     def picture(self, ran, left=False):
         return (self.left if left else self.pictures)[detailed.pose_index(ran, self.stride, 12)]
@@ -588,11 +599,19 @@ class CharacterClipTest(unittest.TestCase):
         places = self.clip.places(0)
         self.assertEqual(sorted(p[1] for p in places), [p[1] for p in places])
 
-    def test_a_left_runner_shows_its_left_pictures(self):
-        for i in (0, 5):
+    def test_a_runner_shows_the_pose_of_its_place_in_the_lap_facing_its_way(self):
+        """The place in the lap: x + width going right, W - x going left. The pose follows it, so the feet keep
+        still."""
+        for i in (0, 5, 40):
             for k, (x, y, img) in zip((0, 1, 2), self.clip.places(i)):
                 with self.subTest(frame=i, runner=k):
-                    self.assertIs(img, self.runners[k].picture(0, self.clip.runs_left[k]))
+                    left, w = self.clip.runs_left[k], self.runners[k].size[0]
+                    self.assertIs(img, self.runners[k].picture(detailed.CharacterClip.W - x if left else x + w, left))
+
+    def test_every_runner_shows_its_first_pose_when_the_clip_starts_again(self):
+        for k, (start, end) in enumerate(zip(self.clip.places(0), self.clip.places(self.clip.count))):
+            with self.subTest(runner=k):
+                self.assertIs(start[2], end[2])
 
     def test_a_runner_advances_so_many_px_in_so_many_frames(self):
         """10 frames of 40 ms: 20 px at 50 px a second to the right, 32 px at 80 px a second to the left."""
@@ -607,8 +626,19 @@ class CharacterClipTest(unittest.TestCase):
         self.assertEqual([219, 238, 200], detailed.CharacterClip(runners, self.street).rows)
 
     def test_the_clip_lasts_as_long_as_the_slowest_runner_takes_to_cross_once(self):
-        """330 px at 50 px a second, in frames of 40 ms: 165 frames and the one that ends the crossing."""
-        self.assertEqual(166, len(self.clip.frames()))
+        """330 px at 50 px a second, the second runner, in frames of 40 ms: 165 frames and the one that ends the
+        crossing."""
+        clip = detailed.CharacterClip([Stand((0, 200, 0), 80), Stand((200, 0, 0), 50), Stand((0, 0, 200), 120)],
+                                      self.street)
+        self.assertEqual(166, len(clip.frames()))
+
+    def test_a_run_of_no_whole_number_of_laps_goes_round_fewer_longer_laps(self):
+        """At 105 px a second over 166 frames a runner runs 697 px: two laps of 330 px or more do not fill it, so it
+        goes round one lap of 697 px and is back at its start when the clip starts again."""
+        runners = [Stand((0, 200, 0), 80), Stand((200, 0, 0), 50), Stand((0, 0, 200), 105)]
+        clip = detailed.CharacterClip(runners, self.street)
+        self.assertEqual(697, clip.laps[2])
+        self.assertEqual([p[:2] for p in clip.places(0)], [p[:2] for p in clip.places(clip.count)])
 
     def test_every_runner_is_at_its_start_place_when_the_clip_starts_again(self):
         start, end = self.clip.places(0), self.clip.places(self.clip.count)
@@ -635,6 +665,16 @@ class CastFromCaptureTest(unittest.TestCase):
         if cast_runs() is None:
             raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
         cls.capture, cls.runners = cast_runs()
+
+    def test_the_childs_lowest_pose_stands_on_the_last_row_and_no_pose_is_cut(self):
+        """Painted on the box the run paints in, no pose of his touches its left, right or top edge."""
+        run = next(run for run in self.runners if run.character == detailed.CHILD)
+        self.assertEqual(run.size[1] - 1, max(opaque_rows(img)[-1] for img in run.pictures))
+        figure = run.figure()
+        for i, pose in enumerate(run.capture.poses(run.cycle)):
+            with self.subTest(pose=i):
+                x0, y0, x1, _ = figure.paint(pose).getchannel("A").getbbox()
+                self.assertTrue(x0 > 0 and y0 > 0 and x1 < figure.w)
 
     def test_the_stride_shrinks_with_the_legs(self):
         """So the feet keep still on the street: the capture's stride in px of the record's size, times its legs."""
