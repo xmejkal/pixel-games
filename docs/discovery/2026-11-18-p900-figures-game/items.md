@@ -56,3 +56,4 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - order the card of the switch prototype into Ready · taken 2026-11-19, 11:43 Prague · D34: P905 #1284
 - pull the card of the switch prototype into Build · taken 2026-11-19, 12:19 Prague · D35: P905 #1284
 - the card of the switch prototype is Done and closed · taken 2026-11-19, 15:31 Prague · D40: P905 #1284
+- order the walking skeleton's card into Ready · taken 2026-11-19, 15:36 Prague · D44: P906 #1285
