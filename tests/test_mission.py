@@ -2,9 +2,11 @@
 painter each row gets, the pack's bytes and what the pass line leaves. On test_moves' stand-in capture, for the painter
 of a row. On stand-in pictures of known sizes, each row heavier than all lighter rows together, so a row left out,
 counted twice or put in the wrong sum shows. And, only when the CMU files are downloaded, the six rows painted from
-them: skipped without the files, and a skip is not a pass. Run from the repository root: python3 -B -m unittest
-tests.test_mission."""
+them: skipped without the files, and a skip is not a pass. The set mission (P906): its places, the ladder, its pack
+and index, its numbers for the probe and the storyboard, on the stand-in capture and, only with the CMU files, from
+them. Run from the repository root: python3 -B -m unittest tests.test_mission."""
 
+import ast
 import contextlib
 import functools
 import io
@@ -22,8 +24,10 @@ sys.path.insert(0, os.path.join(REPO, "tests"))
 import detailed  # noqa: E402
 import mission  # noqa: E402
 import mocap  # noqa: E402
+import moves  # noqa: E402
+import sets  # noqa: E402
 from artset import ArtSet, Painting  # noqa: E402
-from export import Packs, Sheet  # noqa: E402
+from export import HEADER, Packs, Sheet, pack_bytes, to_bin  # noqa: E402
 from PIL import Image, ImageOps  # noqa: E402
 from sets.rescue import read_committed  # noqa: E402
 from test_detailed_figure import opaque_rows, standing  # noqa: E402
@@ -308,6 +312,242 @@ class MissionFromCaptureTest(unittest.TestCase):
         for label, _ in sheet.rows():
             with self.subTest(label=label):
                 self.assertLessEqual(font.getlength(label), expected.width - 20)
+
+
+# --- the set mission (P906) --------------------------------------------------------------------------------------
+
+NAMES = ["mission_night", "mission_ladder"] + [
+    "mission_%s_%s_%s%d" % (figure, motion, side, i)
+    for figure, motion, poses in (("fireman", "run", 12), ("fireman", "hold", 1), ("child", "run", 12),
+                                  ("child", "climb", 12))
+    for side in "rl" for i in range(poses)]  # the set's pictures in the pack's order
+
+
+def set_capture():
+    """hopping()'s capture, with the hopper's frames as the child's run and as the spray too: the set's four motions
+    with no file read."""
+    capture = hopping()
+    for cycle in (mocap.named("child"), mocap.named("spray")):
+        first, last = cycle.frames
+        capture.spans[(cycle.trial, cycle.frames)] = (
+            Height(), [in_3d(hopper(t), AHEAD * t) for t in range(last - first)], 0.0)
+    return capture
+
+
+@functools.lru_cache(maxsize=None)
+def set_painted():
+    """The set's motions painted at SMALL px from the stand-in capture, once for all the tests that read them."""
+    return mission.painted(set_capture(), SMALL)
+
+
+@functools.lru_cache(maxsize=None)
+def set_captured():
+    """The set's motions painted at 96 px from the CMU files, once; None without the files."""
+    capture = mocap.Capture()
+    if capture.missing([mocap.named(row.cycle) for row in mission.MISSION]):
+        return None
+    return mission.painted(capture)
+
+
+def opaque(img, row):
+    """The columns of img's opaque pixels on a row."""
+    return [x for x in range(img.width) if img.getpixel((x, row))[3]]
+
+
+class SetTest(unittest.TestCase):
+    """The set mission's name, its motions and its places, as literals: a change of a place is a change of this test."""
+
+    def test_the_set_is_mission_and_in_no_art_sets(self):
+        self.assertEqual("mission", mission.SET)
+        self.assertNotIn("mission", [art_set.name for art_set in sets.ART_SETS])
+
+    def test_its_motions_are_the_first_four_rows_and_the_hold_keeps_one_pose(self):
+        self.assertEqual([("fireman", "run", 0, None), ("fireman", "hold", 1, 1), ("child", "run", 3, None),
+                          ("child", "climb", 2, None)],
+                         [(f, m, mission.MISSION.index(row), keep) for f, m, row, keep in mission.MOTIONS])
+
+    def test_the_places_are_the_storyboards_start_values(self):
+        self.assertEqual((214, 111, 96, (220, 282), 115, 117, 54, (115, 222), (80, 88)),
+                         (mission.FEET, mission.LADDER_FOOT, mission.LADDER_TOP, mission.START, mission.HOLD_PLACE,
+                          mission.FOOT_PLACE, mission.END_UP, mission.MARK_HOLD, mission.MARK_ROOF))
+        self.assertEqual({"fireman": 8, "child": 0}, mission.STAND)
+
+
+class LadderPictureTest(unittest.TestCase):
+    """ladder(advance): art/moves.py's Ladder from the foot on the soles' row up to the roof's row, at the climb's
+    slant, cut to the px it uses."""
+
+    def test_at_the_climbs_slant_it_is_39_by_119_px_from_x_75_on_the_roofs_row(self):
+        img, place = mission.ladder((5, 19))
+        self.assertEqual(((39, 119), (75, 96)), (img.size, place))
+
+    def test_its_rail_stands_on_the_foot_and_leans_on_the_stations_corner(self):
+        img, (x, y) = mission.ladder((5, 19))
+        self.assertEqual([110 - x, 111 - x], opaque(img, 214 - y))  # the foot: the rail's 2 px round x 111
+        self.assertEqual([79 - x, 80 - x], opaque(img, 96 - y))  # the top: the corner, x 80
+
+    def test_another_slant_keeps_the_foot_and_the_roofs_row(self):
+        img, (x, y) = mission.ladder((7, 23))
+        self.assertEqual((96, 214 - 96 + 1), (y, img.height))
+        self.assertIn(111 - x, opaque(img, img.height - 1))
+        self.assertEqual(round(111 - 118 * 7 / 23) - 1 - x, opaque(img, 0)[0])
+
+    def test_it_is_keyed_and_in_one_colour_of_wood(self):
+        img, _ = mission.ladder((5, 19))
+        self.assertEqual({(0, 0, 0, 0), moves.Ladder.COLOUR + (255,)}, set(img.get_flattened_data()))
+
+
+class SetPaintTest(unittest.TestCase):
+    """The set painted from the stand-in capture at SMALL px: its motions, its pack and index (write), and its numbers
+    for the probe."""
+
+    def test_each_motion_is_its_rows_pictures_and_only_the_climb_is_a_move(self):
+        painted = set_painted()
+        self.assertEqual([("fireman", "run"), ("fireman", "hold"), ("child", "run"), ("child", "climb")],
+                         list(painted))
+        self.assertEqual(["Pictures", "Pictures", "Pictures", "MovePictures"],
+                         [type(p).__name__ for p in painted.values()])
+        self.assertEqual([("fireman", "run"), ("fireman", "spray"), ("child", "child"), ("child", "climb")],
+                         [(p.character.name, p.cycle.name) for p in painted.values()])
+        self.assertEqual([SMALL] * 4, [p.height for p in painted.values()])
+
+    def test_write_puts_the_pack_and_an_index_of_it_alone_where_the_board_has_them(self):
+        painted = set_painted()
+        with tempfile.TemporaryDirectory() as folder:
+            pack, index = mission.write(folder, painted)
+            self.assertEqual((os.path.join(folder, "packs", "mission.pak"), os.path.join(folder, "art_index.py")),
+                             (pack, index))
+            art = {}
+            with open(index) as f:
+                exec(f.read(), art)
+            with open(pack, "rb") as f:
+                data = f.read()
+        self.assertEqual(NAMES, list(art["PICTURE_SETS"]["mission"]))
+        self.assertEqual(["mission"], list(art["PACKS"]))
+        self.assertEqual(("packs/mission.pak", len(data)), art["PACKS"]["mission"][:2])
+        ladder_img, _ = mission.ladder(painted["child", "climb"].advance)
+        motions = sum(w * h * 2 * poses * 2 for (w, h), poses in (
+            (painted["fireman", "run"].size, 12), (painted["fireman", "hold"].size, 1),
+            (painted["child", "run"].size, 12), (painted["child", "climb"].size, 12)))
+        self.assertEqual(HEADER + 320 * 240 * 2 + ladder_img.width * ladder_img.height * 2 + motions, len(data))
+
+        def at(name):
+            w, h, _, offset = art["ART"][name]
+            return data[offset:offset + w * h * 2]
+
+        self.assertTrue(at("mission_night") == pack_bytes("rescue_night"))
+        self.assertTrue(at("mission_fireman_hold_l0") == to_bin(painted["fireman", "hold"].left[0], True))
+        self.assertTrue(at("mission_child_climb_r7") == to_bin(painted["child", "climb"].pictures[7], True))
+        self.assertTrue(at("mission_ladder") == to_bin(ladder_img, True))
+
+    def test_the_numbers_are_the_runs_gaits_the_pivots_the_climbs_travel_and_the_places(self):
+        painted, capture = set_painted(), set_capture()
+        got = mission.numbers(painted)
+        runs = {figure: detailed.RunPictures(capture, SMALL, character=character, cycle_name=cycle)
+                for figure, character, cycle in (("fireman", detailed.FIREMAN, "run"),
+                                                 ("child", detailed.CHILD, "child"))}
+        climb = painted["child", "climb"]
+        self.assertEqual({figure: run.stride for figure, run in runs.items()}, got["stride"])
+        self.assertEqual({figure: round(run.speed) for figure, run in runs.items()}, got["speed"])
+        self.assertEqual({key: p.pivot[0] for key, p in painted.items()}, got["pivot"])
+        self.assertEqual((round(climb.pose_ms), tuple(climb.travel), climb.advance), got["climb"])
+        self.assertEqual(mission.ladder(climb.advance)[1], got["ladder"])
+        self.assertEqual(({"fireman": 8, "child": 0}, (220, 282), (115, 117), 54, ((115, 222), (80, 88))),
+                         (got["stand"], got["start"], got["place"], got["end"], got["mark"]))
+
+    def test_the_numbers_are_plain_literals_for_the_probes_copy(self):
+        got = mission.numbers(set_painted())
+        self.assertEqual(got, ast.literal_eval(repr(got)))
+
+
+class SetFromCaptureTest(unittest.TestCase):
+    """The set painted from the CMU files at 96 px: the pack's bytes part by part, as the plan counts them, and the
+    numbers the probe gets. Skipped without the files, and a skip is not a pass."""
+
+    @classmethod
+    def setUpClass(cls):
+        if set_captured() is None:
+            raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
+
+    def test_the_pack_is_773470_bytes_the_plans_count_part_by_part(self):
+        with tempfile.TemporaryDirectory() as folder:
+            pack, index = mission.write(folder, set_captured())
+            size = os.path.getsize(pack)
+            art = {}
+            with open(index) as f:
+                exec(f.read(), art)
+        parts = {}
+        for name in art["PICTURE_SETS"]["mission"]:
+            w, h = art["ART"][name][:2]
+            part = "_".join(name.split("_")[1:3]) if name.count("_") > 1 else name.split("_")[1]
+            parts[part] = parts.get(part, 0) + w * h * 2
+        self.assertEqual({"night": 153600, "fireman_run": 328032, "fireman_hold": 19788, "child_run": 145152,
+                          "child_climb": 117600, "ladder": 9282}, parts)
+        self.assertEqual(773470, size)
+        self.assertEqual(16 + sum(parts.values()), size)
+
+    def test_the_numbers_from_the_capture(self):
+        got = mission.numbers(set_captured())
+        self.assertEqual(({"fireman": 146, "child": 80}, {"fireman": 199, "child": 108}), (got["stride"], got["speed"]))
+        self.assertEqual({("fireman", "run"): 39, ("fireman", "hold"): 15, ("child", "run"): 23,
+                          ("child", "climb"): 6}, got["pivot"])
+        self.assertEqual((201, ((0, 5), (1, 13), (1, 13), (1, 13), (1, 12), (2, 12), (2, 11), (3, 11), (4, 14),
+                                (5, 19), (5, 23), (5, 23)), (5, 19)), got["climb"])
+        self.assertEqual((75, 96), got["ladder"])
+
+
+class StoryboardTest(unittest.TestCase):
+    """The storyboard's three moments on the set painted from the stand-in capture: what each frame shows and where."""
+
+    def setUp(self):
+        self.painted = set_painted()
+        self.board = mission.Storyboard(self.painted, Image.new("RGB", (320, 240), (9, 7, 5)))
+
+    def standing(self, figure, x):
+        p = self.painted[figure, "run"]
+        pose = mission.STAND[figure]
+        return p.left[pose], x - (p.size[0] - 1 - p.pivot[0]), 214 - p.size[1] + 1
+
+    def test_the_start_both_stand_at_their_start_places_the_child_active_the_mark_over_the_fireman(self):
+        first = self.board.moments()[0]
+        self.assertEqual((self.standing("fireman", 220), self.standing("child", 282)),
+                         (first["figures"][0], first["figures"][1]))
+        self.assertEqual((1, 1), (first["active"], first["task"]))
+        self.assertEqual(("over", 0), first["mark"])
+
+    def test_the_hold_the_fireman_holds_at_his_place_and_the_mark_is_over_the_child(self):
+        second = self.board.moments()[1]
+        hold = self.painted["fireman", "hold"]
+        self.assertEqual((hold.left[0], 115 - (hold.size[0] - 1 - hold.pivot[0]), 214 - hold.size[1] + 1),
+                         second["figures"][0])
+        self.assertEqual(self.standing("child", 282), second["figures"][1])
+        self.assertEqual((0, 2, ("over", 1)), (second["active"], second["task"], second["mark"]))
+
+    def test_the_end_the_child_at_its_first_pose_54_px_up_or_more_and_the_mark_on_the_roofs_edge(self):
+        third = self.board.moments()[2]
+        climb = self.painted["child", "climb"]
+        (af, au), w, h = climb.advance, climb.size[0], climb.size[1]
+        plays, pose = next((k, i) for k in range(99) for i in range(12) if k * au + climb.travel[i][1] >= 54)
+        f, u = plays * af + climb.travel[pose][0], plays * au + climb.travel[pose][1]
+        self.assertGreaterEqual(u, 54)
+        self.assertEqual((climb.left[pose], 117 - f - (w - 1 - climb.pivot[0]), 214 - u - h + 1),
+                         third["figures"][1])
+        self.assertEqual((1, 2, ("at", (80, 88))), (third["active"], third["task"], third["mark"]))
+
+    def test_the_arrow_and_the_mark_are_their_rows_each_over_a_dark_rim_of_1_px(self):
+        self.assertEqual(((7, 5, 3, 1), (1, 3, 5, 7, 9, 7, 5, 3, 1)),
+                         (mission.Storyboard.ARROW, mission.Storyboard.MARK))
+        frame, (x, y) = self.board.frame(2), mission.MARK_ROOF  # the mark's middle on the roof's edge
+        yellow, rim = mission.Storyboard.YELLOW, mission.Storyboard.RIM
+        self.assertEqual([rim, yellow, yellow, rim], [frame.getpixel((x, row)) for row in (y - 5, y - 4, y + 4, y + 5)])
+        self.assertEqual([rim, yellow, yellow, rim], [frame.getpixel((col, y)) for col in (x - 5, x - 4, x + 4, x + 5)])
+
+    def test_the_image_is_the_three_frames_at_twice_the_size_under_their_labels(self):
+        image = self.board.image()
+        self.assertEqual((640 + 20, 3 * (480 + 28) + 10), image.size)
+        frame = self.board.frame(0)
+        self.assertEqual((320, 240), frame.size)
+        self.assertEqual(moves.Ladder.COLOUR, frame.getpixel((111, 214)))  # the ladder's foot, under no figure
 
 
 if __name__ == "__main__":

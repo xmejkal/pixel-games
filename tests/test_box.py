@@ -3,8 +3,8 @@
 across a reset. The firmware check (P848) reads the answers tools/firmware_probe.py prints, run here on the Mac with
 stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. deploy --engine (P850) writes or
 removes :engine_config.py. A deploy tells spark's store through spark's launcher (P921): here a stand-in run and a
-temp store, so no test starts the real launcher. ProbeRun (P905) runs a probe's file on a fake runner. Run from
-the repository root:
+temp store, so no test starts the real launcher. ProbeRun (P905) runs a probe's file on a fake runner, and LentPack
+(P906) lends the box a pack on one that keeps the box's files. Run from the repository root:
 python3 -B -m unittest tests.test_box. --- MVP (P817) ---"""
 
 import contextlib
@@ -1242,6 +1242,143 @@ class ProbeRunTest(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             self.run_probe(ProbeRunner(error=error))
         self.assertFalse(os.path.exists(self.log))
+
+
+class LendRunner:
+    """A runner for LentPack: it keeps each command, answers `ls :` and `ls :packs` with what the box holds (each copy
+    lands, each rm removes; `ls :packs` fails on a box with no packs folder), and fails each command named in fails
+    once each time it is named, and a copy to a destination in copy_fails before it lands."""
+
+    dry_run = False
+
+    def __init__(self, root=("boot.py", "main.py", "app.mpy", "art_index.mpy", "packs/"), packs=("rescue.pak",),
+                 fails=(), copy_fails=()):
+        self.root, self.packs, self.fails, self.copy_fails = set(root), set(packs), list(fails), set(copy_fails)
+        self.commands = []
+
+    def fail(self, args):
+        raise subprocess.CalledProcessError(1, ["mpremote"] + args, output="", stderr="could not enter raw repl")
+
+    def run(self, args, timeout=None):
+        self.commands.append(args)
+        if " ".join(args) in self.fails:
+            self.fails.remove(" ".join(args))
+            self.fail(args)
+        if args[0] == "cp":
+            if args[-1] in self.copy_fails or (args[-1].startswith(":packs/") and "packs/" not in self.root):
+                self.fail(args)
+            (self.packs if args[-1].startswith(":packs/") else self.root).add(args[-1].split("/")[-1].lstrip(":"))
+        if args[0] == "rm":
+            for path in args[1:]:
+                (self.packs if path.startswith(":packs/") else self.root).discard(path.split("/")[-1].lstrip(":"))
+        if args[0] == "ls":
+            if args[1] == ":packs" and "packs/" not in self.root:
+                self.fail(args)
+            names = self.root if args[1] == ":" else self.packs
+            return "ls %s\n" % args[1] + "".join("%12d %s\n" % (1000 + len(n), n) for n in sorted(names))
+        return ""
+
+
+class LentPackTest(unittest.TestCase):
+    """LentPack (P906): a pack that the box has for one sitting, its index as the shadow :art_index.py."""
+
+    PACK, INDEX = "/tmp/lend/packs/mission.pak", "/tmp/lend/art_index.py"  # the runner reads neither
+
+    def setUp(self):
+        self.sleeps = []
+
+    def lent(self, runner):
+        return box.LentPack(runner, "mission", sleep=self.sleeps.append)
+
+    def test_check_reads_the_root_once_and_passes_a_box_with_no_index(self):
+        runner = LendRunner()
+        self.lent(runner).check()
+        self.assertEqual([["ls", ":"]], runner.commands)
+
+    def test_check_refuses_a_box_with_an_index_naming_both_kinds_and_the_way_out(self):
+        runner = LendRunner(root=("boot.py", "main.py", "art_index.py", "packs/"))
+        with self.assertRaises(box.Refused) as refused:
+            self.lent(runner).check()
+        said = str(refused.exception)
+        for words in ("real index", "deploy without --py", "shadow index",
+                      "`mpremote rm :art_index.py`, `mpremote rm :packs/mission.pak`, then `mpremote reset`"):
+            self.assertIn(words, said)
+        self.assertEqual([["ls", ":"]], runner.commands)
+
+    def test_lend_copies_the_pack_first_then_the_index(self):
+        runner = LendRunner()
+        self.lent(runner).lend(self.PACK, self.INDEX)
+        self.assertEqual([["cp", self.PACK, ":packs/mission.pak"], ["cp", self.INDEX, ":art_index.py"]],
+                         runner.commands)
+        self.assertEqual(({"rescue.pak", "mission.pak"}, True), (runner.packs, "art_index.py" in runner.root))
+
+    def test_a_failed_pack_copy_copies_no_index(self):
+        runner = LendRunner(copy_fails={":packs/mission.pak"})
+        with self.assertRaises(subprocess.CalledProcessError):
+            self.lent(runner).lend(self.PACK, self.INDEX)
+        self.assertEqual([["cp", self.PACK, ":packs/mission.pak"]], runner.commands)
+
+    def test_remove_removes_both_copies_where_the_box_holds_them(self):
+        runner = LendRunner()
+        lent = self.lent(runner)
+        lent.lend(self.PACK, self.INDEX)
+        lent.remove()
+        self.assertEqual([["ls", ":"], ["ls", ":packs"], ["rm", ":art_index.py"], ["rm", ":packs/mission.pak"]],
+                         runner.commands[2:])
+        self.assertEqual(({"rescue.pak"}, False), (runner.packs, "art_index.py" in runner.root))
+
+    def test_remove_removes_only_the_copies_that_are_there(self):
+        for case, runner, rm in (("the pack alone", LendRunner(packs=("rescue.pak", "mission.pak")),
+                                  [["rm", ":packs/mission.pak"]]),
+                                 ("the index alone", LendRunner(root=("main.py", "art_index.py", "packs/")),
+                                  [["rm", ":art_index.py"]]),
+                                 ("none", LendRunner(), [])):
+            with self.subTest(case=case):
+                self.lent(runner).remove()
+                self.assertEqual([["ls", ":"], ["ls", ":packs"]] + rm, runner.commands)
+
+    def test_a_box_with_no_packs_folder_is_not_asked_for_one(self):
+        runner = LendRunner(root=("main.py", "art_index.py"))
+        self.lent(runner).remove()
+        self.assertEqual([["ls", ":"], ["rm", ":art_index.py"]], runner.commands)
+
+    def test_its_reads_and_its_removal_try_again_while_a_probe_keeps_mpremote_out(self):
+        runner = LendRunner(packs=("mission.pak",), fails=["ls :", "ls :", "rm :packs/mission.pak"])
+        self.lent(runner).check()
+        self.lent(runner).remove()
+        self.assertEqual([["ls", ":"]] * 3 + [["ls", ":"], ["ls", ":packs"]] + [["rm", ":packs/mission.pak"]] * 2,
+                         runner.commands)
+        self.assertEqual([box.RESET_PAUSE_S] * 3, self.sleeps)
+
+    def test_a_dry_runs_box_holds_both_copies(self):
+        with contextlib.redirect_stdout(io.StringIO()) as said, mock.patch.object(box.subprocess, "run") as run:
+            lent = self.lent(box.Mpremote(True))
+            lent.check()
+            lent.lend(self.PACK, self.INDEX)
+            lent.remove()
+        run.assert_not_called()
+        self.assertEqual(["mpremote ls :", "mpremote cp %s :packs/mission.pak" % self.PACK,
+                          "mpremote cp %s :art_index.py" % self.INDEX, "mpremote ls :", "mpremote ls :packs",
+                          "mpremote rm :art_index.py", "mpremote rm :packs/mission.pak"], said.getvalue().splitlines())
+
+    def test_the_way_out_by_hand(self):
+        self.assertEqual("`mpremote rm :art_index.py`, `mpremote rm :packs/mission.pak`, then `mpremote reset`",
+                         self.lent(LendRunner()).recovery())
+
+    def test_a_removal_that_half_worked_finishes_with_the_copy_that_is_left(self):
+        runner = LendRunner(fails=["rm :packs/mission.pak"])
+        lent = self.lent(runner)
+        lent.lend(self.PACK, self.INDEX)
+        lent.remove()
+        self.assertEqual([["ls", ":"], ["ls", ":packs"], ["rm", ":art_index.py"], ["rm", ":packs/mission.pak"],
+                          ["rm", ":packs/mission.pak"]], runner.commands[2:])
+        self.assertEqual(({"rescue.pak"}, False), (runner.packs, "art_index.py" in runner.root))
+
+    def test_the_removals_first_read_is_tried_again(self):
+        runner = LendRunner(packs=("mission.pak",), fails=["ls :"])
+        self.lent(runner).remove()
+        self.assertEqual([["ls", ":"], ["ls", ":"], ["ls", ":packs"], ["rm", ":packs/mission.pak"]], runner.commands)
+        self.assertEqual([box.RESET_PAUSE_S], self.sleeps)
 
 
 class Python(box.Tool):

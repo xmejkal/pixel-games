@@ -1,0 +1,68 @@
+p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 8033808
+frame tft
+lineup 1: ladder
+import 1441 ms
+ready
+pack pool 773470
+game ladder
+switch ladder 707 ms, load 674 ms, import 0 ms
+fps ladder 23
+time ladder step 1.1 paint 15.7 send 2.7 gc 3.0 fps 23 worst 425 slowest 424 = step 1 paint 419 send 3 gc 0
+phases ladder static 9 paint 0 fx 0 hud 0 over 0 title 410
+avg ladder static 7.9 paint 0.0 fx 0.0 hud 0.0 over 0.0 title 7.6 input 0.7
+heap ladder alloc 204400 glyphs 44
+fps ladder 25
+time ladder step 1.0 paint 12.2 send 2.5 gc 3.0 fps 25 worst 40 slowest 15 = step 1 paint 12 send 2 gc 0
+phases ladder static 7 paint 0 fx 0 hud 0 over 0 title 4
+avg ladder static 7.8 paint 0.0 fx 0.0 hud 0.0 over 0.0 title 4.1 input 0.7
+heap ladder alloc 204080 glyphs 44
+p906 intro ends time
+fps ladder 24
+time ladder step 1.0 paint 12.6 send 2.5 gc 3.0 fps 24 worst 54 slowest 68 = step 1 paint 62 send 3 gc 0
+phases ladder static 7 paint 5 fx 0 hud 49 over 0 title 4
+avg ladder static 7.8 paint 0.0 fx 0.0 hud 0.4 over 0.0 title 4.1 input 0.7
+heap ladder alloc 220336 glyphs 45
+p906 round 1 starts after 0
+fps ladder 24
+time ladder step 1.2 paint 11.4 send 7.9 gc 3.1 fps 24 worst 101 slowest 27 = step 2 paint 13 send 11 gc 0
+phases ladder static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg ladder static 7.8 paint 2.1 fx 0.1 hud 1.2 over 0.0 title 0.0 input 0.7
+heap ladder alloc 221008 glyphs 45
+fps ladder 24
+time ladder step 1.3 paint 11.0 send 7.4 gc 3.2 fps 24 worst 41 slowest 19 = step 1 paint 11 send 7 gc 0
+phases ladder static 7 paint 1 fx 0 hud 1 over 0 title 0
+avg ladder static 7.8 paint 1.7 fx 0.1 hud 1.2 over 0.0 title 0.0 input 0.7
+heap ladder alloc 220304 glyphs 45
+fps ladder 24
+time ladder step 1.2 paint 11.0 send 7.4 gc 3.2 fps 24 worst 59 slowest 19 = step 1 paint 11 send 7 gc 0
+phases ladder static 7 paint 1 fx 0 hud 1 over 0 title 0
+avg ladder static 7.8 paint 1.7 fx 0.1 hud 1.2 over 0.0 title 0.0 input 0.7
+heap ladder alloc 220304 glyphs 45
+fps ladder 24
+time ladder step 1.2 paint 11.0 send 7.4 gc 3.2 fps 24 worst 61 slowest 19 = step 1 paint 11 send 7 gc 0
+phases ladder static 7 paint 1 fx 0 hud 1 over 0 title 0
+avg ladder static 7.8 paint 1.7 fx 0.1 hud 1.2 over 0.0 title 0.0 input 0.7
+heap ladder alloc 220304 glyphs 45
+fps ladder 24
+time ladder step 1.3 paint 11.0 send 7.4 gc 3.2 fps 24 worst 60 slowest 19 = step 1 paint 11 send 7 gc 0
+phases ladder static 7 paint 1 fx 0 hud 1 over 0 title 0
+avg ladder static 7.8 paint 1.7 fx 0.1 hud 1.2 over 0.0 title 0.0 input 0.7
+heap ladder alloc 220304 glyphs 45
+fps ladder 24
+time ladder step 1.2 paint 11.0 send 7.4 gc 3.2 fps 24 worst 60 slowest 19 = step 1 paint 11 send 7 gc 0
+phases ladder static 7 paint 1 fx 0 hud 1 over 0 title 0
+avg ladder static 7.8 paint 1.7 fx 0.1 hud 1.2 over 0.0 title 0.0 input 0.7
+heap ladder alloc 220304 glyphs 45
+fps ladder 24
+time ladder step 1.3 paint 11.0 send 7.4 gc 3.2 fps 24 worst 61 slowest 19 = step 1 paint 11 send 7 gc 0
+phases ladder static 7 paint 1 fx 0 hud 1 over 0 title 0
+avg ladder static 7.8 paint 1.7 fx 0.1 hud 1.2 over 0.0 title 0.0 input 0.7
+heap ladder alloc 220304 glyphs 45
+fps ladder 24
+time ladder step 1.2 paint 11.0 send 7.4 gc 3.2 fps 24 worst 61 slowest 19 = step 1 paint 11 send 7 gc 0
+phases ladder static 7 paint 1 fx 0 hud 1 over 0 title 0
+avg ladder static 7.8 paint 1.7 fx 0.1 hud 1.2 over 0.0 title 0.0 input 0.7
+heap ladder alloc 220304 glyphs 45
