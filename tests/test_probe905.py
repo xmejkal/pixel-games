@@ -16,6 +16,9 @@ sys.path.append(REPO)  # the probe, last: the root's engine/ is the submodule, g
 
 from drawing_tft import DrawingTft  # noqa: E402,F401  first: it puts games/ and the stubs on the path
 
+if not hasattr(time, "ticks_add"):  # the stubs give ticks_diff, ticks_us and ticks_ms; app.run and Round add
+    time.ticks_add = lambda a, b: a + b
+
 import probe905_switch as probe  # noqa: E402
 from engine import actions as engine_actions  # noqa: E402
 from test_actions import FakeButton  # noqa: E402
@@ -471,6 +474,198 @@ class SteeredFigureTest(unittest.TestCase):
         f = figure()
         f.walk(41, 1)
         self.assertIs(RUN_R[f.ran * 12 // 41 % 12], f.picture(-1))
+
+
+class FallbackDice:
+    """Its values first, then gfx.Dice's stream."""
+
+    def __init__(self, *values):
+        self.values, self.dice = list(values), gfx_dice()
+
+    def below(self, n):
+        return self.values.pop(0) if self.values else self.dice.below(n)
+
+
+class Play:
+    """One round on scripted frames: its lines in a list (the emit), a clock that moves 41 ms a frame unless a frame
+    names its time, and the fireman (at 140, active first) and the child (at 260) on stand-in pictures."""
+
+    def __init__(self, name, *dice):
+        self.lines, self.now = [], T0
+        self.figures = [figure(140, 1), figure(260, -1, stands=None)]
+        self.round = probe.Round(way(name), self.figures, FallbackDice(*dice), self.lines.append, T0)
+
+    def frame(self, at=None, ms=41, boot=NONE, click=NONE, **inputs):
+        self.now = T0 + at if at is not None else self.now + ms
+        self.round.step(self.now, ms, frame(**inputs), boot, click)
+        return self
+
+    def ready(self):
+        return self.frame(at=600)
+
+    def to_ring(self):
+        """The wanted figure stands on its ring."""
+        self.figures[self.round.wanted].x = self.round.ring
+        return self
+
+    def task(self, lean):
+        """A clean task: a lean toward the wanted figure, a rest, the ring, FIRE."""
+        self.frame(y=lean).to_ring().frame(fire=True)
+        return self
+
+
+EXAMPLE = """p905 round stick starts
+p905 task 1 wants child at 152
+p905 switch child first
+p905 act child stray
+p905 act child reached
+p905 task 1 clean streak 1 wrong 0
+p905 task 2 wants fireman at 236
+p905 act child other
+p905 switch fireman first
+p905 switch child extra
+p905 switch child same
+p905 switch fireman back
+p905 act fireman reached
+p905 task 2 wrong streak 0 wrong 1""".splitlines()  # the plan's example, from the board's lines on
+
+
+class RoundTest(unittest.TestCase):
+    """One round of one way on scripted frames, with no drawing."""
+
+    def test_its_values_are_the_plans(self):
+        self.assertEqual((600, 400, 400, 20000, (140, 260), ("fireman", "child")),
+                         (probe.READY_MS, probe.ACT_MS, probe.MARK_MS, probe.IDLE_MS, probe.START_X, probe.NAMES))
+
+    def test_lean_is_the_engines_lean(self):
+        for v in (-100, -41, -40, -39, -1, 0, 1, 39, 40, 41, 100):
+            self.assertEqual(engine_actions.lean(v), probe.lean(v), v)
+
+    def test_ready_drops_the_inputs_of_599_ms_and_reads_at_600(self):
+        p = Play("stick")
+        p.frame(at=311, fire=True, y=-80, x=90).frame(at=599, fire=True)
+        self.assertEqual(["p905 round stick starts"], p.lines)
+        self.assertEqual((140, 260), (p.figures[0].x, p.figures[1].x))
+        p.frame(at=600, y=66)
+        self.assertEqual(["p905 task 1 wants", "p905 switch child first"], [line[:17] if "task" in line else line
+                                                                              for line in p.lines[1:]])
+
+    def test_the_way_starts_from_the_inputs_of_readys_last_frame(self):
+        p = Play("stick")
+        p.frame(at=599, y=66).frame(at=600, y=71).frame(at=641, y=88)
+        self.assertEqual(2, len(p.lines))  # the round and its first task: the lean was there before
+        p = Play("double")
+        p.frame(at=599, fire=True).frame(at=600).frame(at=941)
+        self.assertEqual(2, len(p.lines))  # READY's push waits for no second one
+
+    def test_an_act_and_a_switch_in_one_frame_at_the_ring_give_a_clean_task_and_the_next_tasks_first(self):
+        p = Play("stick").ready()
+        p.frame(y=70).to_ring().frame(fire=True, y=-70)
+        self.assertEqual(["p905 act child reached", "p905 task 1 clean streak 1 wrong 0"], p.lines[3:5])
+        self.assertTrue(p.lines[5].startswith("p905 task 2 wants fireman at "), p.lines[5])
+        self.assertEqual("p905 switch fireman first", p.lines[6])
+        self.assertEqual((1, 0), (p.round.tally.streak, p.round.tally.wrong))
+
+    def test_the_same_pair_at_a_tasks_start_gives_other_then_first(self):
+        p = Play("stick").ready()
+        p.frame(fire=True, y=70)
+        self.assertEqual(["p905 act fireman other", "p905 switch child first"], p.lines[2:])
+        self.assertEqual((0, 1), (p.round.tally.streak, p.round.tally.wrong))
+
+    def test_the_lines_of_a_wrong_task_and_of_a_round_that_passes_are_the_plans_example(self):
+        p = Play("stick", 56, 36).ready()
+        p.frame(y=70).frame(fire=True)  # the child: away from its ring
+        p.to_ring().frame(fire=True)
+        p.frame(fire=True)  # the child, but the task wants the fireman
+        p.frame(y=-70).frame().frame(y=70).frame().frame(y=70).frame().frame(y=-70)
+        p.to_ring().frame(fire=True)
+        self.assertEqual(EXAMPLE, p.lines[:len(EXAMPLE)])
+        for k in range(10):
+            p.frame().task(70 if k % 2 == 0 else -70)
+        self.assertEqual("p905 task 12 clean streak 10 wrong 1", p.lines[-2])
+        self.assertEqual("p905 round stick ends pass streak 10 best 10 tasks 12 wrong 1", p.lines[-1])
+        self.assertEqual(probe.PASS, p.round.end)
+        tasks = [line for line in p.lines if " task " in line and " wants " not in line]
+        self.assertEqual(["p905 task %d clean streak %d wrong 1" % (k + 3, k + 1) for k in range(10)], tasks[2:])
+        lines = len(p.lines)
+        p.frame(fire=True, y=70)
+        self.assertEqual(lines, len(p.lines))  # an ended round reads nothing
+
+    def test_a_round_ends_with_fail_at_the_event_of_its_third_wrong_task_and_the_frame_stops_there(self):
+        p, on = Play("click").ready(), seen(True, True)
+        for _ in range(2):  # an other, then the switch, the ring and the act
+            p.frame(boot=on).frame(click=on).to_ring().frame(boot=on)
+        self.assertEqual((2, 2, probe.PLAYING), (p.round.tally.wrong, p.round.tally.tasks, p.round.end))
+        lines = len(p.lines)
+        p.frame(boot=on, click=on)  # the act is the event; the click in its frame is not read
+        self.assertEqual(["p905 act fireman other", "p905 round click ends fail streak 0 best 0 tasks 2 wrong 3"],
+                         p.lines[lines:])
+        self.assertEqual(probe.FAIL, p.round.end)
+
+    def test_idle_at_20000_ms_and_not_at_19999_from_readys_end(self):
+        p = Play("knob").ready()
+        p.frame(at=600 + 19999)
+        self.assertEqual(probe.PLAYING, p.round.end)  # outside
+        p.frame(at=600 + 20000)  # inside
+        self.assertEqual("p905 round knob ends idle streak 0 best 0 tasks 0 wrong 0", p.lines[-1])
+        self.assertEqual(probe.IDLE, p.round.end)
+
+    def test_idle_is_counted_from_the_last_tasks_end(self):
+        p = Play("knob").ready()
+        p.frame(at=13001, turn=1).to_ring().frame(at=17003, fire=True)
+        p.frame(at=17003 + 19999)
+        self.assertEqual(probe.PLAYING, p.round.end)
+        p.frame(at=17003 + 20000)
+        self.assertEqual(probe.IDLE, p.round.end)
+
+    def test_auto_switches_at_each_tasks_start_and_ends_with_control_never_pass(self):
+        p = Play("auto").ready()
+        self.assertEqual("p905 switch child first", p.lines[2])
+        for _ in range(10):
+            p.to_ring().frame(fire=True)
+        self.assertEqual("p905 round auto ends control streak 10 best 10 tasks 10 wrong 0", p.lines[-1])
+        self.assertEqual(probe.CONTROL, p.round.end)
+        self.assertEqual([], [line for line in p.lines if "pass" in line])
+        self.assertEqual(10, len([line for line in p.lines if line.endswith(" first")]))
+
+    def test_the_knob_and_the_stick_stop_at_the_lists_ends_and_say_same(self):
+        p = Play("knob").ready()
+        p.frame(turn=-1).frame(turn=2).frame(turn=3)
+        self.assertEqual(["p905 switch fireman same", "p905 switch child first", "p905 switch child same"],
+                         p.lines[2:])
+
+    def test_a_button_way_takes_the_other_figure(self):
+        p = Play("click").ready()
+        on = seen(True, True)
+        p.frame(click=on).frame().frame(click=on).frame().frame(click=on)
+        self.assertEqual(["p905 switch child first", "p905 switch fireman extra", "p905 switch child back"],
+                         p.lines[2:])
+
+    def test_only_the_active_figure_walks_with_the_sticks_x(self):
+        p = Play("stick").ready()
+        p.frame(x=80, ms=43)
+        self.assertEqual((140 + 56 * 43 // 1000, 260), (p.figures[0].x, p.figures[1].x))
+        self.assertEqual((1, 0), (p.figures[0].lean, p.figures[1].lean))
+        p.frame(y=70).frame(x=-39, ms=47).frame(x=-40, ms=47)
+        self.assertEqual(260 - 3, p.figures[1].x)  # -39 is no lean, -40 is: 2.632 px floor to 3 to the left
+
+    def test_the_act_shows_for_400_ms_and_the_wrong_mark_for_400_ms_on_the_frames_clock(self):
+        p = Play("stick").ready()
+        p.frame(at=1013, fire=True)
+        self.assertEqual(0, p.round.act_ms(probe.FIREMAN))
+        self.assertEqual(-1, p.round.act_ms(probe.CHILD))
+        self.assertTrue(p.round.marking())
+        p.frame(at=1013 + 399)
+        self.assertEqual((399, True), (p.round.act_ms(probe.FIREMAN), p.round.marking()))  # inside
+        p.frame(at=1013 + 400)
+        self.assertEqual((-1, False), (p.round.act_ms(probe.FIREMAN), p.round.marking()))  # outside
+
+    def test_a_stray_act_shows_no_wrong_mark(self):
+        p = Play("stick").ready()
+        p.frame(y=70).frame(fire=True)
+        self.assertEqual("p905 act child stray", p.lines[-1])
+        self.assertFalse(p.round.marking())
+        self.assertEqual(0, p.round.act_ms(probe.CHILD))
 
 
 if __name__ == "__main__":

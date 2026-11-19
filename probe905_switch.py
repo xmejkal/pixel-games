@@ -18,6 +18,18 @@ WRONG_MAX = 3  # the wrong tasks that end a round with fail
 WALK_LEFT, WALK_RIGHT = 96, 304  # px: the hips walk between these, the street that both of Rescue's ranges share
 TASK_MIN_PX = 60  # px at least from the wanted figure to its ring
 REACH_PX = 8  # px from the hips to the ring's middle that reach it
+READY_MS = 600  # a round starts with READY, which reads no input
+ACT_MS = 400  # the fireman sprays or the child waves this long after an act
+MARK_MS = 400  # WRONG shows this long after a task turns wrong
+IDLE_MS = 20000  # a round with no task ended for this long ends: since READY's end or the last task's end
+FIREMAN, CHILD = 0, 1  # the list of the figures
+NAMES = ("fireman", "child")  # each figure's word in the log
+START_X = (140, 260)  # px: each figure's hips at a round's start; the fireman is active first
+
+# How a round ends (Round.end), and its word in the log
+PLAYING, PASS, FAIL, IDLE, CONTROL = range(5)
+ENDS = ("playing", "pass", "fail", "idle", "control")
+TASK_WORDS = ("clean", "wrong")  # a task's word in its line, by whether it is wrong
 
 # What a switch or an act counts as (Tally), and its word in the log
 FIRST, EXTRA, BACK, SAME, REACHED, OTHER, STRAY = range(7)
@@ -47,6 +59,12 @@ class Seen:
         self.pushed, self.held = False, self.button.held
 
 
+def lean(v):
+    """engine.actions.lean's rule, for the walk: -1, 0 or 1. The board runs this file from RAM, so it keeps its own
+    copy, and a Mac test pins the two alike."""
+    return 1 if v >= LEAN else -1 if v <= -LEAN else 0
+
+
 class LeanEdge:
     """The edge of an axis: read(v) answers -1 or 1 once when a new lean starts, else 0. A lean starts at LEAN or more
     from the middle, and the axis rests under LEAN_REST, so a lean that wavers between the two answers once. A lean the
@@ -58,10 +76,10 @@ class LeanEdge:
 
     def reset(self, v):
         """Starts from the axis as it is: a lean now is no new lean."""
-        self.on = 1 if v >= LEAN else -1 if v <= -LEAN else 0
+        self.on = lean(v)
 
     def read(self, v):
-        side = 1 if v >= LEAN else -1 if v <= -LEAN else 0
+        side = lean(v)
         if side and side != self.on:
             self.on = side
             return side
@@ -319,3 +337,116 @@ class SteeredFigure:
             return self.stands[side]
         names = self.runs[side]
         return names[self.ran * len(names) // self.stride % len(names)]
+
+
+class Round:
+    """One round of one way, with no drawing. way: a Way; figures: the two SteeredFigures, the fireman first; dice: a
+    gfx.Dice for the rings; emit: where each `p905` line goes (print on the box, a list's append in a test); now_ms:
+    the round's start on the frame's clock. step(now_ms, ms, actions, boot, click) runs one frame in this order: READY,
+    the way's read, the act, the switches, the walk, the round's end. During READY every frame resets the way and reads
+    nothing, so the way starts from the inputs of READY's last frame and that frame's pushes are dropped. The first task
+    starts in READY's first frame after it. An act comes before the switches: a REACHED ends the task and starts the
+    next one at once, so a switch in its frame is the next task's. A PASS, a CONTROL or a FAIL ends the round at its
+    event and the rest of the frame does not run; IDLE is the frame's last check. The game draws from its state:
+    figures, active, wanted, ring, tally, ready, act_ms(i), marking() and end (PLAYING until it ends)."""
+
+    def __init__(self, way, figures, dice, emit, now_ms):
+        self.way, self.figures, self.dice, self.emit = way, figures, dice, emit
+        self.start_ms = self.now = self.since_ms = now_ms  # since_ms: the idle's start
+        self.ready, self.end, self.tally = True, PLAYING, Tally()
+        self.active, self.wanted, self.ring = FIREMAN, CHILD, -1  # no ring until the first task
+        self.act_at, self.act_figure, self.mark_at = now_ms, -1, None
+        emit("p905 round %s starts" % way.name)
+
+    def step(self, now_ms, ms, actions, boot, click):
+        self.now = now_ms
+        if self.end != PLAYING:
+            return
+        way = self.way
+        if self.ready:
+            if time.ticks_diff(now_ms, self.start_ms) < READY_MS:
+                way.reset(now_ms, actions, boot, click)
+                return
+            self.ready, self.since_ms = False, time.ticks_add(self.start_ms, READY_MS)
+            self.next_task()
+        way.read(now_ms, actions, boot, click)
+        if way.acts:
+            self.act(now_ms)
+            if self.end != PLAYING:
+                return
+        if way.steps:
+            self.switch(now_ms, way.steps)
+            if self.end != PLAYING:
+                return
+        walk = lean(actions.x)
+        for i in range(len(self.figures)):
+            self.figures[i].walk(ms, walk if i == self.active else 0)
+        if time.ticks_diff(now_ms, self.since_ms) >= IDLE_MS:
+            self.finish(IDLE)
+
+    def next_task(self):
+        """A task: it wants the figure that is not active, at a ring TASK_MIN_PX or more from it. The control way makes
+        the wanted figure active at once, and that switch is the task's first."""
+        self.wanted = CHILD if self.active == FIREMAN else FIREMAN
+        self.ring = ring_x(self.dice, self.figures[self.wanted].x)
+        self.tally.start()
+        self.emit("p905 task %d wants %s at %d" % (self.tally.tasks + 1, NAMES[self.wanted], self.ring))
+        if self.way.control:
+            self.active = self.wanted
+            self.emit("p905 switch %s %s" % (NAMES[self.active], WORDS[self.tally.switch(True)]))
+
+    def act(self, now_ms):
+        tally, a = self.tally, self.active
+        wrong = tally.wrong
+        said = tally.act(a == self.wanted, reaches(self.figures[a].x, self.ring))
+        self.emit("p905 act %s %s" % (NAMES[a], WORDS[said]))
+        self.act_at, self.act_figure = now_ms, a
+        if tally.wrong != wrong:
+            self.mark_at = now_ms
+        if said != REACHED:
+            if tally.failed():
+                self.finish(FAIL)
+            return
+        self.emit("p905 task %d %s streak %d wrong %d" % (tally.tasks, TASK_WORDS[tally.marked], tally.streak,
+                                                          tally.wrong))
+        self.since_ms = now_ms
+        if self.way.control:
+            if tally.tasks >= STREAK_TO_PASS:
+                self.finish(CONTROL)
+                return
+        elif tally.passed():
+            self.finish(PASS)
+            return
+        self.next_task()
+
+    def switch(self, now_ms, steps):
+        """steps along the list of the figures: round it when the way wraps, else stopped at its ends. A step that
+        changes nothing is SAME."""
+        n = len(self.figures)
+        to = (self.active + steps) % n if self.way.wraps else max(0, min(n - 1, self.active + steps))
+        if to == self.active:
+            self.emit("p905 switch %s %s" % (NAMES[to], WORDS[SAME]))
+            return
+        tally, wrong = self.tally, self.tally.wrong
+        self.active = to
+        self.emit("p905 switch %s %s" % (NAMES[to], WORDS[tally.switch(to == self.wanted)]))
+        if tally.wrong != wrong:
+            self.mark_at = now_ms
+        if tally.failed():
+            self.finish(FAIL)
+
+    def finish(self, end):
+        self.end, tally = end, self.tally
+        self.emit("p905 round %s ends %s streak %d best %d tasks %d wrong %d" % (
+            self.way.name, ENDS[end], tally.streak, tally.best, tally.tasks, tally.wrong))
+
+    def act_ms(self, i):
+        """ms since figure i's act, while its act shows (ACT_MS), else -1."""
+        if i != self.act_figure:
+            return -1
+        ms = time.ticks_diff(self.now, self.act_at)
+        return ms if ms < ACT_MS else -1
+
+    def marking(self):
+        """Whether WRONG shows: MARK_MS from the moment a task turned wrong."""
+        return self.mark_at is not None and time.ticks_diff(self.now, self.mark_at) < MARK_MS
