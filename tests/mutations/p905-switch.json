@@ -220,5 +220,173 @@
   "name": "a run's lines are neither printed nor logged",
   "find": "self.runner.stream([\"run\", path], self.keep, timeout=limit_s)",
   "replace": "self.runner.stream([\"run\", path], lambda line: None, timeout=limit_s)"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the limit does not kill the command",
+  "find": "        def kill():\n            killed.append(True)\n            proc.kill()",
+  "replace": "        def kill():\n            killed.append(True)"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a killed command is no TimeoutExpired",
+  "find": "        if killed and proc.returncode != 0:\n            raise subprocess.TimeoutExpired",
+  "replace": "        if False:\n            raise subprocess.TimeoutExpired"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "an interrupt does not kill the command",
+  "find": "        except BaseException:\n            proc.kill()\n            proc.wait()\n            raise",
+  "replace": "        except BaseException:\n            raise"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a line reaches the log only at its end",
+  "find": "            self.file.write(line + \"\\n\")\n            self.file.flush()",
+  "replace": "            self.file.write(line + \"\\n\")"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a non-zero exit is no failure",
+  "find": "        if proc.returncode:\n            raise subprocess.CalledProcessError",
+  "replace": "        if False:\n            raise subprocess.CalledProcessError"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a run with no done passes",
+  "find": "(end != run.DONE or run.lines[-1:] != [\"done\"])",
+  "replace": "(end != run.DONE)"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a hint of 39 characters",
+  "find": "\"up: FIREMAN, down: CHILD  FIRE at ring\"",
+  "replace": "\"up: FIREMAN, down: CHILD   FIRE at ring\""
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the bar has no edge",
+  "find": "    edge = 6  # px",
+  "replace": "    edge = 0  # px"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the wrong count ends at the screen's edge",
+  "find": "cv.text(wrong, gfx.WIDTH - edge - 8 * len(wrong)",
+  "replace": "cv.text(wrong, gfx.WIDTH - 8 * len(wrong)"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the hint grey",
+  "find": "cv.text(r.way.hint, edge, 8, gfx.WHITE)",
+  "replace": "cv.text(r.way.hint, edge, 8, gfx.GREY)"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a passed row yellow in place of the cursor's",
+  "find": "gfx.YELLOW if i == m.cursor else gfx.WHITE",
+  "replace": "gfx.YELLOW if m.marked[i] else gfx.WHITE"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "QUIT grey",
+  "find": "gfx.RED if m.armed else gfx.YELLOW if m.cursor == QUIT else gfx.WHITE",
+  "replace": "gfx.RED if m.armed else gfx.GREY"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the card's fail word green",
+  "find": "(gfx.WHITE, gfx.GREEN, gfx.RED, gfx.GREY, gfx.CYAN)[r.end]",
+  "replace": "(gfx.WHITE, gfx.GREEN, gfx.GREEN, gfx.GREY, gfx.CYAN)[r.end]"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the wrong count red at 0",
+  "find": "gfx.RED if r.tally.wrong else gfx.GREY",
+  "replace": "gfx.RED"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the end line says the streak as the best",
+  "find": "ENDS[end], tally.streak, tally.best, tally.tasks",
+  "replace": "ENDS[end], tally.streak, tally.streak, tally.tasks"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the menu records the streak as the best",
+  "find": "self.menu.record(self.row, r.end, r.tally.best)",
+  "replace": "self.menu.record(self.row, r.end, r.tally.streak)"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the card is kept by the streak twice",
+  "find": "cv.keep((self.name, self.row, r.end, r.tally.streak, r.tally.best), gfx.OVER_RECT",
+  "replace": "cv.keep((self.name, self.row, r.end, r.tally.streak, r.tally.streak), gfx.OVER_RECT"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "an extra switch never fails the round",
+  "find": "        if self.tally.failed():\n            self.finish(FAIL)\n\n    def note_wrong",
+  "replace": "\n    def note_wrong"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a second hold does not switch",
+  "find": "self.down, self.since_ms, self.switched = True, now_ms, False",
+  "replace": "self.down, self.since_ms = True, now_ms"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "idle counts from the first frame after READY",
+  "find": "self.ready, self.since_ms = False, time.ticks_add(self.start_ms, READY_MS)",
+  "replace": "self.ready, self.since_ms = False, now_ms"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the arrow over the wanted figure",
+  "find": "x = r.figures[r.active].x  # the arrow",
+  "replace": "x = r.figures[r.wanted].x  # the arrow"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a picture at its hips minus its width",
+  "find": "drawn(cv, name, f.x - w // 2, feet - f.h + 1)",
+  "replace": "drawn(cv, name, f.x - w, feet - f.h + 1)"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the standing fireman in the spray's second pose",
+  "find": "(rescue.POSES[\"spray\", side][0], spray)",
+  "replace": "(rescue.POSES[\"spray\", side][1], spray)"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the bar is kept without the streak",
+  "find": "cv.keep((self.name, 1, r.tally.streak, r.tally.wrong)",
+  "replace": "cv.keep((self.name, 1, r.tally.wrong)"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the control's row says PASS",
+  "find": "(\"control\" if way.control else \"PASS\")",
+  "replace": "\"PASS\""
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a picture that does not draw passes",
+  "find": "            raise RuntimeError(\"%s did not draw: no art\" % name)",
+  "replace": "            pass"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a missing mpremote gives a traceback",
+  "find": "    except (box.subprocess.CalledProcessError, FileNotFoundError) as e:",
+  "replace": "    except box.subprocess.CalledProcessError as e:"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "the fireman at the child's speed",
+  "find": "SteeredFigure(START_X[FIREMAN], 1, rescue.SPEED_PX_S,",
+  "replace": "SteeredFigure(START_X[FIREMAN], 1, rescue.PERSON_PX_S[rescue.CHILD],"
  }
 ]

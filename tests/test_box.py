@@ -1330,6 +1330,14 @@ elif how == "fail":
 elif how == "interrupt":
     print(os.getpid())
     time.sleep(30)
+elif how == "watch":  # whether the log on disk holds the first line while this run goes on
+    end = time.time() + 5
+    while time.time() < end:
+        with open(os.environ["P905_LOG"]) as f:
+            if f.read() == "p905 ways stick\\n":
+                break
+        time.sleep(0.02)
+    print("seen" if time.time() < end else "unseen")
 """
 
 
@@ -1389,6 +1397,11 @@ class ProbeRunProcessTest(unittest.TestCase):
         self.assertEqual(box.ProbeRun.FAILED, end)
         self.assertEqual("p905 ways stick\nTraceback (most recent call last):\nRuntimeError: no art\n", self.logged())
         self.assertEqual("the run failed with exit 1", probe.why)
+
+    def test_each_line_is_in_the_log_on_disk_while_the_run_goes_on(self):
+        with mock.patch.dict(os.environ, {"P905_LOG": self.log}):
+            probe, end, said = self.run_probe(FakeMpremote(self.fake), "watch")
+        self.assertEqual((box.ProbeRun.DONE, ["p905 ways stick", "seen"]), (end, probe.lines))
 
     def test_an_interrupt_leaves_the_first_line_in_the_log_and_no_child(self):
         runner = Interrupted(self.fake)
