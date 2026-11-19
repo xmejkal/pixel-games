@@ -1049,3 +1049,79 @@ The refuter read the commit 344a10a. The facilitator records its report here, be
 - **Missing:** the draft PR #104. Its title still says "set by D35", and its body says "D1 to D35".
 
 1 refuted, 7 partly, 5 hold, 2 missing actions
+
+# Twelfth pass (2026-11-19, after the play of the switch prototype and D37 to D41)
+
+The refuter read the commit ef22773, the play's log at 8024613, `bench.md` at c7d88ea, the card #1284 with its comments, the probe's classes Tally and Round, `games/pins.py` at 72f0772, the knob's record and the session's transcript. It recounted every round of the log with `python3 -I`. It wrote nothing else in the tree.
+
+## 1. The claims
+
+- **Partly, ★C32.** Every number holds. The lines read: line 901 `p905 task 1 clean streak 1 wrong 0`, line 918 `p905 task 2 wrong streak 0 wrong 1`, line 947 `p905 task 3 wrong streak 0 wrong 2`, line 962 `p905 task 4 clean streak 1 wrong 2`, line 1051 `p905 task 13 clean streak 10 wrong 2`, line 1052 `p905 round stick ends pass streak 10 best 10 tasks 13 wrong 2`, line 225 `p905 round stick ends idle streak 0 best 0 tasks 0 wrong 1`. Round 4 holds 18 switch lines (lines 187 to 219). The caveat is narrower than the log in three ways:
+  - Round 4 counts one wrong task (line 225). The claim says only "no finished task".
+  - Tasks 4 to 13 hold four `same` lines (954, 991, 1016, 1017). Lines 954 and 991 (`p905 switch child same`) are leans toward the child while the task wants the fireman: a lean toward the figure that the task does not want, which the count leaves out (D36).
+  - The stick and the knob stop at their ends (`wraps = False`), so a lean toward the active figure costs nothing. The click, the hold, PICK and the double tap wrap, so every extra press there is `extra`, and that task is wrong. The ways were not counted on equal terms.
+  - Fix: add to the caveat "round 4 counted one wrong task; four `same` lines in tasks 4 to 13, two of them a lean toward the unwanted figure, are not counted; the stick and the knob stop at their ends, so the count forgives them more than the ways that wrap".
+- **Partly, C33.** The counts hold. "20 s after their last finished task" is false for 7 of the 9 idle rounds, because they have no finished task, and the idle then runs from READY's end (`IDLE_MS`, the comment at line 93 of the probe). "They say nothing against the pass line" drops that five idle rounds each count one wrong task (lines 174, 225, 373, 576, 835). The automatic rounds 1 and 2, which have no task, are left out. Fix: "nine of the eleven rounds ended with idle, 20 s with no task ended; five of them count one wrong task each".
+- **Holds, C34.** 16 switch lines in round 8, 6 in round 9, and 8 `act fireman other` lines with no switch in round 7. Caveat to add: 10 of the knob's 16 lines are `same`, so 6 changed the figure.
+- **Holds, C35.** The quote is verbatim (13:49:39Z). The read of 14:49:39 Prague is confirmed. Round 5 idles at least 20 s after it, so round 6 comes after the session's text of 14:50:01 Prague. "After" holds, and "because" is not shown.
+- **Partly, C36.** Each number holds: fps 16 to 19, paint 32.1 to 40.1, slowest 41 to 437. Two caveats are dropped:
+  - The phases lines put the HUD at 184 to 393 ms in 13 of 18 windows of round 10 (for example line 1047, `hud 338`). So the slowest-frame figure is mostly the HUD, and "the cause was not looked for" ignores what the log names. Windows with `hud 1` still read 17 to 19 (lines 920, 940, 949, 956, 1036).
+  - The finding's own caveat, "A line can hold frames from before the round's start", is missing.
+- **Holds, C37.** `games/pins.py` holds JOY_SW, ENC_A and ENC_B, and no knob switch. The record says "The person's unit has not been seen." Caveat to add: the record also says that Leybold lists 5 pins with SW.
+
+## 2. The sections against their sources
+
+- **REFUTED, A2's status:** "a question, and no demand". At 14:15:44Z (15:15:44 Prague), 16 s before the commit, he wrote "hmm, alright, so lets do a short update and add the knob button using the system when youre done". A2's own change trigger is "he asks for a button the box does not have", and by C37 the knob's button reaches nothing. Fix: record his order, and check A2's retirement against its trigger. His words do not say what the button does, so whether the trigger fired is open.
+- **Partly, A2, "retired as tested".** The evidence cell drops round 4's wrong task. The round that passed holds three `extra` lines (909, 936, 938), which are switches away from the wanted figure, and the belief says "never".
+- **Partly, D39.** The quotes are verbatim. "With his reason: the knob is the volume" drops that the facilitator's reply 1.5 minutes before said "The knob would have to stop being the volume knob." D39 lists the reply's reasons without this one. The marker "The last two sentences" fits "P905: Done. Go on." literally, so it is unclear whether the switch sentence was a marked recommendation. "It orders no card" is true of that message, but his next message ordered one.
+- **Partly, D38.** The quotes are verbatim. It drops the offer's own terms: "If you say "enough" instead, I record it as it is: your words name the stick and the knob, and the pass line was not tested."
+- **Partly, D37.** "The option's text" is cut without a mark. It drops "If the suite fails, I tell you, and the play's log still counts unless the fix changes the probe." The times hold: 13:37:29Z, 13:46:10Z, 13:49:26Z.
+- **Partly, Riskiest.** "The switch prototype's own rounds … read 16 to 19": only round 10 reads 16 to 19. Round 11 reads 15 to 19, and all rounds read 11 to 21 (the finding). Fix: "the round that passed".
+- **Partly, Ready for, and A11.** "A climb wants the stick's up and down too" is written as fact and cited to D29. D29's words name no axis. Fix: mark it H (the facilitator's).
+- **Partly, Q14's opinion.** "The skeleton has its switch (D39)" is stronger than the source while A11 is open.
+- **Partly, the chip row.** The quote is cut. The full message is "I wont be able to read the chip, any other photo you could use to tell ?".
+- **Partly, the Results row.** "An earlier round with no finished task" drops that round's wrong task.
+- **Partly, Decision needed.** It is stale since 15:17 Prague. P932 #1320 is in Ready in the pixel-games lane (Status=Ready, Slice=pixel-games, read by GraphQL), so a Ready order for P906 now meets the lane's one place.
+- **Holds:** the Test line, Q5, Q6, Q17, D40, D41, the hand-off, the Q6 collection row, and every new Board actions row. GitHub's times: 12:48:56Z, 12:47:27Z, 13:07:31Z, 13:39:26Z, 13:40:59Z, 13:46:10Z, 14:03:10Z, 13:49:26Z, 14:04:51Z and 14:04:00Z.
+
+## 3. Rival explanations
+
+- **A2 retired:** the stick passed partly because its count forgives a lean toward the active figure (section 1). The three `extra` lines in the passing round speak against "never".
+- **A11:** the climb may be an act by FIRE at the ladder, the probe's own model ("walk to a ring and press FIRE"). Then nothing collides, so A11 rests on a design that the facilitator assumes. Against that rival, the four `same` leans in the streak would be climb inputs on a shared axis. That is evidence for A11 that the row does not cite.
+- **"His own choice" (D39):** he echoes the facilitator's volume argument, and he still wants the knob in play (P932).
+- **"Enough" (D38):** he declines the knob's round, or he is done after a round that he saw pass.
+- **"Done" (D40):** he pasted the block without reading it. The same reply asked for a clear and `/model` first, and the facilitator noted "You pasted the text into the same session, with no clear before it".
+- **"Collecting evidence":** it holds by the template, because no D chose a test. No collection runs.
+- **The frame half (C36):** the HUD repaints of an untuned probe, not the figures, make the slow frames.
+
+## 4. Numbers that lack a unit, a population or a provenance
+
+- The length of an `fps` window and of a `time` window is unstated (C36, the Results row).
+- "18 switch lines": 4 of them are `same`, and the session told him "17 switches".
+- "16 switch lines from the knob": 10 of them are `same`.
+- "20 s after their last finished task" names the wrong population (C33, and the finding).
+- "Rounds … 16 to 19" covers one round (Riskiest).
+
+## 5. bench.md's section
+
+The table's 11 rows match my recount in every column. These sentences say more than the log holds:
+- "with nobody at the buttons" (line 1962): the log cannot show it.
+- "he did not press QUIT" (line 1965): the log shows only that no `done` line exists.
+- "because the screen does not say the task" (line 2013) is H.
+- "The cause of the slow frames was not looked for" (line 2014): the phases lines name the HUD.
+- "round 4, with 18 switch lines and no finished task" (line 1998) drops its wrong task and its 4 `same` lines.
+- "Not shown" lacks the uncounted leans of lines 954 and 991.
+
+## 6. Missing actions
+
+- **Missing:** a D row for his order of 15:15:44 Prague ("hmm, alright, so lets do a short update and add the knob button using the system when youre done").
+- **Missing:** a Board actions row for P932 #1320, filed 14:17:24Z in Ready, slice pixel-games, under #1279.
+- **Missing:** the Ready order between P932 and P906 in the lane's one Ready place is not asked.
+- **Missing:** his question "would the knob buttton work too?" got no answer in the session before his order. Between 14:08:11Z and 14:15:44Z the only text to him is "The section on your play is written into `bench.md`…". P932's body ("When he heard that nothing is wired for it") is not in the transcript.
+- **Owed, as the commit says:** verification.md's row for ★C32.
+
+## Searches: none
+
+Not checked: the figures' act sizes, because I did not trace which act poses the probe uses.
+
+1 refuted, 13 partly, 12 hold, 4 missing actions

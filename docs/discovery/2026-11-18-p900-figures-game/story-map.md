@@ -13,7 +13,7 @@ jobs-and-journeys.md. tag: as in the brief. proof: something the decider can rea
 e.g. `| 0 | Notice | the assignee gets one daily digest | job 1 | H ★C2 | the digest log for one team |` -->
 | slice | activity | story | job | tag | proof |
 | --- | --- | --- | --- | --- | --- |
-| 0 walking skeleton <!-- REQUIRED:slices --> | all five | two 96 px figures stand on one screen, he moves the one he holds, switches with the stick's up and down (D39), and one action of both ends the mission | job 1, job 2 | H A10's frame half, A7, A11 (A1 is retired as tested, in the probe's scene, and A2 for the stick's up and down, in one round of the switch prototype. A10's bytes half met its line for the counted rows on 2026-11-19) | he plays it on the board and says what he saw |
+| 0 walking skeleton <!-- REQUIRED:slices --> | all five | two 96 px figures stand on one screen, he moves the one he holds, switches with the stick's up and down (D39), and one action of both ends the mission | job 1, job 2 | H A10's frame half, A2, A7 (A1 is retired as tested, in the probe's scene. A2 met its line as read for the stick's up and down, in one round of the switch prototype, and stays open in two parts. A10's bytes half met its line for the counted rows on 2026-11-19) | he plays it on the board and says what he saw |
 | 1 | See who I hold | a mark shows the held figure, and the other one stands and breathes | job 3 | H A5 | the same play |
 | 2 | Move and act | the figure, its cycles and its steering live in `games/engine/`, and one old game uses them | job 4 | E ★C9, ★C10 | the golden net passes with 0 changed hashes |
 | 3 | Finish together | the unheld figure does its own job by a rule | job 3 | H A5 | he plays it |
