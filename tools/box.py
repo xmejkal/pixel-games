@@ -57,6 +57,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -123,6 +124,45 @@ class Tool:
         limit = {} if timeout is None else {"timeout": timeout}  # no limit: the call as before
         return subprocess.run([self.name] + args, cwd=ROOT, check=True, capture_output=True, text=True,
                               **limit).stdout
+
+    def stream(self, args, each, timeout=None):
+        """Runs the command from the repository root with its stdout and stderr as one stream, and calls each(line)
+        for each line as it comes (P905: a probe's board run, so its log holds each line at once). Bytes that are
+        not UTF-8, as a serial line gives at a reset, come replaced. Past timeout seconds it kills the command and
+        raises TimeoutExpired, also when the command ended in that moment. A non-zero exit raises CalledProcessError.
+        When each raises, or a KeyboardInterrupt or a SystemExit comes, it kills the command and the exception goes on.
+        With dry_run it prints the command and calls nothing."""
+        if self.dry_run:
+            print(" ".join([self.name] + args))
+            return
+        command, killed = [self.name] + args, []
+        proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                encoding="utf-8", errors="replace")
+
+        def kill():
+            killed.append(True)
+            proc.kill()
+
+        timer = threading.Timer(timeout, kill) if timeout is not None else None
+        try:
+            if timer:
+                timer.daemon = True
+                timer.start()
+            for line in proc.stdout:
+                each(line)
+            proc.wait()
+        except BaseException:
+            proc.kill()
+            proc.wait()
+            raise
+        finally:
+            if timer:
+                timer.cancel()
+            proc.stdout.close()
+        if killed:  # the timer fired: past the limit
+            raise subprocess.TimeoutExpired(command, timeout)
+        if proc.returncode:
+            raise subprocess.CalledProcessError(proc.returncode, command)
 
 
 class Mpremote(Tool):
@@ -508,6 +548,71 @@ def serial_port(name=None):
             raise OSError("no board on USB")
         return serial.Serial(found, 115200, timeout=0.2)
     return open_port
+
+
+class ProbeRun:
+    """For a probe's Mac part: one file run once on the box through a runner (an Mpremote, or a test's) within a time
+    limit, its lines kept (P905, from P904's probe). run(path, limit_s) opens the first free log before the command
+    starts, then prints each line as it comes and writes it to the log at once, so a Ctrl-C or a killed Mac session
+    keeps every line that came. It answers how the run ended: DONE (the file ended), LIMIT (the limit stopped mpremote;
+    the box runs on until a reset) or FAILED (mpremote failed: the file raised, or the board did not answer). The caller
+    decides what each end means. lines: the run's lines, stripped, with no blank one; logged: the log's path, or None (a
+    dry run writes none); why: how a LIMIT or a FAILED came, or None. A missing mpremote raises FileNotFoundError and
+    leaves no log."""
+
+    DONE, LIMIT, FAILED = 1, 2, 3
+
+    def __init__(self, runner, log):
+        self.runner, self.log = runner, log  # log: the first log's path (free_log picks the one written)
+        self.lines, self.logged, self.why, self.file = [], None, None, None
+
+    def run(self, path, limit_s):
+        self.lines, self.why, end = [], None, self.DONE
+        if not self.runner.dry_run:
+            self.logged = self.free_log(self.log)
+            self.file = open(self.logged, "w", encoding="utf-8")
+        try:
+            self.runner.stream(["run", path], self.keep, timeout=limit_s)
+        except subprocess.TimeoutExpired as e:
+            end, self.why = self.LIMIT, "the run took over %d s" % e.timeout
+        except subprocess.CalledProcessError as e:
+            end, self.why = self.FAILED, "the run failed with exit %d" % e.returncode
+        except FileNotFoundError:
+            self.close()
+            if self.logged:
+                os.remove(self.logged)  # empty: the command never started
+                self.logged = None
+            raise
+        finally:
+            self.close()
+        return end
+
+    def keep(self, line):
+        """One line of the run: stripped, a blank one dropped, kept, written to the log at once and then printed, so a
+        print that fails (a broken pipe, a closed terminal) loses no line of the log."""
+        line = line.strip()
+        if not line:
+            return
+        self.lines.append(line)
+        if self.file:
+            self.file.write(line + "\n")
+            self.file.flush()
+        print(line, flush=True)
+
+    def close(self):
+        if self.file:
+            self.file.close()
+            self.file = None
+
+    @staticmethod
+    def free_log(path):
+        """path, or the first of its -2, -3, ... that no file has: a later run never overwrites a log."""
+        stem, ext = os.path.splitext(path)
+        k = 1
+        while os.path.exists(path):
+            k += 1
+            path = "%s-%d%s" % (stem, k, ext)
+        return path
 
 
 def failure(e):

@@ -3,7 +3,8 @@
 across a reset. The firmware check (P848) reads the answers tools/firmware_probe.py prints, run here on the Mac with
 stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. deploy --engine (P850) writes or
 removes :engine_config.py. A deploy tells spark's store through spark's launcher (P921): here a stand-in run and a
-temp store, so no test starts the real launcher. Run from the repository root:
+temp store, so no test starts the real launcher. ProbeRun (P905) runs a probe's file on a fake runner. Run from
+the repository root:
 python3 -B -m unittest tests.test_box. --- MVP (P817) ---"""
 
 import contextlib
@@ -14,6 +15,8 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import types
 import unittest
 from unittest import mock
@@ -1138,6 +1141,298 @@ class VolumeTest(unittest.TestCase):
                     self.assertEqual(1, box.main(argv))
                 self.assertIn("refused:", out.getvalue())
                 made.return_value.run.assert_not_called()
+
+
+def output(out):
+    """An error's output as text: a timed-out run's is bytes, or None."""
+    return out.decode("utf-8", "replace") if isinstance(out, bytes) else out or ""
+
+
+class ProbeRunner:
+    """A runner for ProbeRun: it keeps each command and its time limit, calls each with the lines of said (or of
+    error's output and stderr) one by one, then raises error."""
+
+    def __init__(self, said="", error=None, dry_run=False):
+        self.said, self.error, self.dry_run, self.commands = said, error, dry_run, []
+
+    def stream(self, args, each, timeout=None):
+        self.commands.append((args, timeout))
+        said = output(getattr(self.error, "output", None)) + output(getattr(self.error, "stderr", None)) \
+            if self.error else self.said
+        for line in said.splitlines(True):
+            each(line)
+        if self.error:
+            raise self.error
+
+
+class ProbeRunTest(unittest.TestCase):
+    """ProbeRun (P905): one file run once on the box within a time limit, its lines kept in the first free log."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.log = os.path.join(self.folder.name, "run-p905-switch.log")
+
+    def run_probe(self, runner):
+        """The run: the ProbeRun, its end and what it printed."""
+        with contextlib.redirect_stdout(io.StringIO()) as said:
+            probe = box.ProbeRun(runner, self.log)
+            end = probe.run("probe905_switch.py", 3601)
+        return probe, end, said.getvalue()
+
+    def logged(self, path=None):
+        with open(path or self.log) as f:
+            return f.read()
+
+    def test_its_three_ends_differ(self):
+        self.assertEqual(3, len({box.ProbeRun.DONE, box.ProbeRun.LIMIT, box.ProbeRun.FAILED}))
+
+    def test_a_run_that_ends_is_done_its_lines_printed_and_logged(self):
+        runner = ProbeRunner("p905 ways stick\n\n  p905 inputs stick yes knob yes \ndone\n")
+        probe, end, said = self.run_probe(runner)
+        self.assertEqual(box.ProbeRun.DONE, end)
+        self.assertEqual([(["run", "probe905_switch.py"], 3601)], runner.commands)
+        lines = ["p905 ways stick", "p905 inputs stick yes knob yes", "done"]
+        self.assertEqual(lines, probe.lines)
+        self.assertEqual("".join(line + "\n" for line in lines), said)
+        self.assertEqual(said, self.logged())
+        self.assertEqual((self.log, None), (probe.logged, probe.why))
+
+    def test_a_run_that_the_time_limit_stopped_keeps_the_lines_before_it(self):
+        error = subprocess.TimeoutExpired(["mpremote", "run"], 3601, output=b"p905 ways stick\np905 round stick st",
+                                          stderr=None)
+        probe, end, said = self.run_probe(ProbeRunner(error=error))
+        self.assertEqual(box.ProbeRun.LIMIT, end)
+        self.assertEqual(["p905 ways stick", "p905 round stick st"], probe.lines)
+        self.assertEqual("p905 ways stick\np905 round stick st\n", self.logged())
+        self.assertEqual("the run took over 3601 s", probe.why)
+
+    def test_a_failed_run_is_logged_with_its_error(self):
+        error = subprocess.CalledProcessError(1, ["mpremote", "run"], output="p905 ways stick\n",
+                                              stderr="Traceback (most recent call last):\nRuntimeError: no art\n")
+        probe, end, said = self.run_probe(ProbeRunner(error=error))
+        self.assertEqual(box.ProbeRun.FAILED, end)
+        self.assertEqual("RuntimeError: no art", probe.lines[-1])
+        self.assertEqual("p905 ways stick\nTraceback (most recent call last):\nRuntimeError: no art\n", self.logged())
+        self.assertEqual("the run failed with exit 1", probe.why)
+
+    def test_a_log_is_never_overwritten(self):
+        stem = os.path.join(self.folder.name, "run-p905-switch")
+        for path, text in ((self.log, "the first run\n"), (stem + "-2.log", "the second run\n")):
+            with open(path, "w") as f:
+                f.write(text)
+        probe, end, said = self.run_probe(ProbeRunner("done\n"))
+        self.assertEqual(stem + "-3.log", probe.logged)
+        self.assertEqual(("the first run\n", "the second run\n", "done\n"),
+                         (self.logged(), self.logged(stem + "-2.log"), self.logged(stem + "-3.log")))
+
+    def test_a_dry_run_writes_no_log(self):
+        probe, end, said = self.run_probe(ProbeRunner(dry_run=True))
+        self.assertEqual((box.ProbeRun.DONE, [], None), (end, probe.lines, probe.logged))
+        self.assertFalse(os.path.exists(self.log))
+
+    def test_a_print_that_fails_leaves_its_line_in_the_log(self):
+        with mock.patch.object(box, "print", side_effect=BrokenPipeError, create=True), \
+                self.assertRaises(BrokenPipeError):
+            box.ProbeRun(ProbeRunner("p905 ways stick\n"), self.log).run("probe905_switch.py", 3601)
+        self.assertEqual("p905 ways stick\n", self.logged())
+
+    def test_a_missing_mpremote_raises(self):
+        error = FileNotFoundError(2, "No such file or directory", "mpremote")
+        with self.assertRaises(FileNotFoundError):
+            self.run_probe(ProbeRunner(error=error))
+        self.assertFalse(os.path.exists(self.log))
+
+
+class Python(box.Tool):
+    """Python itself as a tool: a real command for Tool.stream."""
+
+    name = sys.executable
+
+
+def child_gone(pid):
+    """Whether no process has pid: the child was killed and reaped."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return True
+    return False
+
+
+class StreamTest(unittest.TestCase):
+    """Tool.stream (P905) on a real command: each line as it comes, the limit's kill and the kill on an interrupt."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+
+    def script(self, text):
+        path = os.path.join(self.folder.name, "child.py")
+        with open(path, "w") as f:
+            f.write(text)
+        return ["-u", path]
+
+    def test_each_line_comes_as_the_command_prints_it_with_stderr_among_them(self):
+        flag = os.path.join(self.folder.name, "flag")
+        args = self.script("import os, sys, time\nprint('one')\nprint('err', file=sys.stderr)\n"
+                           "end = time.time() + 5\nwhile not os.path.exists(%r) and time.time() < end:\n"
+                           "    time.sleep(0.02)\nprint('two' if os.path.exists(%r) else 'late')\n" % (flag, flag))
+        lines = []
+
+        def each(line):
+            lines.append(line)
+            if line == "one\n":
+                open(flag, "w").close()  # the child waits for it: so "two" proves "one" came before the end
+
+        Python().stream(args, each)
+        self.assertEqual(["one\n", "err\n", "two\n"], lines)
+
+    def test_past_its_limit_it_kills_the_command(self):
+        args = self.script("import time\nprint('one')\ntime.sleep(30)\nprint('never')\n")
+        lines, start = [], time.monotonic()
+        with self.assertRaises(subprocess.TimeoutExpired) as raised:
+            Python().stream(args, lines.append, timeout=1)
+        self.assertLess(time.monotonic() - start, 10)
+        self.assertEqual((["one\n"], 1), (lines, raised.exception.timeout))
+
+    def test_an_interrupt_in_each_kills_the_command_and_goes_on(self):
+        args = self.script("import os, time\nprint(os.getpid())\nprint('two')\ntime.sleep(30)\n")
+        lines = []
+
+        def each(line):
+            lines.append(line)
+            if len(lines) == 2:
+                raise KeyboardInterrupt
+
+        start = time.monotonic()
+        with self.assertRaises(KeyboardInterrupt):
+            Python().stream(args, each)
+        self.assertLess(time.monotonic() - start, 10)
+        self.assertTrue(child_gone(int(lines[0])))
+
+    def test_a_non_zero_exit_raises_after_its_lines(self):
+        lines = []
+        with self.assertRaises(subprocess.CalledProcessError) as raised:
+            Python().stream(self.script("print('one')\nraise SystemExit(3)\n"), lines.append)
+        self.assertEqual((["one\n"], 3), (lines, raised.exception.returncode))
+
+    def test_a_command_that_ends_before_its_limit_leaves_no_timer(self):
+        lines = []
+        Python().stream(["-c", "print('one')"], lines.append, timeout=30)
+        timers = [t for t in threading.enumerate() if isinstance(t, threading.Timer)]
+        for t in timers:
+            t.join(1)
+        self.assertEqual(["one\n"], lines)
+        self.assertEqual([], [t for t in timers if t.is_alive()])
+
+    def test_a_dry_run_prints_the_command_and_runs_nothing(self):
+        lines = []
+        with contextlib.redirect_stdout(io.StringIO()) as said:
+            Python(dry_run=True).stream(["-c", "print('one')"], lines.append)
+        self.assertEqual(([], "%s -c print('one')\n" % sys.executable), (lines, said.getvalue()))
+
+
+FAKE_MPREMOTE = """#!%s -u
+import os, sys, time
+how = sys.argv[2]  # `run <how>`: what this stand-in of mpremote's run does
+print("p905 ways stick")
+if how == "limit":
+    print("p905 round stick starts")
+    time.sleep(30)
+elif how == "fail":
+    print("Traceback (most recent call last):", file=sys.stderr)
+    print("RuntimeError: no art", file=sys.stderr)
+    raise SystemExit(1)
+elif how == "interrupt":
+    print(os.getpid())
+    time.sleep(30)
+elif how == "bytes":  # a serial line at a reset gives bytes that are not UTF-8
+    sys.stdout.buffer.write(b"\\xff\\xfe at reset\\n")
+elif how == "watch":  # whether the log on disk holds the first line while this run goes on
+    end = time.time() + 5
+    while time.time() < end:
+        with open(os.environ["P905_LOG"]) as f:
+            if f.read() == "p905 ways stick\\n":
+                break
+        time.sleep(0.02)
+    print("seen" if time.time() < end else "unseen")
+"""
+
+
+class FakeMpremote(box.Tool):
+    """A stand-in of mpremote, a real executable: `run <how>` prints and ends as how says."""
+
+    def __init__(self, path):
+        box.Tool.__init__(self)
+        self.name = path
+
+
+class Interrupted(FakeMpremote):
+    """The stand-in of mpremote with a Ctrl-C at the run's second line, before ProbeRun has it."""
+
+    def stream(self, args, each, timeout=None):
+        seen = self.seen = []
+
+        def each_until_the_second(line):
+            seen.append(line)
+            if len(seen) == 2:
+                raise KeyboardInterrupt
+            each(line)
+
+        return box.Tool.stream(self, args, each_until_the_second, timeout)
+
+
+class ProbeRunProcessTest(unittest.TestCase):
+    """ProbeRun on a real command: the log holds each line at once, whatever ends the run."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.log = os.path.join(self.folder.name, "run-p905-switch.log")
+        self.fake = os.path.join(self.folder.name, "mpremote")
+        with open(self.fake, "w") as f:
+            f.write(FAKE_MPREMOTE % sys.executable)
+        os.chmod(self.fake, 0o755)
+
+    def logged(self):
+        with open(self.log) as f:
+            return f.read()
+
+    def run_probe(self, runner, how, limit_s=60):
+        with contextlib.redirect_stdout(io.StringIO()) as said:
+            probe = box.ProbeRun(runner, self.log)
+            end = probe.run(how, limit_s)
+        return probe, end, said.getvalue()
+
+    def test_the_limit_kills_the_run_and_the_log_holds_the_lines_before_it(self):
+        probe, end, said = self.run_probe(FakeMpremote(self.fake), "limit", limit_s=1)
+        self.assertEqual(box.ProbeRun.LIMIT, end)
+        self.assertEqual("p905 ways stick\np905 round stick starts\n", self.logged())
+        self.assertEqual(self.logged(), said)
+
+    def test_a_failed_run_is_failed_with_its_lines_and_stderr_kept(self):
+        probe, end, said = self.run_probe(FakeMpremote(self.fake), "fail")
+        self.assertEqual(box.ProbeRun.FAILED, end)
+        self.assertEqual("p905 ways stick\nTraceback (most recent call last):\nRuntimeError: no art\n", self.logged())
+        self.assertEqual("the run failed with exit 1", probe.why)
+
+    def test_bytes_that_are_not_utf_8_reach_the_log_replaced(self):
+        probe, end, said = self.run_probe(FakeMpremote(self.fake), "bytes")
+        self.assertEqual(box.ProbeRun.DONE, end)
+        with open(self.log, encoding="utf-8") as f:
+            self.assertEqual("p905 ways stick\n\ufffd\ufffd at reset\n", f.read())
+
+    def test_each_line_is_in_the_log_on_disk_while_the_run_goes_on(self):
+        with mock.patch.dict(os.environ, {"P905_LOG": self.log}):
+            probe, end, said = self.run_probe(FakeMpremote(self.fake), "watch")
+        self.assertEqual((box.ProbeRun.DONE, ["p905 ways stick", "seen"]), (end, probe.lines))
+
+    def test_an_interrupt_leaves_the_first_line_in_the_log_and_no_child(self):
+        runner = Interrupted(self.fake)
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(KeyboardInterrupt):
+            box.ProbeRun(runner, self.log).run("interrupt", 60)
+        self.assertEqual("p905 ways stick\n", self.logged())
+        self.assertTrue(child_gone(int(runner.seen[1])))  # its second line is its pid
 
 
 if __name__ == "__main__":
