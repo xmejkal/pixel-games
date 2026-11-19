@@ -41,7 +41,7 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - type: spike <!-- REQUIRED:item-type -->
 - needed by: "Q4: whole pictures first, behind one picture source." (the PO, 2026-11-18, D26) <!-- REQUIRED:needed-by -->
 - value proven by: a table he can read, one row for each character and move, with the sum against the pass line <!-- REQUIRED:value-proven-by -->
-- depends on: the list of the first mission's figures and actions, which is his since 2026-11-19 (D29): the fireman moves to the wall and holds a ladder, and the child climbs. The test and the pass line are his too (D27, D28). His words name no captured motion for an action and no idle cycle. So the count's plan names a stand-in for each such row and marks it <!-- REQUIRED:depends-on -->
+- depends on: the list of the first mission's figures and actions, which is his since 2026-11-19 (D29): the fireman moves to the wall and holds a ladder, and the child climbs. The test and the pass line are his too (D27, D28). His words name no captured motion for an action and no idle cycle. So the count's plan names a stand-in for each such row and marks it (the facilitator's method, no decision of his) <!-- REQUIRED:depends-on -->
 - status: filed D27 <!-- REQUIRED:item-status -->
 - label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->

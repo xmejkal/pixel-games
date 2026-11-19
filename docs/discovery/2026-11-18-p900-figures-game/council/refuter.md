@@ -807,3 +807,49 @@ None on the web. I read:
 ## What stayed open
 - The session where the options tool ran cannot be read. So the question and option texts rest on the coordinator's copy.
 - Whether the "Needed by" convention means a board field: no such field shows on #1279 or #1308.
+
+# Sixth pass, 2026-11-19: the sections changed after D29 and D30
+## 1. D29
+- "names two figures and three actions": partly. His words, "The fireman moves to the wall and holds a ladder, then I switch to the child and the child climbs", also give the order and his switch. Change to: "two figures, three of their actions in this order, and his switch from the fireman to the child". With that change, "no design of the mission" holds.
+- "no gait ... no end of the mission": holds. None of those things is in the message.
+- "repeats a text that the facilitator wrote" (H): I could not check it. It contradicts Q16's line, "opinion (none)", and comment 6994615454, whose only example has the grandma. Either Q16 gets the facilitator's later opinion (the child), or D29's options drop "(the facilitator's opinion)".
+- "Both figures are among the eight characters painted at 96 px, and no grandma is": partly. CAST at L443-444 lists 8. PR #109 prints "child (child) at 96 px: 12 poses of 42 by 72 px". But mocap.py L289 captures a granny: `Cycle("granny", "35_01", ...)`. Add: "the child at scale 0.75, 72 px tall (detailed.py L429); a granny's walk is captured (mocap.py L289) but not painted at 96 px".
+- "A run of each figure and a climb are captured": holds. L279 `Cycle("run", "09_01"`, L288 `Cycle("child", "09_02"`, L296 `Rising("climb", "13_33"` ("climb ladder", L31).
+- "the file lists no hold of a ladder": partly. This is literally true, but it misleads. L280 spray is "both arms held out in front at chest height in a staggered stance" (L15-16), which is the nearest stand-in. Add: "the nearest is the spray's held arms (L280)".
+- "The climb's bytes were printed for the fireman only": holds. PR #110: "fireman's climb (13:33 at 120 fps): 12 poses of 52 by 102 px, 254592 bytes".
+## 2. D30
+- The Ready order is in the pixel-games lane: holds. #1308 has Slice=pixel-games.
+- "one place in Ready and one in Build": holds. W6 L85 says "the sound session (the slices "pixel-games" and "graphics library") one in each".
+- The quoted rule: holds, word for word, at CLAUDE.local.md L24.
+- "options: none offered": open. If the paste text held "P924 to Ready", the facilitator offered it.
+- "it waits for a free place": refuted. P921 #1303 went from Review to Done at 10:12:27 Prague, before the commit at 10:14:01. P924 went from Ready to Build at 10:15:50 Prague (GraphQL status events). Change to: "pulled into Build at 10:15 Prague, after P921 went to Done at 10:12".
+## 3. Board actions
+- "taken 10:11 ... read back: Ready": holds. The status went from Idea to Ready at 09:11:16Z.
+- "at 10:11 the board held 4 of 4": holds. P921 was in Review until 10:12:27.
+- "Its move to Build waits for a free place": refuted, as above. Add the action "move P924 to Build · taken 10:15 Prague".
+- items.md, "order ... into Ready · 10:11": holds.
+- Defect, a missing action: P924's body still says "Open before the count: the list of the first mission's figures and moves (Q16) ... grandma ... The PO confirms the list first". #1279 has no comment since 00:24 Prague. The card is now in Build, so whoever builds it reads a stale card. Fix: put D29's and D30's words on P924 and in a comment on #1279.
+## 4. The header lines, Q16, items.md, risks-and-tests.md
+- The readiness "an experiment" holds by the top comment's rule (D27). "its card P924 is in Ready (D30)": partly. It is in Build now.
+- "Decision needed": holds. It matches the queue in the Q16 comment.
+- Q16's status "answered D29": holds. Its "opinion (none)" conflicts with D29 (see section 1).
+- items.md, "So the count's plan names a stand-in for each such row and marks it": partly. No D holds this. Add "(the facilitator's method)".
+- A7's evidence: partly, the same spray point as in section 1.
+- The Collection plan's "in Ready since 2026-11-19 (D30)": partly. Change to "in Build since 2026-11-19, 10:15 Prague".
+## 5. Stale, and not touched by the diff
+- P924's body, as in section 3.
+- A10 says "two 96 px figures". The mission's second figure is 72 px tall (PR #109). The frame half is a worst case, so say so.
+- council/user.md L29 and verification.md L46 keep the grandma. They are history, so leave them.
+## 6. Numbers and times
+- "eight", "96 px", "10:11" and "4 of 4" hold, from the sources above.
+- "about 00:30 Prague": I could not check it. The comment it follows was posted at 00:24:15 Prague.
+- "10:13 by the facilitator's clock": I could not check it. The commit is at 10:14:01 +0100.
+- The child's run is printed at 145,152 bytes (PR #109). D29 could name it.
+## Searches
+- I grepped the folder for Q16, grandma, granny, "waits for", "in Ready" and Idea.
+- I read the GraphQL status events of #1308 and #1303.
+- `board.py status` at 10:15 CET listed P924 in Ready, behind P923 and P922. A field read at 10:16:26 CET showed P924 in Build.
+## What stayed open
+- The session, its paste text and the facilitator's clock: I could not read any of them.
+
+2 refuted, 8 partly, 12 hold, and 1 missing action
