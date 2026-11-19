@@ -56,10 +56,12 @@ child active, also in the first round. Its two tasks:
    pose that is 54 px up or more (art/mission.py's END_UP): its head is then over the roof's edge.
 The figure that is not active stands still, and the fireman keeps the ladder. The child does not climb down: a lean
 down on the ladder picks the fireman, and the child stays. The figures run at half their captured speed (PACE). No
-round can lock, and no round ends by itself. The result screen names the round's time, the best time and the streak
-(`clean 3/5`), and `5 IN A ROW` once the streak reached 5. After 900 ms it says `FIRE: again`, and FIRE starts the
-next round. PICK twice within 3 s (QUIT_MS) ends the sitting, in every state: the first PICK shows `PICK again:
-quit`. A short press is enough: never hold PICK, as a hold of about 5 s powered an older board off (bench.md).
+round can lock, and no round ends by itself. The result screen, in its own rect right of the ladder, names the round
+(`ROUND 3`), its time, the best time, the cause of a wrong round (its first wrong pick, `wrong: UP in task 1`), the
+streak (`clean 3/5`, 5 at most) and `5 IN A ROW: DONE` once the sitting met the streak. It has no verdict word. After
+900 ms it says `FIRE: again`, and FIRE starts the next round. PICK twice within 3 s (QUIT_MS) ends the sitting, in
+every state: the first PICK shows `PICK again: quit`. A short press is enough: never hold PICK, as a hold of about 5 s
+powered an older board off (bench.md).
 
 On the screen: the bar at the top holds the two tasks and the way out in three rows of 8 px and is drawn once. A
 yellow block beside a row marks the task of the moment. A white arrow is over the active figure. The yellow mark is
@@ -69,10 +71,13 @@ edge. No text is drawn in a frame of play.
 The tally. A pick is a new lean of the stick's y: it starts at 40 of 100 (LEAN) and ends under 20 (LEAN_REST). It is
 `right` when it picks the figure that the task wants and `wrong` when it picks the other one, also when it changes
 nothing, and `switch` when it changes the active figure, else `same`. A round with a wrong pick is wrong, once. A
-clean round has none. The streak is the clean rounds in a row. In READY the stick is read and its answer waits: a
-lean that starts in READY is the round's first pick, at READY's end, and a lean from before READY is none. In one
-frame FIRE comes first and the picks after it. A FIRE that holds nothing is listed (`act none`) and not scored. What
-the tally cannot see: a lean under 40, and a tap of the stick's push-button shorter than a frame.
+clean round has none. The streak is the clean rounds in a row. READY: the stick and FIRE are read and wait. At READY's
+end each FIRE of READY is listed as `act none <button> 0`, and then each lean that started in READY is a pick, in the
+order they came, each with 0 ms. READY keeps 8 of each (READY_WAITS): a ninth in one READY is dropped. A lean from
+before READY is none: the round's first frame takes a stick at 20 or more from the middle (LEAN_REST) as the lean that
+it was, so a lean up held from the last climb that sagged to 35 is no new pick, and only a stick that came under 20
+starts one. In one frame FIRE comes first and the picks after it. A FIRE that holds nothing is listed (`act none`) and
+not scored. What the tally cannot see: a lean under 40, and a tap of the stick's push-button shorter than a frame.
 
 The lines, from the box. Each line of the game starts with `p906`. The last number of a pick, act and climb line is
 the ms since READY's end, on the frame's clock:
@@ -92,8 +97,10 @@ the ms since READY's end, on the frame's clock:
 - `p906 quit armed`: the first PICK of a pair
 - `done`: the sitting's last line. A sitting with no `done` and no traceback ended at the time limit. A box with no
   stick is refused: the traceback ends with `RuntimeError: p906 refused: no stick in the pin map ...`.
-The App's own lines come between them: `game ladder`, and every 5 s `fps`, `time`, `phases`, `avg` and `heap`, which
-are context and decide no pass line. A second sitting starts its rounds and its streak at 1 and 0 again.
+The App's own lines come between them: at the start `size`, `backend s3lcd`, `mem`, `frame tft`, `lineup 1: ladder`,
+`import <ms> ms`, `ready`, `game ladder` and `switch ladder <ms> ms, load <ms> ms, import <ms> ms`, and every 5 s
+`fps`, `time`, `phases`, `avg` and `heap`. They are context and decide no pass line: the rate line is computed from
+each end line's gaps and ms. A second sitting starts its rounds and its streak at 1 and 0 again.
 """
 
 import sys
