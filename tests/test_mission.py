@@ -534,6 +534,14 @@ class StoryboardTest(unittest.TestCase):
                          third["figures"][1])
         self.assertEqual((1, 2, ("at", (80, 88))), (third["active"], third["task"], third["mark"]))
 
+    def test_the_arrow_and_the_mark_are_their_rows_each_over_a_dark_rim_of_1_px(self):
+        self.assertEqual(((7, 5, 3, 1), (1, 3, 5, 7, 9, 7, 5, 3, 1)),
+                         (mission.Storyboard.ARROW, mission.Storyboard.MARK))
+        frame, (x, y) = self.board.frame(2), mission.MARK_ROOF  # the mark's middle on the roof's edge
+        yellow, rim = mission.Storyboard.YELLOW, mission.Storyboard.RIM
+        self.assertEqual([rim, yellow, yellow, rim], [frame.getpixel((x, row)) for row in (y - 5, y - 4, y + 4, y + 5)])
+        self.assertEqual([rim, yellow, yellow, rim], [frame.getpixel((col, y)) for col in (x - 5, x - 4, x + 4, x + 5)])
+
     def test_the_image_is_the_three_frames_at_twice_the_size_under_their_labels(self):
         image = self.board.image()
         self.assertEqual((640 + 20, 3 * (480 + 28) + 10), image.size)

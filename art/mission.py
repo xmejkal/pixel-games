@@ -251,8 +251,12 @@ class Storyboard:
     LABELS = ("a round's start: the child is active, task 1 wants the fireman",
               "the fireman holds the ladder: task 2 wants the child",
               "the child at its first pose %d px up or more: the round's end" % END_UP)
-    WHITE, YELLOW, DARK = (255, 255, 255), (250, 220, 40), (30, 30, 40)  # games/gfx.py's
+    WHITE, YELLOW, DARK, RIM = (255, 255, 255), (250, 220, 40), (30, 30, 40), (0, 0, 0)  # games/gfx.py's, BLACK
     GAP = 6  # px from the arrow's tip, and the mark's lowest row, to the top of the picture under it
+    # each shape's rows, from the top: probe906_ladder.py's ARROW and MARK (a Mac test pins them alike). Each has a dark
+    # rim of 1 px all round, drawn first, so it reads on the street's lit windows and on the sky
+    ARROW = (7, 5, 3, 1)  # the white arrow: its tip lowest
+    MARK = (1, 3, 5, 7, 9, 7, 5, 3, 1)  # the yellow mark: a diamond 9 px high and wide
 
     def __init__(self, painted, street):
         self.painted, self.street = painted, street
@@ -295,7 +299,7 @@ class Storyboard:
             img.paste(picture, (x, y), picture)
         draw = ImageDraw.Draw(img)
         tops = [(x, figure[2]) for x, figure in zip(moment["columns"], moment["figures"])]
-        self.over(draw, tops[moment["active"]], (7, 5, 3, 1), self.WHITE)  # the arrow: its tip lowest
+        self.over(draw, tops[moment["active"]], self.ARROW, self.WHITE)
         kind, where = moment["mark"]
         if kind == "over":
             self.over(draw, tops[where], self.MARK, self.YELLOW)
@@ -309,16 +313,16 @@ class Storyboard:
         draw.rectangle((2, task_y, 7, task_y + 5), fill=self.YELLOW)  # the task block
         return img
 
-    MARK = (1, 3, 5, 3, 1)  # the yellow mark's rows: a diamond
-
     def over(self, draw, top, widths, colour):
         """Rows of widths on column x of top, the last one GAP px over the top row of the picture under it."""
         x, y = top
         self.rows(draw, x, y - self.GAP - len(widths) + 1, widths, colour)
 
-    @staticmethod
-    def rows(draw, x, y, widths, colour):
-        """Rows of widths from row y down, each centred on column x."""
+    def rows(self, draw, x, y, widths, colour):
+        """Rows of widths from row y down, each centred on column x, over its rim: first, for each row, a dark rect
+        1 px wider on both sides and 1 px higher and lower, as the probe's shape draws it."""
+        for k, w in enumerate(widths):
+            draw.rectangle((x - w // 2 - 1, y + k - 1, x + w // 2 + 1, y + k + 1), fill=self.RIM)
         for k, w in enumerate(widths):
             draw.rectangle((x - w // 2, y + k, x + w // 2, y + k), fill=colour)
 
