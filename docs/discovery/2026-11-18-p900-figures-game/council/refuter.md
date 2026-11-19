@@ -886,3 +886,32 @@ I grepped for "waits for Q16", "in Build", "an experiment", "count the first mis
 I could not check when P924 moved to Review (10:38): the API gives no time for a field change. Nothing ran on the board.
 
 1 refuted, 8 partly, 10 hold
+
+# Eighth pass, 2026-11-19: D31, Q1's opinion and the board's revision
+## 1. D31
+- "name no rating, no Ready order and no test": holds.
+- "do not say that he read the table … stays in Review": partly. A fair reader can take "great" as his word on the result. Add: "'great' may answer the result. The facilitator does not count it as his word that he read the table."
+- "reads 'go on' as in D25: the discovery's work that needs no decision of his goes on": partly. D25 (brief.md:158) says only that the discovery goes on and that his words name no board move. The part about "needs no decision" is new. The reading that "go on" accepts the proposed P905 is never named. Add: "A reader could take it as a yes to P905. The facilitator does not, because a Ready order waits on him." Also, "by the clock" should say "by the facilitator's clock", as D28 to D30 do.
+- The work it names (one row, a proposal) is no decision: holds. I could not see the report or its three paste lines.
+## 2. Q1's opinion
+- It is labelled as the facilitator's opinion and not as his rating: holds.
+- A2 "the game's one verb, D1": refuted. D1 (brief.md:134) says only that he switches figures, and the request names joystick movements too. Write "the switch is how he collaborates (D1)".
+- A2 "no input is free for it": partly. ★C6 says the stick's y is free in both games. Write "no input is free without a change to the app (★C5), and the climb wants the free y (★C6)".
+- A3 "good for a first iteration": partly. C29 says "ok", not "good". D18 (the painter must gain detail) points the other way.
+- A5 "if the mission comes first, Q14": partly. Q14 orders P906 and P901. Whether A5 is needed turns on Q7, which is open, and on D4.
+- A9 "a scroll answers it": partly. A scroll is A9's own fail line, so it is not a fix.
+- A4, A6, A7, A8 (README.md:38 quotes the FAQ, "may be copied…") and A10's frame half (C30): hold.
+- The split: partly hidden. Riskiest (brief.md:103) names the seventh pass's candidate. Q1 and "Decision needed" do not, so one yes picks A2 without his seeing it. Add "the seventh pass rates the frame half of A10 riskier (Riskiest)".
+- Q1's status still says "one assumption at a time, A2 first" only. Add the one-yes offer.
+## 3. ★C7's caveat
+- "only the board's name, its MAC and its deploys": partly. The keys are board, deploys and mac, but `board` is the type "firebeetle2-esp32s3". Write "the board's type".
+- The quote and lines 248 and 255: hold, verbatim.
+- "different revisions, or two boards": partly. A third reading fits. The 2026-10-31 note judged only where the buttons sat. Its "read 0 while held" does not separate the revisions, since about 0.7 V reads as 0 (from memory, not re-read). bench.md:58 infers V1.1 from the power-off and read no chip. The record's first deploy is 2026-11-01, so the store cannot tie the 2026-10-31 board to this MAC. The store holds one FireBeetle record.
+- `how_to_tell` (line 308): holds. "settles it" settles only the board on his bench.
+## 4. The other lines
+- The collection row matches `how_to_tell`. Partly: its method cell holds a result. The method is his look.
+- "Decision needed" matches D31: holds.
+## What stayed open
+I did not check: DFRobot's overview pictures, P924's column on the board, the session's report.
+
+1 refuted, 12 partly, 9 hold
