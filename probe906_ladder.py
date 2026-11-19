@@ -35,13 +35,15 @@ The Mac part:
    end the Mac part the same way.
 A run that ended with `done` exits 0. A run that the time limit ended exits 0 when its lines hold a `p906 round` line.
 Any other end is refused with its last line and the log's path. A failed removal is refused with what may be left
-on the box and the way out by hand: `mpremote rm :art_index.py :packs/mission.pak`, then `mpremote reset`.
+on the box and the way out by hand: `mpremote rm :art_index.py`, `mpremote rm :packs/mission.pak`, then
+`mpremote reset`.
 --dry-run paints and writes the set, prints each board command (the removal as for a box that holds both copies),
 runs none and writes no log.
 
 By hand, when the removal failed or after a `kill -9` of the Mac part: end the `mpremote` that is left, then run
-`mpremote rm :art_index.py :packs/mission.pak` and `mpremote reset`. The next `python3 tools/box.py deploy` also
-removes an :art_index.py.
+`mpremote rm :art_index.py`, `mpremote rm :packs/mission.pak` and `mpremote reset`. A deploy without --py also removes
+a left :art_index.py, and one with --py writes the real index over it. A deploy never removes :packs/mission.pak: the
+pack of a sitting that crashed stays in :packs until it is removed by hand.
 
 The game. FIRE is BOOT or the stick's push-button, which this file calls the click. The intro shows once in a
 sitting, for 15 s (TITLE_MS) or until FIRE: the two tasks, the buttons and the way out. Its FIRE does not reach the
@@ -749,9 +751,12 @@ def minutes_arg(text):
 
 
 def said(box, e):
-    """An error's line: a failed or missing tool as box.main says it, any other error as itself."""
+    """An error's line: a failed or missing tool as box.main says it, a stop by its words, any other error as
+    itself."""
     if isinstance(e, (box.subprocess.CalledProcessError, FileNotFoundError)):
         return box.failure(e)
+    if isinstance(e, SystemExit):
+        return str(e.code)
     return repr(e)
 
 
@@ -771,7 +776,7 @@ def sitting(box, lent, run, files, limit_s, sleep):
     finally:
         try:
             lent.remove()
-        except Exception as e:  # noqa: BLE001  said with what may be left
+        except BaseException as e:  # noqa: B902  a stop signal in the removal too: said with what may be left
             before = first or run.why
             raise SystemExit("refused: the removal failed: %s%s; :%s and :%s may still be on the box: run %s%s" % (
                 said(box, e), "; before it: " + before if before else "", lent.INDEX, lent.pack, lent.recovery(),
@@ -835,7 +840,7 @@ def main(argv):
     import signal
 
     def stop(signum, frame):
-        raise SystemExit("stopped by signal %d: the box is reset" % signum)
+        raise SystemExit("stopped by signal %d" % signum)
 
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGHUP, stop)

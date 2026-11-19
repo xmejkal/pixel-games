@@ -621,9 +621,10 @@ class LentPack:
     :art_index.py, the shadow index: the board imports a .py before the .mpy of the same name, so the pool is made as
     big as this pack alone, and meanwhile the lineup's games find no art. check() refuses a box that has an
     :art_index.py, before any copy, as the removal would delete it. lend(pack, index) copies the pack first, so a failed
-    copy leaves no index that names it. remove() removes each copy that the box holds (a dry run's box holds both): the
-    caller's in every case once lend began. The reads and the removal are tried again while a running probe keeps
-    mpremote out. The resets are the caller's. sleep: the pause between two tries."""
+    copy leaves no index that names it. remove() removes each copy that the box holds (a dry run's box holds both),
+    each with its own `rm`, the index first, so a removal that half worked can finish: the caller's in every case once
+    lend began. The reads and each `rm` are tried again while a running probe keeps mpremote out. The resets are the
+    caller's. sleep: the pause between two tries."""
 
     INDEX = "art_index.py"
 
@@ -635,7 +636,7 @@ class LentPack:
 
     def recovery(self):
         """The way out by hand when the removal failed."""
-        return "`mpremote rm :%s :%s`, then `mpremote reset`" % (self.INDEX, self.pack)
+        return "`mpremote rm :%s`, `mpremote rm :%s`, then `mpremote reset`" % (self.INDEX, self.pack)
 
     def check(self):
         if self.INDEX in board_names(self.tried(["ls", ":"])):
@@ -652,10 +653,9 @@ class LentPack:
         root = board_names(self.tried(["ls", ":"]))
         folder, name = self.pack.split("/")
         packs = board_names(self.tried(["ls", ":" + folder])) if dry or folder + "/" in root else set()
-        there = [":" + path for path, names, file in ((self.INDEX, root, self.INDEX), (self.pack, packs, name))
-                 if dry or file in names]
-        if there:
-            self.tried(["rm"] + there)
+        for path, names, file in ((self.INDEX, root, self.INDEX), (self.pack, packs, name)):
+            if dry or file in names:
+                self.tried(["rm", ":" + path])
 
 
 def failure(e):

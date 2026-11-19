@@ -1301,7 +1301,7 @@ class LentPackTest(unittest.TestCase):
             self.lent(runner).check()
         said = str(refused.exception)
         for words in ("real index", "deploy without --py", "shadow index",
-                      "`mpremote rm :art_index.py :packs/mission.pak`, then `mpremote reset`"):
+                      "`mpremote rm :art_index.py`, `mpremote rm :packs/mission.pak`, then `mpremote reset`"):
             self.assertIn(words, said)
         self.assertEqual([["ls", ":"]], runner.commands)
 
@@ -1323,7 +1323,7 @@ class LentPackTest(unittest.TestCase):
         lent = self.lent(runner)
         lent.lend(self.PACK, self.INDEX)
         lent.remove()
-        self.assertEqual([["ls", ":"], ["ls", ":packs"], ["rm", ":art_index.py", ":packs/mission.pak"]],
+        self.assertEqual([["ls", ":"], ["ls", ":packs"], ["rm", ":art_index.py"], ["rm", ":packs/mission.pak"]],
                          runner.commands[2:])
         self.assertEqual(({"rescue.pak"}, False), (runner.packs, "art_index.py" in runner.root))
 
@@ -1359,11 +1359,26 @@ class LentPackTest(unittest.TestCase):
         run.assert_not_called()
         self.assertEqual(["mpremote ls :", "mpremote cp %s :packs/mission.pak" % self.PACK,
                           "mpremote cp %s :art_index.py" % self.INDEX, "mpremote ls :", "mpremote ls :packs",
-                          "mpremote rm :art_index.py :packs/mission.pak"], said.getvalue().splitlines())
+                          "mpremote rm :art_index.py", "mpremote rm :packs/mission.pak"], said.getvalue().splitlines())
 
     def test_the_way_out_by_hand(self):
-        self.assertEqual("`mpremote rm :art_index.py :packs/mission.pak`, then `mpremote reset`",
+        self.assertEqual("`mpremote rm :art_index.py`, `mpremote rm :packs/mission.pak`, then `mpremote reset`",
                          self.lent(LendRunner()).recovery())
+
+    def test_a_removal_that_half_worked_finishes_with_the_copy_that_is_left(self):
+        runner = LendRunner(fails=["rm :packs/mission.pak"])
+        lent = self.lent(runner)
+        lent.lend(self.PACK, self.INDEX)
+        lent.remove()
+        self.assertEqual([["ls", ":"], ["ls", ":packs"], ["rm", ":art_index.py"], ["rm", ":packs/mission.pak"],
+                          ["rm", ":packs/mission.pak"]], runner.commands[2:])
+        self.assertEqual(({"rescue.pak"}, False), (runner.packs, "art_index.py" in runner.root))
+
+    def test_the_removals_first_read_is_tried_again(self):
+        runner = LendRunner(packs=("mission.pak",), fails=["ls :"])
+        self.lent(runner).remove()
+        self.assertEqual([["ls", ":"], ["ls", ":"], ["ls", ":packs"], ["rm", ":packs/mission.pak"]], runner.commands)
+        self.assertEqual([box.RESET_PAUSE_S], self.sleeps)
 
 
 class Python(box.Tool):

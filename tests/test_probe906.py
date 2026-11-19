@@ -689,7 +689,11 @@ DONE = "p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2\npack po
 
 
 def removal():
-    return [["ls", ":"], ["ls", ":packs"], ["rm", ":art_index.py", ":packs/mission.pak"]]
+    return [["ls", ":"], ["ls", ":packs"], ["rm", ":art_index.py"], ["rm", ":packs/mission.pak"]]
+
+
+LEFT = (":art_index.py and :packs/mission.pak may still be on the box: run `mpremote rm :art_index.py`, `mpremote rm "
+        ":packs/mission.pak`, then `mpremote reset`")  # a failed removal's way out by hand
 
 
 class MacTest(unittest.TestCase):
@@ -726,7 +730,7 @@ class MacTest(unittest.TestCase):
                           ["reset"], ["exec", "pass"], ["run", copy]] + removal() + [["reset"]], board.commands)
         self.assertTrue(pack.endswith(os.path.join("packs", "mission.pak")) and index.endswith("art_index.py"))
         self.assertTrue(copy.endswith("probe906_ladder.py"))
-        self.assertEqual([None] * 5 + [3600] + [None] * 4, board.limits)
+        self.assertEqual([None] * 5 + [3600] + [None] * 5, board.limits)  # each rm on its own
         self.assertEqual((set(ROOT), {"rescue.pak"}), (board.root, board.packs))
         self.assertEqual(["capture", "the capture", "the painted set", "the painted set"], self.art.asked)
         self.assertEqual(DONE, self.logged())
@@ -784,7 +788,7 @@ class MacTest(unittest.TestCase):
         said, err, refused = self.mac([], board)
         self.assertIsNone(refused)
         self.assertIn("the time limit of 60 minutes ended the sitting", said)
-        self.assertEqual(removal() + [["reset"]], board.commands[-4:])
+        self.assertEqual(removal() + [["reset"]], board.commands[-5:])
         self.assertEqual(out.decode(), self.logged())
 
     def test_a_limit_with_no_p906_round_line_is_refused_with_its_last_line_and_the_log(self):
@@ -793,7 +797,7 @@ class MacTest(unittest.TestCase):
         said, err, refused = self.mac([], board)
         self.assertEqual("refused: the run took over 3600 s: p906 intro ends time; the log is %s" % self.log,
                          refused.code)
-        self.assertEqual(removal() + [["reset"]], board.commands[-4:])
+        self.assertEqual(removal() + [["reset"]], board.commands[-5:])
 
     def test_a_failed_run_is_refused_with_its_last_line_and_the_log(self):
         board = StreamBoard(run_error=subprocess.CalledProcessError(
@@ -802,7 +806,7 @@ class MacTest(unittest.TestCase):
         said, err, refused = self.mac([], board)
         self.assertEqual("refused: the run failed with exit 1: RuntimeError: p906 refused: no stick in the pin map; "
                          "the log is %s" % self.log, refused.code)
-        self.assertEqual(removal() + [["reset"]], board.commands[-4:])
+        self.assertEqual(removal() + [["reset"]], board.commands[-5:])
 
     def test_a_run_that_ends_without_done_is_refused(self):
         board = StreamBoard(said="p906 rules lean 40\np906 round 1 starts after 0\n")
@@ -815,17 +819,37 @@ class MacTest(unittest.TestCase):
         board = StreamBoard(run_error=run_error, broken={"ls :"})
         said, err, refused = self.mac([], board)
         self.assertEqual("refused: the removal failed: mpremote ls : failed: could not enter raw repl; before it: "
-                         "the run failed with exit 1; :art_index.py and :packs/mission.pak may still be on the box: "
-                         "run `mpremote rm :art_index.py :packs/mission.pak`, then `mpremote reset`; the log is %s"
-                         % self.log, refused.code)
+                         "the run failed with exit 1; " + LEFT + "; the log is %s" % self.log, refused.code)
         self.assertEqual(["reset"], board.commands[-1])
+
+    def test_a_failed_copy_and_then_a_failed_removal_name_both(self):
+        board = StreamBoard(copy_fails={":art_index.py": "before"}, broken={"ls :"})
+        said, err, refused = self.mac([], board)
+        self.assertEqual("refused: the removal failed: mpremote ls : failed: could not enter raw repl; before it: "
+                         "mpremote cp %s :art_index.py failed: no space left; %s" % (board.commands[2][1], LEFT),
+                         refused.code)
+        self.assertEqual(["reset"], board.commands[-1])
+
+    def test_a_stop_inside_the_removal_is_refused_with_what_may_be_left(self):
+        class Stopped(StreamBoard):
+            def run(self, args, timeout=None):
+                if args == ["ls", ":"] and self.copy is not None:  # the removal's first read, after the run
+                    self.commands.append(args)
+                    raise SystemExit("stopped by signal 15")
+                return StreamBoard.run(self, args, timeout)
+
+        board = Stopped(said=DONE)
+        said, err, refused = self.mac([], board)
+        self.assertEqual("refused: the removal failed: stopped by signal 15; " + LEFT + "; the log is %s" % self.log,
+                         refused.code)
+        self.assertEqual([["ls", ":"], ["reset"]], board.commands[-2:])
 
     def test_a_ctrl_c_keeps_the_log_removes_both_and_resets_the_box(self):
         board = StreamBoard(said="p906 rules lean 40\n", run_error=KeyboardInterrupt())
         with self.assertRaises(KeyboardInterrupt):
             self.mac([], board)
         self.assertEqual("p906 rules lean 40\n", self.logged())
-        self.assertEqual(removal() + [["reset"]], board.commands[-4:])
+        self.assertEqual(removal() + [["reset"]], board.commands[-5:])
 
     def test_a_missing_capture_refuses_before_any_board_command(self):
         class NoCapture(StandInArt):
@@ -850,8 +874,8 @@ class MacTest(unittest.TestCase):
                                                                                               "mission.pak"),
                           "mpremote cp %s :art_index.py" % os.path.join(tmp, "art_index.py"), "mpremote reset",
                           "mpremote exec pass", "mpremote run %s" % os.path.join(tmp, "probe906_ladder.py"),
-                          "mpremote ls :", "mpremote ls :packs", "mpremote rm :art_index.py :packs/mission.pak",
-                          "mpremote reset"], lines)
+                          "mpremote ls :", "mpremote ls :packs", "mpremote rm :art_index.py",
+                          "mpremote rm :packs/mission.pak", "mpremote reset"], lines)
         self.assertFalse(os.path.exists(self.log))
 
 
@@ -1452,6 +1476,107 @@ class ReviewGameTest(unittest.TestCase):
         again(finish(box.play()))
         finish(box)
         self.assertEqual(1, len([line for line in box.said.getvalue().splitlines() if line.startswith("pack ")]))
+
+
+STAND_IN_MPREMOTE = """#!PYTHON -u
+import os, sys, time
+record = os.environ["P906_RECORD"]
+said = open(record).read().splitlines() if os.path.exists(record) else []
+with open(record, "a") as f:  # each command, so the test sees the removal and the final reset
+    f.write(" ".join(sys.argv[1:]) + "\\n")
+lent = [line for line in said if line.startswith("cp ") and line.endswith(":art_index.py")]
+if sys.argv[1:] == ["ls", ":"]:
+    print("        0 packs/")
+    if lent:
+        print("     1234 art_index.py")
+elif sys.argv[1:] == ["ls", ":packs"]:
+    print("   660008 rescue.pak")
+    if lent:
+        print("   773470 mission.pak")
+elif sys.argv[1] == "run":
+    print("p906 rules lean 40")
+    with open(record, "a") as f:
+        f.write("pid %d\\n" % os.getpid())
+    time.sleep(30)
+"""
+
+MAC_CHILD = """import os, sys
+sys.path.insert(0, %r)
+import probe906_ladder as probe
+
+
+class Art:
+    SET = "mission"
+
+    def capture(self, parser):
+        return None
+
+    def painted(self, capture):
+        return None
+
+    def write(self, folder, painted):
+        os.makedirs(os.path.join(folder, "packs"))
+        pack, index = os.path.join(folder, "packs", "mission.pak"), os.path.join(folder, "art_index.py")
+        for path in (pack, index):
+            open(path, "w").close()
+        return pack, index
+
+    def numbers(self, painted):
+        return {}
+
+
+probe.LOG = %r
+mac = probe.mac
+probe.mac = lambda argv: mac(argv, art=Art())
+probe.main([])
+"""
+
+
+class SignalTest(unittest.TestCase):
+    """The Mac part from the command line in a real process, with a stand-in mpremote on PATH and a stand-in for
+    art/mission.py: a SIGTERM or a SIGHUP ends it as a Ctrl-C does, with the removal and then the reset."""
+
+    def test_a_sigterm_or_a_sighup_kills_the_run_removes_both_copies_and_resets_the_box(self):
+        import signal
+
+        for signum in (signal.SIGTERM, signal.SIGHUP):
+            with self.subTest(signal=signum), tempfile.TemporaryDirectory() as tmp:
+                record, log = os.path.join(tmp, "record"), os.path.join(tmp, "run.log")
+                stand_in = os.path.join(tmp, "mpremote")
+                with open(stand_in, "w") as f:
+                    f.write(STAND_IN_MPREMOTE.replace("PYTHON", sys.executable))
+                os.chmod(stand_in, 0o755)
+                child = os.path.join(tmp, "child.py")
+                with open(child, "w") as f:
+                    f.write(MAC_CHILD % (REPO, log))
+                env = dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], P906_RECORD=record)
+                mac = subprocess.Popen([sys.executable, "-B", child], env=env, stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.DEVNULL)
+                self.addCleanup(mac.kill)
+                end = time.monotonic() + 20
+                while time.monotonic() < end and mac.poll() is None and not (
+                        os.path.exists(log) and open(log).read()):
+                    time.sleep(0.05)  # the run's first line is in the log: the Mac part reads its lines
+                mac.send_signal(signum)
+                self.assertNotEqual(0, mac.wait(timeout=20))
+                with open(record) as f:
+                    said = [line for line in f.read().splitlines() if not line.startswith("pid ")]
+                with open(record) as f:
+                    pid = int([line for line in f.read().splitlines() if line.startswith("pid ")][0].split()[1])
+                self.addCleanup(end_if_left, pid)
+                run = [k for k, line in enumerate(said) if line.startswith("run ")][0]
+                self.assertEqual(["ls :", "reset", "exec pass"], [said[0], said[3], said[4]])
+                self.assertEqual(["ls :", "ls :packs", "rm :art_index.py", "rm :packs/mission.pak", "reset"],
+                                 said[run + 1:])
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(pid, 0)  # no child left
+
+
+def end_if_left(pid):
+    try:
+        os.kill(pid, 9)
+    except ProcessLookupError:
+        pass
 
 
 class MacValuesTest(unittest.TestCase):
