@@ -1959,10 +1959,11 @@ Not measured:
   holds. Spark's store names the box's last deploy as one by `box.py` on 2026-11-19 at 10:11:37 Prague. The
   session that made it says that it deployed d57d484. What the box held was not read back.
 - The logs: `logs/run-p905-switch.log` is the smoke run, `python3 -B probe905_switch.py --minutes 1` from branch
-  p905-switch-probe (15f5f2d), 14:39:37 to 14:40:39 Prague, exit 0, with nobody at the buttons.
+  p905-switch-probe (15f5f2d), 14:39:37 to 14:40:39 Prague, exit 0. The session had asked the PO to leave the box
+  alone, and that log holds no round, no switch and no act line.
   `logs/run-p905-switch-2.log` is the PO's play, the same command with `--minutes 60`, 14:46:14 to 15:02:34 Prague,
   1,219 lines, no traceback. The branch was merged as 72f0772 at 14:49 Prague while he played. The play's log has
-  no `done` line: he did not press QUIT, and a SIGTERM ended the Mac part, which printed
+  no `done` line, so the run did not end by QUIT. A SIGTERM from the session ended the Mac part, which printed
   `stopped by signal 15: the box is reset`. The box was not read back after that reset.
 - Both logs start with `p905 ways stick,click,double,hold,pick,knob,auto streak 10 wrong 3 double 300 hold 400` and
   `p905 inputs stick yes knob yes`. The play's log says `import 1566 ms` (line 8) and
@@ -1995,8 +1996,13 @@ Not measured:
   the knob is volume."
 - The stick's up and down: the pass line is met as read. In round 10, task 1 was clean (line 901), tasks 2 and 3
   were wrong (lines 918 and 947), and tasks 4 to 13 were clean (lines 962 to 1051): a streak of 10, and the round
-  ended with `pass` (line 1052). The tries beside it: round 4, with 18 switch lines and no finished task, and the
-  two wrong tasks of round 10. By the stricter reading, which he did not take, the line is not met.
+  ended with `pass` (line 1052). The tries beside it: round 4, with 18 switch lines, no finished task and one wrong
+  task (line 225), and the two wrong tasks of round 10, which hold three switches away from the wanted figure (lines
+  909, 936 and 938). By the stricter reading, which he did not take, the line is not met.
+- What the count does not score: tasks 4 to 13 of round 10 hold four `same` lines, steps that changed nothing
+  (lines 954, 991, 1016 and 1017). Two of them are leans toward the figure that the task did not want (lines 954
+  and 991). The stick and the knob stop at their ends, so such a step costs nothing. The four button ways take the
+  other figure at every press. So the ways were not counted on equal terms.
 - The knob: not tested against the line. Round 8 has two finished tasks, the first wrong and the second clean
   (lines 625 and 634), and it ended with idle.
 - The hold, the click and PICK: no finished task. The double tap: no round. The automatic way is the control: 8
@@ -2006,9 +2012,12 @@ Not measured:
   say which button he pressed there.
 - The frame: in round 10 the `fps` lines say 16 to 19, the `time` lines give a paint of 32.1 to 40.1 ms, and the
   slowest frame of a window took 41 to 437 ms. In round 11 the slowest frame took 355 to 725 ms. In the menu the
-  `fps` lines say 22 in most windows (lines 17 to 62). The figures are Rescue's small ones, 26 by 30 px and 18 by
-  22 px, over the still street.
+  `fps` lines say 22 in most windows (lines 17 to 62). In 13 of the 18 windows of round 10 the `phases` line gives
+  the top bar's redraw (`hud`) as 184 to 393, and in the other five as 1 (lines 897 to 1047). These lines carry no
+  unit, and the `time` lines are in ms. A line can hold frames from before the round's start. The figures are
+  Rescue's small ones, with run pictures of 26 by 30 px and 18 by 22 px, over the still street.
 - Not shown: which hand he used; a press that the box never saw; the knob, the hold, the click, PICK and the
   double tap against the pass line; a second sitting or another player. The first five rounds have no finished
-  task, because the screen does not say the task, and nine of the eleven rounds ended with idle, because a round
-  has no way out. The cause of the slow frames was not looked for.
+  task. Nine of the eleven rounds ended with idle, which comes after 20 s with no task ended, and five of those
+  count one wrong task each (lines 174, 225, 373, 576 and 835). A round has no other way out. Why the bar's redraw
+  is slow was not looked for.
