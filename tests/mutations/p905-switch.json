@@ -116,13 +116,13 @@
  {
   "file": "probe905_switch.py",
   "name": "an extra switch is not wrong",
-  "find": "        self.mark()\n        return EXTRA",
+  "find": "        self.turn_wrong()\n        return EXTRA",
   "replace": "        return EXTRA"
  },
  {
   "file": "probe905_switch.py",
   "name": "an act of the other figure is not wrong",
-  "find": "            self.mark()\n            return OTHER",
+  "find": "            self.turn_wrong()\n            return OTHER",
   "replace": "            return OTHER"
  },
  {
@@ -134,19 +134,19 @@
  {
   "file": "probe905_switch.py",
   "name": "a task is wrong at each mistake",
-  "find": "        if not self.marked:\n            self.marked, self.streak = True, 0",
-  "replace": "        if True:\n            self.marked, self.streak = True, 0"
+  "find": "        if not self.task_wrong:\n            self.task_wrong, self.streak = True, 0",
+  "replace": "        if True:\n            self.task_wrong, self.streak = True, 0"
  },
  {
   "file": "probe905_switch.py",
   "name": "a wrong task keeps the streak",
-  "find": "self.marked, self.streak = True, 0",
-  "replace": "self.marked = True"
+  "find": "self.task_wrong, self.streak = True, 0",
+  "replace": "self.task_wrong = True"
  },
  {
   "file": "probe905_switch.py",
   "name": "a wrong task grows the streak",
-  "find": "        if not self.marked:\n            self.streak += 1",
+  "find": "        if not self.task_wrong:\n            self.streak += 1",
   "replace": "        if True:\n            self.streak += 1"
  },
  {
@@ -218,7 +218,7 @@
  {
   "file": "tools/box.py",
   "name": "a run's lines are neither printed nor logged",
-  "find": "        self.keep(said)\n        return end",
-  "replace": "        return end"
+  "find": "self.runner.stream([\"run\", path], self.keep, timeout=limit_s)",
+  "replace": "self.runner.stream([\"run\", path], lambda line: None, timeout=limit_s)"
  }
 ]

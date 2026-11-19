@@ -428,9 +428,9 @@ STAND = (("stand_r", 38), ("stand_l", 38))
 STEPS = (37, 23, 41, 60, 17)  # ms: 56 px a second times none of them is a whole px
 
 
-def figure(x=200, facing=1, stands=STAND):
+def figure(x=200, facing=1, stand_poses=STAND):
     """A figure at the fireman's speed and stride, on stand-in pictures."""
-    return probe.SteeredFigure(x, facing, 56, 41, 30, (RUN_R, RUN_L), (ACT_R, ACT_L), 83, stands)
+    return probe.SteeredFigure(x, facing, 56, 41, 30, (RUN_R, RUN_L), (ACT_R, ACT_L), 83, stand_poses)
 
 
 class SteeredFigureTest(unittest.TestCase):
@@ -473,7 +473,7 @@ class SteeredFigureTest(unittest.TestCase):
         f.ran = 20
         f.walk(43, 0)
         self.assertEqual(("stand_l", 38), f.picture(-1))
-        f = figure(stands=None)
+        f = figure(stand_poses=None)
         f.ran = 20
         f.walk(43, 0)
         self.assertEqual(("run_r5", 26), f.picture(-1))
@@ -505,7 +505,7 @@ class Play:
 
     def __init__(self, name, *dice):
         self.lines, self.now = [], T0
-        self.figures = [figure(140, 1), figure(260, -1, stands=None)]
+        self.figures = [figure(140, 1), figure(260, -1, stand_poses=None)]
         self.round = probe.Round(way(name), self.figures, FallbackDice(*dice), self.lines.append, T0)
 
     def frame(self, at=None, ms=41, boot=NONE, click=NONE, **inputs):
@@ -548,7 +548,7 @@ class RoundTest(unittest.TestCase):
 
     def test_its_values_are_the_plans(self):
         self.assertEqual((600, 400, 400, 20000, (140, 260), ("fireman", "child")),
-                         (probe.READY_MS, probe.ACT_MS, probe.MARK_MS, probe.IDLE_MS, probe.START_X, probe.NAMES))
+                         (probe.READY_MS, probe.ACT_MS, probe.WRONG_MS, probe.IDLE_MS, probe.START_X, probe.NAMES))
 
     def test_lean_is_the_engines_lean(self):
         for v in (-100, -41, -40, -39, -1, 0, 1, 39, 40, 41, 100):
@@ -667,17 +667,17 @@ class RoundTest(unittest.TestCase):
         p.frame(at=1013, fire=True)
         self.assertEqual(0, p.round.act_ms(probe.FIREMAN))
         self.assertEqual(-1, p.round.act_ms(probe.CHILD))
-        self.assertTrue(p.round.marking())
+        self.assertTrue(p.round.shows_wrong())
         p.frame(at=1013 + 399)
-        self.assertEqual((399, True), (p.round.act_ms(probe.FIREMAN), p.round.marking()))  # inside
+        self.assertEqual((399, True), (p.round.act_ms(probe.FIREMAN), p.round.shows_wrong()))  # inside
         p.frame(at=1013 + 400)
-        self.assertEqual((-1, False), (p.round.act_ms(probe.FIREMAN), p.round.marking()))  # outside
+        self.assertEqual((-1, False), (p.round.act_ms(probe.FIREMAN), p.round.shows_wrong()))  # outside
 
     def test_a_stray_act_shows_no_wrong_mark(self):
         p = Play("stick").ready()
         p.frame(y=70).frame(fire=True)
         self.assertEqual("p905 act child stray", p.lines[-1])
-        self.assertFalse(p.round.marking())
+        self.assertFalse(p.round.shows_wrong())
         self.assertEqual(0, p.round.act_ms(probe.CHILD))
 
 

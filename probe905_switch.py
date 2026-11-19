@@ -18,8 +18,9 @@ The Mac part:
    so a log is never overwritten, and a Ctrl-C or a killed Mac session keeps every line that was played
    (tools/box.py, ProbeRun).
 4. hard-resets the box in every case, so the box plays its lineup again.
-A run that QUIT ended, whose last line is `done`, exits 0. A run that the time limit ended exits 0 when its lines hold a `p905 ways` line, so a
-run that hung before the menu does not pass as a play. Any other end is refused with its last line and the log's path.
+A run that QUIT ended, whose last line is `done`, exits 0. A run that the time limit ended exits 0 when its lines hold a
+`p905 ways` line, so a run that hung before the menu does not pass as a play. Any other end is refused with its last
+line and the log's path.
 --dry-run prints each board command and runs none, and writes no log.
 
 The game. FIRE is BOOT or the stick's push-button, which this file calls the click. The menu lists the seven ways,
@@ -62,10 +63,10 @@ The lines, from the box. Each line of the game starts with `p905`:
 - `p905 act <figure> reached|other|stray`: the figure that acted
 - `p905 task <n> clean|wrong streak <s> wrong <w>`: a task that ended, the round's streak and wrong tasks after it
 - `p905 round <way> ends pass|fail|idle|control streak <s> best <b> tasks <t> wrong <w>`
-- `done`, after QUIT. A traceback and no `done` when the run failed. A box with no stick is refused with
-  `p905 refused` before any `p905 ways` line.
-The App's own lines come between them: `game switchtest`, `switch switchtest ...`, and every 5 s `fps`, `time`,
-`phases`, `avg` and `heap`. The box is silent.
+- `done`, after QUIT. A traceback and no `done` when the run failed. A box with no stick is refused before any
+  `p905 ways` line: the traceback ends with `RuntimeError: p905 refused: no stick in the pin map ...`.
+The App's own lines come between them, for example `backend s3lcd`, `lineup 1: switchtest`, `import N ms`, `ready`,
+`game switchtest` and every 5 s `fps` and `heap`. The probe reads none of them. The box is silent.
 
 By hand, when the box does not come back: `mpremote reset`. Nothing is copied to the box, so the reset is the whole
 cleanup.
@@ -86,7 +87,7 @@ TASK_MIN_PX = 60  # px at least from the wanted figure to its ring
 REACH_PX = 8  # px from the hips to the ring's middle that reach it
 READY_MS = 600  # a round starts with READY, which reads no input
 ACT_MS = 400  # the fireman sprays or the child waves this long after an act
-MARK_MS = 400  # WRONG shows this long after a task turns wrong
+WRONG_MS = 400  # WRONG shows this long after a task turns wrong
 IDLE_MS = 20000  # a round with no task ended for this long ends: since READY's end or the last task's end
 FIREMAN, CHILD = 0, 1  # the list of the figures
 NAMES = ("fireman", "child")  # each figure's word in the log
@@ -98,7 +99,7 @@ ENDS = ("playing", "pass", "fail", "idle", "control")
 TASK_WORDS = ("clean", "wrong")  # a task's word in its line, by whether it is wrong
 CARD_WORDS = ("", "PASS", "%d WRONG" % WRONG_MAX, "IDLE", "CONTROL")  # each end's word on the result card
 
-# What a switch or an act counts as (Tally), and its word in the log
+# What a switch or an act counts as, and its word in the log: Round says SAME, Tally the others
 FIRST, EXTRA, BACK, SAME, REACHED, OTHER, STRAY = range(7)
 WORDS = ("first", "extra", "back", "same", "reached", "other", "stray")
 
@@ -127,8 +128,9 @@ class Seen:
 
 
 def lean(v):
-    """engine.actions.lean's rule, for the walk: -1, 0 or 1. The board runs this file from RAM, so it keeps its own
-    copy, and a Mac test pins the two alike."""
+    """engine.actions.lean's rule, for the walk: -1, 0 or 1. The file keeps its own copy because at its top it imports
+    only sys and time, so the Mac part and the tests load it with no game code; on a plain Mac the root's engine/ also
+    shadows games/engine. board() itself imports engine.actions. A Mac test pins the two alike."""
     return 1 if v >= LEAN else -1 if v <= -LEAN else 0
 
 
@@ -161,8 +163,9 @@ class Way:
     actions, boot, click) reads one frame and leaves its answer in steps (along the list of the figures: + toward the
     child, - toward the fireman) and acts (whether FIRE acts), so a frame makes no tuple. actions is the frame's
     engine.actions.Actions, boot and click the two Seen FIRE buttons. name: the log's word; label: the screen's; hint:
-    one line of the top bar, 38 characters at most, that names the act as "X at ring"; wraps: whether a step past the list's end comes round (false for
-    the stick and the knob, whose list stops at its ends); control: true for the way that is no test."""
+    one line of the top bar, 38 characters at most, that names the act as "X at ring"; wraps: whether a step past the
+    list's end comes round (false for the stick and the knob, whose list stops at its ends); control: true for the way
+    that is no test."""
 
     name = label = hint = ""
     wraps, control = True, False
@@ -308,11 +311,11 @@ class Tally:
 
     def __init__(self):
         self.streak = self.best = self.wrong = self.tasks = 0
-        self.switches, self.marked = 0, False  # the task's switches, and whether it is wrong
+        self.switches, self.task_wrong = 0, False  # the task's switches, and whether it is wrong
 
     def start(self):
         """A new task."""
-        self.switches, self.marked = 0, False
+        self.switches, self.task_wrong = 0, False
 
     def switch(self, to_wanted):
         """A change of the active figure: to_wanted, whether it now is the wanted one. Answers FIRST, EXTRA or BACK."""
@@ -321,27 +324,27 @@ class Tally:
             return FIRST
         if to_wanted:
             return BACK
-        self.mark()
+        self.turn_wrong()
         return EXTRA
 
     def act(self, wanted, at_ring):
         """An act of the active figure: wanted, whether it is the wanted one; at_ring, whether it is in reach of the
         ring. Answers OTHER, STRAY or REACHED."""
         if not wanted:
-            self.mark()
+            self.turn_wrong()
             return OTHER
         if not at_ring:
             return STRAY
         self.tasks += 1
-        if not self.marked:
+        if not self.task_wrong:
             self.streak += 1
             self.best = max(self.best, self.streak)
         return REACHED
 
-    def mark(self):
+    def turn_wrong(self):
         """The task is wrong, once."""
-        if not self.marked:
-            self.marked, self.streak = True, 0
+        if not self.task_wrong:
+            self.task_wrong, self.streak = True, 0
             self.wrong += 1
 
     def passed(self):
@@ -368,15 +371,16 @@ def reaches(x, ring):
 class SteeredFigure:
     """One figure that the stick's x walks: its hips' x, its facing (1 right, -1 left), the px it ran, the thousandths
     of a px carried to its next step (rest) and the lean of its last walk, all whole numbers, as games/rescue.py's
-    Fireman.run. speed in px a second, stride the px of one run cycle, h its pictures' height. runs and acts are
-    (right, left), each a tuple of (name, width) pairs made once, so a frame makes no name: its run cycle, and the act's
-    cycle at act_pose_ms a pose. stands: (right, left), one pair each, for the picture it stands in, or None to stand
-    in the run's pose where it stopped. Its hips are at its picture's middle."""
+    Fireman.run. speed in px a second, stride the px of one run cycle, h its pictures' height. run_poses and act_poses
+    are (right, left), each a tuple of (name, width) pairs made once, so a frame makes no name: its run cycle, and the
+    act's cycle at act_pose_ms a pose. stand_poses: (right, left), one pair each, for the picture it stands in, or None
+    to stand in the run's pose where it stopped. Its hips are at its picture's middle."""
 
-    def __init__(self, x, facing, speed, stride, h, runs, acts, act_pose_ms, stands=None):
+    def __init__(self, x, facing, speed, stride, h, run_poses, act_poses, act_pose_ms, stand_poses=None):
         self.x, self.facing, self.ran, self.rest, self.lean = x, facing, 0, 0, 0
         self.speed, self.stride, self.h = speed, stride, h
-        self.runs, self.acts, self.act_pose_ms, self.stands = runs, acts, act_pose_ms, stands
+        self.run_poses, self.act_poses, self.stand_poses = run_poses, act_poses, stand_poses
+        self.act_pose_ms = act_pose_ms
 
     def walk(self, ms, lean):
         """ms of a frame with the stick's lean (-1, 0 or 1): 0 stands, else it faces the lean and walks, in whole px
@@ -399,11 +403,11 @@ class SteeredFigure:
         stand picture, else the run's pose for the px it ran."""
         side = 0 if self.facing > 0 else 1
         if act_ms >= 0:
-            names = self.acts[side]
+            names = self.act_poses[side]
             return names[act_ms // self.act_pose_ms % len(names)]
-        if not self.lean and self.stands:
-            return self.stands[side]
-        names = self.runs[side]
+        if not self.lean and self.stand_poses:
+            return self.stand_poses[side]
+        names = self.run_poses[side]
         return names[self.ran * len(names) // self.stride % len(names)]
 
 
@@ -416,14 +420,14 @@ class Round:
     starts in READY's first frame after it. An act comes before the switches: a REACHED ends the task and starts the
     next one at once, so a switch in its frame is the next task's. A PASS, a CONTROL or a FAIL ends the round at its
     event and the rest of the frame does not run; IDLE is the frame's last check. The game draws from its state:
-    figures, active, wanted, ring, tally, ready, act_ms(i), marking() and end (PLAYING until it ends)."""
+    figures, active, wanted, ring, tally, ready, act_ms(i), shows_wrong() and end (PLAYING until it ends)."""
 
     def __init__(self, way, figures, dice, emit, now_ms):
         self.way, self.figures, self.dice, self.emit = way, figures, dice, emit
         self.start_ms = self.now = self.since_ms = now_ms  # since_ms: the idle's start
         self.ready, self.end, self.tally = True, PLAYING, Tally()
         self.active, self.wanted, self.ring = FIREMAN, CHILD, -1  # no ring until the first task
-        self.act_at, self.act_figure, self.mark_at = now_ms, -1, None
+        self.act_at, self.act_figure, self.wrong_at, self.wrong_seen = now_ms, -1, None, 0
         emit("p905 round %s starts" % way.name)
 
     def step(self, now_ms, ms, actions, boot, click):
@@ -465,17 +469,15 @@ class Round:
 
     def act(self, now_ms):
         tally, a = self.tally, self.active
-        wrong = tally.wrong
         said = tally.act(a == self.wanted, reaches(self.figures[a].x, self.ring))
         self.emit("p905 act %s %s" % (NAMES[a], WORDS[said]))
         self.act_at, self.act_figure = now_ms, a
-        if tally.wrong != wrong:
-            self.mark_at = now_ms
+        self.note_wrong(now_ms)
         if said != REACHED:
             if tally.failed():
                 self.finish(FAIL)
             return
-        self.emit("p905 task %d %s streak %d wrong %d" % (tally.tasks, TASK_WORDS[tally.marked], tally.streak,
+        self.emit("p905 task %d %s streak %d wrong %d" % (tally.tasks, TASK_WORDS[tally.task_wrong], tally.streak,
                                                           tally.wrong))
         self.since_ms = now_ms
         if self.way.control:
@@ -495,13 +497,16 @@ class Round:
         if to == self.active:
             self.emit("p905 switch %s %s" % (NAMES[to], WORDS[SAME]))
             return
-        tally, wrong = self.tally, self.tally.wrong
         self.active = to
-        self.emit("p905 switch %s %s" % (NAMES[to], WORDS[tally.switch(to == self.wanted)]))
-        if tally.wrong != wrong:
-            self.mark_at = now_ms
-        if tally.failed():
+        self.emit("p905 switch %s %s" % (NAMES[to], WORDS[self.tally.switch(to == self.wanted)]))
+        self.note_wrong(now_ms)
+        if self.tally.failed():
             self.finish(FAIL)
+
+    def note_wrong(self, now_ms):
+        """WRONG shows from now_ms when the count has one wrong task more than WRONG last started showing for."""
+        if self.tally.wrong != self.wrong_seen:
+            self.wrong_seen, self.wrong_at = self.tally.wrong, now_ms
 
     def finish(self, end):
         self.end, tally = end, self.tally
@@ -515,9 +520,9 @@ class Round:
         ms = time.ticks_diff(self.now, self.act_at)
         return ms if ms < ACT_MS else -1
 
-    def marking(self):
-        """Whether WRONG shows: MARK_MS from the moment a task turned wrong."""
-        return self.mark_at is not None and time.ticks_diff(self.now, self.mark_at) < MARK_MS
+    def shows_wrong(self):
+        """Whether WRONG shows: WRONG_MS from the moment a task turned wrong."""
+        return self.wrong_at is not None and time.ticks_diff(self.now, self.wrong_at) < WRONG_MS
 
 
 class Menu:
@@ -570,15 +575,16 @@ def game_class(boot, click):
     import pictures
     import rescue
 
-    feet, lane, mark = rescue.FEET, rescue.LANE, rescue.MARK
+    feet, lane, arrow_colour = rescue.FEET, rescue.LANE, rescue.MARK
     spray, run_w = rescue.SIZES["spray"], rescue.SIZES["run"]
     child_w, child_h = rescue.PEOPLE_SIZES[rescue.CHILD]
     # each picture a (name, width) pair, made once: a frame makes no name
-    fireman_runs = tuple(tuple((n, run_w) for n in rescue.POSES["run", side]) for side in "rl")
-    fireman_acts = tuple(tuple((n, spray) for n in rescue.POSES["spray", side]) for side in "rl")
-    fireman_stands = tuple((rescue.POSES["spray", side][0], spray) for side in "rl")  # the hose ready, as Rescue's
-    child_runs = tuple(tuple((n, child_w) for n in rescue.PEOPLE_POSES[rescue.CHILD, "run", side]) for side in "rl")
-    child_acts = tuple(tuple((n, child_w) for n in rescue.PEOPLE_POSES[rescue.CHILD, "wave", side]) for side in "rl")
+    fireman_run_poses = tuple(tuple((n, run_w) for n in rescue.POSES["run", side]) for side in "rl")
+    fireman_act_poses = tuple(tuple((n, spray) for n in rescue.POSES["spray", side]) for side in "rl")
+    fireman_stand_poses = tuple((rescue.POSES["spray", side][0], spray) for side in "rl")  # the hose ready, as Rescue's
+    child = rescue.CHILD
+    child_run_poses = tuple(tuple((n, child_w) for n in rescue.PEOPLE_POSES[child, "run", side]) for side in "rl")
+    child_act_poses = tuple(tuple((n, child_w) for n in rescue.PEOPLE_POSES[child, "wave", side]) for side in "rl")
     wave_pose_ms = rescue.WAVE_MS // rescue.WAVE_POSES
     big_names = ("FIREMAN", "CHILD")  # the task's wanted figure, big
     menu_rect = (24, 32, 272, 8 + 16 * (QUIT + 1))  # the menu's panel, kept like the score bar
@@ -591,7 +597,6 @@ def game_class(boot, click):
 
     class Switchtest(gfx.Game):
         name = "switchtest"
-        hint = "switch between two figures"
         ART = ("rescue", None)
         TITLE_MS = 0
         bg = rescue.Rescue.bg
@@ -607,9 +612,10 @@ def game_class(boot, click):
             self.covers = pictures.load(*self.ART)  # the street covers the screen, so no fill goes under it
             self.figures = [
                 SteeredFigure(START_X[FIREMAN], 1, rescue.SPEED_PX_S, rescue.STRIDE_PX, rescue.PICTURE_H,
-                              fireman_runs, fireman_acts, rescue.SPRAY_POSE_MS, fireman_stands),
+                              fireman_run_poses, fireman_act_poses, rescue.SPRAY_POSE_MS, fireman_stand_poses),
                 SteeredFigure(START_X[CHILD], -1, rescue.PERSON_PX_S[rescue.CHILD],
-                              rescue.PERSON_STRIDE_PX[rescue.CHILD], child_h, child_runs, child_acts, wave_pose_ms)]
+                              rescue.PERSON_STRIDE_PX[rescue.CHILD], child_h, child_run_poses, child_act_poses,
+                              wave_pose_ms)]
             self.round, self.fresh = None, True  # fresh: the menu's next frame is its reset
 
         def play(self, pressed, held):
@@ -645,17 +651,17 @@ def game_class(boot, click):
                 name, w = f.picture(r.act_ms(i))
                 drawn(cv, name, f.x - w // 2, feet - f.h + 1)
             x = r.figures[r.active].x  # the arrow over the active figure: four fills, as Rescue's draw_help
-            cv.fill(x - 3, arrow_y, 7, 1, mark)
-            cv.fill(x - 2, arrow_y + 1, 5, 1, mark)
-            cv.fill(x - 1, arrow_y + 2, 3, 1, mark)
-            cv.fill(x, arrow_y + 3, 1, 1, mark)
+            cv.fill(x - 3, arrow_y, 7, 1, arrow_colour)
+            cv.fill(x - 2, arrow_y + 1, 5, 1, arrow_colour)
+            cv.fill(x - 1, arrow_y + 2, 3, 1, arrow_colour)
+            cv.fill(x, arrow_y + 3, 1, 1, arrow_colour)
             if r.ready:
                 cv.big("READY", gfx.WIDTH // 2 - 60, ready_y, gfx.WHITE, 3)
                 return
             word = big_names[r.wanted]
             w = 16 * len(word)
             cv.big(word, max(0, min(gfx.WIDTH - w, r.ring - w // 2)), task_y, gfx.WHITE, 2)
-            if r.marking():
+            if r.shows_wrong():
                 cv.big("WRONG", gfx.WIDTH // 2 - 60, ready_y, gfx.RED, 3)
 
         def draw_menu(self, cv):
@@ -673,13 +679,13 @@ def game_class(boot, click):
                     gfx.RED if m.armed else gfx.YELLOW if m.cursor == QUIT else gfx.WHITE)
 
         def hud(self, cv):
-            """The top bar, two lines of 8 px, drawn again only when the screen, the way, the streak or the wrong
-            tasks change."""
+            """The top bar, two lines of 8 px, drawn again only when the screen, the streak or the wrong tasks change.
+            The way needs no place in the key: the menu's bar always comes between two rounds."""
             r = self.round
             if r is None:
-                cv.keep((self.name, 0, 0, 0, 0), gfx.HUD_RECT, self.draw_hud)
+                cv.keep((self.name, 0, 0, 0), gfx.HUD_RECT, self.draw_hud)
             else:
-                cv.keep((self.name, 1, self.row, r.tally.streak, r.tally.wrong), gfx.HUD_RECT, self.draw_hud)
+                cv.keep((self.name, 1, r.tally.streak, r.tally.wrong), gfx.HUD_RECT, self.draw_hud)
 
         def draw_hud(self, cv):
             """Both lines start at x 6 and end by x 314, the base bar's edges (gfx.Game.draw_hud), and the second is

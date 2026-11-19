@@ -550,13 +550,14 @@ def serial_port(name=None):
 
 
 class ProbeRun:
-    """One file run once on the box through a runner (an Mpremote, or a test's) within a time limit, its lines kept
-    (P905, from P904's probe). run(path, limit_s) opens the first free log before the command starts, then prints each
-    line as it comes and writes it to the log at once, so a Ctrl-C or a killed Mac session keeps every line that came.
-    It answers how the run ended: DONE (the file ended), LIMIT (the limit stopped mpremote; the box runs on until a
-    reset) or FAILED (mpremote failed: the file raised, or the board did not answer). The caller decides what each end
-    means. lines: the run's lines, stripped, with no blank one; logged: the log's path, or None (a dry run writes none);
-    why: how a LIMIT or a FAILED came, or None. A missing mpremote raises FileNotFoundError and leaves no log."""
+    """For a probe's Mac part: one file run once on the box through a runner (an Mpremote, or a test's) within a time
+    limit, its lines kept (P905, from P904's probe). run(path, limit_s) opens the first free log before the command
+    starts, then prints each line as it comes and writes it to the log at once, so a Ctrl-C or a killed Mac session
+    keeps every line that came. It answers how the run ended: DONE (the file ended), LIMIT (the limit stopped mpremote;
+    the box runs on until a reset) or FAILED (mpremote failed: the file raised, or the board did not answer). The caller
+    decides what each end means. lines: the run's lines, stripped, with no blank one; logged: the log's path, or None (a
+    dry run writes none); why: how a LIMIT or a FAILED came, or None. A missing mpremote raises FileNotFoundError and
+    leaves no log."""
 
     DONE, LIMIT, FAILED = 1, 2, 3
 
