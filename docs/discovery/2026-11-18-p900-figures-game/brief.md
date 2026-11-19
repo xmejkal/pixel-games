@@ -209,6 +209,9 @@ None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - move P924 #1308 to Done, with Waiting on and Waiting since cleared · taken 2026-11-19, 11:43 Prague · D32. The fields were read back: Status Done, and no waiting field
 - move P905 #1284 to Ready · taken 2026-11-19, 11:43 Prague · D34. The fields were read back: Status Ready, Slice pixel-games. `tools/check_backlog.py` then said "the limits hold"
 - P924 #1308 closed, with a comment that holds his words · taken 2026-11-19, 11:46 Prague · https://github.com/xmejkal/spark/issues/1308#issuecomment-7006863759 · D32. The comment's sentence on what his words accept was corrected after the refuter's ninth pass
+- a comment on #1279 with D32 to D34 and the question on the pass line of the switch's test · taken 2026-11-19, 11:57 Prague · https://github.com/xmejkal/spark/issues/1279#issuecomment-7007110325 · D32 to D34: the card holds his words
+- the body of P905 #1284 now holds his order of D34, the rating of D33, the proposed pass line and the limit on a hold of PICK · taken 2026-11-19, 11:57 Prague · D34: the card holds his words. The refuter's ninth pass named it as a missing action
+- Waiting on the PO stays set on #1279, with Waiting since 2026-11-19 · read 2026-11-19, 11:43 Prague · his standing rule "It moves as the work moves", as in D9: Q1's importance question is answered (D33), and the pass line of the switch's test is asked of him in that comment
 <!-- EXTEND:brief-sections -->
 
 ## Hand-off
