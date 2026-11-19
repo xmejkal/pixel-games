@@ -73,11 +73,12 @@ The tally. A pick is a new lean of the stick's y: it starts at 40 of 100 (LEAN) 
 nothing, and `switch` when it changes the active figure, else `same`. A round with a wrong pick is wrong, once. A
 clean round has none. The streak is the clean rounds in a row. READY: the stick and FIRE are read and wait. At READY's
 end each FIRE of READY is listed as `act none <button> 0`, and then each lean that started in READY is a pick, in the
-order they came, each with 0 ms. READY keeps 8 of each (READY_WAITS): a ninth in one READY is dropped. A lean from
-before READY is none: the round's first frame takes a stick at 20 or more from the middle (LEAN_REST) as the lean that
-it was, so a lean up held from the last climb that sagged to 35 is no new pick, and only a stick that came under 20
-starts one. In one frame FIRE comes first and the picks after it. A FIRE that holds nothing is listed (`act none`) and
-not scored. What the tally cannot see: a lean under 40, and a tap of the stick's push-button shorter than a frame.
+order they came, each with 0 ms. READY keeps 8 of each (READY_WAITS): a ninth in one READY is dropped. One detector
+(LeanEdge) follows the stick through the whole sitting, the intro and the result screens too, and nothing resets it,
+so a lean from before READY is none. A lean up held from the last climb that sags to 35 or 21 is no new pick, and only
+a stick that came under 20 and leans again starts one. A stick that rests at 25 and is then pushed to 70 in READY is a
+pick. In one frame FIRE comes first and the picks after it. A FIRE that holds nothing is listed (`act none`) and not
+scored. What the tally cannot see: a lean under 40, and a tap of the stick's push-button shorter than a frame.
 
 The lines, from the box. Each line of the game starts with `p906`. The last number of a pick, act and climb line is
 the ms since READY's end, on the frame's clock:
@@ -194,12 +195,6 @@ class LeanEdge:
 
     def __init__(self):
         self.on = 0  # the lean that answered and has not rested since: -1, 0 or 1
-
-    def reset(self, v):
-        """Starts from the axis as it is: an axis at LEAN_REST or more from the middle is the lean that it was, in its
-        direction, so only an axis that came under LEAN_REST can start a new lean. A lean that sagged from the last
-        round's climb to 35 is no new lean when it leans to 45 again."""
-        self.on = 1 if v >= LEAN_REST else -1 if v <= -LEAN_REST else 0
 
     def read(self, v):
         side = lean(v)
@@ -371,33 +366,36 @@ class Round:
     """One round, with no drawing. number: the round's number in the sitting. ended_ms: the last round's end on the
     frame's clock, None in round 1. figures: the two Walkers, the fireman first, at their start places. emit: where each
     `p906` line goes (print on the box, a list's append in a test). tally: the sitting's Tally (None: a new one). climb:
-    the child's Climb (None: a climb that never ends, as for a round of the thin version's tests). step(now_ms, ms,
+    the child's Climb (None: a climb that never ends, as for a round of the thin version's tests). edge: the
+    sitting's one LeanEdge, which the game reads in the frames that are no round's (None: a new one). step(now_ms, ms,
     actions, boot) runs one frame: ms is the frame's, cut at 60 ms (gfx.Game.step), for the run and the climb, now_ms
     the frame's clock, for the gaps and the ms of each line, and boot the wrapped BOOT, which tells BOOT's FIRE from the
     click's.
 
-    Its first frame starts the round: its line, and READY from that frame's clock, where the stick's lean is no pick
-    (LeanEdge.reset). In READY the stick and FIRE are read and wait. At READY's end each FIRE of READY is listed as
-    `act none` and then each lean that started in READY is a pick, in the order they came, each with 0 ms. READY keeps
-    up to READY_WAITS of each: a ninth in one READY is dropped. The frame where READY ends is the round's clock: each
-    later frame is a gap, and each line's last number is the ms since it. Then each frame runs in this order. FIRE
-    holds the ladder when the fireman is active within HOLD_PX of his place, and ends task 1. Any other FIRE holds
-    nothing (`act none`) and is not scored. Each new lean of the stick's y is a pick (UP the child, the other way the
-    fireman), scored by the tally. The active figure runs with the stick's x, and the other stands. Last, the climb:
-    the child climbs while it is active at the foot of the held ladder, or on it, and the stick leans up (LeanEdge's
-    lean, from LEAN until it rests under LEAN_REST), with a line at each start and stop. The round ends at the climb's
-    first pose climb.end px up or more, with task 2's line, its end line, and `p906 streak 5 met` once in a sitting. No
-    round ends by itself, and an ended one reads nothing. The child is active at the start. The game draws from its
-    state: figures, active, task (1 or 2), ready, ended and took, the round's ms."""
+    Its first frame starts the round: its line, and READY from that frame's clock. The detector is not reset: its
+    state is the frame before's, so a lean from before READY is no pick. In READY the stick and FIRE are read and
+    wait. At READY's end each FIRE of READY is listed as `act none` and then each lean that started in READY is a
+    pick, in the order they came, each with 0 ms. READY keeps up to READY_WAITS of each: a ninth in one READY is
+    dropped. The frame where READY ends is the round's clock: each later frame is a gap, and each line's last number
+    is the ms since it. Then each frame runs in this order. FIRE holds the ladder when the fireman is active within
+    HOLD_PX of his place, and ends task 1. Any other FIRE holds nothing (`act none`) and is not scored. Each new lean
+    of the stick's y is a pick (UP the child, the other way the fireman), scored by the tally. The active figure runs
+    with the stick's x, and the other stands. Last, the climb: the child climbs while it is active at the foot of the
+    held ladder, or on it, and the stick leans up (LeanEdge's lean, from LEAN until it rests under LEAN_REST), with a
+    line at each start and stop. The round ends at the climb's first pose climb.end px up or more, with task 2's line,
+    its end line, and `p906 streak 5 met` once in a sitting. No round ends by itself, and an ended one reads nothing.
+    The child is active at the start. The game draws from its state: figures, active, task (1 or 2), ready, ended and
+    took, the round's ms."""
 
-    def __init__(self, number, ended_ms, figures, emit, tally=None, climb=None):
+    def __init__(self, number, ended_ms, figures, emit, tally=None, climb=None, edge=None):
         self.number, self.ended_ms, self.figures, self.emit = number, ended_ms, figures, emit
+        self.edge = edge or LeanEdge()  # the sitting's one detector of the stick's y: never reset
         self.tally = tally or Tally()
         self.climb = climb or Climb(1000, ((0, 0),), (0, 0), 1)  # stands still at 0 px: it never ends
         self.tally.start()
         self.climb.reset()
         self.start_ms, self.ready, self.active, self.task, self.ended = None, True, CHILD, 1, False
-        self.edge, self.climbing, self.took = LeanEdge(), False, 0
+        self.climbing, self.took = False, 0
         # READY's leans and FIREs, in the order they came, each list made once: READY_WAITS places
         self.leans, self.fires, self.n_leans, self.n_fires = [0] * READY_WAITS, [False] * READY_WAITS, 0, 0
         self.play_ms = self.last_ms = self.gaps = self.worst = self.slow = 0  # the round's clock from READY's end
@@ -406,7 +404,7 @@ class Round:
         if self.ended:
             return
         if self.start_ms is None:
-            self.start(now_ms, actions)
+            self.start(now_ms)
         side, fire = self.edge.read(actions.y), actions.fire.pressed
         if self.ready:
             if fire and self.n_fires < READY_WAITS:
@@ -437,10 +435,9 @@ class Round:
             self.figures[i].walk(ms, walk if i == self.active else 0)
         self.climb_step(ms, at, now_ms)
 
-    def start(self, now_ms, actions):
+    def start(self, now_ms):
         """The round's first frame of play."""
         self.start_ms = now_ms
-        self.edge.reset(actions.y)
         self.emit("p906 round %d starts after %d" % (
             self.number, 0 if self.ended_ms is None else time.ticks_diff(now_ms, self.ended_ms)))
 
@@ -604,7 +601,7 @@ def game_class(boot, numbers, pool=None):
             self.figures = [walker(source, i) for i in range(len(FIGURES))]
             pose_ms, travel, advance = numbers["climb"]
             self.climb = Climb(pose_ms // CLIMB_PACE, travel, advance, numbers["end"])
-            self.tally, self.exit = Tally(), Exit(print)
+            self.tally, self.exit, self.edge = Tally(), Exit(print), LeanEdge()  # the sitting's, made once
             self.number, self.ended_ms, self.round, self.quit_made = 0, None, None, False
             # bound once: a frame binds no method
             self.bar_draw, self.intro_draw, self.quit_draw = self.draw_bar, self.draw_intro, self.draw_quit
@@ -618,13 +615,19 @@ def game_class(boot, numbers, pool=None):
             self.number += 1
             for i in range(len(self.figures)):
                 self.figures[i].put(self.starts[i], -1)
-            self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb)
+            self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb, self.edge)
 
         def step(self, now_ms, pressed, held):
-            """Exit first, on the frame's clock and in every state, then the base game's states. The stick's record
-            is read only here: App.play sets it after setup() ran."""
-            if self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):
-                raise Quit
+            """Exit first, on the frame's clock and in every state, then the base game's states. In a frame that is
+            no round's (the intro, the result screen and the frame that leaves either) the stick's y goes through the
+            sitting's one detector and its answer is dropped: the round reads it in its own frames, so a lean from
+            before READY is none. The stick's record is read only here: App.play sets it after setup() ran."""
+            stick = self.stick
+            if stick is not None:
+                if self.exit.step(now_ms, stick.pick.pressed):
+                    raise Quit
+                if self.state != self.PLAY:
+                    self.edge.read(stick.y)
             intro = self.state == self.TITLE
             self.base_step(now_ms, pressed, held)
             if intro and self.state == self.PLAY:

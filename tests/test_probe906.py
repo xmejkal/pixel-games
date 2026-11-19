@@ -41,7 +41,7 @@ from engine import actions as engine_actions  # noqa: E402
 from engine.subpixel import SubPixel  # noqa: E402
 from test_actions import FakeButton, FakeEncoder, FakeStick  # noqa: E402
 from test_mission import set_painted  # noqa: E402  the set painted from the stand-in capture
-from test_probe905 import Out, StreamBoard, frame, seen  # noqa: E402  P905's fakes
+from test_probe905 import Out, StreamBoard, WordsCanvas, frame, seen  # noqa: E402  P905's fakes
 
 T0 = 7919  # ms: the first frame's clock in a test, no round number
 NONE = seen()
@@ -86,10 +86,8 @@ class SeenTest(unittest.TestCase):
 class LeanEdgeTest(unittest.TestCase):
     """LeanEdge: one answer at each new lean of an axis (P905's)."""
 
-    def reads(self, values, start=None):
+    def reads(self, values):
         edge = probe.LeanEdge()
-        if start is not None:
-            edge.reset(start)
         return [edge.read(v) for v in values]
 
     def test_the_lean_and_the_rest_are_the_engines_lean_and_20_and_up_is_minus_1(self):
@@ -110,16 +108,11 @@ class LeanEdgeTest(unittest.TestCase):
     def test_up_straight_to_down_answers_twice(self):
         self.assertEqual([-1, 1, -1], self.reads([-61, 52, -77]))
 
-    def test_reset_on_a_leaning_axis_answers_nothing_until_a_new_lean(self):
-        self.assertEqual([0, 0, 0, 1], self.reads([66, 91, 7, 45], start=58))
-        self.assertEqual([0, 1], self.reads([-71, 45], start=-58))
+    def test_a_lean_that_sags_to_35_or_21_is_no_new_lean_and_one_that_came_under_20_is(self):
+        self.assertEqual([-1, 0, 0, 0, 0, -1], self.reads([-70, -35, -21, -45, -19, -40]))
 
-    def test_reset_takes_a_stick_at_20_or_more_as_the_lean_it_was_and_at_19_as_none(self):
-        self.assertEqual([0], self.reads([45], start=35))  # it sagged from a lean: no new lean
-        self.assertEqual([0], self.reads([-45], start=-20))
-        self.assertEqual([1], self.reads([40], start=19))  # it came under 20: a new lean
-        self.assertEqual([-1], self.reads([-40], start=-19))
-        self.assertEqual([-1], self.reads([-45], start=35))  # the other way is a new lean at once
+    def test_it_has_no_reset_one_detector_follows_the_stick_through_the_sitting(self):
+        self.assertFalse(hasattr(probe.LeanEdge, "reset"))
 
 
 class PackSourceTest(unittest.TestCase):
@@ -245,10 +238,10 @@ class Play:
     """One round on scripted frames: its lines in a list, a clock that moves 41 ms a frame unless a frame names its
     time, and the two stand-in walkers."""
 
-    def __init__(self, number=1, ended=None):
+    def __init__(self, number=1, ended=None, edge=None):
         self.lines, self.now = [], T0
         self.figures = walkers()
-        self.round = probe.Round(number, ended, self.figures, self.lines.append)
+        self.round = probe.Round(number, ended, self.figures, self.lines.append, None, None, edge)
 
     def frame(self, at=None, ms=41, boot=NONE, click=NONE, **inputs):
         self.now = T0 + at if at is not None else self.now + ms
@@ -290,8 +283,10 @@ class RoundTest(unittest.TestCase):
         p.frame(at=600, y=72)
         self.assertEqual(probe.FIREMAN, p.round.active)
 
-    def test_a_lean_from_before_ready_is_no_pick(self):
-        p = Play().frame(at=0, y=70).frame(at=599, y=75).frame(at=600, y=77).frame(at=641, y=81)
+    def test_a_lean_that_the_sittings_detector_saw_before_the_round_is_no_pick(self):
+        edge = probe.LeanEdge()
+        edge.read(70)  # the frame before the round's first: the result screen or the intro
+        p = Play(edge=edge).frame(at=0, y=70).frame(at=599, y=75).frame(at=600, y=77).frame(at=641, y=81)
         self.assertEqual(probe.CHILD, p.round.active)
 
     def test_up_picks_the_child_and_down_the_fireman_from_each_figure(self):
@@ -978,11 +973,11 @@ class Run(Play):
     """A whole round on scripted frames, with the sitting's tally and a climb: Play's walkers, the fireman's place 127
     and the child's foot 131."""
 
-    def __init__(self, number=1, ended=None, tally=None, climb=None):
+    def __init__(self, number=1, ended=None, tally=None, climb=None, edge=None):
         self.lines, self.now = [], T0
         self.figures = walkers()
         self.tally, self.climb = tally or probe.Tally(), climb or stand_climb()
-        self.round = probe.Round(number, ended, self.figures, self.lines.append, self.tally, self.climb)
+        self.round = probe.Round(number, ended, self.figures, self.lines.append, self.tally, self.climb, edge)
 
     def holds(self):
         """The fireman picked, at his place, and FIRE: task 1 ends."""
@@ -1025,8 +1020,10 @@ class WholeRoundTest(unittest.TestCase):
         p = Run().frame(at=0).frame(at=599, y=70).frame(at=600, y=72)
         self.assertEqual(["p906 round 1 starts after 0", "p906 pick fireman right switch ground 0"], p.lines)
 
-    def test_ready_a_lean_from_before_ready_is_no_pick(self):
-        p = Run().frame(at=0, y=-70).frame(at=599, y=-75).frame(at=600, y=-77).frame(at=641, y=-81)
+    def test_ready_a_lean_that_the_sittings_detector_saw_before_the_round_is_no_pick(self):
+        edge = probe.LeanEdge()
+        edge.read(-70)  # the frame before the round's first
+        p = Run(edge=edge).frame(at=0, y=-70).frame(at=599, y=-75).frame(at=600, y=-77).frame(at=641, y=-81)
         self.assertEqual(["p906 round 1 starts after 0"], p.lines)
 
     def test_fire_holds_within_24_px_and_ends_task_1_and_at_25_px_it_holds_nothing_and_is_not_scored(self):
@@ -1653,6 +1650,114 @@ class ReviewScreenTest(unittest.TestCase):
             with self.subTest(method=name):
                 self.assertEqual((), code.co_freevars)
                 self.assertLessEqual(code.co_argcount, 5)
+
+
+def picks_after(box, start):
+    """The pick lines after the first line that starts with start."""
+    lines = box.lines()
+    first = [k for k, line in enumerate(lines) if line.startswith(start)][0]
+    return [line for line in lines[first:] if " pick " in line]
+
+
+class SittingEdgeTest(unittest.TestCase):
+    """One lean detector for the sitting (E1): the game reads the stick's y through it in the intro and on the result
+    screen, the round in its own frames, and nothing resets it."""
+
+    def test_a_lean_up_held_from_the_climb_that_sags_to_35_or_21_is_no_pick_until_it_came_under_20(self):
+        for sag in (-35, -21):
+            with self.subTest(sag=sag):
+                box = finish(Box(self).play())
+                box.frame(y=-60).frame(ms=900, fire=True, y=sag).frame(y=sag).frame(ms=600, y=-45).frame(y=-70)
+                self.assertEqual([], picks_after(box, "p906 round 2 starts"))
+                box.frame(y=-19).frame(y=-40)
+                self.assertEqual(["p906 pick child wrong same ground"],
+                                 [line.rsplit(" ", 1)[0] for line in picks_after(box, "p906 round 2 starts")])
+
+    def test_a_stick_at_25_that_never_leaned_and_is_pushed_to_70_in_ready_is_a_pick_at_its_end(self):
+        box = finish(Box(self).play())
+        box.frame(y=0).frame(y=25).frame(ms=900, fire=True, y=25).frame(y=25).frame(ms=300, y=70).frame(ms=300, y=72)
+        self.assertEqual(["p906 pick fireman right switch ground 0"], picks_after(box, "p906 round 2 starts"))
+
+    def test_a_lean_that_starts_on_the_result_screen_or_in_its_fire_frame_and_lasts_into_ready_is_no_pick(self):
+        for case, frames in (("result", ((41, False, 70), (900, True, 70))),
+                             ("fire", ((41, False, 0), (900, True, 70)))):
+            with self.subTest(case=case):
+                box = finish(Box(self).play())
+                for ms, fire, y in frames:
+                    box.frame(ms=ms, fire=fire, y=y)
+                box.frame(y=70).frame(ms=600, y=72).frame(y=75)
+                self.assertEqual([], picks_after(box, "p906 round 2 starts"))
+
+    def test_a_lean_that_starts_in_the_intro_and_lasts_into_round_1s_ready_is_no_pick(self):
+        box = Box(self)
+        box.frame(y=70).frame(fire=True, y=70).frame(y=70).frame(ms=600, y=72).frame(y=75)
+        self.assertEqual([], picks_after(box, "p906 round 1 starts"))
+
+    def test_a_lean_that_starts_in_ready_is_a_pick_at_its_end(self):
+        box = Box(self)
+        box.frame(fire=True).frame().frame(ms=300, y=70).frame(ms=300, y=72)
+        self.assertEqual(["p906 pick fireman right switch ground 0"], picks_after(box, "p906 round 1 starts"))
+
+
+class EscapeTest(unittest.TestCase):
+    """Six faults that the refuter planted and no test saw (E2)."""
+
+    def test_nine_fires_in_one_ready_give_eight_act_none_lines(self):
+        p = Run().frame(at=0)
+        for k in range(9):
+            p.frame(at=10 + 20 * k, fire=True, boot=ON)
+        p.frame(at=600)
+        self.assertEqual(["p906 act none boot 0"] * 8, [line for line in p.lines if " act " in line])
+
+    def test_a_lean_and_a_fire_on_the_frame_where_ready_ends_are_scored_once(self):
+        p = Run().frame(at=0).frame(at=600, y=70)
+        self.assertEqual(["p906 pick fireman right switch ground 0"], [line for line in p.lines if " pick " in line])
+        p = Run().frame(at=0).frame(at=600, fire=True, boot=ON)
+        self.assertEqual(["p906 act none boot 0"], [line for line in p.lines if " act " in line])
+
+    def test_5_in_a_row_done_still_shows_after_a_wrong_round(self):
+        box = Box(self).play()
+        for _ in range(5):
+            again(finish(box))
+        box.frame(y=-70).frame()  # task 1 wants the fireman: a wrong pick
+        box.out.cv.seen.clear()
+        finish(box)
+        box.frame()
+        self.assertIn("p906 round 6 ends wrong", " ".join(box.lines()))
+        self.assertIn("5 IN A ROW: DONE", box.out.cv.seen)
+        self.assertIn("clean 0/5", box.out.cv.seen)
+
+    def test_the_intro_makes_the_way_outs_strip_at_alpha_0_so_it_does_not_show(self):
+        calls, real = [], gfx.Canvas.keep
+
+        def keep(cv, key, rect, draw, alpha=255):
+            calls.append((rect, alpha))
+            return real(cv, key, rect, draw, alpha)
+
+        with mock.patch.object(gfx.Canvas, "keep", keep):
+            Box(self).frame().frame()
+        self.assertEqual([0], [alpha for rect, alpha in calls if rect == probe.QUIT_RECT])
+
+    def test_every_draw_of_the_result_screen_lies_in_its_rect(self):
+        box = finish(Box(self).play())
+        cv = WordsCanvas()
+        cv.start()
+        box.app.game.draw_result(cv)
+        x, y, w, h = probe.RESULT_RECT
+        self.assertTrue(cv.ops)
+        self.assertEqual([], [op[:4] for op in cv.ops if not (x <= op[0] and y <= op[1] and op[2] <= x + w
+                                                                and op[3] <= y + h)])
+
+    def test_a_ctrl_c_then_a_failed_removal_names_the_ctrl_c(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        log = os.path.join(folder.name, "run-p906-ladder.log")
+        board = StreamBoard(said="p906 rules lean 40\n", run_error=KeyboardInterrupt(), broken={"ls :"})
+        with mock.patch.object(probe, "LOG", log), contextlib.redirect_stdout(io.StringIO()), \
+                contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as refused:
+            probe.mac([], runner=board, sleep=lambda s: None, art=StandInArt())
+        self.assertIn("; before it: KeyboardInterrupt(); ", str(refused.exception.code))
+        self.assertIn("may still be on the box", str(refused.exception.code))
 
 
 class MacValuesTest(unittest.TestCase):

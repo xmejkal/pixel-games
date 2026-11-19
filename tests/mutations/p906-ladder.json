@@ -73,12 +73,6 @@
  },
  {
   "file": "probe906_ladder.py",
-  "name": "a lean from before READY is a pick",
-  "find": "        self.edge.reset(actions.y)",
-  "replace": "        self.edge.reset(0)"
- },
- {
-  "file": "probe906_ladder.py",
   "name": "the pick comes before FIRE",
   "find": "        if fire:\n            self.act(at, boot)\n        if side:\n            self.pick(side, at)",
   "replace": "        if side:\n            self.pick(side, at)\n        if fire:\n            self.act(at, boot)"
@@ -278,8 +272,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "PICK twice quits only in play",
-  "find": "if self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):",
-  "replace": "if self.state == self.PLAY and self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):"
+  "find": "                if self.exit.step(now_ms, stick.pick.pressed):",
+  "replace": "                if self.state == self.PLAY and self.exit.step(now_ms, stick.pick.pressed):"
  },
  {
   "file": "probe906_ladder.py",
@@ -364,18 +358,6 @@
   "name": "READY's picks come in reverse order",
   "find": "            for k in range(self.n_leans):\n                self.pick(self.leans[k], 0)",
   "replace": "            for k in range(self.n_leans - 1, -1, -1):\n                self.pick(self.leans[k], 0)"
- },
- {
-  "file": "probe906_ladder.py",
-  "name": "a reset takes only a lean of 40",
-  "find": "self.on = 1 if v >= LEAN_REST else -1 if v <= -LEAN_REST else 0",
-  "replace": "self.on = lean(v)"
- },
- {
-  "file": "probe906_ladder.py",
-  "name": "a reset takes 19 as a lean",
-  "find": "self.on = 1 if v >= LEAN_REST else -1 if v <= -LEAN_REST else 0",
-  "replace": "self.on = 1 if v >= LEAN_REST - 1 else -1 if v <= -LEAN_REST + 1 else 0"
  },
  {
   "file": "probe906_ladder.py",
@@ -508,5 +490,71 @@
   "name": "paint closes over the numbers",
   "find": "                    x, y = self.marks[r.task - 1]",
   "replace": "                    x, y = numbers[\"mark\"][r.task - 1]"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the detector is not read on the result screen",
+  "find": "                if self.state != self.PLAY:\n                    self.edge.read(stick.y)",
+  "replace": "                if self.state == self.TITLE:\n                    self.edge.read(stick.y)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the detector is not read in the intro",
+  "find": "                if self.state != self.PLAY:\n                    self.edge.read(stick.y)",
+  "replace": "                if self.state != self.PLAY and self.state != self.TITLE:\n                    self.edge.read(stick.y)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the game reads the detector in a round's frames too",
+  "find": "                if self.state != self.PLAY:\n                    self.edge.read(stick.y)",
+  "replace": "                if True:\n                    self.edge.read(stick.y)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "each round has a detector of its own",
+  "find": "self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb, self.edge)",
+  "replace": "self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a round rests the detector at its start",
+  "find": "        self.start_ms = now_ms\n",
+  "replace": "        self.start_ms, self.edge.on = now_ms, 0\n"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY keeps 7 FIREs",
+  "find": "            if fire and self.n_fires < READY_WAITS:",
+  "replace": "            if fire and self.n_fires < READY_WAITS - 1:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY's end scores its frame's lean and FIRE again",
+  "find": "self.ready, side, fire, self.play_ms, self.last_ms = False, 0, False, now_ms, now_ms",
+  "replace": "self.ready, self.play_ms, self.last_ms = False, now_ms, now_ms"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "5 IN A ROW: DONE only while the streak is 5",
+  "find": "\"%d IN A ROW: DONE\" % STREAK if tally.met else \"\"",
+  "replace": "\"%d IN A ROW: DONE\" % STREAK if tally.streak >= STREAK else \"\""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the intro's way-out strip at alpha 255",
+  "find": "                cv.keep(QUIT_WORDS, QUIT_RECT, self.quit_draw, 0)",
+  "replace": "                cv.keep(QUIT_WORDS, QUIT_RECT, self.quit_draw)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the result screen drawn in the base game's box",
+  "find": "            x, y, w, h = RESULT_RECT",
+  "replace": "            x, y, w, h = gfx.OVER_RECT"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a Ctrl-C is not kept as the first error",
+  "find": "    except BaseException as e:\n        first = said(box, e)\n        raise",
+  "replace": "    except Exception as e:\n        first = said(box, e)\n        raise"
  }
 ]
