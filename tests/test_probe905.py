@@ -152,13 +152,13 @@ class WaysTest(unittest.TestCase):
         self.assertEqual([False, True, True, True, True, False, True], [w.wraps for w in probe.WAYS])
         self.assertEqual([False] * 6 + [True], [w.control for w in probe.WAYS])
 
-    def test_each_hint_is_one_line_of_the_bar_and_the_picks_says_never_hold(self):
+    def test_each_hint_fits_the_bar_and_names_its_act_and_the_picks_says_never_hold(self):
         for w in probe.WAYS:
             with self.subTest(way=w.name):
-                self.assertLessEqual(len(w.hint), 40)
-                self.assertTrue(w.hint)
+                self.assertLessEqual(len(w.hint), 38)  # x 6 to 314: the base bar's edges
+                self.assertTrue(w.hint.endswith(" at ring"), w.hint)  # each names its act
         self.assertIn("never hold", way("pick").hint)
-        self.assertIn("one way FIREMAN, other way CHILD", way("knob").hint)
+        self.assertIn("FIREMAN or CHILD", way("knob").hint)  # the encoder's sign: no direction
 
     def test_the_stick_steps_up_minus_1_and_down_plus_1_once_a_lean_and_fire_acts(self):
         w = way("stick")
@@ -872,8 +872,47 @@ def card(box):
     return ops[[i for i, op in enumerate(ops) if op[:5] == (x, y, x + w, y + h, 0)][-1]:]
 
 
+def texts(box):
+    """The frame's text and big words, kept ones too, each as (words, x, y, colour)."""
+    return [(op[5], op[7], op[8], op[6]) for op in box.out.cv.ops if op[4] == 3]
+
+
+def text(box, start):
+    """The frame's one text that starts with start, as (words, x, y, colour)."""
+    found = [t for t in texts(box) if t[0].startswith(start)]
+    assert len(found) == 1, (start, texts(box))
+    return found[0]
+
+
 class GameTest(unittest.TestCase):
     """The probe's game through app.App, with no pack: it never skips."""
+
+    def test_the_bar_keeps_the_base_bars_6_px_at_both_edges_and_both_its_lines_are_white(self):
+        box = Box(self)
+        self.assertEqual([("P905 SWITCH TEST: pick a way", 6, 0, gfx.WHITE), ("stick up/down: row  FIRE: start", 6, 8,
+                                                                          gfx.WHITE)],
+                         [t for t in texts(box) if t[2] < 16])
+        box.start(0)
+        box.frame(fire=True)  # wrong 1
+        way = probe.WAYS[0]
+        self.assertEqual((way.label, 6, 0, gfx.WHITE), text(box, way.label))
+        self.assertEqual((way.hint, 6, 8, gfx.WHITE), text(box, way.hint))
+        wrong = text(box, "wrong ")
+        self.assertEqual(314, wrong[1] + 8 * len(wrong[0]))
+
+    def test_the_menus_cursor_row_is_yellow_every_other_white_and_quit_red_once_armed(self):
+        box = Box(self)
+        box.start(5)
+        for k in range(10):
+            box.frame(turn=1 if k % 2 == 0 else -1).to_ring().frame(fire=True)
+        box.frame(ms=900, fire=True).frame().frame(y=-70).frame()  # the menu, its reset, the cursor up to PICK
+        rows = [t for t in texts(box) if t[0].startswith(("> ", "  "))]
+        self.assertEqual([gfx.WHITE] * 4 + [gfx.YELLOW] + [gfx.WHITE] * 3, [t[3] for t in rows])
+        self.assertIn("PASS", rows[5][0])  # the knob's mark, on a white row
+        for _ in range(3):
+            box.frame(y=70).frame()
+        box.frame(fire=True)
+        self.assertEqual(("> QUIT: FIRE again", gfx.RED), (text(box, "> QUIT")[0], text(box, "> QUIT")[3]))
 
     def test_the_game_is_switchtest_on_rescues_set_and_starts_in_play(self):
         box = Box(self)

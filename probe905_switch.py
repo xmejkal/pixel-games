@@ -161,7 +161,7 @@ class Way:
     actions, boot, click) reads one frame and leaves its answer in steps (along the list of the figures: + toward the
     child, - toward the fireman) and acts (whether FIRE acts), so a frame makes no tuple. actions is the frame's
     engine.actions.Actions, boot and click the two Seen FIRE buttons. name: the log's word; label: the screen's; hint:
-    one line of the top bar, 40 characters at most; wraps: whether a step past the list's end comes round (false for
+    one line of the top bar, 38 characters at most, that names the act as "X at ring"; wraps: whether a step past the list's end comes round (false for
     the stick and the knob, whose list stops at its ends); control: true for the way that is no test."""
 
     name = label = hint = ""
@@ -180,7 +180,7 @@ class Way:
 class StickWay(Way):
     """A new lean of the stick's y picks by direction: up the fireman, down the child."""
 
-    name, label, hint, wraps = "stick", "STICK UP/DOWN", "up: FIREMAN, down: CHILD  act: FIRE", False
+    name, label, hint, wraps = "stick", "STICK UP/DOWN", "up: FIREMAN, down: CHILD  FIRE at ring", False
 
     def __init__(self):
         Way.__init__(self)
@@ -197,7 +197,7 @@ class StickWay(Way):
 class ClickWay(Way):
     """A push of the click (the stick's push-button) takes the other figure, and a push of BOOT acts."""
 
-    name, label, hint = "click", "STICK CLICK", "click: switch  act: BOOT"
+    name, label, hint = "click", "STICK CLICK", "click: switch  BOOT at ring"
 
     def read(self, now_ms, actions, boot, click):
         self.steps, self.acts = 1 if click.pushed else 0, boot.pushed
@@ -209,7 +209,7 @@ class DoubleWay(Way):
     double tap the count starts again, so a third push is a first one. A push past DOUBLE_MS is a new first one, and
     the push before it acts in that frame."""
 
-    name, label, hint = "double", "DOUBLE TAP", "FIRE twice: switch  FIRE once: act"
+    name, label, hint = "double", "DOUBLE TAP", "FIRE twice: switch  FIRE once at ring"
 
     def __init__(self):
         Way.__init__(self)
@@ -239,7 +239,7 @@ class HoldWay(Way):
     the box saw no level acts at once. The length is the frame's clock, so a release that a frame sees at HOLD_MS or
     later is a hold."""
 
-    name, label, hint = "hold", "HOLD FIRE", "hold FIRE: switch  tap FIRE: act"
+    name, label, hint = "hold", "HOLD FIRE", "hold FIRE: switch  tap FIRE at ring"
 
     def __init__(self):
         Way.__init__(self)
@@ -271,7 +271,7 @@ class PickWay(Way):
     """A push of PICK (the board's D14 button) takes the other figure, and FIRE acts. Never a hold: a hold of about 5 s
     powered an older board off (bench.md)."""
 
-    name, label, hint = "pick", "PICK (D14)", "press PICK, never hold  act: FIRE"
+    name, label, hint = "pick", "PICK (D14)", "press PICK, never hold  FIRE at ring"
 
     def read(self, now_ms, actions, boot, click):
         self.steps, self.acts = 1 if actions.pick.pressed else 0, actions.fire.pressed
@@ -281,7 +281,7 @@ class KnobWay(Way):
     """A turn of the knob picks by direction: its positive detents step toward the child. Which way that is on the box
     follows the encoder's sign, so the hint names no direction."""
 
-    name, label, hint, wraps = "knob", "KNOB", "knob: one way FIREMAN, other way CHILD", False
+    name, label, hint, wraps = "knob", "KNOB", "turn: FIREMAN or CHILD  FIRE at ring", False
 
     def read(self, now_ms, actions, boot, click):
         self.steps, self.acts = actions.turn, actions.fire.pressed
@@ -290,7 +290,7 @@ class KnobWay(Way):
 class AutoWay(Way):
     """The control: the game makes the wanted figure active at each task's start (Round), so no input switches."""
 
-    name, label, hint, control = "auto", "AUTO (control)", "the game switches for you  act: FIRE", True
+    name, label, hint, control = "auto", "AUTO (control)", "game switches for you  FIRE at ring", True
 
 
 WAYS = (StickWay, ClickWay, DoubleWay, HoldWay, PickWay, KnobWay, AutoWay)  # the menu's order
@@ -583,6 +583,7 @@ def game_class(boot, click):
     big_names = ("FIREMAN", "CHILD")  # the task's wanted figure, big
     menu_rect = (24, 32, 272, 8 + 16 * (QUIT + 1))  # the menu's panel, kept like the score bar
     ready_y, task_y, arrow_y = 90, lane - 40, lane - 8  # READY and WRONG, the task's name, the arrow's tip row - 3
+    edge = 6  # px: the bar's margin at both ends, as the base bar's (gfx.Game.draw_hud)
 
     def drawn(cv, name, x, y):
         if not pictures.draw(cv, name, x, y):
@@ -662,14 +663,14 @@ def game_class(boot, click):
             cv.fill(x, y, w, h, gfx.BLACK)
             cv.box(x, y, w, h, gfx.GREY)
             m = self.menu
-            for i in range(QUIT):
+            for i in range(QUIT):  # the cursor's row yellow, every other white; the mark is the row's word
                 way = WAYS[i]
                 cv.text("%s %-14s best %2d %s" % ("> " if i == m.cursor else "  ", way.label, m.best[i],
                                                   ("control" if way.control else "PASS") if m.marked[i] else ""),
-                        x + 4, y + 6 + 16 * i, gfx.YELLOW if m.marked[i] else gfx.WHITE)
+                        x + 4, y + 6 + 16 * i, gfx.YELLOW if i == m.cursor else gfx.WHITE)
             quit_row = "QUIT: FIRE again" if m.armed else "QUIT"
             cv.text(("> " if m.cursor == QUIT else "  ") + quit_row, x + 4, y + 6 + 16 * QUIT,
-                    gfx.RED if m.armed else gfx.GREY)
+                    gfx.RED if m.armed else gfx.YELLOW if m.cursor == QUIT else gfx.WHITE)
 
         def hud(self, cv):
             """The top bar, two lines of 8 px, drawn again only when the screen, the way, the streak or the wrong
@@ -681,17 +682,19 @@ def game_class(boot, click):
                 cv.keep((self.name, 1, self.row, r.tally.streak, r.tally.wrong), gfx.HUD_RECT, self.draw_hud)
 
         def draw_hud(self, cv):
+            """Both lines start at x 6 and end by x 314, the base bar's edges (gfx.Game.draw_hud), and the second is
+            white: grey on DARK reads under 4 to 1."""
             cv.fill(0, 0, gfx.WIDTH, gfx.HUD_RECT[3], gfx.DARK)
             r = self.round
             if r is None:
-                cv.text("P905 SWITCH TEST: pick a way", 0, 0, gfx.WHITE)
-                cv.text("stick up/down: row  FIRE: start", 0, 8, gfx.GREY)
+                cv.text("P905 SWITCH TEST: pick a way", edge, 0, gfx.WHITE)
+                cv.text("stick up/down: row  FIRE: start", edge, 8, gfx.WHITE)
                 return
-            cv.text(r.way.label, 0, 0, gfx.WHITE)
-            cv.text("streak %d/%d" % (r.tally.streak, STREAK_TO_PASS), 120, 0, gfx.YELLOW)
+            cv.text(r.way.label, edge, 0, gfx.WHITE)
+            cv.text("streak %d/%d" % (r.tally.streak, STREAK_TO_PASS), 128, 0, gfx.YELLOW)
             wrong = "wrong %d" % r.tally.wrong
-            cv.text(wrong, gfx.WIDTH - 8 * len(wrong), 0, gfx.RED if r.tally.wrong else gfx.GREY)
-            cv.text(r.way.hint, 0, 8, gfx.GREY)
+            cv.text(wrong, gfx.WIDTH - edge - 8 * len(wrong), 0, gfx.RED if r.tally.wrong else gfx.GREY)
+            cv.text(r.way.hint, edge, 8, gfx.WHITE)
 
         def draw_over(self, cv):
             """The result card: the way, the end, the streak and the best streak, kept like the bar. Its timing is the
