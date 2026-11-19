@@ -510,6 +510,59 @@ def serial_port(name=None):
     return open_port
 
 
+class ProbeRun:
+    """One file run once on the box through a runner (an Mpremote, or a test's) within a time limit, its lines kept: it
+    prints them and writes them to the first free log, also after the limit or a failed run (P905, from P904's probe).
+    run(path, limit_s) answers how the run ended: DONE (the file ended), LIMIT (the limit stopped mpremote; the box
+    runs on until a reset) or FAILED (mpremote failed: the file raised, or the board did not answer). The caller
+    decides what each end means. lines: the run's lines; logged: the log's path, or None (a dry run writes none); why:
+    how a LIMIT or a FAILED came, or None. A missing mpremote raises FileNotFoundError."""
+
+    DONE, LIMIT, FAILED = 1, 2, 3
+
+    def __init__(self, runner, log):
+        self.runner, self.log = runner, log  # log: the first log's path (free_log picks the one written)
+        self.lines, self.logged, self.why = [], None, None
+
+    def run(self, path, limit_s):
+        try:
+            said, end = self.runner.run(["run", path], timeout=limit_s), self.DONE
+        except subprocess.TimeoutExpired as e:
+            said, end, self.why = self.text(e.stdout) + self.text(e.stderr), self.LIMIT, \
+                "the run took over %d s" % e.timeout
+        except subprocess.CalledProcessError as e:
+            said, end, self.why = self.text(e.stdout) + self.text(e.stderr), self.FAILED, \
+                "the run failed with exit %d" % e.returncode
+        self.keep(said)
+        return end
+
+    @staticmethod
+    def text(out):
+        """A run's output as text: a timed-out one's is bytes (subprocess.run decodes only a finished command's), or
+        None."""
+        return out.decode("utf-8", "replace") if isinstance(out, bytes) else out or ""
+
+    @staticmethod
+    def free_log(path):
+        """path, or the first of its -2, -3, ... that no file has: a later run never overwrites a log."""
+        stem, ext = os.path.splitext(path)
+        k = 1
+        while os.path.exists(path):
+            k += 1
+            path = "%s-%d%s" % (stem, k, ext)
+        return path
+
+    def keep(self, said):
+        """The run's lines, printed and written to the first free log (a dry run's are none, and it writes no log)."""
+        self.lines = [line.strip() for line in said.splitlines() if line.strip()]
+        for line in self.lines:
+            print(line)
+        if not self.runner.dry_run:
+            self.logged = self.free_log(self.log)
+            with open(self.logged, "w") as f:
+                f.write("".join(line + "\n" for line in self.lines))
+
+
 def failure(e):
     """The line that says a tool's command failed (a CalledProcessError) or that the tool is missing (a
     FileNotFoundError: mpremote or mpy-cross)."""

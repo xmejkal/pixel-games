@@ -1140,5 +1140,91 @@ class VolumeTest(unittest.TestCase):
                 made.return_value.run.assert_not_called()
 
 
+class ProbeRunner:
+    """A runner for ProbeRun: it keeps each command and its time limit, and answers said or raises error."""
+
+    def __init__(self, said="", error=None, dry_run=False):
+        self.said, self.error, self.dry_run, self.commands = said, error, dry_run, []
+
+    def run(self, args, timeout=None):
+        self.commands.append((args, timeout))
+        if self.error:
+            raise self.error
+        return self.said
+
+
+class ProbeRunTest(unittest.TestCase):
+    """ProbeRun (P905): one file run once on the box within a time limit, its lines kept in the first free log."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.log = os.path.join(self.folder.name, "run-p905-switch.log")
+
+    def run_probe(self, runner):
+        """The run: the ProbeRun, its end and what it printed."""
+        with contextlib.redirect_stdout(io.StringIO()) as said:
+            probe = box.ProbeRun(runner, self.log)
+            end = probe.run("probe905_switch.py", 3601)
+        return probe, end, said.getvalue()
+
+    def logged(self, path=None):
+        with open(path or self.log) as f:
+            return f.read()
+
+    def test_its_three_ends_differ(self):
+        self.assertEqual(3, len({box.ProbeRun.DONE, box.ProbeRun.LIMIT, box.ProbeRun.FAILED}))
+
+    def test_a_run_that_ends_is_done_its_lines_printed_and_logged(self):
+        runner = ProbeRunner("p905 ways stick\n\n  p905 inputs stick yes knob yes \ndone\n")
+        probe, end, said = self.run_probe(runner)
+        self.assertEqual(box.ProbeRun.DONE, end)
+        self.assertEqual([(["run", "probe905_switch.py"], 3601)], runner.commands)
+        lines = ["p905 ways stick", "p905 inputs stick yes knob yes", "done"]
+        self.assertEqual(lines, probe.lines)
+        self.assertEqual("".join(line + "\n" for line in lines), said)
+        self.assertEqual(said, self.logged())
+        self.assertEqual((self.log, None), (probe.logged, probe.why))
+
+    def test_a_run_that_the_time_limit_stopped_is_logged_from_its_bytes(self):
+        error = subprocess.TimeoutExpired(["mpremote", "run"], 3601, output=b"p905 ways stick\np905 round stick st",
+                                          stderr=None)
+        probe, end, said = self.run_probe(ProbeRunner(error=error))
+        self.assertEqual(box.ProbeRun.LIMIT, end)
+        self.assertEqual(["p905 ways stick", "p905 round stick st"], probe.lines)
+        self.assertEqual("p905 ways stick\np905 round stick st\n", self.logged())
+        self.assertEqual("the run took over 3601 s", probe.why)
+
+    def test_a_failed_run_is_logged_with_its_error(self):
+        error = subprocess.CalledProcessError(1, ["mpremote", "run"], output="p905 ways stick\n",
+                                              stderr="Traceback (most recent call last):\nRuntimeError: no art\n")
+        probe, end, said = self.run_probe(ProbeRunner(error=error))
+        self.assertEqual(box.ProbeRun.FAILED, end)
+        self.assertEqual("RuntimeError: no art", probe.lines[-1])
+        self.assertEqual("p905 ways stick\nTraceback (most recent call last):\nRuntimeError: no art\n", self.logged())
+        self.assertEqual("the run failed with exit 1", probe.why)
+
+    def test_a_log_is_never_overwritten(self):
+        stem = os.path.join(self.folder.name, "run-p905-switch")
+        for path, text in ((self.log, "the first run\n"), (stem + "-2.log", "the second run\n")):
+            with open(path, "w") as f:
+                f.write(text)
+        probe, end, said = self.run_probe(ProbeRunner("done\n"))
+        self.assertEqual(stem + "-3.log", probe.logged)
+        self.assertEqual(("the first run\n", "the second run\n", "done\n"),
+                         (self.logged(), self.logged(stem + "-2.log"), self.logged(stem + "-3.log")))
+
+    def test_a_dry_run_writes_no_log(self):
+        probe, end, said = self.run_probe(ProbeRunner(dry_run=True))
+        self.assertEqual((box.ProbeRun.DONE, [], None), (end, probe.lines, probe.logged))
+        self.assertFalse(os.path.exists(self.log))
+
+    def test_a_missing_mpremote_raises(self):
+        error = FileNotFoundError(2, "No such file or directory", "mpremote")
+        with self.assertRaises(FileNotFoundError):
+            self.run_probe(ProbeRunner(error=error))
+        self.assertFalse(os.path.exists(self.log))
+
+
 if __name__ == "__main__":
     unittest.main()

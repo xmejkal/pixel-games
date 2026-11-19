@@ -650,3 +650,101 @@ def game_class(boot, click):
             cv.text(line, x + w // 2 - 4 * len(line), y + 52, gfx.WHITE)
 
     return Switchtest
+
+
+def board():
+    """The board part: the knob's pads first, as main.py takes them at boot, then the box's action map with both FIRE
+    buttons wrapped (Seen), then the App with the probe's game alone, silent and with no knob, so PICK and the knob's
+    turn reach the game. It refuses a pin map with no stick. QUIT ends the run with `done`."""
+    import pins
+    from drivers import encoder
+
+    encoder.take_pads(pins.ENC_A, pins.ENC_B)  # first: until here a turn of the knob types into the console (P757)
+    import app
+    from engine.actions import ActionMap
+
+    found = app.open_action_map()
+    if found.stick is None or len(found.fire_bindings) < 2:
+        raise RuntimeError("p905 refused: no stick in the pin map (pins.JOY_X): the probe needs the stick")
+    boot, click = Seen(found.fire_bindings[0]), Seen(found.fire_bindings[1])
+    action_map = ActionMap((boot, click), found.pick_bindings, found.encoder, found.stick)
+    print("p905 ways %s streak %d wrong %d double %d hold %d" % (
+        ",".join([way.name for way in WAYS]), STREAK_TO_PASS, WRONG_MAX, DOUBLE_MS, HOLD_MS))
+    print("p905 inputs stick yes knob %s" % ("yes" if found.encoder else "no"))
+    try:
+        app.run(games=(game_class(boot, click),), knob=None, speaker=None, action_map=action_map)
+    except Quit:
+        pass
+    print("done")
+
+
+# --- the Mac part ---
+
+LOG = "logs/run-p905-switch.log"  # from the repository root: the first log's path (box.ProbeRun.free_log)
+MINUTES = 60  # the run's time limit; QUIT ends it sooner
+PACK = "rescue.pak"  # the art the game needs, in :packs
+WAIT = ["exec", "pass"]  # a cheap command: the box answers it once it is back from the hard reset
+DEPLOY = "python3 tools/box.py deploy --all"
+
+
+def check(box, runner, sleep):
+    """Refuses a box without :packs/rescue.pak. It reads `ls :`, then `ls :packs` when the box has that folder (a dry
+    run reads both and refuses nothing), each tried again while a running game keeps mpremote out."""
+    root = box.board_names(box.retried(runner, ["ls", ":"], box.PROBE_TRIES, box.RESET_PAUSE_S, sleep))
+    if runner.dry_run or "packs/" in root:
+        packs = box.board_names(box.retried(runner, ["ls", ":packs"], box.PROBE_TRIES, box.RESET_PAUSE_S, sleep))
+    else:
+        packs = set()
+    if not runner.dry_run and PACK not in packs:
+        raise SystemExit("refused: the box has no :packs/%s: deploy first: %s" % (PACK, DEPLOY))
+
+
+def minutes_arg(text):
+    """--minutes' value: a whole number of 1 or more."""
+    import argparse
+
+    if not text.isdigit() or int(text) < 1:
+        raise argparse.ArgumentTypeError("not a whole number of 1 or more: %r" % text)
+    return int(text)
+
+
+def mac(argv, runner=None, sleep=None):
+    """The Mac part from the command line: runner and sleep stand in for box.Mpremote and time.sleep in a test."""
+    import argparse
+    import os
+
+    here = os.path.dirname(os.path.abspath(__file__))
+    if os.path.join(here, "tools") not in sys.path:
+        sys.path.insert(0, os.path.join(here, "tools"))
+    import box
+
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--dry-run", action="store_true", help="print each board command, run none")
+    parser.add_argument("--minutes", type=minutes_arg, default=MINUTES, metavar="N",
+                        help="the run's time limit in minutes (%(default)s)")
+    args = parser.parse_args(argv)
+    runner, sleep = runner or box.Mpremote(args.dry_run), sleep or time.sleep
+    run = box.ProbeRun(runner, os.path.join(here, LOG))
+    try:
+        try:
+            check(box, runner, sleep)
+            box.reset(runner, sleep=sleep)
+            box.retried(runner, WAIT, box.RESET_TRIES, box.RESET_PAUSE_S, sleep)
+            end = run.run(os.path.relpath(os.path.abspath(__file__), box.ROOT), args.minutes * 60)
+        finally:
+            box.reset(runner, sleep=sleep)  # in every case: the box plays its lineup again
+    except (box.subprocess.CalledProcessError, FileNotFoundError) as e:
+        raise SystemExit(box.failure(e))
+    if end == run.LIMIT and [line for line in run.lines if line.startswith("p905 ways ")]:
+        print("the time limit of %d minutes ended the run" % args.minutes)
+    elif end != run.DONE:
+        raise SystemExit("refused: %s: %s; the log is %s" % (
+            run.why, run.lines[-1] if run.lines else "no output", run.logged))
+    if run.logged:
+        print("the log is %s" % run.logged)
+
+
+if sys.implementation.name == "micropython":
+    board()
+elif __name__ == "__main__":
+    mac(sys.argv[1:])

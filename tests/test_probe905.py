@@ -2,10 +2,13 @@
 lean, the seven ways to switch, each threshold pinned on both sides 1 ms or 1 px apart. Run from the repository root:
 python3 -B -m unittest tests.test_probe905."""
 
+import ast
 import contextlib
 import io
 import os
+import subprocess
 import sys
+import tempfile
 import time
 import types
 import unittest
@@ -23,10 +26,12 @@ if not hasattr(time, "ticks_add"):  # the stubs give ticks_diff, ticks_us and ti
     time.ticks_add = lambda a, b: a + b
 
 import app  # noqa: E402
+import box  # noqa: E402
 import gfx  # noqa: E402
 import probe905_switch as probe  # noqa: E402
 from engine import actions as engine_actions  # noqa: E402
 from test_actions import FakeButton, FakeEncoder, FakeStick  # noqa: E402
+from test_probe904 import Board  # noqa: E402  the fake runner of P904's probe
 
 T0 = 7919  # ms: the first frame's clock in a test, no round number
 
@@ -978,6 +983,207 @@ class GameTest(unittest.TestCase):
         box.frame(fire=True).frame()
         with self.assertRaises(probe.Quit):
             box.frame(fire=True)
+
+
+class BoardTest(unittest.TestCase):
+    """board() on stand-in modules: pins, the encoder's pads, the App's map and run."""
+
+    def board(self, stick=True, encoder="the encoder", ends=probe.Quit):
+        """board() run: what it did in order, what it printed, the map and game run got, and the error it left with."""
+        did, got = [], {}
+        boot, click, d14 = FakeButton(), FakeButton(), FakeButton()
+
+        def open_action_map():
+            did.append("map")
+            fire = (boot, click) if stick else (boot,)
+            return engine_actions.ActionMap(fire, (d14,), encoder, FakeStick(0, 0) if stick else None)
+
+        def run(games, knob, speaker, action_map):
+            did.append("run")
+            got.update(games=games, knob=knob, speaker=speaker, map=action_map)
+            raise ends
+
+        modules = {"pins": types.SimpleNamespace(ENC_A=44, ENC_B=43),
+                   "drivers": types.SimpleNamespace(encoder=types.SimpleNamespace(
+                       take_pads=lambda a, b: did.append("pads %d %d" % (a, b)))),
+                   "app": types.SimpleNamespace(open_action_map=open_action_map, run=run)}
+        error = None
+        with mock.patch.dict(sys.modules, modules), contextlib.redirect_stdout(io.StringIO()) as said:
+            try:
+                probe.board()
+            except Exception as e:  # noqa: BLE001  the test reads which one
+                error = e
+        return did, said.getvalue().splitlines(), got, error, (boot, click, d14)
+
+    def test_it_takes_the_pads_first_then_the_map_then_runs_one_game_silent_with_no_knob_and_ends_on_done(self):
+        did, lines, got, error, _ = self.board()
+        self.assertIsNone(error)
+        self.assertEqual(["pads 44 43", "map", "run"], did)
+        self.assertEqual(["p905 ways stick,click,double,hold,pick,knob,auto streak 10 wrong 3 double 300 hold 400",
+                          "p905 inputs stick yes knob yes", "done"], lines)
+        self.assertEqual((None, None, 1), (got["knob"], got["speaker"], len(got["games"])))
+        self.assertEqual("switchtest", got["games"][0].name)
+
+    def test_both_fire_buttons_are_wrapped_and_the_rest_of_the_map_is_its_own(self):
+        did, lines, got, error, (boot, click, d14) = self.board()
+        fire = got["map"].fire_bindings
+        self.assertEqual([probe.Seen, probe.Seen], [type(b) for b in fire])
+        self.assertEqual([boot, click], [b.button for b in fire])
+        self.assertEqual(((d14,), "the encoder"), (got["map"].pick_bindings, got["map"].encoder))
+        self.assertIsNotNone(got["map"].stick)
+
+    def test_a_box_with_no_knob_says_so(self):
+        did, lines, got, error, _ = self.board(encoder=None)
+        self.assertEqual("p905 inputs stick yes knob no", lines[1])
+
+    def test_a_pin_map_with_no_stick_is_refused_in_one_line_and_runs_nothing(self):
+        did, lines, got, error, _ = self.board(stick=False)
+        self.assertIsInstance(error, RuntimeError)
+        self.assertEqual(1, len(str(error).splitlines()))
+        self.assertIn("no stick", str(error))
+        self.assertEqual(["pads 44 43", "map"], did)
+        self.assertEqual([], lines)
+
+    def test_an_error_of_the_run_leaves_board_as_itself_with_no_done(self):
+        did, lines, got, error, _ = self.board(ends=RuntimeError("rescue_night did not draw: no art"))
+        self.assertIsInstance(error, RuntimeError)
+        self.assertNotIn("done", lines)
+
+
+class SourceTest(unittest.TestCase):
+    """The file also runs on the board under MicroPython, sent from RAM."""
+
+    def test_at_module_level_it_imports_only_sys_and_time(self):
+        with open(os.path.join(REPO, "probe905_switch.py")) as f:
+            tree = ast.parse(f.read())
+        imports = [alias.name for node in tree.body if isinstance(node, (ast.Import, ast.ImportFrom))
+                   for alias in node.names]
+        self.assertEqual(["sys", "time"], imports)
+
+    def test_mpy_cross_compiles_it_so_its_syntax_is_micropythons(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            try:
+                out = box.Compiler(box.MpyCross()).compile(["probe905_switch.py"], tmp)
+            except FileNotFoundError:
+                self.skipTest("no mpy-cross: %s" % box.MPY_CROSS_PIP)  # a skip is not a pass
+            self.assertGreater(os.path.getsize(out[0]), 1000)
+
+
+SAID = "p905 ways stick,click,double,hold,pick,knob,auto streak 10 wrong 3 double 300 hold 400\n" \
+       "p905 inputs stick yes knob yes\ngame switchtest\np905 round knob starts\ndone\n"
+
+
+class MacTest(unittest.TestCase):
+    """The Mac part with the fake runner of P904's probe: no board."""
+
+    def setUp(self):
+        self.folder = tempfile.TemporaryDirectory()
+        self.addCleanup(self.folder.cleanup)
+        self.log = os.path.join(self.folder.name, "run-p905-switch.log")
+        patch = mock.patch.object(probe, "LOG", self.log)
+        patch.start()
+        self.addCleanup(patch.stop)
+        self.sleeps = []
+
+    def mac(self, argv, runner):
+        """mac(argv) with runner: what it printed, what it said on stderr, and its SystemExit or None."""
+        with contextlib.redirect_stdout(io.StringIO()) as said, contextlib.redirect_stderr(io.StringIO()) as err:
+            try:
+                probe.mac(argv, runner=runner, sleep=self.sleeps.append)
+            except SystemExit as e:
+                return said.getvalue(), err.getvalue(), e
+        return said.getvalue(), err.getvalue(), None
+
+    def logged(self):
+        with open(self.log) as f:
+            return f.read()
+
+    def test_a_run_reads_the_box_resets_waits_runs_the_file_once_and_resets_again(self):
+        board = Board(said=SAID)
+        said, err, refused = self.mac([], board)
+        self.assertIsNone(refused)
+        self.assertEqual([["ls", ":"], ["ls", ":packs"], ["reset"], ["exec", "pass"], ["run", "probe905_switch.py"],
+                          ["reset"]], board.commands)
+        self.assertEqual([None] * 4 + [3600, None], board.limits)
+        self.assertEqual(SAID, self.logged())
+        self.assertEqual(SAID + "the log is %s\n" % self.log, said)
+        with open(os.path.join(REPO, "probe905_switch.py")) as f:
+            self.assertEqual(f.read(), board.copy)  # the file itself, with nothing filled in
+
+    def test_minutes_set_the_time_limit(self):
+        board = Board(said=SAID)
+        self.mac(["--minutes", "7"], board)
+        self.assertEqual(7 * 60, board.limits[4])
+        for value in ("0", "-3", "x"):
+            with self.subTest(minutes=value):
+                board = Board(said=SAID)
+                said, err, refused = self.mac(["--minutes", value], board)
+                self.assertEqual(2, refused.code)
+                self.assertEqual([], board.commands)
+
+    def test_a_box_without_the_rescue_pack_is_refused_and_reset(self):
+        board = Board(packs=("meteors.pak",))
+        said, err, refused = self.mac([], board)
+        self.assertIn("deploy first: python3 tools/box.py deploy --all", str(refused.code))
+        self.assertEqual([["ls", ":"], ["ls", ":packs"], ["reset"]], board.commands)
+        self.assertFalse(os.path.exists(self.log))
+
+    def test_a_box_without_the_packs_folder_is_refused_and_reset(self):
+        board = Board(root=("boot.py", "main.py", "app.mpy"))
+        said, err, refused = self.mac([], board)
+        self.assertIn("deploy first", str(refused.code))
+        self.assertEqual([["ls", ":"], ["reset"]], board.commands)
+
+    def test_the_box_is_read_again_while_a_game_keeps_mpremote_out(self):
+        board = Board(said=SAID, fails=["ls :", "ls :"])
+        said, err, refused = self.mac([], board)
+        self.assertIsNone(refused)
+        self.assertEqual([["ls", ":"]] * 3 + [["ls", ":packs"]], board.commands[:4])
+        self.assertEqual([box.RESET_PAUSE_S] * 2, self.sleeps)
+
+    def test_a_limit_with_a_p905_ways_line_is_a_play_and_exits_0(self):
+        out = b"p905 ways stick,click\np905 inputs stick yes knob yes\np905 round stick starts\n"
+        board = Board(run_error=subprocess.TimeoutExpired(["mpremote", "run"], 3600, output=out, stderr=None))
+        said, err, refused = self.mac([], board)
+        self.assertIsNone(refused)
+        self.assertIn("the time limit of 60 minutes ended the run", said)
+        self.assertEqual(["reset"], board.commands[-1])
+        self.assertEqual(out.decode(), self.logged())
+
+    def test_a_limit_with_no_p905_ways_line_is_refused(self):
+        out = b"lineup 1: switchtest\nimport 3012 ms\n"
+        board = Board(run_error=subprocess.TimeoutExpired(["mpremote", "run"], 3600, output=out, stderr=None))
+        said, err, refused = self.mac([], board)
+        self.assertIn("the run took over 3600 s", str(refused.code))
+        self.assertIn("import 3012 ms", str(refused.code))
+        self.assertIn(self.log, str(refused.code))
+        self.assertEqual(["reset"], board.commands[-1])
+
+    def test_a_failed_run_is_refused_with_its_last_line_and_the_log(self):
+        board = Board(run_error=subprocess.CalledProcessError(
+            1, ["mpremote", "run"], output="p905 ways stick\n",
+            stderr="Traceback (most recent call last):\nRuntimeError: p905 refused: no stick in the pin map\n"))
+        said, err, refused = self.mac([], board)
+        text = str(refused.code)
+        self.assertIn("the run failed with exit 1", text)
+        self.assertIn("RuntimeError: p905 refused: no stick in the pin map", text)
+        self.assertTrue(text.endswith("the log is %s" % self.log), text)
+        self.assertEqual(["reset"], board.commands[-1])
+
+    def test_a_failed_command_is_said_as_box_main_says_it_and_the_box_is_reset(self):
+        board = Board(fails=["exec pass"] * 3 + ["exec pass"] * 2)
+        said, err, refused = self.mac([], board)
+        self.assertEqual("mpremote exec pass failed: could not enter raw repl", refused.code)
+        self.assertEqual(["reset"], board.commands[-1])
+
+    def test_its_dry_run_prints_every_command_and_runs_none(self):
+        with mock.patch.object(box.subprocess, "run") as run:
+            said, err, refused = self.mac(["--dry-run"], None)
+        run.assert_not_called()
+        self.assertIsNone(refused)
+        self.assertEqual(["mpremote ls :", "mpremote ls :packs", "mpremote reset", "mpremote exec pass",
+                          "mpremote run probe905_switch.py", "mpremote reset"], said.splitlines())
+        self.assertFalse(os.path.exists(self.log))
 
 
 if __name__ == "__main__":
