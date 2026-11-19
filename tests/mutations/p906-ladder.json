@@ -556,5 +556,17 @@
   "name": "a Ctrl-C is not kept as the first error",
   "find": "    except BaseException as e:\n        first = said(box, e)\n        raise",
   "replace": "    except Exception as e:\n        first = said(box, e)\n        raise"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the round skips its read of the detector in its first frame",
+  "find": "        if self.start_ms is None:\n            self.start(now_ms)\n        side, fire = self.edge.read(actions.y), actions.fire.pressed",
+  "replace": "        if self.start_ms is None:\n            self.start(now_ms)\n            side, fire = 0, actions.fire.pressed\n        else:\n            side, fire = self.edge.read(actions.y), actions.fire.pressed"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "draw_over keeps the result screen in another rect",
+  "find": "cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), RESULT_RECT, self.result_draw)",
+  "replace": "cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), (76, 70, 200, 100), self.result_draw)"
  }
 ]

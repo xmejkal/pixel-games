@@ -1693,6 +1693,13 @@ class SittingEdgeTest(unittest.TestCase):
         box.frame(y=70).frame(fire=True, y=70).frame(y=70).frame(ms=600, y=72).frame(y=75)
         self.assertEqual([], picks_after(box, "p906 round 1 starts"))
 
+    def test_a_rest_only_in_the_rounds_first_frame_rearms_the_detector_for_a_lean_in_ready(self):
+        box = finish(Box(self).play())
+        box.frame(y=70).frame(ms=900, fire=True, y=70)  # a lean on the result screen, held in the FIRE's frame
+        box.frame(y=0)  # round 2's first frame: the only rest, under 20
+        box.frame(ms=300, y=70).frame(ms=300, y=72)  # a lean again in READY, and READY's end
+        self.assertEqual(["p906 pick fireman right switch ground 0"], picks_after(box, "p906 round 2 starts"))
+
     def test_a_lean_that_starts_in_ready_is_a_pick_at_its_end(self):
         box = Box(self)
         box.frame(fire=True).frame().frame(ms=300, y=70).frame(ms=300, y=72)
@@ -1737,6 +1744,19 @@ class EscapeTest(unittest.TestCase):
         with mock.patch.object(gfx.Canvas, "keep", keep):
             Box(self).frame().frame()
         self.assertEqual([0], [alpha for rect, alpha in calls if rect == probe.QUIT_RECT])
+
+    def test_draw_over_keeps_the_result_screen_in_result_rect(self):
+        box = finish(Box(self).play())
+        rects, real = [], gfx.Canvas.keep
+
+        def keep(cv, key, rect, draw, alpha=255):
+            rects.append(rect)
+            return real(cv, key, rect, draw, alpha)
+
+        with mock.patch.object(gfx.Canvas, "keep", keep):
+            box.frame().frame(ms=900)
+        self.assertEqual([probe.RESULT_RECT] * 2, [rect for rect in rects if rect not in (probe.BAR_RECT,
+                                                                                          probe.QUIT_RECT)])
 
     def test_every_draw_of_the_result_screen_lies_in_its_rect(self):
         box = finish(Box(self).play())
