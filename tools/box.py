@@ -615,6 +615,49 @@ class ProbeRun:
         return path
 
 
+class LentPack:
+    """For a probe's Mac part: a pack that the box has for one sitting, through a runner (an Mpremote, or a test's)
+    (P906, the copy and the clean of P904's probe). The set's pack goes to :packs/<name>.pak and its index to
+    :art_index.py, the shadow index: the board imports a .py before the .mpy of the same name, so the pool is made as
+    big as this pack alone, and meanwhile the lineup's games find no art. check() refuses a box that has an
+    :art_index.py, before any copy, as the removal would delete it. lend(pack, index) copies the pack first, so a failed
+    copy leaves no index that names it. remove() removes each copy that the box holds (a dry run's box holds both): the
+    caller's in every case once lend began. The reads and the removal are tried again while a running probe keeps
+    mpremote out. The resets are the caller's. sleep: the pause between two tries."""
+
+    INDEX = "art_index.py"
+
+    def __init__(self, runner, name, sleep=time.sleep):
+        self.runner, self.sleep, self.pack = runner, sleep, "packs/%s.pak" % name
+
+    def tried(self, args):
+        return retried(self.runner, args, PROBE_TRIES, RESET_PAUSE_S, self.sleep)
+
+    def recovery(self):
+        """The way out by hand when the removal failed."""
+        return "`mpremote rm :%s :%s`, then `mpremote reset`" % (self.INDEX, self.pack)
+
+    def check(self):
+        if self.INDEX in board_names(self.tried(["ls", ":"])):
+            raise Refused("the box has an :%s. It is its real index (a deploy with --py: deploy without --py first) "
+                          "or a shadow index that a failed removal left (remove it: %s)" % (self.INDEX,
+                                                                                           self.recovery()))
+
+    def lend(self, pack, index):
+        self.runner.run(["cp", pack, ":" + self.pack])
+        self.runner.run(["cp", index, ":" + self.INDEX])
+
+    def remove(self):
+        dry = self.runner.dry_run
+        root = board_names(self.tried(["ls", ":"]))
+        folder, name = self.pack.split("/")
+        packs = board_names(self.tried(["ls", ":" + folder])) if dry or folder + "/" in root else set()
+        there = [":" + path for path, names, file in ((self.INDEX, root, self.INDEX), (self.pack, packs, name))
+                 if dry or file in names]
+        if there:
+            self.tried(["rm"] + there)
+
+
 def failure(e):
     """The line that says a tool's command failed (a CalledProcessError) or that the tool is missing (a
     FileNotFoundError: mpremote or mpy-cross)."""
