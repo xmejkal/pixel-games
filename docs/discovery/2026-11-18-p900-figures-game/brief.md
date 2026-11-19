@@ -188,6 +188,10 @@ None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - a comment on #1279 with D27, D28, the card P924 and the question Q16 · taken 2026-11-19, 00:24 Prague · https://github.com/xmejkal/spark/issues/1279#issuecomment-6994615454 · D27 and D28: the card holds his words
 - move P924 #1308 to Ready · taken 2026-11-19, 10:11 Prague · D30. The status was read back: Ready. At 10:11 the board held 4 of 4 in flight (P820 #1173 and P900 #1279 in Discovery, P828 #1186 and P921 #1303 in Review), by `tools/board.py status`
 - move P924 #1308 to Build · taken 2026-11-19, 10:15 Prague · D30 and his standing rule "you pull the top card of your lane without asking". P921 #1303 went to Done at 10:12 Prague and left a place in the flight. The status was read back: Build, and `tools/check_backlog.py` then said "the limits hold"
+- the body of P924 #1308 now holds his words of D29 and D30 in place of the open list · taken 2026-11-19, 10:18 Prague · D29: the card holds his words. The refuter's sixth pass named it as a missing action
+- a comment on #1279 with D29, D30 and both moves of P924 · taken 2026-11-19, 10:19 Prague · https://github.com/xmejkal/spark/issues/1279#issuecomment-7004957790 · D29 and D30: the card holds his words
+- Waiting on and Waiting since cleared on #1279 · taken 2026-11-19, 10:20 Prague · his standing rule "It moves as the work moves", as in D9: he answered Q16, and no question is asked of him now
+- the plan of the count as a comment on P924 #1308 · taken 2026-11-19, 10:25 Prague · https://github.com/xmejkal/spark/issues/1308#issuecomment-7004983292 · D30 and his standing rule for the top card of a lane
 <!-- EXTEND:brief-sections -->
 
 ## Hand-off
