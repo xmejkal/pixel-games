@@ -1229,3 +1229,76 @@ The refuter read the diff from bb4e2cf to 28b2c31 in full, the approved plan, th
 Not checked: what he read while the dialog was open for 11 minutes, the plan's other code citations, and whether `time` lines are evenly spaced.
 
 1 refuted, 5 partly, 11 hold, 1 missing action
+
+# Fifteenth pass (2026-11-19, after the play of the walking skeleton, D48 to D51)
+
+I read the diff from 8a65cdb to 1b18b43, all 194 lines of the play log, both smoke logs, bench.md lines 2025 to 2090, the probe and `art/mission.py` at 71333b2, the plan, the transcript from 16:08Z to 22:38Z, the four card comments, the board fields and the store's record for the box.
+
+1. **REFUTED.** D50 says his words came "between two commands that the session's clock puts at 23:26 and 23:27 Prague".
+   - The transcript holds them as a queue record (`enqueue`) stamped 2026-11-19T22:25:58.207Z, which is 23:25:58 Prague.
+   - A `queued_command` attachment with a human origin carries the same stamp.
+   - At 22:26:35Z they were handed to the running turn as a system note ("absorbed_mid_turn").
+   - That is 35 s after the sitting ended, between the session's clock reads of 23:25:31 and 23:26:32.
+   - Fix: write "23:25:58 Prague by the queue's stamp".
+
+2. **REFUTED.** bench.md's frame bullet is wrong on two numbers.
+   - It says "a send of 3.3 to 10.5 ms", but line 25 reads `send 2.6`.
+   - It says the heap is "236,960 bytes in round 1 and 278,480 from the first result screen on". Line 100 reads 237664, and lines 116 to 150 read 278656 to 279264.
+   - Fix: write "2.6 to 10.5", and give the heap as ranges.
+
+3. **Partly.** Lines the play made stale:
+   - The Ready-for line and the Hand-off both still say "which no play tested".
+   - The Hand-off still says "his play is asked: the card says ready to play" and "Its frame half is untested".
+   - The P905 Results row also says "which no play tested".
+   - The feasibility risk row still names "the walking skeleton's log" as the next test.
+   - Fix: rewrite each line to match the play's result.
+
+4. **Partly.** The Riskiest line says "so the frame half of A10 has its first evidence", and the new riskiest pick is marked as a proposal. But it rests on rates that the plan does not read.
+   - The plan says "The first round of a sitting is left out".
+   - Round 1 holds every slow gap in the sitting: `slow 5` against `slow 0`.
+   - The slot's head still names A10 as the riskiest.
+   - Fix: say this in C39's caveat and in the slot.
+
+5. **Partly.** Five of the eight wrong picks changed nothing: lines 80, 118, 172, 173 and 179 are `same`.
+   - Round 1 is wrong only by D46's stricter rule. By D36's count it would be clean.
+   - After D46, the build changed two tally rules ("Each lean of the stick during READY counts as a pick", and one detector for the whole sitting). He was told this at 20:18.
+   - bench.md says "The reading was fixed before any run". No line of the log has ms 0, so the READY change touched no pick.
+   - Fix: add both facts to C38 and to bench.md.
+
+6. **Partly.**
+   - D48 says "It ended:", but the reply goes on with the P828 bullet.
+   - D50 calls his words "a signal against A3", but A3 compares 96 px with 24 px, and "too big" names neither size.
+   - Fix: one clause for each.
+
+7. **Partly.** bench.md says "no deploy since".
+   - The store's record of the box (firebeetle2-esp32s3, 34:85:18:xx:xx:xx, the last three bytes masked in this copy) has its last deploy at 2026-11-19T10:11:37+01:00, made by `box.py`, and none after it.
+   - Fix: cite that record, and add that a copy made outside `box.py` is not recorded.
+
+8. **Holds** (11 checks).
+   - The quotes in D48, D49 and D51 are exact. D51's question is in the turn's last reply (22:28:13Z), so it is stored as written.
+   - D49's "about three hours later" holds: the report is stamped 20:18 and his yes 23:18.
+   - The gaps recount: 600, 440, 640, 1,400, 1,083 and 79 ms.
+   - The rates recount: 24.92 and 24.90.
+   - Every cell of bench.md's table recounts.
+   - Both smoke logs hold: 68 and 63 lines, eight `fps ladder 24` lines each, and no pick.
+   - C41 holds against the code: `PACE = 2` at line 117, and 282 − 117 = 165 px.
+   - The three readings match plan lines 101, 106 and 113.
+   - The 11 Board-actions times read back.
+   - The fields read back: #1285 is in Review, waiting on the PO since 2026-11-19. #1279 is in Discovery.
+
+For verification.md:
+- ★C38, line 145: `p906 round 2 ends wrong ms 16949 gaps 422 worst 46 slow 0 streak 0`. A search for `streak 5 met` printed 0.
+- ★C39, line 105: `p906 round 1 ends wrong ms 68821 gaps 1715 worst 65 slow 5 streak 0`.
+
+**Missing.**
+- His `/clear`, queued at 23:32:47 Prague, still waits while the session works on.
+- The body of #1285 has no line on the play, and its "Done when" is now met.
+- #1279 has no Waiting on, although the Decision-needed line lists three decisions of his.
+
+## Searches
+
+None.
+
+Not checked: the captured speeds 199 and 108 (they need a paint with the CMU files), and what the box held, because I did not touch it.
+
+2 refuted, 5 partly, 11 hold, 3 missing actions.
