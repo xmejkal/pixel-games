@@ -158,7 +158,15 @@ You need ESP-IDF v5.5.2 in `~/esp/esp-idf-v5.5.2`. The script clones MicroPython
    `--py` copies `games/*.py` and `games/engine/*.py` instead and removes those modules' `.mpy` files: for debugging on the board, where a
    traceback shows the source line. The names are `games/catalog.py`'s, and `python3 tools/box.py list` shows each
    with its art's bytes. The deploy writes `:lineup.py` (`--all` removes it) and hard-resets the board, so step 6 is
-   done; `--dry-run` prints the commands. `tools/crackle.sh` copies `.py` files, which run instead of their `.mpy`
+   done; `--dry-run` prints the commands.
+   Before the reset, the deploy tells spark's store about itself (P921): with the Python that runs it, it runs
+   spark's launcher once, `<store>/launcher/bench.py record pixel-games --json`, which lists the boards on USB and
+   opens no port. It says one line: `spark's store: recorded pixel-games, <time>`, `spark's store: not recorded
+   (<reason>)`, or `not known` after 30 s. The deploy goes on whatever that line says. After a recorded line, spark's
+   `bench.py show` names pixel-games for the box. `<store>` is `SPARK_HOME`, else `XDG_DATA_HOME/spark`, else
+   `~/.local/share/spark`. With no launcher there, register once from a spark checkout that stays: `bench.py register
+   pixel-games --origin https://github.com/xmejkal/pixel-games.git --tool box.py`.
+   `tools/crackle.sh` copies `.py` files, which run instead of their `.mpy`
    files until the next deploy. By hand: `mpremote cp games/*.py games/box_bank.raw :`, `mpremote mkdir :engine` (once),
    `mpremote cp games/engine/*.py :engine/`, `mpremote cp -r games/packs :`
    and, when the board has one, `mpremote rm :lineup.py`, or the box keeps the old lineup. To pick a lineup, Claude

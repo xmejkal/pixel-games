@@ -1,0 +1,188 @@
+[
+ {
+  "file": "tools/box.py",
+  "name": "the record runs after the reset",
+  "find": "        if self.launcher:  # before the reset: the board is on USB for certain, and the record opens no port\n            self.say(self.launcher.record())\n        self.runner.run([\"reset\"])\n",
+  "replace": "        self.runner.run([\"reset\"])\n        if self.launcher:  # before the reset: the board is on USB for certain, and the record opens no port\n            self.say(self.launcher.record())\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the record runs before the volume's copy, not after the last copy",
+  "find": "        if self.volume is not None:  # the start step (P866); without --volume the board keeps its own\n            write_file(self.runner, VOLUME_FILE, str(self.volume))\n        if self.launcher:  # before the reset: the board is on USB for certain, and the record opens no port\n            self.say(self.launcher.record())\n",
+  "replace": "        if self.launcher:  # before the reset: the board is on USB for certain, and the record opens no port\n            self.say(self.launcher.record())\n        if self.volume is not None:  # the start step (P866); without --volume the board keeps its own\n            write_file(self.runner, VOLUME_FILE, str(self.volume))\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the deploy does not say the record's line",
+  "find": "            self.say(self.launcher.record())\n",
+  "replace": "            self.launcher.record()\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "an answer that cannot be read raises, so the deploy never resets",
+  "find": "        except Exception:  # whatever the answer was",
+  "replace": "        except (OSError, subprocess.SubprocessError):  # whatever the answer was"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "only an answer of the wrong shape is caught, so JSON nested too deep raises",
+  "find": "        except Exception:  # whatever the answer was",
+  "replace": "        except (OSError, subprocess.SubprocessError, ValueError, LookupError, TypeError, AttributeError):  # whatever the answer was"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a time limit says not recorded",
+  "find": "            return SAYS + \"not known (time limit of %d s)\" % RECORD_S\n",
+  "replace": "            return SAYS + \"not recorded (no answer that box.py can read)\"\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the launcher runs with check, so a stop raises",
+  "find": "errors=\"replace\", stdin=subprocess.DEVNULL, timeout=RECORD_S)",
+  "replace": "errors=\"replace\", stdin=subprocess.DEVNULL, timeout=RECORD_S, check=True)"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the launcher runs with no time limit",
+  "find": "errors=\"replace\", stdin=subprocess.DEVNULL, timeout=RECORD_S)",
+  "replace": "errors=\"replace\", stdin=subprocess.DEVNULL)"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the time limit is 15 s, spark's own",
+  "find": "RECORD_S = 30  #",
+  "replace": "RECORD_S = 15  #"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the output is decoded strictly, so bytes that are no UTF-8 raise in the real run",
+  "find": "                errors=\"replace\", stdin=",
+  "replace": "                stdin="
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the launcher can read the terminal",
+  "find": "stdin=subprocess.DEVNULL, timeout=RECORD_S)",
+  "replace": "timeout=RECORD_S)"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the launcher runs from the caller's folder",
+  "find": "[sys.executable, script, \"record\", SPARK_NAME, \"--json\"], cwd=ROOT, capture_output=True, text=True,",
+  "replace": "[sys.executable, script, \"record\", SPARK_NAME, \"--json\"], capture_output=True, text=True,"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the status is not read: any answer with a time is recorded",
+  "find": "    if answer[\"status\"] == \"ok\":\n",
+  "replace": "    if answer[\"data\"]:\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the first line of the answer is read, not the last",
+  "find": "    answer = json.loads(stdout.strip().splitlines()[-1])\n",
+  "replace": "    answer = json.loads(stdout.strip().splitlines()[0])\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a code is said as read, whatever it holds",
+  "find": "        if re.fullmatch(r\"[a-z_]+\", code):\n",
+  "replace": "        if isinstance(code, str):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the line says the board's port",
+  "find": "            return \"recorded %s, %s\" % (SPARK_NAME, deployed)\n",
+  "replace": "            return \"recorded %s, %s %s\" % (SPARK_NAME, deployed, answer[\"data\"].get(\"device\"))\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a dry run names this Mac's Python",
+  "find": "            return \"python3 <store>/launcher/bench.py record %s --json\" % SPARK_NAME\n",
+  "replace": "            return \"%s <store>/launcher/bench.py record %s --json\" % (sys.executable, SPARK_NAME)\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a dry run looks for the launcher first",
+  "find": "        if self.dry_run:\n            return \"python3 <store>/launcher/bench.py record %s --json\" % SPARK_NAME\n        script = os.path.join(self.folder, \"launcher\", \"bench.py\")\n        if not os.path.isfile(script):\n            return SAYS + \"not recorded (no launcher: run spark's bench.py register for %s)\" % SPARK_NAME\n",
+  "replace": "        script = os.path.join(self.folder, \"launcher\", \"bench.py\")\n        if not os.path.isfile(script):\n            return SAYS + \"not recorded (no launcher: run spark's bench.py register for %s)\" % SPARK_NAME\n        if self.dry_run:\n            return \"python3 <store>/launcher/bench.py record %s --json\" % SPARK_NAME\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a missing launcher is started all the same",
+  "find": "        if not os.path.isfile(script):\n",
+  "replace": "        if False:\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "an empty SPARK_HOME is the store",
+  "find": "    return environ.get(\"SPARK_HOME\") or os.path.join(\n",
+  "replace": "    return environ[\"SPARK_HOME\"] if \"SPARK_HOME\" in environ else os.path.join(\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "XDG_DATA_HOME comes before SPARK_HOME",
+  "find": "    return environ.get(\"SPARK_HOME\") or os.path.join(\n        environ.get(\"XDG_DATA_HOME\") or os.path.expanduser(\"~/.local/share\"), \"spark\")\n",
+  "replace": "    return os.path.join(environ[\"XDG_DATA_HOME\"], \"spark\") if environ.get(\"XDG_DATA_HOME\") else (\n        environ.get(\"SPARK_HOME\") or os.path.join(os.path.expanduser(\"~/.local/share\"), \"spark\"))\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "an empty XDG_DATA_HOME is used",
+  "find": "        environ.get(\"XDG_DATA_HOME\") or os.path.expanduser(\"~/.local/share\"), \"spark\")\n",
+  "replace": "        environ.get(\"XDG_DATA_HOME\", os.path.expanduser(\"~/.local/share\")), \"spark\")\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the project's name in spark's store is another",
+  "find": "SPARK_NAME = \"pixel-games\"  #",
+  "replace": "SPARK_NAME = \"firebeetle-games\"  #"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "main's deploy has no launcher",
+  "find": "                   reference=reference, volume=step,\n                   launcher=SparkLauncher(spark_store(), dry_run=args.dry_run)).run(",
+  "replace": "                   reference=reference, volume=step).run("
+ },
+ {
+  "file": "tools/box.py",
+  "name": "main's launcher ignores --dry-run",
+  "find": "launcher=SparkLauncher(spark_store(), dry_run=args.dry_run)",
+  "replace": "launcher=SparkLauncher(spark_store())"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a stop's code may hold digits and colons, so a MAC passes",
+  "find": "        if re.fullmatch(r\"[a-z_]+\", code):\n",
+  "replace": "        if re.fullmatch(r\"[a-z_0-9:]+\", code):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a time is any text of digits and time marks, so a MAC of digits passes",
+  "find": "        if re.fullmatch(r\"\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d)?\", deployed):\n",
+  "replace": "        if re.fullmatch(r\"[0-9T:.+Z-]+\", deployed):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a time is any text with no space",
+  "find": "        if re.fullmatch(r\"\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d)?\", deployed):\n",
+  "replace": "        if re.fullmatch(r\"\\S+\", deployed):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a time is matched at its start only, so a second line passes",
+  "find": "        if re.fullmatch(r\"\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d)?\", deployed):\n",
+  "replace": "        if re.match(r\"\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d)?\", deployed):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a folder in the launcher's place is started",
+  "find": "        if not os.path.isfile(script):\n",
+  "replace": "        if not os.path.exists(script):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a relative store is run as given, from the repository root",
+  "find": "os.path.abspath(folder), run, dry_run",
+  "replace": "folder, run, dry_run"
+ }
+]

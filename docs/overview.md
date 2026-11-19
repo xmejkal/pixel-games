@@ -33,6 +33,7 @@ flowchart LR
     C -- "writes games, engine package, drivers" --> PG
     PG -- "includes" --> EN
     PG -- "tools/box.py deploy (mpremote)" --> BOX
+    PG -- "tools/box.py deploy records itself (spark's launcher, P921)" --> ST
     C -- "moves cards, opens PRs" --> GH
     PO -- "orders Ready, merges rules" --> GH
 ```
@@ -162,6 +163,8 @@ sequenceDiagram
 
 The other places where they touch:
 
+- The deploy's record (P921): before its reset, `tools/box.py deploy` runs spark's launcher in the store once
+  (`bench.py record pixel-games`), and after a recorded line spark's `bench.py show` names pixel-games for the box.
 - Part records: `parts/` in this repository holds one spark record, the microphone's, made from a photo
   (README.md names `/spark:identify` as its source).
 - The wiring guide: [wiring.html](wiring.html) shows every wire with pictures. spark's README shows it as its example.

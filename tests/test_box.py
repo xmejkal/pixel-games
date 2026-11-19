@@ -2,11 +2,13 @@
 :packs and :lineup.py on the board, --all, --dry-run, each refusal with no command run, list, and the console's read
 across a reset. The firmware check (P848) reads the answers tools/firmware_probe.py prints, run here on the Mac with
 stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. deploy --engine (P850) writes or
-removes :engine_config.py. Run from the repository root:
+removes :engine_config.py. A deploy tells spark's store through spark's launcher (P921): here a stand-in run and a
+temp store, so no test starts the real launcher. Run from the repository root:
 python3 -B -m unittest tests.test_box. --- MVP (P817) ---"""
 
 import contextlib
 import io
+import json
 import os
 import re
 import subprocess
@@ -36,6 +38,8 @@ CRACKLE = box.CRACKLE  # before setUpModule's patch
 NOT_BUILT = os.path.join(HERE, "fixtures", "no-such-folder", "_crackle.mpy")
 FLASH = ": flash the image of ./build.sh engine first (README, Build and run)"
 PROBE_LINE = "run `mpremote run tools/firmware_probe.py` and read it"
+DRY_RECORD = "python3 <store>/launcher/bench.py record pixel-games --json"  # a dry run's line: no path of this Mac
+NO_LAUNCHER = "spark's store: not recorded (no launcher: run spark's bench.py register for pixel-games)"
 NO_ANSWER = "the board did not answer: close any mpremote or log session, press reset, and deploy again"
 RAW_REPL = """Traceback (most recent call last):
   File "/usr/local/bin/mpremote", line 8, in <module>
@@ -85,6 +89,11 @@ def setUpModule():
     patch = mock.patch.object(box, "CRACKLE", NOT_BUILT)  # box.main's deploys: as for a tree with no _crackle.mpy
     patch.start()
     unittest.addModuleCleanup(patch.stop)
+    store = tempfile.TemporaryDirectory()  # box.main's deploys: a spark store with no launcher, never the real one
+    unittest.addModuleCleanup(store.cleanup)
+    home = mock.patch.dict(os.environ, {"SPARK_HOME": store.name})
+    home.start()
+    unittest.addModuleCleanup(home.stop)
 
 
 def deploy(runner, compiler=None, crackle=NOT_BUILT, said=None, pauses=None, reference=None):
@@ -180,7 +189,7 @@ class DeployTest(unittest.TestCase):
                          ["no _crackle.mpy built, so none is copied: tools/crackle.sh builds it"], lines[:9])
         self.assertEqual("mpremote cp games/packs/snake.pak :packs/snake.pak", lines[9])
         self.assertRegex(lines[10], r"^mpremote cp \S+lineup\.py :lineup\.py$")
-        self.assertEqual(["mpremote reset"], lines[11:])
+        self.assertEqual([DRY_RECORD, "mpremote reset"], lines[11:])
 
     def test_the_runner_runs_mpremote_from_the_repository_root(self):
         with mock.patch.object(box.subprocess, "run") as run:
@@ -508,8 +517,8 @@ class EngineTest(unittest.TestCase):
             self.assertEqual(0, box.main(["deploy", "--py", "--dry-run", "--engine", "reference=volume", "snake"]))
         run.assert_not_called()
         lines = said.getvalue().splitlines()
-        self.assertRegex(lines[-2], r"^mpremote cp \S+engine_config\.py :engine_config\.py$")
-        self.assertEqual("mpremote reset", lines[-1])
+        self.assertRegex(lines[-3], r"^mpremote cp \S+engine_config\.py :engine_config\.py$")
+        self.assertEqual([DRY_RECORD, "mpremote reset"], lines[-2:])
 
 
 class FirmwareTest(unittest.TestCase):
@@ -852,6 +861,232 @@ class ConsoleTest(unittest.TestCase):
         clock = iter([100.0, 100.5, 112.3456]).__next__
         self.assertEqual(["0.500 lineup 1: cave", "12.346 ready"],
                          list(box.stamped(iter(["lineup 1: cave", "ready"]), clock)))
+
+
+def envelope(status="ok", data=None, unchecked=()):
+    """One line of spark's envelope, as bench.py record --json prints it."""
+    return json.dumps({"envelope": 1, "tool": "bench", "op": "record-deploy", "status": status, "data": data,
+                       "problems": [], "unchecked": list(unchecked), "next": [], "truncated": None},
+                      separators=(",", ":")) + "\n"
+
+
+MAC, DEVICE = "dc:da:0c:12:34:56", "/dev/cu.usbmodem1101"  # a made-up board: no line of box.py may hold them
+RECORDED = envelope(data={"entry": {"project": "pixel-games", "made_by": "box.py",
+                                    "deployed": "2026-11-19T10:15:00+01:00", "verdict": "ready not read"},
+                          "mac": MAC, "device": DEVICE})
+
+
+def stopped(code, sentence="Nothing was written."):
+    return envelope("could-not-run", unchecked=[{"subject": DEVICE, "code": code, "sentence": sentence, "fix": "x"}])
+
+
+class FakeLauncherRun:
+    """Stands in for subprocess.run under a SparkLauncher: keeps each call, answers stdout with the exit code, or
+    raises error. As the real one, it raises a CalledProcessError for an exit that is not 0 when check is true."""
+
+    def __init__(self, stdout="", code=0, error=None, events=None):
+        self.stdout, self.code, self.error, self.calls = stdout, code, error, []
+        self.events = events if events is not None else []
+
+    def __call__(self, args, **keywords):
+        self.calls.append((args, keywords))
+        self.events.append("record")
+        if self.error:
+            raise self.error
+        if keywords.get("check") and self.code:
+            raise subprocess.CalledProcessError(self.code, args)
+        return types.SimpleNamespace(stdout=self.stdout, stderr="port " + DEVICE, returncode=self.code)
+
+
+class LauncherTest(unittest.TestCase):
+    """A deploy tells spark's store (P921): once, through spark's launcher in the store, after the last copy and
+    before the reset. Whatever the launcher answers, the deploy says one line and goes on."""
+
+    def setUp(self):
+        folder = tempfile.TemporaryDirectory()
+        self.addCleanup(folder.cleanup)
+        self.store = os.path.join(folder.name, "a store")
+        os.makedirs(os.path.join(self.store, "launcher"))
+        self.launcher = os.path.join(self.store, "launcher", "bench.py")
+        with open(self.launcher, "w") as f:
+            f.write("# never run: the tests stand in for subprocess.run\n")
+
+    def line(self, run):
+        return box.SparkLauncher(self.store, run).record()
+
+    def test_it_runs_the_launcher_s_record_once_with_a_time_limit(self):
+        run = FakeLauncherRun(RECORDED)
+        self.line(run)
+        self.assertEqual([([sys.executable, self.launcher, "record", "pixel-games", "--json"],
+                           {"cwd": box.ROOT, "capture_output": True, "text": True, "errors": "replace",
+                            "stdin": subprocess.DEVNULL, "timeout": 30})], run.calls)
+
+    def test_a_recorded_deploy_says_its_time_and_nothing_of_the_board_or_the_store(self):
+        said = self.line(FakeLauncherRun(RECORDED))
+        self.assertEqual("spark's store: recorded pixel-games, 2026-11-19T10:15:00+01:00", said)
+        for secret in (MAC, DEVICE, self.store):
+            self.assertNotIn(secret, said)
+
+    def test_the_envelope_is_the_last_line_of_the_answer(self):
+        said = self.line(FakeLauncherRun("a note\n" + stopped("no_port") + RECORDED + "\n"))
+        self.assertEqual("spark's store: recorded pixel-games, 2026-11-19T10:15:00+01:00", said)
+
+    def test_a_stop_says_its_code(self):
+        for code in ("no_port", "two_boards", "not_registered", "cannot_tell_board", "launcher_stale"):
+            with self.subTest(code):
+                said = self.line(FakeLauncherRun(stopped(code), 2))
+                self.assertEqual("spark's store: not recorded (%s)" % code, said)
+                self.assertNotIn(DEVICE, said)  # the envelope's subject and the launcher's stderr hold the port
+
+    def test_a_status_that_is_not_ok_is_not_recorded_whatever_its_data(self):
+        answer = json.loads(RECORDED)
+        answer["status"], answer["unchecked"] = "could-not-run", [{"code": "store_problem"}]
+        self.assertEqual("spark's store: not recorded (store_problem)",
+                         self.line(FakeLauncherRun(json.dumps(answer), 2)))
+
+    def test_an_answer_it_cannot_read_says_so_and_prints_none_of_it(self):
+        unreadable = "spark's store: not recorded (no answer that box.py can read)"
+        no_time = envelope(data={"entry": {"project": "pixel-games"}, "mac": MAC, "device": DEVICE})
+        for name, stdout in (("nothing", ""), ("no JSON", "Traceback in /Users/someone/spark\n"),
+                             ("a list", "[1]\n"), ("a number", "7\n"), ("ok with no time", no_time),
+                             ("a time that is no text", envelope(data={"entry": {"deployed": 5}})),
+                             ("data that is no object", envelope(data=[1])),
+                             ("a time that is a path", envelope(data={"entry": {"deployed": "/Users/someone/x"}})),
+                             ("a time that is a word", envelope(data={"entry": {"deployed": "Users"}})),
+                             ("a time with a space", envelope(data={"entry": {"deployed": "2026 x"}})),
+                             ("a time that is a MAC of digits", envelope(data={"entry": {"deployed": "34:85:18:12:34:56"}})),
+                             ("a time with a second line",
+                              envelope(data={"entry": {"deployed": "2026-11-19T10:15:00+01:00\n/Users/x"}})),
+                             ("a code that is a MAC", stopped(MAC)), ("a code with a digit", stopped("no_port2")),
+                             ("no stdout at all", None), ("JSON nested too deep to read", "[" * 100000),
+                             ("unchecked that is no list", envelope("could-not-run", unchecked=())[:-1]
+                              .replace('"unchecked":[]', '"unchecked":7')),
+                             ("a code with a space", stopped("no port")),
+                             ("a code with a path", stopped("/Users/someone/store")),
+                             ("a code that is no text", stopped(7)), ("no item", envelope("could-not-run"))):
+            with self.subTest(name):
+                self.assertEqual(unreadable, self.line(FakeLauncherRun(stdout, 2)))
+
+    def test_a_launcher_that_cannot_start_or_decode_says_so(self):
+        unreadable = "spark's store: not recorded (no answer that box.py can read)"
+        for error in (OSError(13, "Permission denied", "/Users/someone/python3"),
+                      UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")):
+            with self.subTest(type(error).__name__):
+                self.assertEqual(unreadable, self.line(FakeLauncherRun(error=error)))
+
+    def test_a_time_limit_says_not_known_because_the_record_can_still_land(self):
+        late = subprocess.TimeoutExpired(["python3"], 30)
+        self.assertEqual("spark's store: not known (time limit of 30 s)", self.line(FakeLauncherRun(error=late)))
+
+    def test_no_launcher_starts_nothing_and_names_the_register_step(self):
+        os.remove(self.launcher)
+        run = FakeLauncherRun(RECORDED)
+        self.assertEqual(NO_LAUNCHER, self.line(run))
+        self.assertEqual([], run.calls)
+
+    def test_a_folder_in_the_launcher_s_place_is_no_launcher(self):
+        os.remove(self.launcher)
+        os.mkdir(self.launcher)
+        run = FakeLauncherRun(RECORDED)
+        self.assertEqual(NO_LAUNCHER, self.line(run))
+        self.assertEqual([], run.calls)
+
+    def test_a_relative_store_runs_the_launcher_by_its_whole_path(self):
+        run = FakeLauncherRun(RECORDED)  # the launcher runs from the repository root, not from the caller's folder
+        box.SparkLauncher(os.path.relpath(self.store), run).record()
+        self.assertEqual(os.path.realpath(self.launcher), os.path.realpath(run.calls[0][0][1]))
+        self.assertTrue(os.path.isabs(run.calls[0][0][1]))
+
+    def test_a_reset_that_fails_after_the_record_still_exits_1(self):
+        class ResetFails(FakeRunner):
+            def run(self, args):
+                if args == ["reset"]:
+                    raise subprocess.CalledProcessError(1, ["mpremote"] + args, stderr="no device\n")
+                return super().run(args)
+        run = FakeLauncherRun(RECORDED)
+        with mock.patch.dict(os.environ, {"SPARK_HOME": self.store}), \
+                mock.patch.object(box, "Mpremote", lambda dry_run=False: ResetFails()), \
+                mock.patch.object(box.subprocess, "run", run), contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual(1, box.main(["deploy", "--py", "snake"]))
+        self.assertEqual(["spark's store: recorded pixel-games, 2026-11-19T10:15:00+01:00",
+                          "mpremote reset failed: no device"], said.getvalue().splitlines()[-2:])
+
+    def test_a_dry_run_prints_a_fixed_line_and_starts_nothing(self):
+        run = FakeLauncherRun(RECORDED)
+        with mock.patch.object(sys, "executable", "/Users/someone/.pyenv/versions/3.10.0/bin/python3"):
+            said = box.SparkLauncher(self.store, run, dry_run=True).record()
+        self.assertEqual(DRY_RECORD, said)
+        self.assertEqual([], run.calls)
+        os.remove(self.launcher)  # a dry run does not look for the launcher
+        self.assertEqual(DRY_RECORD, box.SparkLauncher(self.store, run, dry_run=True).record())
+
+    def test_the_run_is_looked_up_at_the_call_so_a_test_s_patch_reaches_it(self):
+        with mock.patch.object(box.subprocess, "run", FakeLauncherRun(RECORDED)) as run:
+            box.SparkLauncher(self.store).record()
+        self.assertEqual(1, len(run.calls))
+
+    def test_the_deploy_records_after_the_last_copy_and_before_the_reset(self):
+        events, said = [], []
+        runner = FakeRunner()
+        runner.run = lambda args, run=runner.run: events.append(args[0]) or run(args)
+        launcher = box.SparkLauncher(self.store, FakeLauncherRun(RECORDED, events=events))
+        box.Deploy(runner, crackle=NOT_BUILT, say=said.append, launcher=launcher, volume=3).run(["snake"])
+        self.assertEqual(["cp", "record", "reset"], events[-3:])
+        self.assertEqual(1, events.count("record"))
+        self.assertEqual("spark's store: recorded pixel-games, 2026-11-19T10:15:00+01:00", said[-1])
+
+    def test_whatever_the_launcher_answers_the_deploy_resets_and_exits_0(self):
+        runs = (FakeLauncherRun(stopped("no_port"), 2), FakeLauncherRun("", 2), FakeLauncherRun("no JSON"),
+                FakeLauncherRun(error=OSError("gone")), FakeLauncherRun(error=ValueError("bytes")),
+                FakeLauncherRun("[" * 100000),
+                FakeLauncherRun(error=subprocess.TimeoutExpired(["python3"], 30)))
+        for run in runs:
+            runner = FakeRunner()
+            with self.subTest((run.stdout or "")[:40] or run.error), \
+                    mock.patch.dict(os.environ, {"SPARK_HOME": self.store}), \
+                    mock.patch.object(box, "Mpremote", lambda dry_run=False: runner), \
+                    mock.patch.object(box.subprocess, "run", run), \
+                    contextlib.redirect_stdout(io.StringIO()) as said:
+                self.assertEqual(0, box.main(["deploy", "--py", "snake"]))
+                self.assertEqual(["reset"], runner.commands[-1])
+                self.assertEqual(1, len(run.calls))
+                self.assertRegex(said.getvalue().splitlines()[-1], r"^spark's store: not (recorded|known) \(")
+
+    def test_a_failed_deploy_records_nothing(self):
+        run = FakeLauncherRun(RECORDED)
+        with mock.patch.dict(os.environ, {"SPARK_HOME": self.store}), \
+                mock.patch.object(box, "Mpremote", lambda dry_run=False: FailingRunner(99)), \
+                mock.patch.object(box.subprocess, "run", run), mock.patch.object(box.time, "sleep"), \
+                contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(1, box.main(["deploy", "--py", "snake"]))
+        self.assertEqual([], run.calls)
+
+    def test_the_tests_main_deploys_meet_a_store_with_no_launcher(self):
+        runner = FakeRunner()
+        with mock.patch.object(box, "Mpremote", lambda dry_run=False: runner), \
+                mock.patch.object(box.subprocess, "run") as run, contextlib.redirect_stdout(io.StringIO()) as said:
+            self.assertEqual(0, box.main(["deploy", "--py", "snake"]))
+        run.assert_not_called()
+        self.assertEqual(NO_LAUNCHER, said.getvalue().splitlines()[-1])
+        self.assertEqual(["reset"], runner.commands[-1])
+
+    def test_volume_is_no_deploy_and_records_nothing(self):
+        runner = FakeRunner()
+        with mock.patch.dict(os.environ, {"SPARK_HOME": self.store}), \
+                mock.patch.object(box, "Mpremote", lambda dry_run=False: runner), \
+                mock.patch.object(box.subprocess, "run") as run, contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(0, box.main(["volume", "3"]))
+        run.assert_not_called()
+
+    def test_the_store_is_where_spark_keeps_it(self):
+        home = os.path.expanduser("~")
+        for environ, folder in (({"SPARK_HOME": "/a/store", "XDG_DATA_HOME": "/x"}, "/a/store"),
+                                ({"XDG_DATA_HOME": "/x"}, "/x/spark"),
+                                ({"SPARK_HOME": "", "XDG_DATA_HOME": "/x"}, "/x/spark"),
+                                ({"SPARK_HOME": "", "XDG_DATA_HOME": ""}, home + "/.local/share/spark"),
+                                ({}, home + "/.local/share/spark")):
+            with self.subTest(environ):
+                self.assertEqual(folder, box.spark_store(environ))
 
 
 class VolumeTest(unittest.TestCase):
