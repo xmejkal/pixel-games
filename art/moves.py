@@ -24,7 +24,7 @@ from PIL import Image, ImageDraw
 import mocap
 from detailed import (ACROBAT, CHILD, DARK, FIREMAN, FOOTBALLER, FRAME_MS, GAP, SEED, TALL, CharacterClip, Committed,
                       Pictures, write_clip)
-from export import Sheet
+from export import stacked
 from sets.rescue import snapped
 
 # each mover's character, its move, the row of its lift 0 (its span's floor) and the column its pivot starts at (None:
@@ -134,12 +134,7 @@ class MoveSheet:
         return [(move_line(move), self.strip(move)) for move in self.move_pictures]
 
     def image(self):
-        rows = self.rows()
-        sheet = Sheet(max(img.width for _, img in rows) + 20, sum(img.height + 28 for _, img in rows) + 10)
-        y = 6
-        for label, img in rows:
-            y = sheet.put(label, img, 10, y) + 10
-        return sheet.image
+        return stacked(self.rows())
 
 
 class Mover(namedtuple("Mover", "move row column plays", defaults=(1,))):

@@ -30,7 +30,7 @@ import mocap
 from brush import Sprite
 from detailed import (CLOSE_MS, DARK, FIREMAN, GAP, TALL, CharacterClip, Committed, DetailedFigure, NoRim,
                       RunPictures, on_dark, write_clip)
-from export import Sheet, q565
+from export import q565, stacked
 from sets.rescue import FEET, STRIPE, Figure, along
 
 HIPS = "hips"  # the middle of the two hip joints: the joint of the torso and of the back gear
@@ -373,12 +373,7 @@ class MakerSheet:
                 for k, (kind, _) in enumerate(PARTS)]
 
     def image(self):
-        rows = self.rows()
-        sheet = Sheet(max(img.width for _, img in rows) + 20, sum(img.height + 28 for _, img in rows) + 10)
-        y = 6
-        for label, img in rows:
-            y = sheet.put(label, img, 10, y) + 10
-        return sheet.image
+        return stacked(self.rows())
 
 
 class MakerClip:

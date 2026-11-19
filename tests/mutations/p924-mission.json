@@ -1,0 +1,152 @@
+[
+ {
+  "file": "art/mission.py",
+  "name": "a move is painted without the snap to the floor",
+  "find": "maker = MovePictures if mocap.named(self.cycle) in mocap.MOVES else Pictures",
+  "replace": "maker = Pictures"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "every cycle is painted as a move",
+  "find": "maker = MovePictures if mocap.named(self.cycle) in mocap.MOVES else Pictures",
+  "replace": "maker = MovePictures"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the row's character is not painted",
+  "find": "return maker(capture, height, character=self.character, cycle_name=self.cycle)",
+  "replace": "return maker(capture, height, cycle_name=self.cycle)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the height is not passed on",
+  "find": "return maker(capture, height, character=self.character, cycle_name=self.cycle)",
+  "replace": "return maker(capture, TALL, character=self.character, cycle_name=self.cycle)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the pass line is one byte more",
+  "find": "PASS_LINE = 2464000",
+  "replace": "PASS_LINE = 2464001"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the fireman's idle row is one that the PO said",
+  "find": "Row(FIREMAN, \"spray\", \"stands idle\", said=False, placeholder=NO_IDLE)",
+  "replace": "Row(FIREMAN, \"spray\", \"stands idle\", placeholder=NO_IDLE)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the child's run is one that the PO said",
+  "find": "Row(CHILD, \"child\", \"runs to the ladder\", said=False)",
+  "replace": "Row(CHILD, \"child\", \"runs to the ladder\")"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "a said row is marked as not named",
+  "find": "    if not row.said:",
+  "replace": "    if row.said:"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "a placeholder's line does not say why",
+  "find": "line += \"; a placeholder: \" + row.placeholder",
+  "replace": "line += \"; a placeholder\""
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the street is counted with two facings",
+  "find": "return w * h * 2",
+  "replace": "return w * h * 4"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the said bytes hold every row",
+  "find": "for row, p in self.painted if row.said)",
+  "replace": "for row, p in self.painted)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the size forgets the header",
+  "find": "return HEADER + self.street_bytes() + sum(p.size_bytes() for _, p in self.painted)",
+  "replace": "return self.street_bytes() + sum(p.size_bytes() for _, p in self.painted)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "what is left is counted from the said rows",
+  "find": "return line - self.size()",
+  "replace": "return line - self.said_bytes()"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the said rows' line prints the size",
+  "find": "HEADER, self.said_bytes()),",
+  "replace": "HEADER, self.size()),"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "a pack as big as the line is over it",
+  "find": "\"leaves\" if left >= 0 else",
+  "replace": "\"leaves\" if left > 0 else"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the printed line is always the pass line",
+  "find": "left = self.left(line)",
+  "replace": "left = self.left()"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the sheet shows the poses facing left",
+  "find": "on_dark(p.pictures))",
+  "replace": "on_dark(p.left))"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the sheet marks every row as a placeholder",
+  "find": "\", a placeholder\" if row.placeholder else \"\"",
+  "replace": "\", a placeholder\""
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main asks for the files of the cycles and the crowd, not of the rows",
+  "find": "mocap.open_capture(parser, args.cmu, [mocap.named(row.cycle) for row in MISSION])",
+  "replace": "mocap.open_capture(parser, args.cmu)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main takes the street's size from another picture",
+  "find": "committed_index()[\"ART\"][STREET][:2])",
+  "replace": "committed_index()[\"ART\"][\"rescue_run_r0\"][:2])"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main writes the sheet only with no --out",
+  "find": "    if args.out:",
+  "replace": "    if not args.out:"
+ },
+ {
+  "file": "art/export.py",
+  "name": "a stacked page is as wide as its first picture",
+  "find": "sheet = Sheet(max(img.width for _, img in rows) + 20,",
+  "replace": "sheet = Sheet(rows[0][1].width + 20,"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the street is another picture of the same size",
+  "find": "STREET = \"rescue_night\"",
+  "replace": "STREET = \"stack_noon\""
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main paints from another capture than the --cmu folder's",
+  "find": "[(row, row.pictures(capture)) for row in MISSION]",
+  "replace": "[(row, row.pictures(mocap.Capture())) for row in MISSION]"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main answers an exit code of 1 after a count",
+  "find": "    print(\"\\n\".join(pack.lines()))\n",
+  "replace": "    print(\"\\n\".join(pack.lines()))\n    return 1\n"
+ }
+]

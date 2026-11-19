@@ -76,6 +76,16 @@ class Sheet:
         return y + 18 + img.height
 
 
+def stacked(rows):
+    """A Sheet's image of rows, a label and its picture each, one row under the other: the page is as wide as the
+    widest picture, and a row starts 10 px under the picture before it."""
+    sheet = Sheet(max(img.width for _, img in rows) + 20, sum(img.height + 28 for _, img in rows) + 10)
+    y = 6
+    for label, img in rows:
+        y = sheet.put(label, img, 10, y) + 10
+    return sheet.image
+
+
 def checker(w, h, c=8):
     img = Image.new("RGB", (w, h), (240, 240, 240))
     d = ImageDraw.Draw(img)

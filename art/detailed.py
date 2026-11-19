@@ -28,7 +28,7 @@ from PIL import Image, ImageChops, ImageOps
 
 import mocap
 from brush import Sprite, rnd
-from export import Sheet, committed_index, from_bin, pack_bytes, q565
+from export import Sheet, committed_index, from_bin, pack_bytes, q565, stacked
 from sets.rescue import FEET, HELMET, HELMET_L, HELMET_TOP, Figure, along, dist, lighter
 
 TALL = 96  # px from the soles to the helmet's top, standing
@@ -782,11 +782,7 @@ class FigureSheet:
                  on_dark([run.alone(self.POSE), run.alone(self.POSE, turned=True)], self.ZOOM)),
                 ("the rims (--rim): %s, at %dx" % (", ".join(RIMS), self.ZOOM),
                  on_dark([run.alone(self.POSE, rim()) for rim in RIMS.values()], self.ZOOM))]
-        sheet = Sheet(max(img.width for _, img in rows) + 20, sum(img.height + 28 for _, img in rows) + 10)
-        y = 6
-        for label, img in rows:
-            y = sheet.put(label, img, 10, y) + 10
-        return sheet.image
+        return stacked(rows)
 
 
 class RunClip:
