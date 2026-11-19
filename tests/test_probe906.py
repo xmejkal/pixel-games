@@ -1595,6 +1595,27 @@ class ReviewScreenTest(unittest.TestCase):
         self.assertIn(("wrong: UP in task 1", gfx.YELLOW), words)
         self.assertIn("clean 0/5", [w for w, _ in words])
 
+    def test_two_wrong_picks_and_the_result_names_the_first(self):
+        box = Box(self).play()
+        box.frame(y=-70).frame()  # task 1 wants the fireman: a lean up is wrong
+        fireman, child = box.app.game.figures
+        box.frame(y=70)
+        fireman.x = fireman.lo
+        box.frame(y=70, fire=True).frame().frame(y=70).frame()  # task 2 wants the child: a lean down is wrong too
+        box.frame(y=-70)
+        child.x = child.lo
+        for _ in range(3000):
+            box.frame(y=-70)
+            if box.app.game.state == gfx.OVER:
+                break
+        box.frame()
+        self.assertIn("wrong: UP in task 1", [op[5] for op in box.out.cv.ops if op[4] == 3])
+
+    def test_the_intro_makes_the_way_outs_strip_before_any_pick(self):
+        box = Box(self)
+        self.assertIn(probe.QUIT_RECT, box.out.cv.kept)
+        self.assertEqual([], [line for line in box.lines() if "quit" in line])
+
     def test_the_result_screen_has_its_own_rect_right_of_the_ladder_and_of_the_fireman_at_his_place(self):
         self.assertEqual((131, 36, 183, 112), probe.RESULT_RECT)
         x, y, w, h = probe.RESULT_RECT

@@ -56,7 +56,7 @@
  {
   "file": "probe906_ladder.py",
   "name": "a lean that starts in READY is dropped",
-  "find": "                self.waiting = side",
+  "find": "                self.leans[self.n_leans], self.n_leans = side, self.n_leans + 1",
   "replace": "                pass"
  },
  {
@@ -80,8 +80,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "the pick comes before FIRE",
-  "find": "        if actions.fire.pressed:\n            self.act(at, boot)\n        if side:\n            self.pick(side, at)",
-  "replace": "        if side:\n            self.pick(side, at)\n        if actions.fire.pressed:\n            self.act(at, boot)"
+  "find": "        if fire:\n            self.act(at, boot)\n        if side:\n            self.pick(side, at)",
+  "replace": "        if side:\n            self.pick(side, at)\n        if fire:\n            self.act(at, boot)"
  },
  {
   "file": "probe906_ladder.py",
@@ -218,8 +218,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "the child climbs to the right",
-  "find": "child.x, child.up, child.pose = child.lo + ON_LADDER * climb.forward, climb.up, climb.pose",
-  "replace": "child.x, child.up, child.pose = child.lo - ON_LADDER * climb.forward, climb.up, climb.pose"
+  "find": "child.x, child.up, child.pose = child.lo + TO_LADDER * climb.forward, climb.up, climb.pose",
+  "replace": "child.x, child.up, child.pose = child.lo - TO_LADDER * climb.forward, climb.up, climb.pose"
  },
  {
   "file": "probe906_ladder.py",
@@ -248,8 +248,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "READY's end frame is a gap",
-  "find": "self.ready, side, self.play_ms, self.last_ms = False, self.waiting, now_ms, now_ms",
-  "replace": "self.ready, side, self.play_ms, self.last_ms, self.gaps = False, self.waiting, now_ms, now_ms, 1"
+  "find": "self.ready, side, fire, self.play_ms, self.last_ms = False, 0, False, now_ms, now_ms",
+  "replace": "self.ready, side, fire, self.play_ms, self.last_ms, self.gaps = False, 0, False, now_ms, now_ms, 1"
  },
  {
   "file": "probe906_ladder.py",
@@ -279,7 +279,7 @@
   "file": "probe906_ladder.py",
   "name": "PICK twice quits only in play",
   "find": "if self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):",
-  "replace": "if self.state == gfx.PLAY and self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):"
+  "replace": "if self.state == self.PLAY and self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):"
  },
  {
   "file": "probe906_ladder.py",
@@ -290,13 +290,13 @@
  {
   "file": "probe906_ladder.py",
   "name": "the result screen is drawn in each frame",
-  "find": "cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), gfx.OVER_RECT, self.result_draw)",
-  "replace": "cv.keep((RESULT_KEY, self.age), gfx.OVER_RECT, self.result_draw)"
+  "find": "cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), RESULT_RECT, self.result_draw)",
+  "replace": "cv.keep((RESULT_KEY, self.age), RESULT_RECT, self.result_draw)"
  },
  {
   "file": "probe906_ladder.py",
   "name": "the figures stay where the last round left them",
-  "find": "                self.figures[i].put(starts[i], -1)",
+  "find": "                self.figures[i].put(self.starts[i], -1)",
   "replace": "                pass"
  },
  {
@@ -320,8 +320,8 @@
  {
   "file": "tools/box.py",
   "name": "a dry run's box holds neither copy",
-  "find": "                 if dry or file in names]",
-  "replace": "                 if file in names]"
+  "find": "            if dry or file in names:",
+  "replace": "            if file in names:"
  },
  {
   "file": "probe906_ladder.py",
@@ -346,5 +346,167 @@
   "name": "no reset at the sitting's end",
   "find": "                box.reset(runner, sleep=sleep)  # also after a Ctrl-C",
   "replace": "                pass  # also after a Ctrl-C"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY keeps only its last lean",
+  "find": "                self.leans[self.n_leans], self.n_leans = side, self.n_leans + 1",
+  "replace": "                self.leans[0], self.n_leans = side, 1"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY keeps a ninth lean",
+  "find": "READY_WAITS = 8",
+  "replace": "READY_WAITS = 9"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY's picks come in reverse order",
+  "find": "            for k in range(self.n_leans):\n                self.pick(self.leans[k], 0)",
+  "replace": "            for k in range(self.n_leans - 1, -1, -1):\n                self.pick(self.leans[k], 0)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a reset takes only a lean of 40",
+  "find": "self.on = 1 if v >= LEAN_REST else -1 if v <= -LEAN_REST else 0",
+  "replace": "self.on = lean(v)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a reset takes 19 as a lean",
+  "find": "self.on = 1 if v >= LEAN_REST else -1 if v <= -LEAN_REST else 0",
+  "replace": "self.on = 1 if v >= LEAN_REST - 1 else -1 if v <= -LEAN_REST + 1 else 0"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a FIRE in READY is not listed",
+  "find": "                self.emit(\"p906 act none %s 0\" % (\"boot\" if self.fires[k] else \"click\"))",
+  "replace": "                pass"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY's picks come before its FIREs",
+  "find": "            for k in range(self.n_fires):  # FIRE first, as in a frame: each FIRE of READY holds nothing\n                self.emit(\"p906 act none %s 0\" % (\"boot\" if self.fires[k] else \"click\"))\n            for k in range(self.n_leans):\n                self.pick(self.leans[k], 0)",
+  "replace": "            for k in range(self.n_leans):\n                self.pick(self.leans[k], 0)\n            for k in range(self.n_fires):\n                self.emit(\"p906 act none %s 0\" % (\"boot\" if self.fires[k] else \"click\"))"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a FIRE in READY is BOOT's always",
+  "find": "                self.fires[self.n_fires], self.n_fires = boot.pushed, self.n_fires + 1",
+  "replace": "                self.fires[self.n_fires], self.n_fires = True, self.n_fires + 1"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a hold keeps the facing",
+  "find": "            self.x, self.holds, self.facing = place, True, TO_LADDER",
+  "replace": "            self.x, self.holds = place, True"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a stop in the removal goes through",
+  "find": "        except BaseException as e:  # noqa: B902  a stop signal in the removal too: said with what may be left",
+  "replace": "        except Exception as e:  # noqa: BLE001"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a stop is said as its repr",
+  "find": "        return str(e.code)",
+  "replace": "        return repr(e)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "no SIGTERM handler",
+  "find": "    signal.signal(signal.SIGTERM, stop)",
+  "replace": "    pass"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "no SIGHUP handler",
+  "find": "    signal.signal(signal.SIGHUP, stop)",
+  "replace": "    pass"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "one rm for both copies",
+  "find": "        for path, names, file in ((self.INDEX, root, self.INDEX), (self.pack, packs, name)):\n            if dry or file in names:\n                self.tried([\"rm\", \":\" + path])",
+  "replace": "        there = [\":\" + path for path, names, file in ((self.INDEX, root, self.INDEX), (self.pack, packs, name))\n                 if dry or file in names]\n        if there:\n            self.tried([\"rm\"] + there)"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the removal takes the pack before the index",
+  "find": "((self.INDEX, root, self.INDEX), (self.pack, packs, name))",
+  "replace": "((self.pack, packs, name), (self.INDEX, root, self.INDEX))"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the removal's first read is not tried again",
+  "find": "        root = board_names(self.tried([\"ls\", \":\"]))",
+  "replace": "        root = board_names(self.runner.run([\"ls\", \":\"]))"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the way out by hand is one rm",
+  "find": "return \"`mpremote rm :%s`, `mpremote rm :%s`, then `mpremote reset`\" % (self.INDEX, self.pack)",
+  "replace": "return \"`mpremote rm :%s :%s`, then `mpremote reset`\" % (self.INDEX, self.pack)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the result's streak is not capped at 5",
+  "find": "\"clean %d/%d\" % (min(tally.streak, STREAK), STREAK),",
+  "replace": "\"clean %d/%d\" % (tally.streak, STREAK),"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the wrong line names the last wrong pick",
+  "find": "            if not self.round_wrong:\n                self.wrong_side, self.wrong_task = side, task",
+  "replace": "            self.wrong_side, self.wrong_task = side, task"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a wrong round's result names no cause",
+  "find": "if tally.round_wrong and tally.wrong_task:",
+  "replace": "if False:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the result's wrong line says the other lean",
+  "find": "\"UP\" if tally.wrong_side == UP else \"DOWN\"",
+  "replace": "\"DOWN\" if tally.wrong_side == UP else \"UP\""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "5 IN A ROW: DONE is never shown",
+  "find": "\"%d IN A ROW: DONE\" % STREAK if tally.met else \"\"",
+  "replace": "\"\""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the result screen in the base game's box",
+  "find": "RESULT_RECT = (131, 36, 183, 112)",
+  "replace": "RESULT_RECT = (60, 70, 200, 100)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a glyph is missing from the intro's set",
+  "find": "\"ROUND 0123456789 time best .s wrong",
+  "replace": "\"ROUND 0123456789 time best s wrong"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the way out's strip is not made in the intro",
+  "find": "            elif not self.quit_made:",
+  "replace": "            elif False:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the intro has no run line",
+  "find": "\"stick LEFT/RIGHT: run\", ",
+  "replace": ""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "paint closes over the numbers",
+  "find": "                    x, y = self.marks[r.task - 1]",
+  "replace": "                    x, y = numbers[\"mark\"][r.task - 1]"
  }
 ]
