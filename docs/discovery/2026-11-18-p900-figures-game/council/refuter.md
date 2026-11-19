@@ -915,3 +915,60 @@ I could not check when P924 moved to Review (10:38): the API gives no time for a
 I did not check: DFRobot's overview pictures, P924's column on the board, the session's report.
 
 1 refuted, 12 partly, 9 hold
+
+# Ninth pass, 2026-11-19: D32 to D34, the readiness, the ratings and the board moves
+
+**The verdict:** one claim is refuted. The pass line of P905 (the switch prototype) is written as "asked", but it was never put to him before the commit. There are 11 partly and 11 hold, and 3 board actions are missing. Nothing was written in the tree. My scratch folder is removed.
+
+## 1. The readiness
+- "an experiment (the PO chose the next test on 2026-11-19 …": holds. By the rule, a test was chosen by a D before an option, and Q8 and Q14 are open. The precedent for D26 is the fifth pass. The weakest link is not the words but where they come from. The facilitator's reply of 11:38 Prague offered item 3: "If you want the switch's test next: your Ready order for P905". The folder never cites this, so on the page "With D33 it chooses the next test" reads as an inference.
+- "It is asked, and it is set before any result": **refuted**. Before 11:45:44 no text names "10 switches": no reply in the five sessions that hold it, no question in the options tool, and no comment on #1279 (the last is 7006678229, 11:37). The 11:38 reply asks five things, and the pass line is not one of them. The same claim is in the Decision needed line ("It is asked on 2026-11-19"), Q1's status ("is asked 2026-11-19"), A2's cell ("Asked of the PO 2026-11-19"), the Test line and D33 ("it is asked"). Fix, in each place: "to be asked in the next reply (not asked at the commit, 11:45 Prague)".
+
+## 2. Stands on
+- "9 H, 3 of which would change the decision": holds. A2 to A10 are open, and the three high cells are A2, A4 and A10. `check` printed "stands on 9 H, 3 would change the decision", and its output check passes. It also warns "brief.md: 220 lines; the guide is 150".
+- "high D33 for the frame half. The bytes half was not among the nine ratings": holds. The comment's row reads "A10, the frame half | … | high".
+
+## 3. D32
+- "His whole message repeats, unchanged …": holds. His message at 11:39:50 Prague, his first after the clear at 11:39:30, is the same string as the paste line. The reply's stamp of 10:38:30Z holds. "paste this line, changed where you disagree" holds, word for word.
+- He read the corrected table: holds. Comment 7006141011 says "Corrected at 11:19 Prague", which is before his message.
+- "So they accept the count as the result of the test": partly. The "So" follows from "no judgment of a row", which does not support it. Write: "His 'Done' closes the card. The facilitator reads it as his acceptance of the count as the test's result. His words confirm no row as the mission's design." The closing comment 7006863759 repeats the sentence.
+
+## 4. D33
+- The high and low sets match the comment, row by row: holds. "So one yes to this table also puts the switch's test first" is in the comment, word for word: holds. The definition of high holds too.
+- "(a game's own frame holds 19 fps)": partly. The comment's belief reads "a game's own frame with two 96 px figures holds 19 fps".
+- Q1 (brief.md:112), "riskier than A2 …, so one yes … puts A2's test first": partly. The "so" turns the reason around. The real reason is only in the 11:38 reply: "because its test is cheap and the skeleton needs a switch anyway". Write: "…riskier than A2. One yes still puts A2's test first, because its test is cheap and the skeleton needs a switch."
+
+## 5. D34
+- The Ready order holds: Status Ready at 11:43:38 Prague, Slice pixel-games. The feel-slice sentence is in #1284, word for word. "you pull the top card of your lane without asking" is in CLAUDE.local.md:24.
+- "in the pixel-games lane": partly. W6 (WORKING_AGREEMENTS.md, line 85) reads: "the sound session (the slices "pixel-games" and "graphics library") one in each". Write "in the sound session's lane".
+- "The session is past 100k of context": partly. It is true by the transcript's token counts: about 114k at 11:42 and 139k at 11:44 Prague. But the folder holds no evidence for it. The rule says "restart near 100k", not "restarts there". Tag it "(H the facilitator's note of its own session)", or drop it.
+- "options: none offered as a question": partly. Write "options: item 3 of the 11:38 reply, 'If you want the switch's test next: your Ready order for P905'".
+
+## 6. The changed header lines
+- Riskiest, "· D33: he rated A2 high": partly. The line says itself that D33 "does not say which of the two is riskier". Write "· proposed: the facilitator's pick among the three that D33 rates high. D34 tests it first".
+- Test line: the "Done when" quote "He tried each way and named the one he wants" matches #1284: holds. "two placeholder figures at today's size": partly. The card reads "on today's art and today's pool: two figures at today's size".
+- Decision needed, "which is Q1's open half for A2": partly. This is circular, because Q1 asks the pass line of "the riskiest test". Write "the pass line of the next test, P905 (D34)". The line also leaves out Q6, which is queued: "decides: the switch's binding · unblocks: Q5". Write "Then Q6 and Q5, which the switch prototype needs, then Q7, Q8, Q10 and Q14".
+- The chip and PICK: holds. PICK is D14 (games/engine/actions.py:6).
+- Hand-off, "a fifth, a sixth and a seventh time": partly. The eighth pass was applied in 62a76af (verification.md:58-59). Add "and an eighth, on D31 and Q1's proposal".
+
+## 7. Stale lines that the commit did not touch
+- verification.md:56, "· Q1, whose ratings decide between them": partly. D33 did not decide between them. Write "· D33 rates both high and does not decide. D34 tests A2 first".
+- brief.md:207, Waiting on the PO "Q1's first importance question is asked of him": partly. That question is answered, but the field is still set (since 11:21), and no new question has been posted.
+- The searches for "pending Q1", "unrated", "waits for the PO's order" and "No D chooses" find only the rule's comment and the dated Results row: holds.
+
+## 8. Missing actions
+- **Missing:** #1308 was closed at 11:46:28 Prague with comment 7006863759, after the commit. No Board actions row records it. The folder does not claim that the card is open.
+- **Missing:** a comment on #1279 with D32 to D34 and the pass-line question.
+- **Missing:** P905 #1284 has no comment, and its body still dates from 2026-11-18. It lacks D33 and D34, the proposed pass line and the gate of the chip look on a hold of PICK. The fresh session will pull this card, which is the same defect as the sixth pass found on P924.
+- The board moves of 11:43 hold: P924 is Done with no waiting field, and P905 is Ready. `check_backlog.py` printed "the limits hold". items.md's new row holds.
+
+## Searches
+- I read the diff, the comment, #1284, the closing comment and the GraphQL fields of #1308, #1284 and #1279.
+- I read both session transcripts with a small Python script.
+- I ran `check`, `check_backlog.py` and `board.py status`.
+
+## What stayed open
+- Whether the next reply asks the pass line: it comes after my run.
+- A GraphQL read of the whole board did not finish within 120 s and was moved to the background. It is read-only. I used `board.py status` instead.
+
+1 refuted, 11 partly, 11 hold, and 3 missing actions
