@@ -109,7 +109,8 @@ CLIMB_PACE = 2  # the child climbs this many times the captured pace: about 3.3 
 STREAK = 5  # clean rounds in a row: the pick line (`streak 5 met`)
 SLOW_MS = 52  # a gap between two frames of a round over this many ms is slow (the end line's slow)
 QUIT_MS = 3000  # a second PICK at most this long after the first ends the sitting
-ON_LADDER = -1  # the child's facing on the ladder: it leans back to the station at the left, so forward is left
+TO_LADDER = -1  # the facing toward the ladder, which leans back to the station at the left: the hold's and the climb's
+READY_WAITS = 8  # the leans and the FIREs that READY keeps, each up to this many: a ninth in one READY is dropped
 WIDTH = 320  # the screen's width (gfx.WIDTH)
 FEET = 214  # the row the soles stand on (games/rescue.py's FEET, art/mission.py's FEET)
 FIREMAN, CHILD = 0, 1  # the list of the figures: the fireman is drawn first, the child in front of him
@@ -180,8 +181,10 @@ class LeanEdge:
         self.on = 0  # the lean that answered and has not rested since: -1, 0 or 1
 
     def reset(self, v):
-        """Starts from the axis as it is: a lean now is no new lean."""
-        self.on = lean(v)
+        """Starts from the axis as it is: an axis at LEAN_REST or more from the middle is the lean that it was, in its
+        direction, so only an axis that came under LEAN_REST can start a new lean. A lean that sagged from the last
+        round's climb to 35 is no new lean when it leans to 45 again."""
+        self.on = 1 if v >= LEAN_REST else -1 if v <= -LEAN_REST else 0
 
     def read(self, v):
         side = lean(v)
@@ -265,9 +268,10 @@ class Walker:
         self.x = x
 
     def hold(self, place):
-        """FIRE: within HOLD_PX of place it holds the ladder there, until put() again. Answers whether it holds."""
+        """FIRE: within HOLD_PX of place it holds the ladder there, facing it (TO_LADDER) whichever way it ran, until
+        put() again. Answers whether it holds."""
         if not self.holds and -HOLD_PX <= self.x - place <= HOLD_PX:
-            self.x, self.holds = place, True
+            self.x, self.holds, self.facing = place, True, TO_LADDER
         return self.holds
 
     def picture(self):
@@ -349,20 +353,23 @@ class Round:
     frame's clock, None in round 1. figures: the two Walkers, the fireman first, at their start places. emit: where each
     `p906` line goes (print on the box, a list's append in a test). tally: the sitting's Tally (None: a new one). climb:
     the child's Climb (None: a climb that never ends, as for a round of the thin version's tests). step(now_ms, ms,
-    actions, boot, click) runs one frame: ms is the frame's, cut at 60 ms (gfx.Game.step), for the run and the climb,
-    and now_ms the frame's clock, for the gaps and the ms of each line.
+    actions, boot) runs one frame: ms is the frame's, cut at 60 ms (gfx.Game.step), for the run and the climb, now_ms
+    the frame's clock, for the gaps and the ms of each line, and boot the wrapped BOOT, which tells BOOT's FIRE from the
+    click's.
 
     Its first frame starts the round: its line, and READY from that frame's clock, where the stick's lean is no pick
-    (LeanEdge.reset). In READY the stick is read and its answer waits: a lean that starts in READY is the round's first
-    pick, at READY's end. READY's end is the round's clock: each later frame is a gap, and each line's last number is
-    the ms since it. Then each frame, in this order: FIRE, which holds the ladder when the fireman is active within
-    HOLD_PX of his place and ends task 1, else holds nothing (`act none`, not scored). each new lean of the stick's y,
-    a pick (UP the child, the other way the fireman), scored by the tally. the active figure runs with the stick's x,
-    the other stands. the climb. The child climbs while it is active at the foot of the held ladder, or on it, and the
-    stick leans up (LeanEdge's lean: from LEAN until it rests under LEAN_REST), with a line at each start and stop. The
-    round ends at the climb's first pose climb.end px up or more, with task 2's line, its end line, and `p906 streak 5
-    met` once in a sitting. No round ends by itself, and an ended one reads nothing. The child is active at the start.
-    The game draws from its state: figures, active, task (1 or 2), ready and ended."""
+    (LeanEdge.reset). In READY the stick and FIRE are read and wait. At READY's end each FIRE of READY is listed as
+    `act none` and then each lean that started in READY is a pick, in the order they came, each with 0 ms. READY keeps
+    up to READY_WAITS of each: a ninth in one READY is dropped. The frame where READY ends is the round's clock: each
+    later frame is a gap, and each line's last number is the ms since it. Then each frame runs in this order. FIRE
+    holds the ladder when the fireman is active within HOLD_PX of his place, and ends task 1. Any other FIRE holds
+    nothing (`act none`) and is not scored. Each new lean of the stick's y is a pick (UP the child, the other way the
+    fireman), scored by the tally. The active figure runs with the stick's x, and the other stands. Last, the climb:
+    the child climbs while it is active at the foot of the held ladder, or on it, and the stick leans up (LeanEdge's
+    lean, from LEAN until it rests under LEAN_REST), with a line at each start and stop. The round ends at the climb's
+    first pose climb.end px up or more, with task 2's line, its end line, and `p906 streak 5 met` once in a sitting. No
+    round ends by itself, and an ended one reads nothing. The child is active at the start. The game draws from its
+    state: figures, active, task (1 or 2), ready, ended and took, the round's ms."""
 
     def __init__(self, number, ended_ms, figures, emit, tally=None, climb=None):
         self.number, self.ended_ms, self.figures, self.emit = number, ended_ms, figures, emit
@@ -371,21 +378,29 @@ class Round:
         self.tally.start()
         self.climb.reset()
         self.start_ms, self.ready, self.active, self.task, self.ended = None, True, CHILD, 1, False
-        self.edge, self.waiting, self.climbing = LeanEdge(), 0, False  # waiting: a lean that started in READY
+        self.edge, self.climbing, self.took = LeanEdge(), False, 0
+        # READY's leans and FIREs, in the order they came, each list made once: READY_WAITS places
+        self.leans, self.fires, self.n_leans, self.n_fires = [0] * READY_WAITS, [False] * READY_WAITS, 0, 0
         self.play_ms = self.last_ms = self.gaps = self.worst = self.slow = 0  # the round's clock from READY's end
 
-    def step(self, now_ms, ms, actions, boot, click):
+    def step(self, now_ms, ms, actions, boot):
         if self.ended:
             return
         if self.start_ms is None:
             self.start(now_ms, actions)
-        side = self.edge.read(actions.y)
+        side, fire = self.edge.read(actions.y), actions.fire.pressed
         if self.ready:
-            if side:
-                self.waiting = side
+            if fire and self.n_fires < READY_WAITS:
+                self.fires[self.n_fires], self.n_fires = boot.pushed, self.n_fires + 1
+            if side and self.n_leans < READY_WAITS:
+                self.leans[self.n_leans], self.n_leans = side, self.n_leans + 1
             if time.ticks_diff(now_ms, self.start_ms) < READY_MS:
                 return
-            self.ready, side, self.play_ms, self.last_ms = False, self.waiting, now_ms, now_ms
+            self.ready, side, fire, self.play_ms, self.last_ms = False, 0, False, now_ms, now_ms
+            for k in range(self.n_fires):  # FIRE first, as in a frame: each FIRE of READY holds nothing
+                self.emit("p906 act none %s 0" % ("boot" if self.fires[k] else "click"))
+            for k in range(self.n_leans):
+                self.pick(self.leans[k], 0)
         else:
             gap = time.ticks_diff(now_ms, self.last_ms)
             self.last_ms, self.gaps = now_ms, self.gaps + 1
@@ -394,7 +409,7 @@ class Round:
             if gap > SLOW_MS:
                 self.slow += 1
         at = time.ticks_diff(now_ms, self.play_ms)
-        if actions.fire.pressed:
+        if fire:
             self.act(at, boot)
         if side:
             self.pick(side, at)
@@ -449,9 +464,9 @@ class Round:
         if child.on_ladder:
             climb.set(climb.ms + ms)
         else:
-            child.on_ladder, child.facing = True, ON_LADDER
+            child.on_ladder, child.facing = True, TO_LADDER
             climb.set(0)
-        child.x, child.up, child.pose = child.lo + ON_LADDER * climb.forward, climb.up, climb.pose
+        child.x, child.up, child.pose = child.lo + TO_LADDER * climb.forward, climb.up, climb.pose
         if climb.done():
             self.climbing = False
             self.emit("p906 climb stops %d %d" % (child.up, at))
@@ -590,7 +605,7 @@ def game_class(boot, click, numbers, pool=None):
 
         def play(self, pressed, held):
             r = self.round
-            r.step(self.last, self.ms, self.stick, boot, click)
+            r.step(self.last, self.ms, self.stick, boot)
             if r.ended:
                 self.ended_ms = self.last
                 self.die()
