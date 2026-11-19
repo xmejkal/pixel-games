@@ -135,11 +135,17 @@ READY_AT = (100, 56)  # READY's top left: 5 letters of 24 px, under the bar and 
 QUIT_RECT = (96, 228, 128, 12)  # "PICK again: quit", kept, in every state while the first PICK waits: under the feet
 QUIT_WORDS = "PICK again: quit"
 RESULT_KEY = "p906 result"  # the result screen's key with the round's number and whether FIRE starts the next
+# the result screen's own rect: right of the ladder and of the fireman's hold (x 80 to 130 at his place), so the
+# station's corner, the ladder and the child at the roof's edge stay in view
+RESULT_RECT = (131, 36, 183, 112)
+NIGHT, LADDER = SET + "_night", SET + "_ladder"  # the street's and the ladder's pictures
 ROUND_WORDS = ("clean", "wrong")  # a task's or a round's word in the log, by whether it had a wrong pick
-WARM = "PICK again: quit 0123456789 CLEAN WRONG time best s clean / 5 IN A ROW FIRE: again READY"  # glyphs made in the
-# intro, so no first draw of a letter falls in a round's clock (gfx.GLYPHS)
+# every glyph that a screen after the intro draws, made in the intro (gfx.GLYPHS): no first draw of a letter falls in
+# a round's clock
+WARM = "".join(BAR) + "READY" + QUIT_WORDS + "ROUND 0123456789 time best .s wrong: UP DOWN in task clean/ IN A ROW: " \
+    "DONE FIRE: again"
 INTRO = ("THE LADDER MISSION", "", "1 FIREMAN: stick DOWN picks him,", "  run to the ladder, FIRE: hold it",
-         "2 CHILD: stick UP picks it,", "  run to the ladder, UP: climb", "",
+         "2 CHILD: stick UP picks it,", "  run to the ladder, UP: climb", "stick LEFT/RIGHT: run", "",
          "FIRE = BOOT or the stick's click", "PICK twice: quit", "", "FIRE: start")
 INTRO_RECT = (16, 40, 288, 152)  # the intro's dark panel, kept. a line every 12 px from 10 px under its top
 INTRO_KEY = ("p906 intro",)
@@ -329,9 +335,13 @@ class Tally:
 
     def start(self):
         self.task_wrong = self.round_wrong = False
+        self.wrong_side = self.wrong_task = 0  # the round's first wrong pick: its lean (UP or the other way), its task
 
-    def pick(self, right):
+    def pick(self, right, side=0, task=0):
+        """A pick, right or wrong: side, its lean, and task, its task, kept for the round's first wrong one."""
         if not right:
+            if not self.round_wrong:
+                self.wrong_side, self.wrong_task = side, task
             self.task_wrong = self.round_wrong = True
 
     def task_ends(self):
@@ -446,7 +456,7 @@ class Round:
         on the street, or on the ladder with its height."""
         to = CHILD if side == UP else FIREMAN
         right = to == (FIREMAN if self.task == 1 else CHILD)
-        self.tally.pick(right)
+        self.tally.pick(right, side, self.task)
         child = self.figures[CHILD]
         place = "ladder %d" % child.up if child.on_ladder else "ground"
         self.emit("p906 pick %s %s %s %s %d" % (FIGURES[to], "right" if right else "wrong",
@@ -516,36 +526,43 @@ def pack_line(pool, size):
     return "pack pool %d" % size
 
 
-def game_class(boot, click, numbers, pool=None):
-    """The probe's game, a gfx.Game named ladder on the set mission. boot and click: the two Seen FIRE buttons of the
-    action map. numbers: NUMBERS. pool: s3lcd.pool on the box, for the pack line after the first load, or None. The
-    base game runs setup() in its constructor and again after each result screen, so the picture source and the two
-    walkers are made once in __init__, before the base's, and setup() only puts both figures at their start places and
-    makes a new Round. step() notes the intro's end (step 5 reads Exit there first, on the frame's clock). play() hands
-    each frame to the round with the frame's clock (self.last). The intro (draw_title), the bar (hud) and the result
-    screen (draw_over, step 5) are its own. It imports gfx, pictures and engine.subpixel here, as the board part and a
-    Mac test call it."""
+def drawn(pictures, cv, name, x, y):
+    """A picture drawn, or a RuntimeError with its name, so an empty scene cannot pass. A plain function, not a
+    closure, so a frame's call makes nothing on the heap."""
+    if not pictures.draw(cv, name, x, y):
+        raise RuntimeError("%s did not draw: no art" % name)
+
+
+def shape(cv, x, y, rows, colour, rim):
+    """Rows of widths from row y down, each centred on column x, over a rim of 1 px all round: first, for each row, a
+    rect of rim 1 px wider on both sides and 1 px higher and lower. Plain fills, no text."""
+    for k in range(len(rows)):
+        w = rows[k]
+        cv.fill(x - w // 2 - 1, y + k - 1, w + 2, 3, rim)
+    for k in range(len(rows)):
+        w = rows[k]
+        cv.fill(x - w // 2, y + k, w, 1, colour)
+
+
+def seconds(ms):
+    """ms as seconds with one place, in whole numbers: 8460 is 8.4."""
+    return "%d.%d s" % (ms // 1000, ms % 1000 // 100)
+
+
+def game_class(boot, numbers, pool=None):
+    """The probe's game, a gfx.Game named ladder on the set mission. boot: the wrapped BOOT of the action map, which
+    tells BOOT's FIRE from the click's. numbers: NUMBERS. pool: s3lcd.pool on the box, for the pack line after the
+    first load, or None. The base game runs setup() in its constructor and again after each result screen, so the
+    picture source, the two walkers, the climb, the tally and the exit are made once in __init__, before the base's,
+    and setup() only puts both figures at their start places and makes a new Round. step() reads Exit first, on the
+    frame's clock, then runs the base game's states and notes the intro's end. play() hands each frame to the round
+    with the frame's clock (self.last). The intro (draw_title), the bar (hud) and the result screen (draw_over) are its
+    own. No method that runs in each frame closes over a name of this function: what it needs is an attribute, so a
+    frame's call makes nothing on the heap (MicroPython puts a closure's names and arguments beyond 5 there). It imports
+    gfx, pictures and engine.subpixel here, as the board part and a Mac test call it."""
     import gfx
     import pictures
     from engine.subpixel import SubPixel
-
-    night, ladder = SET + "_night", SET + "_ladder"
-    ladder_x, ladder_y = numbers["ladder"]
-    starts = numbers["start"]
-
-    def drawn(cv, name, x, y):
-        if not pictures.draw(cv, name, x, y):
-            raise RuntimeError("%s did not draw: no art" % name)
-
-    def shape(cv, x, y, rows, colour):
-        """Rows of widths from row y down, each centred on column x, over a dark rim of 1 px all round: first, for
-        each row, a black rect 1 px wider on both sides and 1 px higher and lower. Plain fills, no text."""
-        for k in range(len(rows)):
-            w = rows[k]
-            cv.fill(x - w // 2 - 1, y + k - 1, w + 2, 3, gfx.BLACK)
-        for k in range(len(rows)):
-            w = rows[k]
-            cv.fill(x - w // 2, y + k, w, 1, colour)
 
     def walker(source, i):
         figure = FIGURES[i]
@@ -562,10 +579,6 @@ def game_class(boot, click, numbers, pool=None):
         return Walker(SubPixel(), numbers["speed"][figure] // PACE, numbers["stride"][figure], numbers["place"][i],
                       WIDTH - 1 - reach, run, (run[0][stand], run[1][stand]), hold, climb)
 
-    def seconds(ms):
-        """ms as seconds with one place, in whole numbers: 8460 is 8.4."""
-        return "%d.%d s" % (ms // 1000, ms % 1000 // 100)
-
     class Ladder(gfx.Game):
         name = "ladder"
         ART = (SET, None)
@@ -573,26 +586,31 @@ def game_class(boot, click, numbers, pool=None):
         OVER_MS = 900  # FIRE starts the next round this long after a round's end (gfx.Game's, named here for the plan)
         bg = gfx.BLACK
         accent = gfx.YELLOW
+        WHITE, YELLOW, BLACK, DARK, GREY = gfx.WHITE, gfx.YELLOW, gfx.BLACK, gfx.DARK, gfx.GREY
+        TITLE, PLAY = gfx.TITLE, gfx.PLAY
+        base_step = gfx.Game.step  # the base game's states, reached without a closure
 
         def __init__(self):
+            self.pics, self.boot, self.marks, self.starts = pictures, boot, numbers["mark"], numbers["start"]
+            self.ladder_x, self.ladder_y = numbers["ladder"]
             source = PackSource(pictures.art_index.ART, numbers["pivot"])
             self.figures = [walker(source, i) for i in range(len(FIGURES))]
             pose_ms, travel, advance = numbers["climb"]
             self.climb = Climb(pose_ms // CLIMB_PACE, travel, advance, numbers["end"])
             self.tally, self.exit = Tally(), Exit(print)
-            self.number, self.ended_ms, self.round = 0, None, None
+            self.number, self.ended_ms, self.round, self.quit_made = 0, None, None, False
             # bound once: a frame binds no method
             self.bar_draw, self.intro_draw, self.quit_draw = self.draw_bar, self.draw_intro, self.draw_quit
             self.result_draw = self.draw_result
             gfx.Game.__init__(self)
 
         def setup(self):
-            self.covers = pictures.load(*self.ART)  # the street covers the screen, so no fill goes under it
+            self.covers = self.pics.load(*self.ART)  # the street covers the screen, so no fill goes under it
             if pool is not None and self.number == 0:  # the first load made the pool
-                print(pack_line(pool, pictures.art_index.PACKS[SET][1]))
+                print(pack_line(pool, self.pics.art_index.PACKS[SET][1]))
             self.number += 1
             for i in range(len(self.figures)):
-                self.figures[i].put(starts[i], -1)
+                self.figures[i].put(self.starts[i], -1)
             self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb)
 
         def step(self, now_ms, pressed, held):
@@ -600,97 +618,111 @@ def game_class(boot, click, numbers, pool=None):
             is read only here: App.play sets it after setup() ran."""
             if self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):
                 raise Quit
-            intro = self.state == gfx.TITLE
-            gfx.Game.step(self, now_ms, pressed, held)
-            if intro and self.state == gfx.PLAY:
+            intro = self.state == self.TITLE
+            self.base_step(now_ms, pressed, held)
+            if intro and self.state == self.PLAY:
                 print("p906 intro ends %s" % ("fire" if pressed else "time"))
 
         def play(self, pressed, held):
             r = self.round
-            r.step(self.last, self.ms, self.stick, boot)
+            r.step(self.last, self.ms, self.stick, self.boot)
             if r.ended:
                 self.ended_ms = self.last
                 self.die()
                 self.age = 0  # the base game took this frame's age before the end: the result screen's starts now
 
         def paint_static(self, cv):
-            drawn(cv, night, 0, 0)
-            drawn(cv, ladder, ladder_x, ladder_y)
+            drawn(self.pics, cv, NIGHT, 0, 0)
+            drawn(self.pics, cv, LADDER, self.ladder_x, self.ladder_y)
 
         def paint(self, cv):
             r = self.round
             for i in range(len(r.figures)):  # the fireman first, the child in front of him
                 f = r.figures[i]
                 name, dx, dy = f.picture()
-                drawn(cv, name, f.x + dx, FEET - f.up + dy)
+                drawn(self.pics, cv, name, f.x + dx, FEET - f.up + dy)
             f = r.figures[r.active]
-            shape(cv, f.x, FEET - f.up + f.picture()[2] - ARROW_GAP - len(ARROW) + 1, ARROW, gfx.WHITE)
+            shape(cv, f.x, FEET - f.up + f.picture()[2] - ARROW_GAP - len(ARROW) + 1, ARROW, self.WHITE, self.BLACK)
             if not r.ended:  # the yellow mark: the figure to pick, else the place to run to
                 wanted = FIREMAN if r.task == 1 else CHILD
                 if r.active != wanted:
                     f = r.figures[wanted]
-                    shape(cv, f.x, FEET - f.up + f.picture()[2] - ARROW_GAP - len(MARK) + 1, MARK, gfx.YELLOW)
+                    shape(cv, f.x, FEET - f.up + f.picture()[2] - ARROW_GAP - len(MARK) + 1, MARK, self.YELLOW,
+                          self.BLACK)
                 else:
-                    x, y = numbers["mark"][r.task - 1]
-                    shape(cv, x, y - len(MARK) // 2, MARK, gfx.YELLOW)
+                    x, y = self.marks[r.task - 1]
+                    shape(cv, x, y - len(MARK) // 2, MARK, self.YELLOW, self.BLACK)
             if r.ready:
-                cv.big("READY", READY_AT[0], READY_AT[1], gfx.WHITE, 3)
+                cv.big("READY", READY_AT[0], READY_AT[1], self.WHITE, 3)
 
         def hud(self, cv):
             """The bar, drawn once with its constant key and copied in each frame after, then the task block over the
             copy, which covers what paint drew there, then the way out while it is armed."""
             cv.keep(BAR_KEY, BAR_RECT, self.bar_draw)
-            cv.fill(BLOCK_X, 8 * (self.round.task - 1) + 1, BLOCK_W, BLOCK_W, gfx.YELLOW)
+            cv.fill(BLOCK_X, 8 * (self.round.task - 1) + 1, BLOCK_W, BLOCK_W, self.YELLOW)
             if self.exit.armed:
                 cv.keep(QUIT_WORDS, QUIT_RECT, self.quit_draw)
 
         def draw_bar(self, cv):
             """All 24 rows, as a new strip is black: the dark, then the three rows, white."""
-            cv.fill(BAR_RECT[0], BAR_RECT[1], BAR_RECT[2], BAR_RECT[3], gfx.DARK)
+            cv.fill(BAR_RECT[0], BAR_RECT[1], BAR_RECT[2], BAR_RECT[3], self.DARK)
             for k in range(len(BAR)):
-                cv.text(BAR[k], BAR_X, 8 * k, gfx.WHITE)
+                cv.text(BAR[k], BAR_X, 8 * k, self.WHITE)
 
         def draw_quit(self, cv):
             x, y, w, h = QUIT_RECT
-            cv.fill(x, y, w, h, gfx.DARK)
-            cv.text(QUIT_WORDS, x, y + 2, gfx.YELLOW)
+            cv.fill(x, y, w, h, self.DARK)
+            cv.text(QUIT_WORDS, x, y + 2, self.YELLOW)
 
         def draw_title(self, cv):
-            """The intro: its panel, kept, over the street and the ladder, and the way out while it is armed."""
+            """The intro: its panel, kept, over the street and the ladder, and the way out while it is armed. In the
+            intro's first frame the way out's strip is made too, copied at alpha 0 so it does not show: its first
+            draw cannot fall in a round's clock."""
             cv.keep(INTRO_KEY, INTRO_RECT, self.intro_draw)
             if self.exit.armed:
                 cv.keep(QUIT_WORDS, QUIT_RECT, self.quit_draw)
+            elif not self.quit_made:
+                cv.keep(QUIT_WORDS, QUIT_RECT, self.quit_draw, 0)
+                self.quit_made = True
 
         def draw_intro(self, cv):
-            """The panel's lines, and every glyph that a later screen draws, made here once, outside every round."""
+            """The panel's lines, and every glyph that a later screen draws (WARM), made here once, outside every
+            round."""
             x, y, w, h = INTRO_RECT
-            cv.fill(x, y, w, h, gfx.DARK)
-            cv.box(x, y, w, h, gfx.YELLOW)
+            cv.fill(x, y, w, h, self.DARK)
+            cv.box(x, y, w, h, self.YELLOW)
             for k in range(len(INTRO)):
-                cv.text(INTRO[k], x + 8, y + 10 + 12 * k, gfx.YELLOW if k == 0 else gfx.WHITE)
+                cv.text(INTRO[k], x + 8, y + 10 + 12 * k, self.YELLOW if k == 0 else self.WHITE)
             for ch in WARM:
                 cv.glyph(ch)
 
         def draw_over(self, cv):
             """The result screen, kept with the round's number as its key, drawn again once when FIRE starts the next
             round, OVER_MS after the end (the base game's rule)."""
-            cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), gfx.OVER_RECT, self.result_draw)
+            cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), RESULT_RECT, self.result_draw)
 
         def draw_result(self, cv):
-            x, y, w, h = gfx.OVER_RECT
+            """In its own rect right of the ladder, so the station's corner, the ladder and both figures stay in view:
+            ROUND N, the round's time, the best time, the cause of a wrong round, the streak (5 at most) and, once the
+            sitting met the streak, its words, then FIRE: again after OVER_MS. No verdict word."""
+            x, y, w, h = RESULT_RECT
             tally, r = self.tally, self.round
-            cv.fill(x, y, w, h, gfx.BLACK)
+            cv.fill(x, y, w, h, self.BLACK)
             cv.box(x, y, w, h, self.accent)
-            word = ROUND_WORDS[tally.round_wrong].upper()
-            cv.big(word, x + w // 2 - 8 * len(word), y + 8, gfx.RED if tally.round_wrong else gfx.GREEN, 2)
-            lines = ["time " + seconds(r.took), "best " + seconds(tally.best_ms), "clean %d/%d" % (tally.streak,
-                                                                                                  STREAK)]
-            if tally.met:
-                lines.append("%d IN A ROW" % STREAK)
-            for k in range(len(lines)):
-                cv.text(lines[k], x + w // 2 - 4 * len(lines[k]), y + 32 + 12 * k, gfx.WHITE if k < 3 else gfx.YELLOW)
+            head = "ROUND %d" % r.number
+            cv.big(head, x + w // 2 - 8 * len(head), y + 8, self.WHITE, 2)
+            wrong = ""
+            if tally.round_wrong and tally.wrong_task:
+                wrong = "wrong: %s in task %d" % ("UP" if tally.wrong_side == UP else "DOWN", tally.wrong_task)
+            rows = ("time " + seconds(r.took), "best " + seconds(tally.best_ms), wrong,
+                    "clean %d/%d" % (min(tally.streak, STREAK), STREAK),
+                    "%d IN A ROW: DONE" % STREAK if tally.met else "")
+            for k in range(len(rows)):
+                if rows[k]:
+                    cv.text(rows[k], x + w // 2 - 4 * len(rows[k]), y + 30 + 12 * k,
+                            self.YELLOW if k in (2, 4) else self.WHITE)
             if self.age >= self.OVER_MS:
-                cv.text("FIRE: again", x + w // 2 - 44, y + h - 14, gfx.YELLOW)
+                cv.text("FIRE: again", x + w // 2 - 44, y + h - 14, self.YELLOW)
 
     return Ladder
 
@@ -719,7 +751,7 @@ def board():
     except (ImportError, AttributeError):  # no s3lcd, or an older image without the pool: no pack line
         pool = None
     try:
-        app.run(games=(game_class(boot, click, NUMBERS, pool),), knob=None, speaker=None, action_map=action_map)
+        app.run(games=(game_class(boot, NUMBERS, pool),), knob=None, speaker=None, action_map=action_map)
     except Quit:
         pass
     print("done")

@@ -356,7 +356,7 @@ class Box:
         boot, click = probe.Seen(self.boot), probe.Seen(self.click)
         self.out = Out()
         self.app = app.App(None, engine_actions.ActionMap((boot, click), (self.d14,), self.encoder, self.stick),
-                           games=(probe.game_class(boot, click, self.numbers, pool),), out=self.out)
+                           games=(probe.game_class(boot, self.numbers, pool),), out=self.out)
         self.app.start()
         self.frame()
 
@@ -603,10 +603,10 @@ class BoardTest(unittest.TestCase):
         self.assertEqual(["pads 44 43", "map", "run"], did)
         self.assertEqual(["p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2", "done"], lines)
         self.assertEqual((None, None, 1), (got["knob"], got["speaker"], len(got["games"])))
-        wrapped_boot, wrapped_click, numbers, pool = got["games"][0].args
-        self.assertEqual(([boot, click], written()[1], "the pool"),
-                         ([wrapped_boot.button, wrapped_click.button], numbers, pool))
-        self.assertEqual([wrapped_boot, wrapped_click], list(got["map"].fire_bindings))
+        wrapped_boot, numbers, pool = got["games"][0].args
+        fire = list(got["map"].fire_bindings)
+        self.assertEqual(([boot, click], written()[1], "the pool"), ([b.button for b in fire], numbers, pool))
+        self.assertIs(fire[0], wrapped_boot)
         self.assertEqual(((d14,), "the encoder"), (got["map"].pick_bindings, got["map"].encoder))
 
     def test_a_pin_map_with_no_stick_is_refused_in_one_line_and_runs_nothing(self):
@@ -1323,7 +1323,8 @@ class WholeGameTest(unittest.TestCase):
         self.assertIn("time %d.%d s" % (ms // 1000, ms % 1000 // 100), seen)
         self.assertIn("best %d.%d s" % (ms // 1000, ms % 1000 // 100), seen)
         self.assertIn("clean 1/5", seen)
-        self.assertNotIn("5 IN A ROW", seen)
+        self.assertIn("ROUND 1", seen)
+        self.assertEqual([], [w for w in seen if w in ("CLEAN", "WRONG") or w.startswith(("wrong", "5 IN A ROW"))])
         self.assertNotIn("FIRE: again", seen)
         box.frame()
         self.assertEqual([], box.out.cv.words)  # kept
@@ -1341,7 +1342,9 @@ class WholeGameTest(unittest.TestCase):
         lines = box.lines()
         self.assertEqual(1, lines.count("p906 streak 5 met"))
         self.assertTrue(lines[lines.index("p906 streak 5 met") - 1].startswith("p906 round 5 ends clean "))
-        self.assertIn("5 IN A ROW", box.out.cv.seen)
+        self.assertIn("5 IN A ROW: DONE", box.out.cv.seen)
+        self.assertIn("clean 5/5", box.out.cv.seen)
+        self.assertNotIn("clean 6/5", box.out.cv.seen)  # the sixth clean round shows 5 at most
 
     def test_a_pick_pair_quits_in_the_intro_in_play_and_on_the_result_screen(self):
         for where in ("intro", "play", "result"):
@@ -1353,7 +1356,7 @@ class WholeGameTest(unittest.TestCase):
                     finish(box)
                 box.frame(pick=True)
                 self.assertEqual("p906 quit armed", box.lines()[-1])
-                self.assertIn("PICK again: quit", box.out.cv.words)
+                self.assertIn(probe.QUIT_WORDS, [op[5] for op in box.out.cv.ops if op[4] == 3])  # its kept strip
                 with self.assertRaises(probe.Quit):
                     box.frame(ms=2959, pick=True)
 
@@ -1577,6 +1580,58 @@ def end_if_left(pid):
         os.kill(pid, 9)
     except ProcessLookupError:
         pass
+
+
+class ReviewScreenTest(unittest.TestCase):
+    """The review's points on the screen: the result screen's lines and rect, the glyphs made in the intro, the
+    intro's run line, and no closure in a frame's methods."""
+
+    def test_a_wrong_rounds_result_names_its_first_wrong_pick_in_yellow(self):
+        box = Box(self).play()
+        box.frame(y=-70).frame()  # task 1 wants the fireman: a lean up is wrong
+        finish(box)
+        box.frame()
+        words = [(op[5], op[6]) for op in box.out.cv.ops if op[4] == 3]
+        self.assertIn(("wrong: UP in task 1", gfx.YELLOW), words)
+        self.assertIn("clean 0/5", [w for w, _ in words])
+
+    def test_the_result_screen_has_its_own_rect_right_of_the_ladder_and_of_the_fireman_at_his_place(self):
+        self.assertEqual((131, 36, 183, 112), probe.RESULT_RECT)
+        x, y, w, h = probe.RESULT_RECT
+        self.assertLessEqual(x + w, 314)
+        box = finish(Box(self).play())
+        box.frame()
+        fills = [op for op in box.out.cv.ops if op[4] == 0 and op[:4] == (x, y, x + w, y + h)]
+        self.assertEqual(1, len(fills))
+
+    def test_every_glyph_that_a_screen_draws_after_the_intro_is_made_in_the_intro(self):
+        box = Box(self)
+        box.out.cv.seen.clear()
+        box.play()
+        box.frame(y=-70).frame()  # a wrong pick
+        finish(box)
+        box.frame(ms=900)
+        for _ in range(5):
+            again(box)
+            finish(box)
+            box.frame(ms=900)
+        box.frame(pick=True)
+        drawn = set("".join(box.out.cv.seen) + probe.QUIT_WORDS + "0123456789")
+        self.assertEqual(set(), drawn - set(probe.WARM))
+        self.assertIn("5 IN A ROW: DONE", box.out.cv.seen)
+
+    def test_the_intro_says_that_the_sticks_left_and_right_run_and_fits_its_panel(self):
+        self.assertIn("stick LEFT/RIGHT: run", probe.INTRO)
+        x, y, w, h = probe.INTRO_RECT
+        self.assertLessEqual(y + 10 + 12 * (len(probe.INTRO) - 1) + 8, y + h)
+
+    def test_no_method_of_a_frame_closes_over_a_name(self):
+        Game = probe.game_class(None, written()[1])
+        for name in ("step", "play", "paint_static", "paint", "hud", "draw_title", "draw_over"):
+            code = getattr(Game, name).__code__
+            with self.subTest(method=name):
+                self.assertEqual((), code.co_freevars)
+                self.assertLessEqual(code.co_argcount, 5)
 
 
 class MacValuesTest(unittest.TestCase):
