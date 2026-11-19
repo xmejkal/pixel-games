@@ -30,6 +30,7 @@ START_X = (140, 260)  # px: each figure's hips at a round's start; the fireman i
 PLAYING, PASS, FAIL, IDLE, CONTROL = range(5)
 ENDS = ("playing", "pass", "fail", "idle", "control")
 TASK_WORDS = ("clean", "wrong")  # a task's word in its line, by whether it is wrong
+CARD_WORDS = ("", "PASS", "%d WRONG" % WRONG_MAX, "IDLE", "CONTROL")  # each end's word on the result card
 
 # What a switch or an act counts as (Tally), and its word in the log
 FIRST, EXTRA, BACK, SAME, REACHED, OTHER, STRAY = range(7)
@@ -227,6 +228,7 @@ class AutoWay(Way):
 
 
 WAYS = (StickWay, ClickWay, DoubleWay, HoldWay, PickWay, KnobWay, AutoWay)  # the menu's order
+QUIT = len(WAYS)  # the menu's last row
 
 
 class Tally:
@@ -450,3 +452,201 @@ class Round:
     def marking(self):
         """Whether WRONG shows: MARK_MS from the moment a task turned wrong."""
         return self.mark_at is not None and time.ticks_diff(self.now, self.mark_at) < MARK_MS
+
+
+class Menu:
+    """The menu, with no drawing: a row for each way and QUIT last. The cursor moves one row for each new lean of the
+    stick's y and stops at both ends. FIRE starts the row's way. QUIT asks for FIRE a second time, and a move of the
+    cursor takes the first press back. best and marked: each way's best streak, and whether a round of it passed (or,
+    for the control way, ended with CONTROL). changes counts each change, so the drawing knows when to draw again.
+    reset(actions) runs each time the menu comes back, in place of a step: the lean now is no new lean, and the
+    frame's push starts nothing."""
+
+    def __init__(self):
+        self.cursor, self.armed, self.changes, self.edge = 0, False, 0, LeanEdge()
+        self.best, self.marked = [0] * len(WAYS), [False] * len(WAYS)
+
+    def reset(self, actions):
+        self.edge.reset(actions.y)
+        self.armed, self.changes = False, self.changes + 1
+
+    def step(self, actions):
+        """One frame: the row whose way FIRE starts, QUIT at its second press, or None."""
+        to = max(0, min(QUIT, self.cursor + self.edge.read(actions.y)))
+        if to != self.cursor:
+            self.cursor, self.armed, self.changes = to, False, self.changes + 1
+        if not actions.fire.pressed:
+            return None
+        if self.cursor < QUIT:
+            return self.cursor
+        if self.armed:
+            return QUIT
+        self.armed, self.changes = True, self.changes + 1
+        return None
+
+    def record(self, row, end, best):
+        """A round of the row's way ended with end, its best streak best."""
+        self.best[row] = max(self.best[row], best)
+        if end == PASS or end == CONTROL:
+            self.marked[row] = True
+        self.changes += 1
+
+
+def game_class(boot, click):
+    """The probe's game, a gfx.Game named switchtest on Rescue's art set: the menu, then a round of the way it picks,
+    then the result card, then the menu again. boot and click are the two Seen FIRE buttons of the action map. It starts
+    in play (TITLE_MS 0). The base game runs setup() in its constructor and again after each card, so the menu, the dice
+    and the seven ways are built once in __init__, before the base's, and setup() makes only the round's figures anew.
+    play() hands each frame to the menu or the round with the frame's clock (self.last). The top bar (hud, draw_hud)
+    and the card (draw_over) are its own: the base card says "game over" and is kept by the score, which stays 0 here.
+    It imports gfx, pictures and rescue here, as the board part and a Mac test call it: rescue needs framebuf."""
+    import gfx
+    import pictures
+    import rescue
+
+    feet, lane, mark = rescue.FEET, rescue.LANE, rescue.MARK
+    spray, run_w = rescue.SIZES["spray"], rescue.SIZES["run"]
+    child_w, child_h = rescue.PEOPLE_SIZES[rescue.CHILD]
+    # each picture a (name, width) pair, made once: a frame makes no name
+    fireman_runs = tuple(tuple((n, run_w) for n in rescue.POSES["run", side]) for side in "rl")
+    fireman_acts = tuple(tuple((n, spray) for n in rescue.POSES["spray", side]) for side in "rl")
+    fireman_stands = tuple((rescue.POSES["spray", side][0], spray) for side in "rl")  # the hose ready, as Rescue's
+    child_runs = tuple(tuple((n, child_w) for n in rescue.PEOPLE_POSES[rescue.CHILD, "run", side]) for side in "rl")
+    child_acts = tuple(tuple((n, child_w) for n in rescue.PEOPLE_POSES[rescue.CHILD, "wave", side]) for side in "rl")
+    wave_pose_ms = rescue.WAVE_MS // rescue.WAVE_POSES
+    big_names = ("FIREMAN", "CHILD")  # the task's wanted figure, big
+    menu_rect = (24, 32, 272, 8 + 16 * (QUIT + 1))  # the menu's panel, kept like the score bar
+    ready_y, task_y, arrow_y = 90, lane - 40, lane - 8  # READY and WRONG, the task's name, the arrow's tip row - 3
+
+    def drawn(cv, name, x, y):
+        if not pictures.draw(cv, name, x, y):
+            raise RuntimeError("%s did not draw: no art" % name)
+
+    class Switchtest(gfx.Game):
+        name = "switchtest"
+        hint = "switch between two figures"
+        ART = ("rescue", None)
+        TITLE_MS = 0
+        bg = rescue.Rescue.bg
+        accent = gfx.ORANGE
+
+        def __init__(self):
+            self.menu, self.dice = Menu(), gfx.Dice(905)
+            self.ways = tuple(way() for way in WAYS)
+            self.row = 0
+            gfx.Game.__init__(self)
+
+        def setup(self):
+            self.covers = pictures.load(*self.ART)  # the street covers the screen, so no fill goes under it
+            self.figures = [
+                SteeredFigure(START_X[FIREMAN], 1, rescue.SPEED_PX_S, rescue.STRIDE_PX, rescue.PICTURE_H,
+                              fireman_runs, fireman_acts, rescue.SPRAY_POSE_MS, fireman_stands),
+                SteeredFigure(START_X[CHILD], -1, rescue.PERSON_PX_S[rescue.CHILD],
+                              rescue.PERSON_STRIDE_PX[rescue.CHILD], child_h, child_runs, child_acts, wave_pose_ms)]
+            self.round, self.fresh = None, True  # fresh: the menu's next frame is its reset
+
+        def play(self, pressed, held):
+            actions, r = self.stick, self.round
+            if r is None:
+                if self.fresh:
+                    self.fresh = False
+                    self.menu.reset(actions)
+                    return
+                row = self.menu.step(actions)
+                if row == QUIT:
+                    raise Quit
+                if row is not None:
+                    self.row, self.round = row, Round(self.ways[row], self.figures, self.dice, print, self.last)
+                return
+            r.step(self.last, self.ms, actions, boot, click)
+            if r.end != PLAYING:
+                self.menu.record(self.row, r.end, r.tally.best)
+                self.die()
+
+        def paint_static(self, cv):
+            drawn(cv, "rescue_night", 0, 0)
+
+        def paint(self, cv):
+            r = self.round
+            if r is None:
+                cv.keep(("switchtest menu", self.menu.changes), menu_rect, self.draw_menu)
+                return
+            if not r.ready:
+                rescue.Rescue.draw_ring(cv, r.ring, REACH_PX, gfx.YELLOW)
+            for i in range(len(r.figures)):
+                f = r.figures[i]
+                name, w = f.picture(r.act_ms(i))
+                drawn(cv, name, f.x - w // 2, feet - f.h + 1)
+            x = r.figures[r.active].x  # the arrow over the active figure: four fills, as Rescue's draw_help
+            cv.fill(x - 3, arrow_y, 7, 1, mark)
+            cv.fill(x - 2, arrow_y + 1, 5, 1, mark)
+            cv.fill(x - 1, arrow_y + 2, 3, 1, mark)
+            cv.fill(x, arrow_y + 3, 1, 1, mark)
+            if r.ready:
+                cv.big("READY", gfx.WIDTH // 2 - 60, ready_y, gfx.WHITE, 3)
+                return
+            word = big_names[r.wanted]
+            w = 16 * len(word)
+            cv.big(word, max(0, min(gfx.WIDTH - w, r.ring - w // 2)), task_y, gfx.WHITE, 2)
+            if r.marking():
+                cv.big("WRONG", gfx.WIDTH // 2 - 60, ready_y, gfx.RED, 3)
+
+        def draw_menu(self, cv):
+            x, y, w, h = menu_rect
+            cv.fill(x, y, w, h, gfx.BLACK)
+            cv.box(x, y, w, h, gfx.GREY)
+            m = self.menu
+            for i in range(QUIT):
+                way = WAYS[i]
+                cv.text("%s %-14s best %2d %s" % ("> " if i == m.cursor else "  ", way.label, m.best[i],
+                                                  ("control" if way.control else "PASS") if m.marked[i] else ""),
+                        x + 4, y + 6 + 16 * i, gfx.YELLOW if m.marked[i] else gfx.WHITE)
+            quit_row = "QUIT: FIRE again" if m.armed else "QUIT"
+            cv.text(("> " if m.cursor == QUIT else "  ") + quit_row, x + 4, y + 6 + 16 * QUIT,
+                    gfx.RED if m.armed else gfx.GREY)
+
+        def hud(self, cv):
+            """The top bar, two lines of 8 px, drawn again only when the screen, the way, the streak or the wrong
+            tasks change."""
+            r = self.round
+            if r is None:
+                cv.keep((self.name, 0, 0, 0, 0), gfx.HUD_RECT, self.draw_hud)
+            else:
+                cv.keep((self.name, 1, self.row, r.tally.streak, r.tally.wrong), gfx.HUD_RECT, self.draw_hud)
+
+        def draw_hud(self, cv):
+            cv.fill(0, 0, gfx.WIDTH, gfx.HUD_RECT[3], gfx.DARK)
+            r = self.round
+            if r is None:
+                cv.text("P905 SWITCH TEST: pick a way", 0, 0, gfx.WHITE)
+                cv.text("stick up/down: row  FIRE: start", 0, 8, gfx.GREY)
+                return
+            cv.text(r.way.label, 0, 0, gfx.WHITE)
+            cv.text("streak %d/%d" % (r.tally.streak, STREAK_TO_PASS), 120, 0, gfx.YELLOW)
+            wrong = "wrong %d" % r.tally.wrong
+            cv.text(wrong, gfx.WIDTH - 8 * len(wrong), 0, gfx.RED if r.tally.wrong else gfx.GREY)
+            cv.text(r.way.hint, 0, 8, gfx.GREY)
+
+        def draw_over(self, cv):
+            """The result card: the way, the end, the streak and the best streak, kept like the bar. Its timing is the
+            base game's: FIRE goes back to the menu OVER_MS after the end, and only then the card says so."""
+            r = self.round
+            cv.keep((self.name, self.row, r.end, r.tally.streak, r.tally.best), gfx.OVER_RECT, self.draw_card)
+            if self.age >= self.OVER_MS:
+                x, y, w, h = gfx.OVER_RECT
+                cv.text("FIRE: menu", x + w // 2 - 40, y + h - 20, gfx.YELLOW)
+
+        def draw_card(self, cv):
+            x, y, w, h = gfx.OVER_RECT
+            r = self.round
+            cv.fill(x, y, w, h, gfx.BLACK)
+            cv.box(x, y, w, h, self.accent)
+            cv.box(x + 3, y + 3, w - 6, h - 6, gfx.GREY)
+            label, word = r.way.label, CARD_WORDS[r.end]
+            cv.text(label, x + w // 2 - 4 * len(label), y + 10, gfx.WHITE)
+            colour = (gfx.WHITE, gfx.GREEN, gfx.RED, gfx.GREY, gfx.CYAN)[r.end]
+            cv.big(word, x + w // 2 - 8 * len(word), y + 26, colour, 2)
+            line = "streak %d  best %d" % (r.tally.streak, r.tally.best)
+            cv.text(line, x + w // 2 - 4 * len(line), y + 52, gfx.WHITE)
+
+    return Switchtest

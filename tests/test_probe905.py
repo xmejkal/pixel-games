@@ -2,11 +2,14 @@
 lean, the seven ways to switch, each threshold pinned on both sides 1 ms or 1 px apart. Run from the repository root:
 python3 -B -m unittest tests.test_probe905."""
 
+import contextlib
+import io
 import os
 import sys
 import time
 import types
 import unittest
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -19,9 +22,11 @@ from drawing_tft import DrawingTft  # noqa: E402,F401  first: it puts games/ and
 if not hasattr(time, "ticks_add"):  # the stubs give ticks_diff, ticks_us and ticks_ms; app.run and Round add
     time.ticks_add = lambda a, b: a + b
 
+import app  # noqa: E402
+import gfx  # noqa: E402
 import probe905_switch as probe  # noqa: E402
 from engine import actions as engine_actions  # noqa: E402
-from test_actions import FakeButton  # noqa: E402
+from test_actions import FakeButton, FakeEncoder, FakeStick  # noqa: E402
 
 T0 = 7919  # ms: the first frame's clock in a test, no round number
 
@@ -666,6 +671,313 @@ class RoundTest(unittest.TestCase):
         self.assertEqual("p905 act child stray", p.lines[-1])
         self.assertFalse(p.round.marking())
         self.assertEqual(0, p.round.act_ms(probe.CHILD))
+
+
+class MenuTest(unittest.TestCase):
+    """The menu: the seven ways and QUIT, with no drawing."""
+
+    def menu(self):
+        m = probe.Menu()
+        m.reset(frame())
+        return m
+
+    def move(self, m, *ys):
+        for y in ys:
+            m.step(frame(y=y))
+        return m.cursor
+
+    def test_it_holds_a_row_for_each_way_and_quit_last(self):
+        self.assertEqual(len(probe.WAYS), probe.QUIT)
+        self.assertEqual((0, [0] * 7, [False] * 7), (self.menu().cursor, self.menu().best, self.menu().marked))
+
+    def test_the_cursor_moves_one_row_for_each_new_lean_and_stops_at_both_ends(self):
+        m = self.menu()
+        self.assertEqual(1, self.move(m, 70, 88, 95))  # one lean: one row
+        self.assertEqual(3, self.move(m, 3, 70, 5, 70))
+        self.assertEqual(7, self.move(m, *([3, 70] * 9)))  # stops at QUIT
+        self.assertEqual(0, self.move(m, *([3, -70] * 11)))  # stops at the first way
+
+    def test_fire_starts_the_rows_way(self):
+        m = self.menu()
+        self.move(m, 70, 3, 70, 3, 70, 3)
+        self.assertIsNone(m.step(frame(held=True)))
+        self.assertEqual(3, m.step(frame(fire=True)))
+
+    def test_quit_needs_fire_twice_and_a_cursor_move_takes_the_first_press_back(self):
+        m = self.menu()
+        self.move(m, *([70, 3] * 7))
+        self.assertEqual(probe.QUIT, m.cursor)
+        self.assertIsNone(m.step(frame(fire=True)))
+        self.assertTrue(m.armed)
+        self.assertEqual(probe.QUIT, m.step(frame(fire=True)))
+        m = self.menu()
+        self.move(m, *([70, 3] * 7))
+        m.step(frame(fire=True))
+        self.move(m, -70, 3, 70, 3)  # away and back: the first press is gone
+        self.assertFalse(m.armed)
+        self.assertIsNone(m.step(frame(fire=True)))
+        self.assertEqual(probe.QUIT, m.step(frame(fire=True)))
+
+    def test_reset_with_a_leaning_stick_and_fire_down_moves_nothing_and_starts_nothing(self):
+        m = self.menu()
+        self.move(m, 70, 3, 70)
+        m.reset(frame(fire=True, y=75))
+        self.assertIsNone(m.step(frame(held=True, y=80)))
+        self.assertEqual(2, m.cursor)
+        m = self.menu()
+        self.move(m, *([70, 3] * 7))
+        m.step(frame(fire=True))
+        m.reset(frame())  # the menu comes back: QUIT's first press is gone
+        self.assertIsNone(m.step(frame(fire=True)))
+
+    def test_it_records_each_ways_best_and_its_mark(self):
+        m = self.menu()
+        m.record(2, probe.FAIL, 4)
+        m.record(2, probe.PASS, 10)
+        m.record(2, probe.IDLE, 6)
+        m.record(6, probe.CONTROL, 10)
+        m.record(5, probe.IDLE, 3)
+        self.assertEqual([0, 0, 10, 0, 0, 3, 10], m.best)
+        self.assertEqual([False, False, True, False, False, False, True], m.marked)
+
+
+class Pictures:
+    """pictures stood in: every set is loaded, and every draw is recorded and answers True."""
+
+    load_ms = 0
+
+    def __init__(self):
+        self.drawn = []
+
+    def load(self, game=None, only=None):
+        return True
+
+    def load_steps(self, game=None, only=None):
+        return iter(())
+
+    def free(self):
+        pass
+
+    def draw(self, cv, name, x, y, alpha=255):
+        self.drawn.append((name, x, y))
+        return True
+
+
+class WordsCanvas(gfx.Canvas):
+    """gfx.Canvas that also keeps the words of each text and big call: words since its start, seen since it was made.
+    A kept rect's words show only in the frame that draws it. big records one op with its words in place of its
+    glyphs' fills, which need the board's font (the stub's framebuf has none), so a big word shows in the ops."""
+
+    seen = None
+
+    def start(self):
+        gfx.Canvas.start(self)
+        self.words = []
+        if self.seen is None:
+            self.seen = []
+
+    def text(self, words, x, y, c):
+        self.words.append(words)
+        self.seen.append(words)
+        gfx.Canvas.text(self, words, x, y, c)
+
+    def big(self, words, x, y, c, scale=2):
+        self.words.append(words)
+        self.seen.append(words)
+        self.ops.append((x, y, x + 8 * scale * len(words), y + 8 * scale, 3, words, c, x, y))
+
+
+class Out:
+    """The App's output: each frame the game draws on a WordsCanvas, as Game.draw does on the board."""
+
+    def __init__(self):
+        self.cv = WordsCanvas()
+        self.cv.start()
+
+    def clear(self):
+        pass
+
+    def reset(self):
+        pass
+
+    def draw(self, game, us, overlay):
+        self.cv.start()
+        game.draw(self.cv)
+
+
+class Box:
+    """The real app.App with the probe's game in a lineup of one: the FIRE buttons wrapped (Seen), PICK, the knob's
+    encoder and the stick, the fakes of tests/test_actions.py, pictures stood in, and no knob in the App. The clock
+    moves by each frame's ms."""
+
+    def __init__(self, test):
+        self.now, self.said, self.pictures = T0, io.StringIO(), Pictures()
+        stack = contextlib.ExitStack()
+        test.addCleanup(stack.close)
+        stack.enter_context(contextlib.redirect_stdout(self.said))
+        stack.enter_context(mock.patch.object(app, "pictures", self.pictures))
+        stack.enter_context(mock.patch.dict(sys.modules, {"pictures": self.pictures}))
+        stack.enter_context(mock.patch.object(app, "gc", types.SimpleNamespace(
+            collect=lambda: None, mem_alloc=lambda: 279361, mem_free=lambda: 7000003)))
+        stack.enter_context(mock.patch.object(time, "ticks_ms", lambda: self.now))
+        self.boot, self.click, self.d14 = FakeButton(), FakeButton(), FakeButton()
+        self.encoder, self.stick = FakeEncoder(), FakeStick(0, 0)
+        boot, click = probe.Seen(self.boot), probe.Seen(self.click)
+        self.out = Out()
+        self.app = app.App(None, engine_actions.ActionMap((boot, click), (self.d14,), self.encoder, self.stick),
+                           games=(probe.game_class(boot, click),), out=self.out)
+        self.app.start()
+        self.frame()  # out of the title: TITLE_MS is 0
+        self.frame()  # the menu's reset
+
+    def frame(self, ms=41, fire=False, held=False, boot=False, click=False, pick=False, turn=0, x=0, y=0):
+        self.now += ms
+        for button, pushed in ((self.boot, fire or boot), (self.click, click), (self.d14, pick)):
+            button.pushes.append(pushed)
+        self.boot.held = held or fire or boot
+        self.click.held = click
+        self.encoder.turns.append(turn)
+        self.stick.x, self.stick.y = x, y
+        self.app.frame()
+        return self
+
+    def lines(self):
+        return [line for line in self.said.getvalue().splitlines() if line.startswith("p905 ")]
+
+    def start(self, row):
+        """The menu's cursor down to row, FIRE, and READY's 600 ms."""
+        for _ in range(row - self.app.game.menu.cursor):
+            self.frame(y=70).frame()
+        self.frame(fire=True).frame().frame(ms=600)
+        return self.app.game.round
+
+    def to_ring(self):
+        r = self.app.game.round
+        r.figures[r.wanted].x = r.ring
+        return self
+
+
+def card(box):
+    """The frame's ops from the card's first fill, which covers OVER_RECT, on."""
+    x, y, w, h = gfx.OVER_RECT
+    ops = box.out.cv.ops
+    return ops[[i for i, op in enumerate(ops) if op[:5] == (x, y, x + w, y + h, 0)][-1]:]
+
+
+class GameTest(unittest.TestCase):
+    """The probe's game through app.App, with no pack: it never skips."""
+
+    def test_the_game_is_switchtest_on_rescues_set_and_starts_in_play(self):
+        box = Box(self)
+        game = box.app.game
+        self.assertEqual(("switchtest", ("rescue", None), 0), (game.name, game.ART, game.TITLE_MS))
+        self.assertEqual(gfx.PLAY, game.state)
+        self.assertIsNone(box.app.knob)
+        self.assertIsNone(box.app.volume_pane)
+
+    def test_pick_reaches_the_game_in_a_lineup_of_one(self):
+        box = Box(self)
+        box.start(4)
+        box.frame(pick=True)
+        self.assertEqual("p905 switch child first", box.lines()[-1])
+        self.assertNotIn("pick switchtest", box.said.getvalue())
+
+    def test_the_knobs_turn_reaches_the_game_with_no_knob_in_the_app(self):
+        box = Box(self)
+        box.start(5)
+        box.frame(turn=1)
+        self.assertEqual("p905 switch child first", box.lines()[-1])
+        box.frame(turn=-1)
+        self.assertEqual("p905 switch fireman extra", box.lines()[-1])
+
+    def test_the_click_and_boot_reach_the_game_apart(self):
+        box = Box(self)
+        box.start(1)
+        box.frame(boot=True)
+        self.assertEqual("p905 act fireman other", box.lines()[-1])
+        box.frame(click=True)
+        self.assertEqual("p905 switch child first", box.lines()[-1])
+
+    def test_a_round_draws_the_street_both_figures_the_ring_and_the_task(self):
+        box = Box(self)
+        box.start(0)
+        box.pictures.drawn.clear()
+        box.frame()
+        names = [name for name, _, _ in box.pictures.drawn]
+        self.assertEqual("rescue_night", names[0])
+        self.assertTrue(names[1].startswith("rescue_spray_r"), names)  # the fireman stands, facing right
+        self.assertTrue(names[2].startswith("rescue_child_run_l"), names)
+        self.assertIn("CHILD", box.out.cv.words)
+
+    def test_the_top_bar_is_drawn_again_when_only_the_wrong_tasks_change(self):
+        box = Box(self)
+        box.start(0)
+        box.frame()
+        self.assertEqual([], [w for w in box.out.cv.words if w.startswith("wrong ")])  # kept: not drawn again
+        box.frame(fire=True)  # the fireman acts, but the task wants the child: wrong, the streak stays 0
+        self.assertEqual("p905 act fireman other", box.lines()[-1])
+        self.assertIn("wrong 1", box.out.cv.words)
+        self.assertIn("streak 0/10", box.out.cv.words)
+        box.frame()
+        self.assertEqual([], [w for w in box.out.cv.words if w.startswith("wrong ")])
+
+    def test_two_cards_with_the_same_streak_and_another_end_draw_differently_with_no_game_over(self):
+        box = Box(self)
+        box.start(1)
+        for _ in range(500):  # no input: idle
+            box.frame()
+        self.assertEqual("p905 round click ends idle streak 0 best 0 tasks 0 wrong 0", box.lines()[-1])
+        box.frame(ms=900)
+        first = card(box)
+        box.frame(fire=True).frame()  # the menu, and its reset
+        box.start(1)
+        for _ in range(2):  # an other, the switch, the ring and the act: two wrong tasks
+            box.frame(boot=True).frame(click=True).to_ring().frame(boot=True).frame()
+        box.frame(boot=True)
+        self.assertEqual("p905 round click ends fail streak 0 best 0 tasks 2 wrong 3", box.lines()[-1])
+        box.frame(ms=900)
+        self.assertNotEqual(first, card(box))
+        self.assertEqual(["IDLE", "3 WRONG"], [w for w in box.out.cv.seen if w in probe.CARD_WORDS])
+        self.assertEqual([], [w for w in box.out.cv.seen if w in ("game over", "tap to retry")])
+        self.assertIn("FIRE: menu", box.out.cv.seen)
+
+    def test_after_a_passed_round_fire_at_900_ms_not_899_shows_the_menu_with_its_best_and_pass_on_its_row(self):
+        box = Box(self)
+        box.start(5)
+        for k in range(10):
+            box.frame(turn=1 if k % 2 == 0 else -1).to_ring().frame(fire=True)
+        self.assertEqual("p905 round knob ends pass streak 10 best 10 tasks 10 wrong 0", box.lines()[-1])
+        box.frame(ms=899, fire=True)
+        self.assertEqual(gfx.OVER, box.app.game.state)  # outside
+        self.assertNotIn("FIRE: menu", box.out.cv.words)
+        box.frame(ms=1, fire=True)  # inside: 900
+        self.assertEqual(gfx.PLAY, box.app.game.state)
+        rows = [w for w in box.out.cv.words if "best" in w]
+        self.assertEqual(8, len([w for w in box.out.cv.words if w.startswith(("> ", "  "))]))
+        self.assertEqual([w for w in rows if w.startswith("> ")], [w for w in rows if "KNOB" in w])
+        knob = [w for w in rows if "KNOB" in w][0]
+        self.assertIn("best 10", knob)
+        self.assertIn("PASS", knob)
+        self.assertIsNone(box.app.game.round)
+        self.assertEqual(5, box.app.game.menu.cursor)
+
+    def test_the_menu_comes_back_with_its_own_reset_so_a_push_or_a_lean_then_starts_nothing(self):
+        box = Box(self)
+        box.start(5)
+        for _ in range(500):
+            box.frame()
+        box.frame(ms=900, fire=True)  # the card goes
+        box.frame(fire=True, y=70).frame(held=True, y=75)  # the menu's first frame: its reset drops both
+        self.assertIsNone(box.app.game.round)
+        self.assertEqual(5, box.app.game.menu.cursor)
+
+    def test_quit_pressed_twice_raises_quit(self):
+        box = Box(self)
+        for _ in range(7):
+            box.frame(y=70).frame()
+        box.frame(fire=True).frame()
+        with self.assertRaises(probe.Quit):
+            box.frame(fire=True)
 
 
 if __name__ == "__main__":
