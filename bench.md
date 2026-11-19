@@ -2026,8 +2026,10 @@ Not measured:
 
 - The game code: nothing was deployed. The probe lends the box one pack and an index of that pack alone for a
   sitting, runs from RAM on the code that the box holds, and takes both copies away again. The box's code is the
-  one of the section P905 above: no deploy since. After each of the three sittings the session read the box back:
-  `ls :` showed `art_index.mpy` and no `art_index.py`, and `ls :packs` showed no `mission.pak`.
+  one of the section P905 above, by spark's store: its last deploy to the box is still the one by `box.py` on
+  2026-11-19 at 10:11:37 Prague (read at 23:45 Prague, after the play). A copy made outside `box.py` is not
+  recorded there. After each of the three sittings the session read the box back: `ls :` showed `art_index.mpy`
+  and no `art_index.py`, and `ls :packs` showed no `mission.pak`.
 - The logs: `logs/run-p906-ladder.log` is smoke run 1, the thin version with no climb and no tally,
   `python3 -B probe906_ladder.py --minutes 1` from branch p906-ladder (86f694a), 17:45:14 to 17:49:30 Prague by the
   Mac's clock, exit 0, 68 lines. `logs/run-p906-ladder-2.log` is smoke run 2, the whole game, from e1a20f5, 20:05:19
@@ -2038,12 +2040,15 @@ Not measured:
 - Each log starts with `p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2` and says
   `pack pool 773470`. The play's log says `import 1551 ms` (line 7) and
   `switch ladder 709 ms, load 675 ms, import 0 ms` (line 11).
-- The reading was fixed before any run, in the plan that the PO approved at 16:40 Prague (on #1285). Three pass
-  lines: each finished round after the first reads 19.0 fps or more, from the end line's `gaps` and `ms`, and with
-  fewer than 3 rounds after the first the line is not read. 5 clean rounds in a row, read as the log's
+- The three pass lines were fixed before any run, in the plan that the PO approved at 16:40 Prague (on #1285).
+  Each finished round after the first reads 19.0 fps or more, from the end line's `gaps` and `ms`. With fewer
+  than 3 rounds after the first, the line is not read. 5 clean rounds in a row, read as the log's
   `streak 5 met`. After that streak he finishes 2 more rounds, and nobody asks him to. A round is wrong when it had
   a pick of the figure that its task does not want, also when that pick changes nothing. The verdict is the first
   sitting's.
+- The review of the build changed two rules of the tally after smoke run 1 and before smoke run 2: each lean that
+  starts in READY is a pick, and one lean detector follows the stick through the whole sitting. The "ready to
+  play" comment on #1285 names both. A pick of READY carries 0 ms, and no pick line of the play's log does.
 - The smoke runs: nobody pressed FIRE (`p906 intro ends time`), and neither log holds a pick or an end line. After
   `p906 round 1 starts after 0` each log has eight `fps ladder` lines, and each says 24. Both figures stood, so this
   is a lower limit for the cost of a frame.
@@ -2059,8 +2064,11 @@ Not measured:
   picture: "the walk felt slow".
 - The rate line: not read. One finished round follows the first, and the plan reads the line with 3 or more.
   Beside it: rounds 1 and 2 read 24.92 and 24.90 fps (lines 105 and 145, calculated), with two figures that ran and
-  a climb. These are the first rates of a real round.
+  a climb. These are the first rates of a real round. The plan leaves a sitting's first round out of the line.
+  So only round 2's rate is of the kind that the line reads.
 - The pick line: not met. The log holds no `streak 5 met`. Rounds 1 and 2 ended wrong, and the streak stayed at 0.
+  Of the sitting's 8 wrong picks, 5 are `same` lines, which changed no figure (lines 80, 118, 172, 173 and 179).
+  Round 1's one wrong pick is such a line.
 - The play-on line: not read, because the streak was never met.
 - The wrong picks at a round's start: in rounds 1 and 2 the log has `pick child wrong same ground` and then
   `pick fireman right switch ground`, 600 ms and 440 ms later (lines 80 and 81, 118 and 119). That is a lean up and
@@ -2077,11 +2085,12 @@ Not measured:
   child active, which holds nothing. Then the quit.
 - Round 1 took 68.8 s, and its first line of his is `act none click 52099` (line 79). The log has no line for a
   run to the left or right, so it does not show what he did before it.
-- The frame: in the windows of lines 25 to 189 the `time` lines give a paint of 12.0 to 13.9 ms, a send of 3.3 to
+- The frame: in the windows of lines 25 to 189 the `time` lines give a paint of 12.0 to 13.9 ms, a send of 2.6 to
   10.5 ms and a gc of 3.3 to 4.2 ms, and the worst gap of a window is 40 to 77 ms. The end lines count 5 gaps over
   52 ms in round 1 and none in round 2. The intro's first frame took about 0.5 s (`title 501`, line 14), and the
-  bar's one draw shows as `hud 50` (line 26). Both are outside every round. The heap line says 236,960 bytes in
-  round 1 and 278,480 from the first result screen on (lines 28 to 192).
+  bar's one draw shows as `hud 50` (line 26). Both are outside every round. The heap line says 236,960 to 237,664
+  bytes in round 1 (lines 28 to 100). From the first result screen on it says 278,480 to 279,264 (lines 110 to
+  192).
 - The pace: the figures run at half their captured speed (`PACE = 2`), which is 99 px a second for the fireman
   and 54 for the child. The child's way from its start place to the ladder's foot is 165 px, so it takes 3.1 s
   (calculated).
