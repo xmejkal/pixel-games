@@ -1125,3 +1125,61 @@ The table's 11 rows match my recount in every column. These sentences say more t
 Not checked: the figures' act sizes, because I did not trace which act poses the probe uses.
 
 1 refuted, 13 partly, 12 hold, 4 missing actions
+
+# Thirteenth pass (2026-11-19, after D42 to D44)
+
+The refuter read `git diff ef22773..f064717` for brief.md, risks-and-tests.md, verification.md, story-map.md and items.md. It also read the session's transcript, the photo of his knob's module, the comments on #1320, #1284 and #1279, the board fields of the four cards by GraphQL, and `bench.md` at a089674. It wrote nothing else in the tree.
+
+## 1. D42, D43 and D44 against his words
+
+- **Holds:** his own words in all three rows are exact. "hmm, alright, so lets do a short update and add the knob button using the system when youre done" (14:15:44Z). "OK, maybe the encoder doesn't have a button, even though it feels like it does, I can press it down. But I see no other pin to connect" (14:24:43Z). "Park it" (14:31:30Z). "sounds good, do it" (14:35:45Z).
+- **REFUTED, D42's quote of the facilitator:** "If you want that looked at, say so, and I file it as an idea card with your words." The transcript holds this sentence only in the facilitator's own script that wrote D42, at 14:28:27Z. The words to him before his order are a narration at 14:10:05Z: "The knob's button can't be used as things stand: the board exposes only GA, GB, VCC and GND, and the pin map has no wire for the push switch. Shop photos suggest the knob has one, but nobody has verified your unit, so I'll file it as an idea card if you want that checked." Fix: quote these words, or mark the quote as the facilitator's reconstruction. The substance holds: the offer named an idea card, and his words ordered the work.
+- **REFUTED, D43's quote of the facilitator:** "are you fine with soldering one wire onto that little blue board? If yes, I plan it as P932 after I close today's record. If no, I park the card." The transcript holds it only in the script that wrote D43, at 14:33:02Z. The words before "Park it" are the narration at 14:30:30Z: "The photo shows the four pads read GND, VCC, GB and GA, and the two solder points beside the knob are very likely the push switch's legs, though that's only a guess from one photo. Do you want to solder one wire onto that blue board so I can plan P932, or should I park the card? I'm finishing the P905 close now." "After I close today's record" is not in them. The card's comment 7012074663 ends "Asked of him: whether he is fine with solder on the module. If not, the card is parked." Fix: quote the narration.
+- **Partly, D43's time:** "15:32 Prague, the time of the card's comment". His word is of 14:31:30Z, which is 15:31 Prague.
+- **Holds, D44's quote of the question.** It is verbatim in the text of 14:33:35Z.
+- **Partly, D44:** "So Q14 is answered: the mission first, and the reusable figure is separated out of it after." The options that he saw were "the walking skeleton P906 first …" and "the reusable figure P901 first, and the mission on it after". No option said that the figure is separated out after. That half is Q14's wording in the brief, not his answer.
+- **Rival reading of "sounds good, do it":** the same message ends its state with "When it passes, I merge that PR and write the closing report", and says that the twelfth pass is applied. "Do it" can answer that, or take the advice and leave the Ready order that "then … follows" as a later act. D44 tags its reading of the Ready order H, and "his words take the advice and order it" says more than that.
+
+## 2. "Ready for: an experiment"
+
+- **Holds by the letter.** The rule at the top is "the decider chose a test (a D) before choosing an option". It does not ask for his pass line. The Test line has dated lines: the frame half's line of 2026-11-18 (the facilitator's, from D22) and A4's proposed line. D34 set the precedent: a Ready order counted as the choice of a test before D35 set its line.
+- **Partly:** "the PO chose the next test … for A4 and the frame half of A10". He answered "what is built next?". His words and the question name no test, no A4 and no A10. The mapping is the facilitator's, so tag it H. A2's open part, the climb, has no pass line at all, and the Decision-needed line leaves it to P906's plan.
+
+## 3. The photo of his knob's module
+
+- **Holds:**
+  - The labels read GND, VCC, GB and GA, top to bottom, which is the record's `pin_order`.
+  - Two silver solder points sit at the board's left edge, one above the other, on the side away from the labels.
+  - Six small parts stand in a column: one above GND, four beside the labels and one below GA.
+- **Partly:** "very likely the push legs". From the top only one solder point shows on the labels' side of the encoder, so the "three turn legs on one side" that the reading leans on cannot be seen. The H tag is right, and the photo itself does not support "very likely".
+- **Partly:** "no pad for the push". The photo shows no fifth label. The four pads are hidden under the jumper wires, and the bottom side is not seen. Fix: "the top shows no fifth label".
+- **Not noted:** the record says four resistors and one capacitor, five parts. The photo shows six. The folder and the card do not say that the photo and the record disagree.
+
+## 4. The twelfth pass's fixes
+
+- **Holds, applied as given:** ★C32's caveat, C33, D37, D38, D39, the chip row, A2's row, the Results row, and C36's `hud` counts. My recount gives 13 windows at 184 to 393, and 5 windows at 1 (lines 922, 942, 951, 958 and 1038).
+- **Partly, C36 and bench.md:** "the `time` lines are in ms". The log's `time` lines carry no unit, like the `phases` lines. Fix: cite the code that sets the unit, or drop "in ms".
+- **REJECTED, my own twelfth-pass point:** "his question got no answer in the session before his order". The narration of 14:10:05Z (quoted in section 1) answered it. The transcript does not show whether a narration reaches his screen. The correction of P932's body ("heard" removed) and verification.md's line on it rest on my error. Fix: restore or qualify "heard" on P932, and correct that line.
+
+## 5. The new Board actions rows
+
+- **Holds:** every time and state that I read back:
+  - comments: 14:25:10Z, 14:30:36Z, 14:31:02Z, 14:31:33Z (updated 14:32:04Z), 14:32:01Z and 14:36:45Z
+  - #1284 CLOSED at 14:31:08Z, with Status Done and no waiting field
+  - #1320 in Idea, slice pixel-games
+  - #1285 in Ready, slice pixel-games
+  - #1279 in Discovery, with no Waiting fields
+- **Stale since the commit:** "the draft PR #117 merged · pending". It merged at 14:40:35Z, which is 15:40 Prague, at merge commit 014fcfd. HEAD f064717 is of 15:37:53.
+
+## 6. Missing actions
+
+- **Missing:** a Board actions row for PR #117's merge (15:40 Prague, 014fcfd).
+- **Missing:** the title of the draft PR #104 still ends "collecting evidence", and the brief now says "an experiment".
+- **Missing:** the correction of P932's body and of verification.md's line that rest on my withdrawn point (section 4).
+- **Missing:** a note that the photo's six small parts disagree with the record's five. The record is in spark's store, so this is a found item for its card, not a change here.
+
+## Searches: none
+
+Not checked: whether a narration block reaches the PO's screen, and the code that gives the `time` lines their unit.
+
+2 refuted, 6 partly, 16 hold, 4 missing actions; 1 of my own twelfth-pass points withdrawn
