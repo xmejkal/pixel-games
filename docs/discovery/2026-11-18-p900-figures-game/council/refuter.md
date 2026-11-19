@@ -853,3 +853,36 @@ None on the web. I read:
 - The session, its paste text and the facilitator's clock: I could not read any of them.
 
 2 refuted, 8 partly, 12 hold, and 1 missing action
+
+# Seventh pass, 2026-11-19: the sections changed after the count's result
+## 1. ★C31 and the Results row
+- The numbers hold. On 85c1d54, `python3 art/mission.py` (28 s) printed 1034920, 717976, 1429080, the street's 153600 and a 16-byte header. They match `tests/test_mission.py` lines 231 to 245. My sum of the six rows is 881,304, plus 153,616, which makes 1,034,920. 2,464,000 minus 1,034,920 is 1,429,080, and 1,429,080 / 153,600 is 9.3, so "9 more pictures" holds.
+- REFUTED: "every row with 24 poses in place of 12 (1,916,224 bytes)". 1,916,224 is every row doubled, so the 6-pose rows go to 12 and not to 24. With 24 poses in every row the pack is 2,497,264 bytes, 33,264 over the line. The same error is in PR #115's body ("That is still under the line"), finding 13 of comment 7006108038, and card comment 7006141011. Fix: "every row with twice its poses (1,916,224 bytes, calculated)".
+- "met (D28)" holds as counted, at 42 % of the line. The summary lines keep "placeholders" and "painted on the Mac".
+- Partly: "the pack ... as D29 names it" and "D29's rows" (in ★C31, Results, the Hand-off, the Collection plan, the feasibility row and A10's evidence). D29 names three actions. The child's run and the two idles are the facilitator's rows. Fix: "the six counted rows, three of them named by D29".
+- A note that changes no verdict: rows 2 and 5 are the same picture (the fireman's spray), counted twice. The export's aliases (`art/export.py` lines 191 to 196) would place it once, so a written pack would be 916,192 bytes. The count is conservative.
+## 2. D26's condition
+- Partly: "So D26's condition holds for this list of rows" says more than the evidence. D26 says "fits the pool". The count is pictures painted on the Mac, under the one pack size that the board loaded (★C24, one run). It was never loaded on the board, and the turn, the ladder and the wall are not counted. Fix: "So D26's condition is met on the Mac for the counted rows. Nothing was loaded on the board."
+## 3. The readiness
+- Holds. By the rule (brief.md, lines 4 to 9), no D chooses a next test, so the folder is not "an experiment". The third pass set this precedent (verification.md:37). "design" fails, because the jobs and the remaining risk are unconfirmed.
+## 4. The Riskiest and Test lines
+- Holds: both are marked as proposals, and the pass line is "not his". "The skeleton needs a way to switch" is backed by story-map.md:16 ("switches with one input").
+- A stronger candidate, in my opinion: A10's frame half. C30's arithmetic puts it "near 19 fps", which is the pass line itself, and A10's own cell says no remedy is shown (C27, P907). For A2, ★C5 and ★C6 are already known.
+## 5. A10
+- The status cell "the bytes half met D28's line" holds.
+- Partly: the Results row's "holds for the mission as D29 names it". The count tests something narrower than "the moves that the first mission needs fit the pool": the counted pictures, painted on the Mac, against a size from one run. Fix: "met D28's line for the counted rows".
+## 6. Board actions and times
+- Holds: 7004957790 at 09:20Z is 10:20 Prague, 7004983292 at 09:21Z is 10:21, and 7005344538 at 09:38Z is 10:38. P924 is in Review.
+- Partly: these actions are missing. The finding comment 7006141011 (11:13 Prague) is not listed. #1279 has no comment with the result; its last comment is from 10:20.
+- Partly: Q1 is now "asked from 2026-11-19". But the row "Waiting on ... cleared ... no question is asked of him now" stands, and the board does not show P900 as waiting on the PO. Either set Waiting on as an action, or write "to be asked".
+## 7. Stale, and not touched by the diff
+- The Hand-off (edited by the diff) still counts the refuter's runs up to the fourth. The fifth and sixth passes are in verification.md:46 and 50.
+- The new verification.md line for ★C31 says "refuter: holds" and cites 34 planted faults. That was the refuter of PR #115, not this folder's refuter. Name it.
+- story-map.md:16 tags "H A10". Write "H A10's frame half".
+- brief.md:159 ("A10, untested") and risks-and-tests.md:60 are dated records, so they hold.
+## Searches
+I grepped for "waits for Q16", "in Build", "an experiment", "count the first mission's bytes", "A10", "P924", "untested" and "fit the pool". There is no other stale line.
+## What stayed open
+I could not check when P924 moved to Review (10:38): the API gives no time for a field change. Nothing ran on the board.
+
+1 refuted, 8 partly, 10 hold
