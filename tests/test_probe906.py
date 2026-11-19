@@ -427,6 +427,12 @@ class GameTest(unittest.TestCase):
         self.assertNotEqual((fireman.speed, fireman.stride, fireman.lo), (child.speed, child.stride, child.lo))
         self.assertIsNone(child.hold_poses)
 
+    def test_the_climb_goes_at_twice_the_captured_pace_and_ends_at_the_places_height(self):
+        box = Box(self)
+        climb, (pose_ms, travel, advance) = box.app.game.climb, box.numbers["climb"]
+        self.assertEqual((pose_ms // 2, travel, advance, 54), (climb.pose_ms, climb.travel, climb.advance, climb.end))
+        self.assertEqual((2, 900), (probe.CLIMB_PACE, box.app.game.OVER_MS))
+
     def test_the_last_place_of_each_walk_keeps_both_its_pictures_whole_on_the_screen(self):
         box = Box(self)
         for f in box.app.game.figures:
@@ -1036,6 +1042,7 @@ class WholeRoundTest(unittest.TestCase):
         self.assertEqual("p906 climb stops 3 %d" % p.ms(), p.lines[-1])
         p.frame(y=-3)
         self.assertEqual((82, 3, True), (p.climb.ms, child.up, child.on_ladder))
+        self.assertEqual((131 - 1, -1), (child.x, child.facing))  # forward is left, toward the station
 
     def test_a_lean_up_that_lasts_from_the_pick_through_the_run_climbs_at_the_foot(self):
         p = Run().ready().holds()

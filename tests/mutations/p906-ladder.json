@@ -1,0 +1,350 @@
+[
+ {
+  "file": "probe906_ladder.py",
+  "name": "a wrong pick does not make the round wrong",
+  "find": "self.task_wrong = self.round_wrong = True",
+  "replace": "self.task_wrong = True"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a pick is right for the figure that the task does not want",
+  "find": "right = to == (FIREMAN if self.task == 1 else CHILD)",
+  "replace": "right = to == (CHILD if self.task == 1 else FIREMAN)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a pick that changes nothing is never wrong",
+  "find": "right = to == (FIREMAN if self.task == 1 else CHILD)",
+  "replace": "right = to == (FIREMAN if self.task == 1 else CHILD) or to == self.active"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a task's word is its round's",
+  "find": "wrong, self.task_wrong = self.task_wrong, False",
+  "replace": "wrong, self.task_wrong = self.round_wrong, False"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the streak does not start again after a wrong round",
+  "find": "self.streak = 0 if self.round_wrong else self.streak + 1",
+  "replace": "self.streak = self.streak + 1"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "streak 5 is met at 4",
+  "find": "if self.streak >= STREAK and not self.met:",
+  "replace": "if self.streak >= STREAK - 1 and not self.met:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "streak 5 is met more than once",
+  "find": "if self.streak >= STREAK and not self.met:",
+  "replace": "if self.streak >= STREAK:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "streak 5 met is never said",
+  "find": "        if met:\n",
+  "replace": "        if False:\n"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the best time is the longest round",
+  "find": "if self.best_ms < 0 or ms < self.best_ms:",
+  "replace": "if self.best_ms < 0 or ms > self.best_ms:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a lean that starts in READY is dropped",
+  "find": "                self.waiting = side",
+  "replace": "                pass"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY ends at 599 ms",
+  "find": "if time.ticks_diff(now_ms, self.start_ms) < READY_MS:",
+  "replace": "if time.ticks_diff(now_ms, self.start_ms) < READY_MS - 1:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY ends at 601 ms",
+  "find": "if time.ticks_diff(now_ms, self.start_ms) < READY_MS:",
+  "replace": "if time.ticks_diff(now_ms, self.start_ms) <= READY_MS:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a lean from before READY is a pick",
+  "find": "        self.edge.reset(actions.y)",
+  "replace": "        self.edge.reset(0)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the pick comes before FIRE",
+  "find": "        if actions.fire.pressed:\n            self.act(at, boot)\n        if side:\n            self.pick(side, at)",
+  "replace": "        if side:\n            self.pick(side, at)\n        if actions.fire.pressed:\n            self.act(at, boot)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the climb comes before the run",
+  "find": "        walk = lean(actions.x)\n        for i in range(len(self.figures)):\n            self.figures[i].walk(ms, walk if i == self.active else 0)\n        self.climb_step(ms, at, now_ms)",
+  "replace": "        self.climb_step(ms, at, now_ms)\n        walk = lean(actions.x)\n        for i in range(len(self.figures)):\n            self.figures[i].walk(ms, walk if i == self.active else 0)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the figure that is not active runs too",
+  "find": "self.figures[i].walk(ms, walk if i == self.active else 0)",
+  "replace": "self.figures[i].walk(ms, walk)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "an ended round reads on",
+  "find": "        if self.ended:\n            return\n        if self.start_ms is None:",
+  "replace": "        if self.start_ms is None:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the next round starts with the fireman active",
+  "find": "self.start_ms, self.ready, self.active, self.task, self.ended = None, True, CHILD, 1, False",
+  "replace": "self.start_ms, self.ready, self.active, self.task, self.ended = None, True, FIREMAN, 1, False"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "FIRE holds at 25 px",
+  "find": "if not self.holds and -HOLD_PX <= self.x - place <= HOLD_PX:",
+  "replace": "if not self.holds and -HOLD_PX - 1 <= self.x - place <= HOLD_PX + 1:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "FIRE does not hold at 24 px",
+  "find": "if not self.holds and -HOLD_PX <= self.x - place <= HOLD_PX:",
+  "replace": "if not self.holds and -HOLD_PX < self.x - place < HOLD_PX:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "FIRE of the child holds",
+  "find": "if self.task == 1 and self.active == FIREMAN and fireman.hold(fireman.lo):",
+  "replace": "if self.task == 1 and fireman.hold(fireman.lo):"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the button is always BOOT",
+  "find": "button = \"boot\" if boot.pushed else \"click\"",
+  "replace": "button = \"boot\""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a FIRE that holds nothing is scored",
+  "find": "        self.emit(\"p906 act none %s %d\" % (button, at))",
+  "replace": "        self.tally.pick(False)\n        self.emit(\"p906 act none %s %d\" % (button, at))"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the hold does not end task 1",
+  "find": "            self.task = 2",
+  "replace": "            self.task = 1"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "up picks the fireman",
+  "find": "to = CHILD if side == UP else FIREMAN",
+  "replace": "to = FIREMAN if side == UP else CHILD"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "every pick is a switch",
+  "find": "\"switch\" if to != self.active else \"same\"",
+  "replace": "\"switch\""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the pick's place is always the ground",
+  "find": "place = \"ladder %d\" % child.up if child.on_ladder else \"ground\"",
+  "replace": "place = \"ground\""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the child climbs before the hold",
+  "find": "climbs = self.active == CHILD and self.edge.on == UP and self.figures[FIREMAN].holds and (",
+  "replace": "climbs = self.active == CHILD and self.edge.on == UP and ("
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the child climbs 1 px from the foot",
+  "find": "            child.on_ladder or child.x == child.lo)",
+  "replace": "            child.on_ladder or abs(child.x - child.lo) <= 1)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a lean starts at 39",
+  "find": "return 1 if v >= LEAN else -1 if v <= -LEAN else 0",
+  "replace": "return 1 if v >= LEAN else -1 if v <= -LEAN + 1 else 0"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a lean rests at 20",
+  "find": "if -LEAN_REST < v < LEAN_REST:",
+  "replace": "if -LEAN_REST <= v <= LEAN_REST:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the child climbs with no lean up",
+  "find": "climbs = self.active == CHILD and self.edge.on == UP and",
+  "replace": "climbs = self.active == CHILD and self.edge.on != -UP and"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the climb ends at 53 px",
+  "find": "return self.up >= self.end",
+  "replace": "return self.up >= self.end - 1"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the climb ends past 54 px",
+  "find": "return self.up >= self.end",
+  "replace": "return self.up > self.end"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a pose of the climb lasts 1 ms more",
+  "find": "n = ms // self.pose_ms",
+  "replace": "n = ms // (self.pose_ms + 1)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a play of the climb does not go up",
+  "find": "self.up = plays * self.advance[1] + up",
+  "replace": "self.up = up"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the child climbs to the right",
+  "find": "child.x, child.up, child.pose = child.lo + ON_LADDER * climb.forward, climb.up, climb.pose",
+  "replace": "child.x, child.up, child.pose = child.lo - ON_LADDER * climb.forward, climb.up, climb.pose"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the climb at the captured pace",
+  "find": "self.climb = Climb(pose_ms // CLIMB_PACE, travel, advance, numbers[\"end\"])",
+  "replace": "self.climb = Climb(pose_ms, travel, advance, numbers[\"end\"])"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the figures run at their captured speed",
+  "find": "numbers[\"speed\"][figure] // PACE",
+  "replace": "numbers[\"speed\"][figure]"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a gap of 52 ms is slow",
+  "find": "if gap > SLOW_MS:",
+  "replace": "if gap >= SLOW_MS:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "worst is the last gap",
+  "find": "            if gap > self.worst:\n                self.worst = gap",
+  "replace": "            self.worst = gap"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "READY's end frame is a gap",
+  "find": "self.ready, side, self.play_ms, self.last_ms = False, self.waiting, now_ms, now_ms",
+  "replace": "self.ready, side, self.play_ms, self.last_ms, self.gaps = False, self.waiting, now_ms, now_ms, 1"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the ms count from the round's first frame",
+  "find": "at = time.ticks_diff(now_ms, self.play_ms)",
+  "replace": "at = time.ticks_diff(now_ms, self.start_ms)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "after is always 0",
+  "find": "0 if self.ended_ms is None else time.ticks_diff(now_ms, self.ended_ms)",
+  "replace": "0"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a second PICK at 3,001 ms quits",
+  "find": "if self.armed and time.ticks_diff(now_ms, self.armed_ms) > QUIT_MS:",
+  "replace": "if self.armed and time.ticks_diff(now_ms, self.armed_ms) > QUIT_MS + 1:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a second PICK at 3,000 ms does not quit",
+  "find": "if self.armed and time.ticks_diff(now_ms, self.armed_ms) > QUIT_MS:",
+  "replace": "if self.armed and time.ticks_diff(now_ms, self.armed_ms) >= QUIT_MS:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "PICK twice quits only in play",
+  "find": "if self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):",
+  "replace": "if self.state == gfx.PLAY and self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "FIRE starts the next round at 899 ms",
+  "find": "        OVER_MS = 900",
+  "replace": "        OVER_MS = 899"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the result screen is drawn in each frame",
+  "find": "cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), gfx.OVER_RECT, self.result_draw)",
+  "replace": "cv.keep((RESULT_KEY, self.age), gfx.OVER_RECT, self.result_draw)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the figures stay where the last round left them",
+  "find": "                self.figures[i].put(starts[i], -1)",
+  "replace": "                pass"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "LentPack lends a box that has an index",
+  "find": "if self.INDEX in board_names(self.tried([\"ls\", \":\"])):",
+  "replace": "if False:"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "LentPack copies the index before the pack",
+  "find": "        self.runner.run([\"cp\", pack, \":\" + self.pack])\n        self.runner.run([\"cp\", index, \":\" + self.INDEX])",
+  "replace": "        self.runner.run([\"cp\", index, \":\" + self.INDEX])\n        self.runner.run([\"cp\", pack, \":\" + self.pack])"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "LentPack's removal leaves the pack",
+  "find": "((self.INDEX, root, self.INDEX), (self.pack, packs, name))",
+  "replace": "((self.INDEX, root, self.INDEX),)"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a dry run's box holds neither copy",
+  "find": "                 if dry or file in names]",
+  "replace": "                 if file in names]"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a limit with no round line passes",
+  "find": "if end == run.LIMIT and [line for line in run.lines if line.startswith(\"p906 round \")]:",
+  "replace": "if end == run.LIMIT:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a run that ends without done passes",
+  "find": "elif not runner.dry_run and (end != run.DONE or run.lines[-1:] != [\"done\"]):",
+  "replace": "elif not runner.dry_run and end != run.DONE:"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "no removal after the run",
+  "find": "            lent.remove()",
+  "replace": "            pass"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "no reset at the sitting's end",
+  "find": "                box.reset(runner, sleep=sleep)  # also after a Ctrl-C",
+  "replace": "                pass  # also after a Ctrl-C"
+ }
+]

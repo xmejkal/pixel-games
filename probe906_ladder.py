@@ -509,6 +509,7 @@ def game_class(boot, click, numbers, pool=None):
         name = "ladder"
         ART = (SET, None)
         TITLE_MS = TITLE_MS
+        OVER_MS = 900  # FIRE starts the next round this long after a round's end (gfx.Game's, named here for the plan)
         bg = gfx.BLACK
         accent = gfx.YELLOW
 
