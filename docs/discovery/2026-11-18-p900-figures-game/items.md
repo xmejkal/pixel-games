@@ -41,7 +41,7 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - type: spike <!-- REQUIRED:item-type -->
 - needed by: "Q4: whole pictures first, behind one picture source." (the PO, 2026-11-18, D26) <!-- REQUIRED:needed-by -->
 - value proven by: a table he can read, one row for each character and move, with the sum against the pass line <!-- REQUIRED:value-proven-by -->
-- depends on: the list of the first mission's characters and moves (Q16), which is not fixed. The test and the pass line are his (D27, D28). Of the list only the example of D1's question exists (the fireman holds a ladder, the grandma climbs, https://github.com/xmejkal/spark/issues/1279#issuecomment-6972668412) <!-- REQUIRED:depends-on -->
+- depends on: the list of the first mission's figures and actions, which is his since 2026-11-19 (D29): the fireman moves to the wall and holds a ladder, and the child climbs. The test and the pass line are his too (D27, D28). His words name no captured motion for an action and no idle cycle. So the count's plan names a stand-in for each such row and marks it <!-- REQUIRED:depends-on -->
 - status: filed D27 <!-- REQUIRED:item-status -->
 - label (the repository's type label): spike <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->
@@ -52,3 +52,4 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 <!-- Each action, taken or pending, with its D. e.g. `- move the item to Discovery · pending` -->
 - file the three items above · taken 2026-11-18 · D21: P904 #1283, P905 #1284 (the switch prototype), P906 #1285 (the walking skeleton) <!-- REQUIRED:board-actions -->
 - file the count's item · taken 2026-11-19 · D27: P924 #1308
+- order the count's card into Ready · taken 2026-11-19, 10:11 Prague · D30
