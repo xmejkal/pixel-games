@@ -2021,3 +2021,70 @@ Not measured:
   task. Nine of the eleven rounds ended with idle, which comes after 20 s with no task ended, and five of those
   count one wrong task each (lines 174, 225, 373, 576 and 835). A round has no other way out. Why the bar's redraw
   is slow was not looked for.
+
+## P906 (#1285), 2026-11-19: the walking skeleton, a ladder mission played by the PO
+
+- The game code: nothing was deployed. The probe lends the box one pack and an index of that pack alone for a
+  sitting, runs from RAM on the code that the box holds, and takes both copies away again. The box's code is the
+  one of the section P905 above: no deploy since. After each of the three sittings the session read the box back:
+  `ls :` showed `art_index.mpy` and no `art_index.py`, and `ls :packs` showed no `mission.pak`.
+- The logs: `logs/run-p906-ladder.log` is smoke run 1, the thin version with no climb and no tally,
+  `python3 -B probe906_ladder.py --minutes 1` from branch p906-ladder (86f694a), 17:45:14 to 17:49:30 Prague by the
+  Mac's clock, exit 0, 68 lines. `logs/run-p906-ladder-2.log` is smoke run 2, the whole game, from e1a20f5, 20:05:19
+  to 20:09:40 Prague, exit 0, 63 lines. `logs/run-p906-ladder-3.log` is the PO's play, the first sitting, the same
+  command with `--minutes 60` from master (71333b2), 23:19:35 to 23:25:23 Prague, 194 lines, no traceback. Each of
+  these times holds the paint of the set on the Mac, both copies, the removal and the reset. The play ended by
+  PICK twice: `p906 quit armed` (line 193) and `done` (line 194).
+- Each log starts with `p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2` and says
+  `pack pool 773470`. The play's log says `import 1551 ms` (line 7) and
+  `switch ladder 709 ms, load 675 ms, import 0 ms` (line 11).
+- The reading was fixed before any run, in the plan that the PO approved at 16:40 Prague (on #1285). Three pass
+  lines: each finished round after the first reads 19.0 fps or more, from the end line's `gaps` and `ms`, and with
+  fewer than 3 rounds after the first the line is not read. 5 clean rounds in a row, read as the log's
+  `streak 5 met`. After that streak he finishes 2 more rounds, and nobody asks him to. A round is wrong when it had
+  a pick of the figure that its task does not want, also when that pick changes nothing. The verdict is the first
+  sitting's.
+- The smoke runs: nobody pressed FIRE (`p906 intro ends time`), and neither log holds a pick or an end line. After
+  `p906 round 1 starts after 0` each log has eight `fps ladder` lines, and each says 24. Both figures stood, so this
+  is a lower limit for the cost of a frame.
+
+| round | end | ms | gaps | gaps × 1,000 / ms | worst | slow | picks right / wrong | FIRE hold / none | climb starts | fps lines | lines |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | wrong | 68,821 | 1,715 | 24.92 | 65 | 5 | 3 / 1 | 1 / 2 | 1 | 24, in 14 lines | 23 to 105 |
+| 2 | wrong | 16,949 | 422 | 24.90 | 46 | 0 | 4 / 3 | 1 / 2 | 3 | 24, 25, 24 | 111 to 145 |
+| 3 | no end line: PICK twice | | | | | | 2 / 4 | 0 / 5 | 0 | 24, in 6 lines | 151 to 193 |
+
+- The PO's words, in order. Before the sitting: "yes, I play now, start the sitting". After it: "they are too big
+  btw and a bit slow". To the session's question which felt slow, the walk of the figures or the motion of the
+  picture: "the walk felt slow".
+- The rate line: not read. One finished round follows the first, and the plan reads the line with 3 or more.
+  Beside it: rounds 1 and 2 read 24.92 and 24.90 fps (lines 105 and 145, calculated), with two figures that ran and
+  a climb. These are the first rates of a real round.
+- The pick line: not met. The log holds no `streak 5 met`. Rounds 1 and 2 ended wrong, and the streak stayed at 0.
+- The play-on line: not read, because the streak was never met.
+- The wrong picks at a round's start: in rounds 1 and 2 the log has `pick child wrong same ground` and then
+  `pick fireman right switch ground`, 600 ms and 440 ms later (lines 80 and 81, 118 and 119). That is a lean up and
+  then a lean down. In P905's probe, up picked the fireman. Before each of the two wrong picks the log has
+  `act none click`, 640 ms and 1,400 ms earlier (lines 79 and 117): a press of the stick's push-button while the
+  child was active. The log does not show why he leaned up, nor whether the press tilted the stick.
+- The wrong picks on the ladder, in round 2: `climb stops 42 12055` (line 129) and then
+  `pick fireman wrong switch ladder 42 13138` (line 135), and `climb stops 49 15230` (line 138) and then
+  `pick fireman wrong switch ladder 49 15309` (line 139). A lean down on the ladder picks the fireman. The second
+  came 79 ms after the lean up ended. The log cannot tell a hand that flicks down from a stick that springs back
+  past its middle.
+- Round 3: `pick fireman right switch` and `pick fireman right same` (lines 169 and 170), then four
+  `pick child wrong` lines (171, 172, 173 and 179) and three `act none boot` lines (185 to 187), a FIRE with the
+  child active, which holds nothing. Then the quit.
+- Round 1 took 68.8 s, and its first line of his is `act none click 52099` (line 79). The log has no line for a
+  run to the left or right, so it does not show what he did before it.
+- The frame: in the windows of lines 25 to 189 the `time` lines give a paint of 12.0 to 13.9 ms, a send of 3.3 to
+  10.5 ms and a gc of 3.3 to 4.2 ms, and the worst gap of a window is 40 to 77 ms. The end lines count 5 gaps over
+  52 ms in round 1 and none in round 2. The intro's first frame took about 0.5 s (`title 501`, line 14), and the
+  bar's one draw shows as `hud 50` (line 26). Both are outside every round. The heap line says 236,960 bytes in
+  round 1 and 278,480 from the first result screen on (lines 28 to 192).
+- The pace: the figures run at half their captured speed (`PACE = 2`), which is 99 px a second for the fireman
+  and 54 for the child. The child's way from its start place to the ladder's foot is 165 px, so it takes 3.1 s
+  (calculated).
+- Not shown: a sitting that is long enough for the rate line or the play-on line; which wrong pick came from his
+  hand and which from the stick; whether a press of the stick's push-button tilts the stick; what "too big"
+  means in px, because the size was not varied; a second sitting or another player.
