@@ -972,3 +972,50 @@ I did not check: DFRobot's overview pictures, P924's column on the board, the se
 - A GraphQL read of the whole board did not finish within 120 s and was moved to the background. It is read-only. I used `board.py status` instead.
 
 1 refuted, 11 partly, 11 hold, and 3 missing actions
+
+# Tenth pass, 2026-11-19: D35, the pass line of the switch's test and the pull of P905
+
+The refuter read the commit e30d857 against 8e172f2. The facilitator records its report here, because the refuter writes nothing in the tree.
+
+## 1. D35's words and readings
+- **REFUTED:** D35's evidence time "about 12:25 Prague" is wrong. The branch and PR search in the session's transcript ran at 11:21:14Z and printed at 11:21:17Z, which is 12:21 Prague. The commit that records it was made at 11:22:43Z. A run at about 12:25 would come after the text that reports it.
+- **Holds:** the quote is exact. His message at 11:18:03Z matches the paste line in the reply of 10:59:07Z word for word.
+- **Holds:** "his first message after a clear". The session opens with `/clear` at 11:17:41Z, and "12:18" matches the message's time.
+- **Holds:** "does not show that he weighed the other answers", the three answers, and the proposal's date of 2026-11-18 (`git log -S` finds commit 5eebd6e, 2026-11-18 09:27).
+- **Holds:** "pull it and plan it" is no yes to a plan.
+- **Partly:** the example drops "in a row". The comment 7007110325 says "switch ten times in a row".
+- **Partly:** "a wrong figure can only be a press" is too strong. The card #1284 lists ways to switch with no press: the stick's up and down, and the automatic switch to the nearest figure.
+- **Partly:** the rule's wording. The rules file says "plan mode, then the plan council ..., then build".
+- **Partly:** "the reply asked him to add what he saw". The reply said "If you looked at the chip, add what you saw".
+- **Partly:** "the prototype offers no hold of PICK" sits in a D row whose who cell is "the PO", but it is not his word. It comes from the Collection plan (risks-and-tests.md, "before the switch prototype offers a hold of PICK").
+
+## 2. "Set before any result"
+- **Holds.** The card was in Ready until 11:19:33Z, and nobody played it.
+- Neither the local refs nor origin has a branch of P905. `gh pr list --search P905` finds only #104.
+- The branches `p818-pick` and `p819-switch-options` are from 2026-11-15 and concern the app's lineup of games, not this test.
+
+## 3. The summary lines
+- **Partly, Ready for:** it lacks D35's caveat "his line does not say how a switch or a wrong figure is counted".
+- **Partly, Decision needed:** "no decision ... blocks the plan" leaves out what D35 says. The count of a switch, of a wrong figure and of a switch by mistake is open, and the plan decides it.
+- **Partly, the Test line and A2's row:** both drop the second half of the caveat: the line counts no switch by mistake while he moves a figure. A2's belief is "never switches by mistake".
+- **Partly, Q1:** Q1 asks only for "the riskiest test", and D33 with D35 now answers it, yet its status stays "asked". Also, the line of A10's frame half is "carried by the facilitator from D22's line", not "proposed".
+- **Holds:** the hand-off and the row of items.md.
+
+## 4. The Board actions row
+- **Holds:** P905 is in Build since 11:19:33Z, read back as "Build". The output of `board.py status` at 11:19:18Z shows only P918 in Build.
+- **Partly:** "the limits hold" was printed at 11:21:34Z, and the refuter reproduced it. It is the gate of the branch `p918-lane-flight`, not main's gate.
+
+## 5. Stale lines and the planned actions
+- **Holds:** no line in the folder still calls A2's pass line proposed or asked. D34's line reads as dated history.
+- **Holds:** neither planned action is claimed as done. The body of #1284 still says "The pass line is not set".
+
+## 6. Missing actions
+- **Missing:** on #1279, Waiting on the PO is still set. The reason in its last row, the pass-line question, is answered. Keep the field with a new reason (the look at the chip) or clear it, and add a row.
+- **Missing:** the title of PR #104, "...collecting evidence", is out of date. Only the title was read.
+- **Missing:** the sound session's lane has no card in Ready now (Ready holds P927, P923 and P922, all spark cards). That needs his Ready order, so it belongs in the reply's list of what waits on him.
+
+## What stayed open
+- Main's gate was not run, because that needs a worktree.
+- The refuter ran `git fetch --all` in the main clone of pixel-games. It moved that clone's remote-tracking refs, and no file of a working tree changed.
+
+1 refuted, 11 partly, 14 hold, and 3 missing actions
