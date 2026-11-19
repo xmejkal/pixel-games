@@ -32,6 +32,7 @@ import app  # noqa: E402
 import box  # noqa: E402
 import gfx  # noqa: E402
 import probe905_switch as probe  # noqa: E402
+import rescue  # noqa: E402
 from engine import actions as engine_actions  # noqa: E402
 from test_actions import FakeButton, FakeEncoder, FakeStick  # noqa: E402
 from test_probe904 import Board  # noqa: E402  the fake runner of P904's probe
@@ -243,8 +244,17 @@ class WaysTest(unittest.TestCase):
         w = way("hold")
         w.reset(T0, frame(), NONE, NONE)
         read(w, T0 + 7, frame(fire=True))
-        self.assertEqual((0, False), read(w, T0 + 7 + 211, frame(fire=True, held=True)))  # the other button: no new hold
+        self.assertEqual((0, False), read(w, T0 + 7 + 211, frame(fire=True, held=True)))  # the other: no new hold
         self.assertEqual((1, False), read(w, T0 + 7 + 433, frame(held=True)))
+
+    def test_two_holds_in_a_row_both_switch(self):
+        w = way("hold")
+        w.reset(T0, frame(), NONE, NONE)
+        for start in (T0, T0 + 1000):
+            with self.subTest(hold_at=start - T0):
+                self.assertEqual((0, False), read(w, start, frame(fire=True, held=True)))
+                self.assertEqual((1, False), read(w, start + 400, frame(held=True)))
+                self.assertEqual((0, False), read(w, start + 441, frame()))
 
     def test_a_push_with_no_level_acts_at_once(self):
         w = way("hold")
@@ -622,6 +632,35 @@ class RoundTest(unittest.TestCase):
         p.frame(at=600 + 20000)  # inside
         self.assertEqual("p905 round knob ends idle streak 0 best 0 tasks 0 wrong 0", p.lines[-1])
         self.assertEqual(probe.IDLE, p.round.end)
+
+    def test_a_round_that_fails_at_streak_0_says_its_best_2(self):
+        p, on = Play("click").ready(), seen(True, True)
+        for _ in range(2):  # two clean tasks
+            p.frame(click=on).to_ring().frame(boot=on)
+        for _ in range(2):  # an other, then the switch, the ring and the act
+            p.frame(boot=on).frame(click=on).to_ring().frame(boot=on)
+        p.frame(boot=on)
+        self.assertEqual("p905 round click ends fail streak 0 best 2 tasks 4 wrong 3", p.lines[-1])
+
+    def test_a_fail_at_an_extra_switch_ends_the_round_there_and_the_frame_stops(self):
+        p, on = Play("click").ready(), seen(True, True)
+        for _ in range(2):
+            p.frame(boot=on).frame(click=on).to_ring().frame(boot=on)
+        p.frame(click=on)  # first
+        xs = [f.x for f in p.figures]
+        p.frame(click=on, x=80)  # extra: the third wrong task
+        self.assertEqual(["p905 switch fireman extra", "p905 round click ends fail streak 0 best 0 tasks 2 wrong 3"],
+                         p.lines[-2:])
+        self.assertEqual(probe.FAIL, p.round.end)
+        self.assertEqual(xs, [f.x for f in p.figures])  # no walk after the event
+
+    def test_idle_counts_from_readys_end_and_not_from_the_first_frame_after_it(self):
+        p = Play("knob")
+        p.frame(at=599).frame(at=617)  # the first frame that reads
+        p.frame(at=600 + 19999)
+        self.assertEqual(probe.PLAYING, p.round.end)  # outside
+        p.frame(at=600 + 20000)
+        self.assertEqual(probe.IDLE, p.round.end)  # inside
 
     def test_idle_is_counted_from_the_last_tasks_end(self):
         p = Play("knob").ready()
@@ -1018,6 +1057,153 @@ class GameTest(unittest.TestCase):
         self.assertIsNone(box.app.game.round)
         self.assertEqual(5, box.app.game.menu.cursor)
 
+    def test_a_fail_with_best_2_records_2_and_its_card_differs_from_best_0s(self):
+        box = Box(self)
+        box.start(1)
+        for _ in range(2):  # two wrong tasks, then the third: fail with best 0
+            box.frame(boot=True).frame(click=True).to_ring().frame(boot=True).frame()
+        box.frame(boot=True).frame(ms=900)
+        first = card(box)
+        box.frame(fire=True).frame()
+        box.start(1)
+        for _ in range(2):  # two clean tasks
+            box.frame(click=True).to_ring().frame(boot=True).frame()
+        for _ in range(2):
+            box.frame(boot=True).frame(click=True).to_ring().frame(boot=True).frame()
+        box.frame(boot=True)
+        self.assertEqual("p905 round click ends fail streak 0 best 2 tasks 4 wrong 3", box.lines()[-1])
+        self.assertEqual(2, box.app.game.menu.best[1])
+        box.frame(ms=900)
+        self.assertNotEqual(first, card(box))
+        self.assertIn("streak 0  best 2", box.out.cv.seen)
+
+    def test_ready_shows_its_word_and_no_ring_and_then_the_ring_and_no_word(self):
+        box = Box(self)
+        box.frame(fire=True).frame()  # the stick's round, in READY
+        ring = [op for op in box.out.cv.ops if op[4] == 0 and op[5] == gfx.YELLOW]
+        self.assertEqual(("READY", []), (text(box, "READY")[0], ring))
+        box.frame(ms=600)
+        ring = [op for op in box.out.cv.ops if op[4] == 0 and op[5] == gfx.YELLOW]
+        self.assertTrue(ring)
+        self.assertEqual([], [t for t in texts(box) if t[0] == "READY"])
+
+    def test_wrong_shows_its_word_while_it_shows_and_not_after(self):
+        box = Box(self)
+        box.start(0)
+        box.frame(fire=True)  # an other: the task turns wrong
+        self.assertEqual(("WRONG", gfx.RED), (text(box, "WRONG")[0], text(box, "WRONG")[3]))
+        box.frame(ms=399)
+        self.assertTrue(text(box, "WRONG"))
+        box.frame(ms=1)
+        self.assertEqual([], [t for t in texts(box) if t[0] == "WRONG"])
+
+    def arrow(self, box):
+        return [op[:4] for op in box.out.cv.ops if op[4] == 0 and op[5] == rescue.MARK]
+
+    def test_the_arrow_is_four_fills_over_the_active_figure_before_and_after_a_switch(self):
+        box = Box(self)
+        box.start(0)
+        box.frame()
+        r, y = box.app.game.round, rescue.LANE - 8
+        for active, other in ((probe.FIREMAN, probe.CHILD), (probe.CHILD, probe.FIREMAN)):
+            with self.subTest(active=active):
+                self.assertEqual(active, r.active)
+                x = r.figures[active].x
+                self.assertNotEqual(x, r.figures[other].x)
+                self.assertEqual([(x - 3, y, x + 4, y + 1), (x - 2, y + 1, x + 3, y + 2), (x - 1, y + 2, x + 2, y + 3),
+                                  (x, y + 3, x + 1, y + 4)], self.arrow(box))
+                box.frame(y=70).frame()  # the stick down: the child
+
+    def test_each_figure_is_drawn_at_its_hips_minus_half_its_width_on_the_feet_and_the_standing_fireman_ready(self):
+        box = Box(self)
+        box.start(0)
+        box.pictures.drawn.clear()
+        box.frame()
+        r = box.app.game.round
+        drawn = box.pictures.drawn[1:3]
+        for i in range(2):
+            f = r.figures[i]
+            name, w = f.picture(r.act_ms(i))
+            self.assertEqual((name, f.x - w // 2, rescue.FEET - f.h + 1), drawn[i])
+        self.assertEqual(rescue.POSES["spray", "r"][0], drawn[0][0])  # the hose ready: the spray's first pose
+
+    def test_the_bar_says_streak_1_after_a_clean_task_and_the_wrong_count_grey_at_0_red_from_1(self):
+        box = Box(self)
+        box.start(0)
+        self.assertEqual(("wrong 0", gfx.GREY), (text(box, "wrong ")[0], text(box, "wrong ")[3]))
+        box.frame(y=70).frame().to_ring().frame(fire=True)  # a clean task: only the streak changes
+        self.assertIn("streak 1/10", box.out.cv.words)
+        self.assertEqual(("wrong 0", gfx.GREY), (text(box, "wrong ")[0], text(box, "wrong ")[3]))
+        box.frame(fire=True)  # the child acts, the task wants the fireman
+        self.assertEqual(("wrong 1", gfx.RED), (text(box, "wrong ")[0], text(box, "wrong ")[3]))
+
+    def card_texts(self, box):
+        return [(op[5], op[7], op[8], op[6]) for op in card(box) if op[4] == 3]
+
+    def test_each_cards_way_word_colour_and_streak_line(self):
+        ends = []
+        box = Box(self)
+        box.start(1)
+        for _ in range(500):  # idle
+            box.frame()
+        box.frame(ms=900)
+        ends.append(self.card_texts(box))
+        box.frame(fire=True).frame()
+        box.start(1)
+        for _ in range(3):  # three others: fail
+            box.frame(boot=True).frame(click=True).to_ring().frame(boot=True).frame()
+        box.frame(ms=900)
+        ends.append(self.card_texts(box))
+        box.frame(fire=True).frame()
+        box.start(5)
+        for k in range(10):  # pass
+            box.frame(turn=1 if k % 2 == 0 else -1).to_ring().frame(fire=True)
+        box.frame(ms=900)
+        ends.append(self.card_texts(box))
+        box.frame(fire=True).frame()
+        box.start(6)
+        for _ in range(10):  # control
+            box.to_ring().frame(fire=True).frame()
+        box.frame(ms=900)
+        ends.append(self.card_texts(box))
+        expected = (("CLICK", "STICK CLICK", "IDLE", gfx.GREY, "streak 0  best 0"),
+                    ("CLICK", "STICK CLICK", "3 WRONG", gfx.RED, "streak 0  best 0"),
+                    ("KNOB", "KNOB", "PASS", gfx.GREEN, "streak 10  best 10"),
+                    ("AUTO", "AUTO (control)", "CONTROL", gfx.CYAN, "streak 10  best 10"))
+        for got, (_, label, word, colour, line) in zip(ends, expected):
+            with self.subTest(word=word):
+                self.assertEqual((label, gfx.WHITE), (got[0][0], got[0][3]))
+                self.assertEqual((word, colour), (got[1][0], got[1][3]))
+                self.assertEqual((line, gfx.WHITE), (got[2][0], got[2][3]))
+
+    def test_the_controls_row_says_control_and_never_pass(self):
+        box = Box(self)
+        box.start(6)
+        for _ in range(10):
+            box.to_ring().frame(fire=True).frame()
+        box.frame(ms=900, fire=True).frame().frame()
+        row = [t[0] for t in texts(box) if "AUTO" in t[0]][0]
+        self.assertIn("control", row)
+        self.assertNotIn("PASS", row)
+
+    def test_each_figure_has_its_own_values_of_rescue(self):
+        box = Box(self)
+        f, c = box.app.game.figures
+        child = rescue.CHILD
+        self.assertEqual((140, 1, rescue.SPEED_PX_S, rescue.STRIDE_PX, rescue.SPRAY_POSE_MS, rescue.PICTURE_H),
+                         (f.x, f.facing, f.speed, f.stride, f.act_pose_ms, f.h))
+        self.assertEqual((260, -1, rescue.PERSON_PX_S[child], rescue.PERSON_STRIDE_PX[child],
+                          rescue.WAVE_MS // rescue.WAVE_POSES, rescue.PEOPLE_SIZES[child][1]),
+                         (c.x, c.facing, c.speed, c.stride, c.act_pose_ms, c.h))
+        self.assertNotEqual((f.speed, f.stride, f.act_pose_ms, f.h), (c.speed, c.stride, c.act_pose_ms, c.h))
+
+    def test_a_picture_that_does_not_draw_raises_with_its_name(self):
+        box = Box(self)
+        box.pictures.draw = lambda cv, name, x, y, alpha=255: False
+        with self.assertRaises(RuntimeError) as raised:
+            box.app.game.paint_static(box.out.cv)
+        self.assertEqual("rescue_night did not draw: no art", str(raised.exception))
+
     def test_quit_pressed_twice_raises_quit(self):
         box = Box(self)
         for _ in range(7):
@@ -1262,6 +1448,23 @@ class MacTest(unittest.TestCase):
         self.assertEqual("p905 ways stick\n", self.logged())
         self.assertEqual(["reset"], board.commands[-1])
 
+
+    def test_a_missing_mpremote_gives_its_line_and_a_non_zero_exit(self):
+        class Missing(StreamBoard):
+            def run(self, args, timeout=None):
+                self.commands.append(args)
+                raise FileNotFoundError(2, "No such file or directory", "mpremote")
+
+        board = Missing()
+        said, err, refused = self.mac([], board)
+        self.assertEqual("no mpremote: [Errno 2] No such file or directory: 'mpremote'", refused.code)
+        self.assertEqual(["reset"], board.commands[-1])
+
+    def test_one_minute_is_taken(self):
+        board = StreamBoard(said=SAID)
+        said, err, refused = self.mac(["--minutes", "1"], board)
+        self.assertIsNone(refused)
+        self.assertEqual(60, board.limits[4])
 
 if __name__ == "__main__":
     unittest.main()

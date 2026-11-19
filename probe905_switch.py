@@ -738,8 +738,8 @@ def board():
     import app
     from engine.actions import ActionMap
 
-    found = app.open_action_map()
-    if found.stick is None or len(found.fire_bindings) < 2:
+    found = app.open_action_map()  # a map with a stick has two FIRE buttons: BOOT and the stick's switch
+    if found.stick is None:
         raise RuntimeError("p905 refused: no stick in the pin map (pins.JOY_X): the probe needs the stick")
     boot, click = Seen(found.fire_bindings[0]), Seen(found.fire_bindings[1])
     action_map = ActionMap((boot, click), found.pick_bindings, found.encoder, found.stick)
