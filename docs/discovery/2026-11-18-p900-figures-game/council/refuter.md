@@ -1019,3 +1019,33 @@ The refuter read the commit e30d857 against 8e172f2. The facilitator records its
 - The refuter ran `git fetch --all` in the main clone of pixel-games. It moved that clone's remote-tracking refs, and no file of a working tree changed.
 
 1 refuted, 11 partly, 14 hold, and 3 missing actions
+
+# Eleventh pass, 2026-11-19: D36, his yes to the plan of the switch prototype
+
+The refuter read the commit 344a10a. The facilitator records its report here, because the refuter writes nothing in the tree.
+
+## 1. D36
+- **Holds:** "approved ... with no words of his". In the session's transcript the tool result of 12:05:47Z holds no feedback, and the approved plan's text is identical to the plan file.
+- **Holds:** D36's three decided items. Each one is in the plan's section "What the PO decides with his yes".
+- **Partly:** "nothing more" and "he gave none". "He gave none" is fair, because the plan said that the stricter reading is "his to say with his yes". Two things are missing: the section's fourth point, "Nothing about the board yet", and the caveat that D33 and D35 carry: a yes given in the dialog does not show that he read or weighed the count.
+- **Partly:** "The first is a switch by mistake while he moves a figure". The plan's `extra` is "a switch by mistake while he walks, a double push, or a lean or a turn back". Two mistakes are not wrong under the count: a switch by mistake before the task's first switch is counted `first` and is clean, and a lean or a turn toward the active figure is `same`.
+- **Partly:** "The plan's own values". The plan lists more start values, among them `TASK_MIN_PX` and `REACH_PX`, which decide whether an act counts as `reached` or `stray`. "His yes carries them as start values" is the facilitator's reading.
+- **Partly:** "The automatic way is a control: its rounds say nothing about A2". The plan says only that it is a control and never ends with `pass`. One case is not checked: if he names the automatic way, D36's reading can never be met.
+- **Holds in substance, partly in its evidence:** "The count stands before any result". The reflog of pixel-p905 shows the branch made at 13:06:23 +0100, after the yes at 13:05:47. There is no `logs/run-p905*` file, and the card's only comment is the plan. The branch is from `origin/master` 85c1d54, and the local `master` is another commit. Unlike D35, the claim has no E tag with a time.
+- **Holds:** D36's time, as worded. The yes itself is stamped 13:05 Prague.
+
+## 2. The Board actions row
+- **Holds.** The URL is right, the comment was made at 12:06:39Z (13:06 Prague) and changed at 12:06:54Z.
+
+## 3. The summary lines
+- **REFUTED:** Decision needed, "no decision blocks the switch's test". The plan says that his yes for the board is asked when the probe is merged, and its step 9 runs the smoke run only "With his yes for the board". The same line is stale twice: the look at the chip "decides whether the prototype offers a hold of PICK", and the approved plan offers none. "Q6, an account that the prototype's plan can use": the plan leaves Q6 out, "his play shows it". The Collection plan's row of Q6 is stale for the same reason.
+- **Partly, Ready for:** "The count is his since D36" lacks that the count's values are the plan's start values.
+- **Partly, the Test line and A2's row:** "a switch by mistake while he moves a figure makes its task wrong". The rule is "a switch that takes the active figure away from the wanted one". Neither line says that a press the box never saw goes uncounted.
+- **Holds:** the hand-off.
+- **Not reproduced:** "Two council rounds". It is the plan's own claim, cited as such.
+
+## 4. Missing actions
+- **Missing:** a comment on #1279 with D36. Its last comment is D35's.
+- **Missing:** the draft PR #104. Its title still says "set by D35", and its body says "D1 to D35".
+
+1 refuted, 7 partly, 5 hold, 2 missing actions
