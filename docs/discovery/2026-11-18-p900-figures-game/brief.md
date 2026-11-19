@@ -214,6 +214,10 @@ None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - the body of P905 #1284 now holds his order of D34, the rating of D33, the proposed pass line and the limit on a hold of PICK · taken 2026-11-19, 11:57 Prague · D34: the card holds his words. The refuter's ninth pass named it as a missing action
 - Waiting on the PO stays set on #1279, with Waiting since 2026-11-19 · read 2026-11-19, 11:43 Prague · his standing rule "It moves as the work moves", as in D9: Q1's importance question is answered (D33), and the pass line of the switch's test is asked of him in that comment
 - move P905 #1284 to Build · taken 2026-11-19, 12:19 Prague · D35 ("pull it"). The status was read back: Build. Before the move, `tools/board.py status` listed no card of the sound session's lane in Build. After it, `tools/check_backlog.py` said "the limits hold". Both ran in spark's working tree, which held the peer session's branch `p918-lane-flight` and not main, so the gate was that branch's
+- the body of P905 #1284 now holds his pass line of D35 and his order to pull and plan · taken 2026-11-19, 12:31 Prague · D35: the card holds his words
+- the title and the head lines of the draft PR #104 name D35 and the switch prototype · taken 2026-11-19, 12:31 Prague · the refuter's tenth pass named the stale title as a missing action. The PR's body marks its sections below the head lines as the state of 2026-11-18
+- a comment on #1279 with D35 · taken 2026-11-19, 12:31 Prague · https://github.com/xmejkal/spark/issues/1279#issuecomment-7007855968 · D35: the card holds his words
+- Waiting on the PO stays set on #1279, with Waiting since 2026-11-19 · read 2026-11-19, 12:30 Prague, the minute of the commit 8487a37 · his standing rule "It moves as the work moves", as in D9: the pass line is answered (D35), and his look at the chip is still asked of him, now in that comment
 <!-- EXTEND:brief-sections -->
 
 ## Hand-off
