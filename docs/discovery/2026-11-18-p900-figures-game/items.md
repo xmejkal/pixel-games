@@ -54,3 +54,4 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - file the count's item · taken 2026-11-19 · D27: P924 #1308
 - order the count's card into Ready · taken 2026-11-19, 10:11 Prague · D30
 - order the card of the switch prototype into Ready · taken 2026-11-19, 11:43 Prague · D34: P905 #1284
+- pull the card of the switch prototype into Build · taken 2026-11-19, 12:19 Prague · D35: P905 #1284
