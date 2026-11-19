@@ -1,0 +1,1219 @@
+p905 ways stick,click,double,hold,pick,knob,auto streak 10 wrong 3 double 300 hold 400
+p905 inputs stick yes knob yes
+size 240 320 {'framebuffer': 'double', 'windows': 4, 'timeout': 100, 'tile': 16, 'partial': True, 'swap': False}
+backend s3lcd
+mem 6929072
+frame tft
+lineup 1: switchtest
+import 1566 ms
+ready
+game switchtest
+switch switchtest 639 ms, load 585 ms, import 0 ms
+fps switchtest 20
+time switchtest step 1.9 paint 18.0 send 3.2 gc 8.4 fps 20 worst 325 slowest 323 = step 1 paint 318 send 3 gc 0
+phases switchtest static 7 paint 309 fx 0 hud 69 over 0 title 0
+avg switchtest static 7.6 paint 8.2 fx 0.2 hud 1.7 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392896 glyphs 46
+fps switchtest 22
+time switchtest step 1.8 paint 13.3 send 3.0 gc 8.5 fps 22 worst 62 slowest 19 = step 2 paint 13 send 3 gc 0
+phases switchtest static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 4.2 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392896 glyphs 46
+fps switchtest 22
+time switchtest step 1.8 paint 13.3 send 3.0 gc 8.5 fps 22 worst 62 slowest 19 = step 2 paint 13 send 3 gc 0
+phases switchtest static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 4.2 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392640 glyphs 46
+fps switchtest 22
+time switchtest step 1.8 paint 13.3 send 3.0 gc 8.5 fps 22 worst 63 slowest 19 = step 2 paint 13 send 3 gc 0
+phases switchtest static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 4.2 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392896 glyphs 46
+fps switchtest 18
+time switchtest step 1.8 paint 22.7 send 3.1 gc 8.8 fps 18 worst 434 slowest 432 = step 2 paint 427 send 3 gc 0
+phases switchtest static 7 paint 417 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 13.7 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 391888 glyphs 46
+fps switchtest 22
+time switchtest step 1.8 paint 13.3 send 3.0 gc 8.5 fps 22 worst 85 slowest 19 = step 2 paint 13 send 3 gc 0
+phases switchtest static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 4.2 fx 0.2 hud 1.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392640 glyphs 46
+fps switchtest 21
+time switchtest step 1.8 paint 16.4 send 3.0 gc 8.7 fps 21 worst 350 slowest 348 = step 2 paint 343 send 3 gc 0
+phases switchtest static 7 paint 334 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 7.3 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392128 glyphs 46
+fps switchtest 22
+time switchtest step 1.8 paint 13.3 send 3.0 gc 8.5 fps 22 worst 62 slowest 19 = step 2 paint 13 send 3 gc 0
+phases switchtest static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 4.2 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392896 glyphs 46
+fps switchtest 22
+time switchtest step 1.8 paint 13.3 send 3.0 gc 8.5 fps 22 worst 62 slowest 19 = step 2 paint 13 send 3 gc 0
+phases switchtest static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 4.2 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392896 glyphs 46
+fps switchtest 22
+time switchtest step 1.8 paint 13.3 send 3.0 gc 8.5 fps 22 worst 62 slowest 19 = step 2 paint 13 send 3 gc 0
+phases switchtest static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 4.2 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392896 glyphs 46
+fps switchtest 22
+time switchtest step 1.8 paint 13.3 send 3.0 gc 8.5 fps 22 worst 62 slowest 19 = step 2 paint 13 send 3 gc 0
+phases switchtest static 7 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 4.2 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 392896 glyphs 46
+fps switchtest 15
+time switchtest step 1.8 paint 34.4 send 3.0 gc 8.4 fps 15 worst 434 slowest 432 = step 2 paint 427 send 3 gc 0
+phases switchtest static 7 paint 418 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 25.4 fx 0.2 hud 1.0 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 393280 glyphs 46
+p905 round auto starts
+p905 task 1 wants child at 198
+p905 switch child first
+fps switchtest 18
+time switchtest step 2.0 paint 29.1 send 3.4 gc 8.8 fps 18 worst 503 slowest 501 = step 1 paint 497 send 3 gc 0
+phases switchtest static 7 paint 488 fx 0 hud 210 over 0 title 0
+avg switchtest static 7.7 paint 17.6 fx 0.2 hud 3.3 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 393984 glyphs 51
+fps switchtest 21
+time switchtest step 2.0 paint 23.8 send 3.7 gc 8.6 fps 21 worst 99 slowest 38 = step 2 paint 31 send 3 gc 0
+phases switchtest static 8 paint 21 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.7 paint 14.5 fx 0.2 hud 1.1 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 394512 glyphs 51
+fps switchtest 21
+time switchtest step 2.0 paint 25.0 send 3.5 gc 8.6 fps 21 worst 74 slowest 36 = step 2 paint 30 send 3 gc 0
+phases switchtest static 7 paint 21 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.8 paint 15.6 fx 0.2 hud 1.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 394784 glyphs 51
+fps switchtest 21
+time switchtest step 2.0 paint 25.0 send 3.5 gc 8.6 fps 21 worst 73 slowest 37 = step 2 paint 31 send 3 gc 0
+phases switchtest static 7 paint 21 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.8 paint 15.6 fx 0.2 hud 1.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 394784 glyphs 51
+p905 round auto ends idle streak 0 best 0 tasks 0 wrong 0
+fps switchtest 18
+time switchtest step 2.2 paint 35.1 send 3.5 gc 9.5 fps 18 worst 264 slowest 262 = step 48 paint 210 send 3 gc 43
+phases switchtest static 7 paint 21 fx 0 hud 1 over 183 title 0
+avg switchtest static 7.8 paint 15.4 fx 0.2 hud 1.1 over 10.3 title 0.0 input 0.9
+heap switchtest alloc 434832 glyphs 51
+p905 round auto starts
+fps switchtest 12
+time switchtest step 1.6 paint 57.1 send 3.3 gc 9.5 fps 12 worst 834 slowest 832 = step 5 paint 823 send 3 gc 0
+phases switchtest static 8 paint 603 fx 0 hud 274 over 26 title 0
+avg switchtest static 7.7 paint 28.3 fx 0.2 hud 9.0 over 11.7 title 0.0 input 0.8
+heap switchtest alloc 434528 glyphs 51
+p905 task 1 wants child at 121
+p905 switch child first
+p905 act child stray
+fps switchtest 20
+time switchtest step 1.9 paint 24.4 send 3.9 gc 9.1 fps 20 worst 109 slowest 36 = step 2 paint 30 send 3 gc 0
+phases switchtest static 7 paint 20 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.8 paint 15.1 fx 0.2 hud 1.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 435600 glyphs 51
+p905 act child stray
+p905 act child stray
+fps switchtest 20
+time switchtest step 1.9 paint 24.1 send 3.7 gc 9.4 fps 20 worst 86 slowest 37 = step 1 paint 32 send 3 gc 0
+phases switchtest static 8 paint 22 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.7 paint 14.8 fx 0.2 hud 1.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 434784 glyphs 51
+p905 act child stray
+fps switchtest 21
+time switchtest step 1.9 paint 24.3 send 3.6 gc 9.4 fps 21 worst 79 slowest 38 = step 2 paint 32 send 3 gc 0
+phases switchtest static 7 paint 22 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.7 paint 15.0 fx 0.2 hud 1.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 434784 glyphs 51
+p905 act child stray
+fps switchtest 20
+time switchtest step 1.9 paint 24.5 send 3.9 gc 9.4 fps 20 worst 80 slowest 38 = step 2 paint 32 send 3 gc 0
+phases switchtest static 8 paint 22 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.7 paint 15.2 fx 0.2 hud 1.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 434784 glyphs 51
+p905 round auto ends idle streak 0 best 0 tasks 0 wrong 0
+fps switchtest 11
+time switchtest step 2.3 paint 66.7 send 3.5 gc 9.8 fps 11 worst 837 slowest 836 = step 5 paint 827 send 3 gc 0
+phases switchtest static 8 paint 617 fx 0 hud 231 over 26 title 0
+avg switchtest static 7.7 paint 42.1 fx 0.3 hud 4.8 over 11.5 title 0.0 input 0.8
+heap switchtest alloc 435696 glyphs 51
+fps switchtest 19
+time switchtest step 1.7 paint 20.4 send 3.1 gc 9.3 fps 19 worst 564 slowest 562 = step 1 paint 557 send 3 gc 0
+phases switchtest static 8 paint 548 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.6 paint 11.2 fx 0.2 hud 1.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 434800 glyphs 51
+p905 round hold starts
+p905 task 1 wants child at 131
+p905 switch child first
+p905 act child stray
+fps switchtest 20
+time switchtest step 1.9 paint 25.4 send 3.5 gc 9.4 fps 20 worst 289 slowest 287 = step 4 paint 279 send 3 gc 0
+phases switchtest static 8 paint 19 fx 0 hud 257 over 0 title 0
+avg switchtest static 7.8 paint 13.5 fx 0.2 hud 3.7 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 434784 glyphs 51
+p905 switch fireman extra
+p905 act fireman other
+p905 act fireman other
+fps switchtest 19
+time switchtest step 2.3 paint 32.7 send 3.7 gc 9.4 fps 19 worst 335 slowest 333 = step 3 paint 326 send 3 gc 0
+phases switchtest static 8 paint 41 fx 0 hud 283 over 0 title 0
+avg switchtest static 8.0 paint 20.1 fx 0.3 hud 4.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 435200 glyphs 52
+fps switchtest 20
+time switchtest step 2.1 paint 27.3 send 3.5 gc 9.2 fps 20 worst 85 slowest 38 = step 2 paint 32 send 3 gc 0
+phases switchtest static 8 paint 22 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 17.7 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 435744 glyphs 52
+p905 act fireman other
+p905 switch child back
+fps switchtest 20
+time switchtest step 2.1 paint 26.6 send 3.3 gc 9.2 fps 20 worst 87 slowest 40 = step 2 paint 34 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 17.1 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 435744 glyphs 52
+p905 round hold ends idle streak 0 best 0 tasks 0 wrong 1
+fps switchtest 11
+time switchtest step 2.6 paint 64.6 send 8.1 gc 9.8 fps 11 worst 938 slowest 937 = step 6 paint 915 send 15 gc 0
+phases switchtest static 8 paint 639 fx 0 hud 284 over 191 title 0
+avg switchtest static 7.7 paint 37.3 fx 0.2 hud 6.0 over 13.1 title 0.0 input 0.8
+heap switchtest alloc 437744 glyphs 52
+fps switchtest 15
+time switchtest step 1.9 paint 32.1 send 3.0 gc 9.5 fps 15 worst 625 slowest 597 = step 1 paint 592 send 3 gc 0
+phases switchtest static 8 paint 582 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.8 paint 22.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 434704 glyphs 52
+p905 round stick starts
+p905 task 1 wants child at 156
+p905 switch fireman same
+p905 switch fireman same
+p905 switch child first
+p905 switch fireman extra
+p905 switch child back
+fps switchtest 17
+time switchtest step 2.2 paint 35.1 send 3.5 gc 9.1 fps 17 worst 378 slowest 376 = step 4 paint 368 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 327 over 0 title 0
+avg switchtest static 7.9 paint 18.3 fx 0.3 hud 8.4 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436656 glyphs 54
+p905 switch child same
+p905 switch fireman extra
+p905 switch child back
+p905 switch fireman extra
+p905 switch child back
+p905 switch fireman extra
+p905 switch child back
+p905 switch fireman extra
+p905 switch child back
+p905 switch fireman extra
+fps switchtest 20
+time switchtest step 2.2 paint 27.2 send 3.5 gc 9.2 fps 20 worst 87 slowest 41 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 17.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436384 glyphs 54
+p905 switch child back
+p905 switch fireman extra
+fps switchtest 20
+time switchtest step 2.1 paint 27.1 send 3.4 gc 9.2 fps 20 worst 86 slowest 41 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 17.5 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436384 glyphs 54
+p905 switch fireman same
+fps switchtest 20
+time switchtest step 2.1 paint 26.9 send 3.5 gc 9.2 fps 20 worst 86 slowest 41 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 17.3 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436384 glyphs 54
+p905 round stick ends idle streak 0 best 0 tasks 0 wrong 1
+fps switchtest 14
+time switchtest step 2.2 paint 49.0 send 3.3 gc 10.1 fps 14 worst 317 slowest 315 = step 50 paint 261 send 3 gc 47
+phases switchtest static 8 paint 25 fx 0 hud 1 over 231 title 0
+avg switchtest static 7.9 paint 19.3 fx 0.3 hud 1.2 over 20.2 title 0.0 input 0.8
+heap switchtest alloc 435584 glyphs 54
+fps switchtest 13
+time switchtest step 1.5 paint 54.8 send 3.2 gc 9.5 fps 13 worst 140 slowest 66 = step 2 paint 61 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 31 title 0
+avg switchtest static 7.8 paint 18.3 fx 0.3 hud 1.2 over 27.0 title 0.0 input 0.8
+heap switchtest alloc 435568 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 140 slowest 66 = step 2 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 14
+time switchtest step 1.5 paint 53.9 send 3.2 gc 9.4 fps 14 worst 111 slowest 66 = step 1 paint 60 send 3 gc 0
+phases switchtest static 7 paint 23 fx 0 hud 1 over 30 title 0
+avg switchtest static 7.8 paint 17.9 fx 0.3 hud 1.2 over 26.4 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 10
+time switchtest step 1.5 paint 78.5 send 3.3 gc 8.8 fps 10 worst 897 slowest 895 = step 6 paint 885 send 3 gc 0
+phases switchtest static 8 paint 627 fx 0 hud 250 over 30 title 0
+avg switchtest static 7.8 paint 39.8 fx 0.3 hud 5.8 over 24.6 title 0.0 input 0.8
+heap switchtest alloc 438672 glyphs 54
+p905 round click starts
+p905 task 1 wants child at 191
+p905 switch child first
+fps switchtest 17
+time switchtest step 2.4 paint 36.2 send 3.2 gc 9.1 fps 17 worst 454 slowest 452 = step 1 paint 448 send 3 gc 0
+phases switchtest static 8 paint 439 fx 0 hud 238 over 0 title 0
+avg switchtest static 8.0 paint 23.9 fx 0.3 hud 3.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 436672 glyphs 54
+p905 switch fireman extra
+p905 switch child back
+fps switchtest 19
+time switchtest step 2.2 paint 31.4 send 3.4 gc 9.4 fps 19 worst 283 slowest 281 = step 3 paint 274 send 3 gc 0
+phases switchtest static 8 paint 44 fx 0 hud 239 over 0 title 0
+avg switchtest static 7.9 paint 19.4 fx 0.3 hud 3.7 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 435840 glyphs 54
+p905 switch fireman extra
+fps switchtest 20
+time switchtest step 2.2 paint 28.6 send 3.5 gc 9.3 fps 20 worst 88 slowest 40 = step 2 paint 34 send 3 gc 0
+phases switchtest static 8 paint 24 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 19.0 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436112 glyphs 54
+fps switchtest 20
+time switchtest step 2.2 paint 29.0 send 3.6 gc 9.4 fps 20 worst 89 slowest 41 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 19.4 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 435840 glyphs 54
+p905 switch child back
+p905 round click ends idle streak 0 best 0 tasks 0 wrong 1
+fps switchtest 16
+time switchtest step 2.5 paint 42.8 send 3.5 gc 10.0 fps 16 worst 269 slowest 267 = step 52 paint 212 send 3 gc 47
+phases switchtest static 8 paint 25 fx 0 hud 1 over 184 title 0
+avg switchtest static 7.9 paint 20.0 fx 0.3 hud 1.2 over 13.2 title 0.0 input 0.9
+heap switchtest alloc 435888 glyphs 54
+fps switchtest 7
+time switchtest step 1.9 paint 106.6 send 3.2 gc 9.0 fps 7 worst 962 slowest 960 = step 6 paint 950 send 3 gc 0
+phases switchtest static 8 paint 652 fx 0 hud 296 over 27 title 0
+avg switchtest static 7.8 paint 87.5 fx 0.3 hud 9.2 over 1.6 title 0.0 input 0.8
+heap switchtest alloc 435872 glyphs 54
+fps switchtest 19
+time switchtest step 1.8 paint 20.2 send 3.0 gc 9.2 fps 19 worst 633 slowest 631 = step 1 paint 626 send 3 gc 0
+phases switchtest static 7 paint 617 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.8 paint 10.8 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436976 glyphs 54
+p905 round auto starts
+p905 task 1 wants child at 188
+p905 switch child first
+fps switchtest 18
+time switchtest step 2.3 paint 32.1 send 3.2 gc 9.5 fps 18 worst 359 slowest 309 = step 5 paint 300 send 3 gc 0
+phases switchtest static 8 paint 141 fx 0 hud 272 over 0 title 0
+avg switchtest static 7.9 paint 19.5 fx 0.3 hud 4.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 435584 glyphs 54
+p905 act child stray
+fps switchtest 20
+time switchtest step 2.1 paint 27.8 send 3.5 gc 9.4 fps 20 worst 116 slowest 39 = step 2 paint 33 send 3 gc 0
+phases switchtest static 8 paint 23 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 18.2 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 435840 glyphs 54
+p905 act child reached
+p905 task 1 clean streak 1 wrong 0
+p905 task 2 wants fireman at 282
+p905 switch fireman first
+fps switchtest 18
+time switchtest step 2.2 paint 33.9 send 3.8 gc 9.1 fps 18 worst 327 slowest 325 = step 7 paint 314 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 285 over 0 title 0
+avg switchtest static 7.9 paint 21.3 fx 0.3 hud 4.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436656 glyphs 54
+p905 act fireman reached
+p905 task 2 clean streak 2 wrong 0
+p905 task 3 wants child at 271
+p905 switch child first
+fps switchtest 18
+time switchtest step 2.3 paint 35.3 send 3.6 gc 9.2 fps 18 worst 329 slowest 327 = step 7 paint 316 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 291 over 0 title 0
+avg switchtest static 8.0 paint 22.5 fx 0.3 hud 4.3 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 436688 glyphs 55
+p905 act child reached
+p905 task 3 clean streak 3 wrong 0
+p905 task 4 wants fireman at 140
+p905 switch fireman first
+fps switchtest 18
+time switchtest step 2.2 paint 35.2 send 3.7 gc 9.3 fps 18 worst 335 slowest 333 = step 7 paint 321 send 3 gc 0
+phases switchtest static 8 paint 30 fx 0 hud 283 over 0 title 0
+avg switchtest static 7.9 paint 22.5 fx 0.3 hud 4.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436752 glyphs 56
+p905 act fireman reached
+p905 task 4 clean streak 4 wrong 0
+p905 task 5 wants child at 157
+p905 switch child first
+fps switchtest 18
+time switchtest step 2.2 paint 33.5 send 3.6 gc 9.5 fps 18 worst 318 slowest 315 = step 7 paint 305 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 282 over 0 title 0
+avg switchtest static 8.0 paint 20.9 fx 0.3 hud 4.1 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 436208 glyphs 56
+p905 act child reached
+p905 task 5 clean streak 5 wrong 0
+p905 task 6 wants fireman at 253
+p905 switch fireman first
+fps switchtest 17
+time switchtest step 2.3 paint 36.2 send 3.7 gc 9.1 fps 17 worst 341 slowest 339 = step 7 paint 328 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 290 over 0 title 0
+avg switchtest static 8.0 paint 23.3 fx 0.3 hud 4.4 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 437296 glyphs 56
+p905 act fireman reached
+p905 task 6 clean streak 6 wrong 0
+p905 task 7 wants child at 262
+p905 switch child first
+fps switchtest 18
+time switchtest step 2.5 paint 35.5 send 3.7 gc 9.2 fps 18 worst 334 slowest 332 = step 7 paint 321 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 290 over 0 title 0
+avg switchtest static 8.0 paint 22.7 fx 0.3 hud 4.3 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437392 glyphs 57
+p905 act child reached
+p905 task 7 clean streak 7 wrong 0
+p905 task 8 wants fireman at 183
+p905 switch fireman first
+fps switchtest 16
+time switchtest step 2.4 paint 40.9 send 3.7 gc 9.4 fps 16 worst 345 slowest 343 = step 7 paint 332 send 3 gc 0
+phases switchtest static 8 paint 34 fx 0 hud 294 over 0 title 0
+avg switchtest static 8.0 paint 27.8 fx 0.3 hud 4.6 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437152 glyphs 58
+p905 act fireman reached
+p905 task 8 clean streak 8 wrong 0
+p905 task 9 wants child at 113
+p905 switch child first
+fps switchtest 19
+time switchtest step 2.4 paint 32.3 send 3.4 gc 9.3 fps 19 worst 195 slowest 193 = step 4 paint 185 send 3 gc 0
+phases switchtest static 8 paint 42 fx 0 hud 164 over 0 title 0
+avg switchtest static 8.0 paint 20.8 fx 0.3 hud 2.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437840 glyphs 59
+fps switchtest 20
+time switchtest step 2.3 paint 30.2 send 3.8 gc 9.4 fps 20 worst 88 slowest 42 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 20.5 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 437568 glyphs 59
+fps switchtest 20
+time switchtest step 2.4 paint 30.5 send 3.3 gc 9.4 fps 20 worst 87 slowest 48 = step 2 paint 42 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 20.7 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437568 glyphs 59
+fps switchtest 19
+time switchtest step 2.4 paint 30.5 send 3.3 gc 9.4 fps 19 worst 87 slowest 48 = step 2 paint 42 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 20.7 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437568 glyphs 59
+p905 round auto ends idle streak 8 best 8 tasks 8 wrong 0
+fps switchtest 13
+time switchtest step 2.5 paint 58.1 send 3.3 gc 9.9 fps 13 worst 314 slowest 312 = step 52 paint 256 send 3 gc 47
+phases switchtest static 8 paint 24 fx 0 hud 1 over 227 title 0
+avg switchtest static 8.0 paint 21.7 fx 0.3 hud 1.2 over 26.6 title 0.0 input 1.0
+heap switchtest alloc 437920 glyphs 59
+fps switchtest 13
+time switchtest step 1.7 paint 56.3 send 3.3 gc 9.0 fps 13 worst 115 slowest 72 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 31 title 0
+avg switchtest static 8.0 paint 20.4 fx 0.3 hud 1.2 over 26.2 title 0.0 input 1.0
+heap switchtest alloc 438512 glyphs 59
+fps switchtest 13
+time switchtest step 1.7 paint 57.3 send 3.3 gc 9.1 fps 13 worst 115 slowest 72 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 31 title 0
+avg switchtest static 8.0 paint 20.9 fx 0.3 hud 1.2 over 26.7 title 0.0 input 0.9
+heap switchtest alloc 438208 glyphs 59
+fps switchtest 13
+time switchtest step 1.7 paint 57.3 send 3.3 gc 9.1 fps 13 worst 115 slowest 72 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 31 title 0
+avg switchtest static 8.0 paint 21.1 fx 0.3 hud 1.2 over 26.5 title 0.0 input 0.9
+heap switchtest alloc 438208 glyphs 59
+fps switchtest 13
+time switchtest step 1.7 paint 57.3 send 3.3 gc 9.1 fps 13 worst 115 slowest 71 = step 1 paint 66 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 31 title 0
+avg switchtest static 8.0 paint 20.9 fx 0.3 hud 1.2 over 26.7 title 0.0 input 0.9
+heap switchtest alloc 438208 glyphs 59
+fps switchtest 13
+time switchtest step 1.7 paint 57.3 send 3.3 gc 9.1 fps 13 worst 115 slowest 72 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 31 title 0
+avg switchtest static 8.0 paint 21.1 fx 0.3 hud 1.2 over 26.5 title 0.0 input 0.9
+heap switchtest alloc 438208 glyphs 59
+fps switchtest 13
+time switchtest step 1.7 paint 57.3 send 3.3 gc 9.1 fps 13 worst 115 slowest 71 = step 1 paint 66 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 31 title 0
+avg switchtest static 8.0 paint 20.9 fx 0.3 hud 1.2 over 26.7 title 0.0 input 0.9
+heap switchtest alloc 438208 glyphs 59
+fps switchtest 13
+time switchtest step 1.7 paint 57.3 send 3.3 gc 9.1 fps 13 worst 115 slowest 72 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 31 title 0
+avg switchtest static 8.0 paint 21.1 fx 0.3 hud 1.2 over 26.5 title 0.0 input 0.9
+heap switchtest alloc 438208 glyphs 59
+fps switchtest 13
+time switchtest step 1.7 paint 57.3 send 3.3 gc 9.1 fps 13 worst 115 slowest 71 = step 1 paint 66 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 31 title 0
+avg switchtest static 8.0 paint 20.9 fx 0.3 hud 1.2 over 26.7 title 0.0 input 1.0
+heap switchtest alloc 438208 glyphs 59
+fps switchtest 15
+time switchtest step 2.2 paint 32.1 send 3.1 gc 9.5 fps 15 worst 664 slowest 662 = step 2 paint 657 send 3 gc 0
+phases switchtest static 8 paint 647 fx 0 hud 168 over 16 title 0
+avg switchtest static 7.9 paint 19.7 fx 0.4 hud 3.3 over 0.6 title 0.0 input 1.0
+heap switchtest alloc 437088 glyphs 59
+fps switchtest 21
+time switchtest step 2.1 paint 14.4 send 3.0 gc 9.1 fps 21 worst 98 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.4 hud 1.3 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 438080 glyphs 59
+p905 round pick starts
+p905 task 1 wants child at 135
+p905 act fireman other
+fps switchtest 11
+time switchtest step 2.3 paint 61.8 send 3.2 gc 9.0 fps 11 worst 736 slowest 734 = step 2 paint 728 send 3 gc 0
+phases switchtest static 8 paint 719 fx 0 hud 296 over 0 title 0
+avg switchtest static 7.9 paint 42.0 fx 0.3 hud 11.3 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 438544 glyphs 60
+p905 act fireman other
+p905 act fireman other
+p905 act fireman other
+p905 act fireman other
+fps switchtest 19
+time switchtest step 2.4 paint 31.4 send 3.9 gc 9.5 fps 19 worst 90 slowest 42 = step 4 paint 33 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 21.7 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437712 glyphs 60
+p905 act fireman other
+p905 act fireman other
+fps switchtest 19
+time switchtest step 2.5 paint 32.3 send 3.7 gc 9.2 fps 19 worst 117 slowest 43 = step 4 paint 35 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 22.4 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438528 glyphs 60
+fps switchtest 19
+time switchtest step 2.4 paint 31.5 send 3.7 gc 9.5 fps 19 worst 89 slowest 43 = step 3 paint 36 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 21.7 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437712 glyphs 60
+p905 act fireman other
+p905 round pick ends idle streak 0 best 0 tasks 0 wrong 1
+fps switchtest 17
+time switchtest step 2.9 paint 36.9 send 3.3 gc 9.9 fps 17 worst 290 slowest 288 = step 52 paint 232 send 3 gc 47
+phases switchtest static 8 paint 32 fx 0 hud 1 over 203 title 0
+avg switchtest static 8.0 paint 22.5 fx 0.3 hud 1.3 over 4.6 title 0.0 input 1.0
+heap switchtest alloc 438032 glyphs 60
+fps switchtest 8
+time switchtest step 2.0 paint 87.4 send 3.2 gc 8.6 fps 8 worst 1087 slowest 1085 = step 7 paint 1074 send 3 gc 0
+phases switchtest static 8 paint 849 fx 0 hud 317 over 31 title 0
+avg switchtest static 7.9 paint 62.2 fx 0.3 hud 8.4 over 8.4 title 0.0 input 0.9
+heap switchtest alloc 438544 glyphs 60
+p905 round knob starts
+p905 task 1 wants child at 114
+p905 switch fireman same
+p905 switch fireman same
+p905 switch fireman same
+p905 switch child first
+p905 switch child same
+p905 switch child same
+p905 switch child same
+p905 switch child same
+p905 switch child same
+fps switchtest 18
+time switchtest step 2.7 paint 36.1 send 3.4 gc 9.3 fps 18 worst 379 slowest 377 = step 5 paint 368 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 338 over 0 title 0
+avg switchtest static 8.1 paint 22.6 fx 0.3 hud 4.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438256 glyphs 60
+p905 switch fireman extra
+p905 switch fireman same
+p905 switch child back
+fps switchtest 18
+time switchtest step 2.4 paint 33.5 send 3.3 gc 9.4 fps 18 worst 225 slowest 176 = step 2 paint 170 send 3 gc 0
+phases switchtest static 8 paint 45 fx 0 hud 139 over 0 title 0
+avg switchtest static 8.0 paint 22.3 fx 0.3 hud 2.6 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+fps switchtest 19
+time switchtest step 2.4 paint 31.2 send 3.3 gc 9.1 fps 19 worst 90 slowest 48 = step 2 paint 42 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 21.5 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 switch child same
+p905 switch fireman extra
+p905 switch child back
+fps switchtest 19
+time switchtest step 2.4 paint 31.1 send 3.3 gc 9.1 fps 19 worst 98 slowest 48 = step 2 paint 42 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 21.3 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 act child reached
+p905 task 1 wrong streak 0 wrong 1
+p905 task 2 wants fireman at 223
+p905 switch fireman first
+fps switchtest 17
+time switchtest step 2.5 paint 37.3 send 3.3 gc 9.4 fps 17 worst 97 slowest 58 = step 2 paint 52 send 3 gc 0
+phases switchtest static 8 paint 42 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 27.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+p905 act fireman reached
+p905 task 2 clean streak 1 wrong 1
+p905 task 3 wants child at 287
+fps switchtest 17
+time switchtest step 2.4 paint 39.0 send 3.3 gc 9.1 fps 17 worst 383 slowest 381 = step 6 paint 371 send 3 gc 0
+phases switchtest static 8 paint 42 fx 0 hud 330 over 0 title 0
+avg switchtest static 8.0 paint 25.6 fx 0.3 hud 4.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+fps switchtest 19
+time switchtest step 2.3 paint 32.8 send 3.4 gc 9.5 fps 19 worst 89 slowest 41 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 23.2 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437712 glyphs 60
+fps switchtest 19
+time switchtest step 2.4 paint 33.4 send 3.3 gc 9.2 fps 19 worst 119 slowest 48 = step 2 paint 42 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 23.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 438528 glyphs 60
+fps switchtest 19
+time switchtest step 2.3 paint 32.8 send 3.4 gc 9.5 fps 19 worst 89 slowest 41 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 23.2 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437712 glyphs 60
+p905 round knob ends idle streak 1 best 1 tasks 2 wrong 1
+fps switchtest 15
+time switchtest step 2.6 paint 44.6 send 3.4 gc 10.0 fps 15 worst 292 slowest 290 = step 52 paint 234 send 3 gc 47
+phases switchtest static 8 paint 32 fx 0 hud 1 over 197 title 0
+avg switchtest static 8.0 paint 22.8 fx 0.3 hud 1.2 over 12.0 title 0.0 input 0.9
+heap switchtest alloc 438032 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.9 send 3.2 gc 9.1 fps 12 worst 126 slowest 85 = step 2 paint 79 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 1 over 38 title 0
+avg switchtest static 8.0 paint 23.0 fx 0.3 hud 1.2 over 31.3 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 126 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.6 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.6 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.8 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.6 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 12
+time switchtest step 1.7 paint 63.2 send 3.2 gc 9.1 fps 12 worst 125 slowest 87 = step 2 paint 81 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 1 over 38 title 0
+avg switchtest static 7.9 paint 23.0 fx 0.3 hud 1.2 over 30.7 title 0.0 input 1.0
+heap switchtest alloc 438624 glyphs 60
+fps switchtest 9
+time switchtest step 1.8 paint 88.7 send 3.2 gc 9.5 fps 9 worst 1100 slowest 1098 = step 6 paint 1088 send 3 gc 0
+phases switchtest static 8 paint 764 fx 0 hud 315 over 38 title 0
+avg switchtest static 7.9 paint 44.6 fx 0.3 hud 7.4 over 28.3 title 0.0 input 0.9
+heap switchtest alloc 437520 glyphs 60
+p905 round pick starts
+p905 task 1 wants child at 174
+p905 switch child first
+fps switchtest 16
+time switchtest step 2.3 paint 34.6 send 3.2 gc 9.5 fps 16 worst 658 slowest 656 = step 2 paint 651 send 3 gc 0
+phases switchtest static 8 paint 641 fx 0 hud 296 over 0 title 0
+avg switchtest static 8.0 paint 21.4 fx 0.3 hud 4.7 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437728 glyphs 60
+p905 switch fireman extra
+p905 switch child back
+p905 switch fireman extra
+p905 switch child back
+p905 switch fireman extra
+fps switchtest 19
+time switchtest step 2.5 paint 33.1 send 3.5 gc 9.4 fps 19 worst 137 slowest 87 = step 4 paint 80 send 3 gc 0
+phases switchtest static 8 paint 45 fx 0 hud 60 over 0 title 0
+avg switchtest static 8.0 paint 22.7 fx 0.3 hud 1.8 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+fps switchtest 20
+time switchtest step 2.4 paint 30.8 send 3.3 gc 9.5 fps 20 worst 88 slowest 48 = step 2 paint 42 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 21.1 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437712 glyphs 60
+fps switchtest 19
+time switchtest step 2.4 paint 30.8 send 3.5 gc 9.1 fps 19 worst 118 slowest 42 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 21.1 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 round pick ends idle streak 0 best 0 tasks 0 wrong 1
+fps switchtest 17
+time switchtest step 2.8 paint 38.3 send 3.6 gc 9.7 fps 17 worst 296 slowest 294 = step 52 paint 239 send 3 gc 47
+phases switchtest static 8 paint 27 fx 0 hud 1 over 209 title 0
+avg switchtest static 8.0 paint 21.4 fx 0.3 hud 1.2 over 7.1 title 0.0 input 1.0
+heap switchtest alloc 438640 glyphs 60
+fps switchtest 13
+time switchtest step 1.7 paint 56.5 send 3.3 gc 9.0 fps 13 worst 116 slowest 73 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 32 title 0
+avg switchtest static 8.0 paint 19.8 fx 0.3 hud 1.2 over 27.1 title 0.0 input 0.9
+heap switchtest alloc 438928 glyphs 60
+fps switchtest 13
+time switchtest step 1.7 paint 56.5 send 3.3 gc 9.0 fps 13 worst 116 slowest 73 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 32 title 0
+avg switchtest static 8.0 paint 19.8 fx 0.3 hud 1.2 over 27.1 title 0.0 input 1.0
+heap switchtest alloc 438928 glyphs 60
+fps switchtest 13
+time switchtest step 1.7 paint 56.5 send 3.3 gc 9.0 fps 13 worst 116 slowest 73 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 32 title 0
+avg switchtest static 8.0 paint 19.8 fx 0.3 hud 1.2 over 27.1 title 0.0 input 0.9
+heap switchtest alloc 438928 glyphs 60
+fps switchtest 13
+time switchtest step 1.7 paint 56.5 send 3.3 gc 9.0 fps 13 worst 116 slowest 73 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 32 title 0
+avg switchtest static 8.0 paint 19.8 fx 0.3 hud 1.2 over 27.1 title 0.0 input 0.9
+heap switchtest alloc 438928 glyphs 60
+fps switchtest 13
+time switchtest step 1.7 paint 56.5 send 3.3 gc 9.0 fps 13 worst 116 slowest 73 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 32 title 0
+avg switchtest static 8.0 paint 19.8 fx 0.3 hud 1.2 over 27.1 title 0.0 input 0.9
+heap switchtest alloc 438928 glyphs 60
+fps switchtest 13
+time switchtest step 1.7 paint 56.5 send 3.3 gc 9.0 fps 13 worst 116 slowest 73 = step 1 paint 67 send 3 gc 0
+phases switchtest static 8 paint 25 fx 0 hud 1 over 32 title 0
+avg switchtest static 8.0 paint 19.8 fx 0.3 hud 1.2 over 27.1 title 0.0 input 0.9
+heap switchtest alloc 438928 glyphs 60
+fps switchtest 11
+time switchtest step 1.7 paint 78.3 send 3.3 gc 8.9 fps 11 worst 1093 slowest 1091 = step 5 paint 1082 send 3 gc 0
+phases switchtest static 8 paint 760 fx 0 hud 313 over 32 title 0
+avg switchtest static 8.0 paint 37.5 fx 0.3 hud 6.5 over 25.9 title 0.0 input 0.9
+heap switchtest alloc 440880 glyphs 60
+fps switchtest 17
+time switchtest step 2.3 paint 22.7 send 3.0 gc 9.3 fps 17 worst 808 slowest 759 = step 2 paint 753 send 3 gc 0
+phases switchtest static 8 paint 743 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 13.1 fx 0.4 hud 1.2 over 0.0 title 0.0 input 1.1
+heap switchtest alloc 438000 glyphs 60
+fps switchtest 21
+time switchtest step 2.3 paint 14.3 send 3.0 gc 9.4 fps 21 worst 69 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.4 hud 1.2 over 0.0 title 0.0 input 1.1
+heap switchtest alloc 437728 glyphs 60
+fps switchtest 17
+time switchtest step 2.2 paint 25.0 send 3.0 gc 9.5 fps 17 worst 690 slowest 688 = step 2 paint 683 send 3 gc 0
+phases switchtest static 8 paint 673 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 15.3 fx 0.4 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437488 glyphs 60
+p905 round stick starts
+p905 task 1 wants child at 101
+p905 switch fireman same
+p905 switch child first
+fps switchtest 17
+time switchtest step 2.6 paint 37.1 send 3.4 gc 9.2 fps 17 worst 365 slowest 363 = step 5 paint 354 send 3 gc 0
+phases switchtest static 8 paint 323 fx 0 hud 325 over 0 title 0
+avg switchtest static 8.0 paint 23.5 fx 0.3 hud 4.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438544 glyphs 60
+p905 act child reached
+p905 task 1 clean streak 1 wrong 0
+p905 task 2 wants fireman at 298
+fps switchtest 18
+time switchtest step 2.6 paint 35.0 send 4.0 gc 9.2 fps 18 worst 374 slowest 372 = step 6 paint 362 send 3 gc 0
+phases switchtest static 8 paint 30 fx 0 hud 323 over 0 title 0
+avg switchtest static 8.0 paint 21.8 fx 0.3 hud 4.7 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438528 glyphs 60
+p905 switch fireman first
+p905 switch child extra
+p905 switch child same
+p905 switch fireman back
+fps switchtest 17
+time switchtest step 2.5 paint 40.0 send 3.6 gc 9.4 fps 17 worst 393 slowest 391 = step 3 paint 384 send 3 gc 0
+phases switchtest static 8 paint 51 fx 0 hud 324 over 0 title 0
+avg switchtest static 8.0 paint 26.6 fx 0.3 hud 5.0 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+p905 act fireman reached
+p905 task 2 wrong streak 0 wrong 1
+p905 task 3 wants child at 237
+fps switchtest 18
+time switchtest step 2.5 paint 35.0 send 3.3 gc 9.1 fps 18 worst 95 slowest 58 = step 2 paint 52 send 3 gc 0
+phases switchtest static 8 paint 42 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 25.2 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 act fireman other
+p905 switch fireman same
+p905 switch fireman same
+p905 switch fireman same
+fps switchtest 18
+time switchtest step 2.5 paint 35.6 send 3.7 gc 9.3 fps 18 worst 382 slowest 380 = step 4 paint 372 send 3 gc 0
+phases switchtest static 8 paint 44 fx 0 hud 321 over 0 title 0
+avg switchtest static 8.0 paint 22.3 fx 0.3 hud 4.7 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438320 glyphs 60
+p905 switch child first
+p905 act child stray
+p905 switch fireman extra
+p905 switch child back
+p905 switch fireman extra
+p905 act fireman other
+fps switchtest 19
+time switchtest step 2.5 paint 32.1 send 3.6 gc 9.4 fps 19 worst 89 slowest 41 = step 2 paint 35 send 3 gc 0
+phases switchtest static 8 paint 26 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 22.5 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+p905 switch child back
+p905 act child reached
+p905 task 3 wrong streak 0 wrong 2
+p905 task 4 wants fireman at 96
+fps switchtest 19
+time switchtest step 2.5 paint 33.9 send 3.5 gc 9.3 fps 19 worst 97 slowest 51 = step 2 paint 45 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 24.1 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438256 glyphs 60
+p905 switch child same
+p905 switch fireman first
+fps switchtest 17
+time switchtest step 2.4 paint 38.7 send 3.7 gc 9.1 fps 17 worst 96 slowest 51 = step 2 paint 45 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 29.0 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 act fireman reached
+p905 task 4 clean streak 1 wrong 2
+p905 task 5 wants child at 152
+p905 switch child first
+fps switchtest 18
+time switchtest step 2.6 paint 37.2 send 3.5 gc 9.4 fps 18 worst 380 slowest 378 = step 6 paint 368 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 336 over 0 title 0
+avg switchtest static 8.1 paint 23.7 fx 0.3 hud 4.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+p905 act child reached
+p905 task 5 clean streak 2 wrong 2
+p905 task 6 wants fireman at 224
+p905 switch fireman first
+fps switchtest 17
+time switchtest step 2.5 paint 38.8 send 3.4 gc 9.1 fps 17 worst 219 slowest 217 = step 4 paint 209 send 3 gc 0
+phases switchtest static 8 paint 34 fx 0 hud 184 over 0 title 0
+avg switchtest static 8.0 paint 27.0 fx 0.3 hud 3.3 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 act fireman reached
+p905 task 6 clean streak 3 wrong 2
+p905 task 7 wants child at 266
+p905 switch child first
+fps switchtest 17
+time switchtest step 2.5 paint 37.3 send 3.6 gc 9.1 fps 17 worst 439 slowest 437 = step 6 paint 427 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 393 over 0 title 0
+avg switchtest static 8.0 paint 23.2 fx 0.3 hud 5.6 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 act child reached
+p905 task 7 clean streak 4 wrong 2
+p905 task 8 wants fireman at 162
+p905 switch child same
+p905 switch fireman first
+fps switchtest 18
+time switchtest step 2.5 paint 35.6 send 3.5 gc 9.3 fps 18 worst 334 slowest 284 = step 6 paint 274 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 236 over 0 title 0
+avg switchtest static 8.0 paint 23.3 fx 0.3 hud 3.7 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438320 glyphs 60
+p905 act fireman reached
+p905 task 8 clean streak 5 wrong 2
+p905 task 9 wants child at 145
+p905 switch child first
+fps switchtest 17
+time switchtest step 2.5 paint 36.3 send 3.7 gc 9.4 fps 17 worst 380 slowest 377 = step 6 paint 367 send 3 gc 0
+phases switchtest static 8 paint 34 fx 0 hud 334 over 0 title 0
+avg switchtest static 8.0 paint 23.0 fx 0.3 hud 4.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+p905 act child reached
+p905 task 9 clean streak 6 wrong 2
+p905 task 10 wants fireman at 294
+p905 switch fireman first
+fps switchtest 17
+time switchtest step 2.5 paint 36.7 send 3.6 gc 9.5 fps 17 worst 374 slowest 372 = step 6 paint 362 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 322 over 0 title 0
+avg switchtest static 8.0 paint 23.4 fx 0.3 hud 4.8 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437712 glyphs 60
+p905 switch fireman same
+p905 switch fireman same
+p905 act fireman reached
+p905 task 10 clean streak 7 wrong 2
+p905 task 11 wants child at 260
+fps switchtest 16
+time switchtest step 2.5 paint 40.1 send 3.5 gc 9.4 fps 16 worst 380 slowest 378 = step 6 paint 368 send 3 gc 0
+phases switchtest static 8 paint 42 fx 0 hud 334 over 0 title 0
+avg switchtest static 8.0 paint 26.4 fx 0.3 hud 5.1 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+p905 switch child first
+p905 act child reached
+p905 task 11 clean streak 8 wrong 2
+p905 task 12 wants fireman at 158
+fps switchtest 18
+time switchtest step 2.5 paint 36.2 send 3.4 gc 9.2 fps 18 worst 390 slowest 388 = step 6 paint 377 send 3 gc 0
+phases switchtest static 8 paint 32 fx 0 hud 336 over 0 title 0
+avg switchtest static 8.0 paint 22.9 fx 0.3 hud 4.8 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438528 glyphs 60
+p905 switch fireman first
+fps switchtest 18
+time switchtest step 2.4 paint 35.9 send 3.9 gc 9.2 fps 18 worst 95 slowest 51 = step 2 paint 45 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 1 over 0 title 0
+avg switchtest static 8.0 paint 26.2 fx 0.3 hud 1.2 over 0.0 title 0.0 input 0.9
+heap switchtest alloc 438528 glyphs 60
+p905 act fireman reached
+p905 task 12 clean streak 9 wrong 2
+p905 task 13 wants child at 123
+p905 switch child first
+fps switchtest 18
+time switchtest step 2.5 paint 34.8 send 3.6 gc 9.3 fps 18 worst 383 slowest 381 = step 6 paint 371 send 3 gc 0
+phases switchtest static 8 paint 33 fx 0 hud 338 over 0 title 0
+avg switchtest static 8.0 paint 21.4 fx 0.3 hud 4.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438256 glyphs 60
+p905 act child reached
+p905 task 13 clean streak 10 wrong 2
+p905 round stick ends pass streak 10 best 10 tasks 13 wrong 2
+fps switchtest 12
+time switchtest step 2.9 paint 53.3 send 8.8 gc 10.2 fps 12 worst 725 slowest 723 = step 54 paint 656 send 11 gc 47
+phases switchtest static 8 paint 26 fx 0 hud 385 over 242 title 0
+avg switchtest static 7.9 paint 20.4 fx 0.3 hud 7.1 over 17.4 title 0.0 input 1.0
+heap switchtest alloc 437744 glyphs 60
+fps switchtest 8
+time switchtest step 2.2 paint 93.5 send 6.2 gc 9.3 fps 8 worst 915 slowest 913 = step 6 paint 891 send 15 gc 0
+phases switchtest static 8 paint 771 fx 0 hud 111 over 37 title 0
+avg switchtest static 7.9 paint 73.0 fx 0.3 hud 3.9 over 8.1 title 0.0 input 1.0
+heap switchtest alloc 437760 glyphs 60
+fps switchtest 21
+time switchtest step 2.3 paint 14.4 send 3.0 gc 9.4 fps 21 worst 69 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.4 hud 1.2 over 0.0 title 0.0 input 1.1
+heap switchtest alloc 437728 glyphs 60
+fps switchtest 13
+time switchtest step 2.3 paint 45.1 send 3.0 gc 9.4 fps 13 worst 748 slowest 711 = step 2 paint 706 send 3 gc 0
+phases switchtest static 8 paint 696 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 35.4 fx 0.4 hud 1.2 over 0.0 title 0.0 input 1.1
+heap switchtest alloc 437744 glyphs 60
+fps switchtest 21
+time switchtest step 2.3 paint 14.4 send 3.0 gc 9.4 fps 21 worst 69 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.4 hud 1.3 over 0.0 title 0.0 input 1.1
+heap switchtest alloc 437728 glyphs 60
+p905 round auto starts
+p905 task 1 wants child at 160
+p905 switch child first
+fps switchtest 17
+time switchtest step 2.4 paint 28.6 send 3.2 gc 9.3 fps 17 worst 727 slowest 725 = step 2 paint 719 send 3 gc 0
+phases switchtest static 8 paint 709 fx 0 hud 302 over 0 title 0
+avg switchtest static 7.9 paint 15.4 fx 0.4 hud 4.7 over 0.0 title 0.0 input 1.1
+heap switchtest alloc 438272 glyphs 60
+p905 act child reached
+p905 task 1 clean streak 1 wrong 0
+p905 task 2 wants fireman at 208
+p905 switch fireman first
+fps switchtest 18
+time switchtest step 2.6 paint 36.5 send 3.7 gc 9.4 fps 18 worst 357 slowest 355 = step 7 paint 343 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 302 over 0 title 0
+avg switchtest static 8.0 paint 23.4 fx 0.3 hud 4.5 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+p905 act fireman reached
+p905 task 2 clean streak 2 wrong 0
+p905 task 3 wants child at 285
+p905 switch child first
+fps switchtest 17
+time switchtest step 2.6 paint 38.0 send 3.5 gc 9.1 fps 17 worst 367 slowest 365 = step 7 paint 354 send 3 gc 0
+phases switchtest static 8 paint 34 fx 0 hud 318 over 0 title 0
+avg switchtest static 8.0 paint 24.6 fx 0.3 hud 4.8 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 act child reached
+p905 task 3 clean streak 3 wrong 0
+p905 task 4 wants fireman at 129
+p905 switch fireman first
+p905 act fireman reached
+p905 task 4 clean streak 4 wrong 0
+p905 task 5 wants child at 117
+p905 switch child first
+fps switchtest 16
+time switchtest step 2.7 paint 41.5 send 3.3 gc 9.3 fps 16 worst 373 slowest 371 = step 7 paint 360 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 324 over 0 title 0
+avg switchtest static 8.1 paint 27.1 fx 0.3 hud 5.8 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438880 glyphs 60
+p905 act child reached
+p905 task 5 clean streak 5 wrong 0
+p905 task 6 wants fireman at 221
+p905 switch fireman first
+fps switchtest 19
+time switchtest step 2.7 paint 36.0 send 3.8 gc 9.2 fps 19 worst 89 slowest 355 = step 8 paint 344 send 3 gc 0
+phases switchtest static 8 paint 31 fx 0 hud 304 over 0 title 0
+avg switchtest static 8.0 paint 23.1 fx 0.3 hud 4.3 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 439168 glyphs 60
+p905 act fireman reached
+p905 task 6 clean streak 6 wrong 0
+p905 task 7 wants child at 202
+p905 switch child first
+fps switchtest 15
+time switchtest step 2.7 paint 41.2 send 3.8 gc 9.0 fps 15 worst 385 slowest 373 = step 7 paint 361 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 325 over 0 title 0
+avg switchtest static 8.0 paint 27.3 fx 0.3 hud 5.3 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438800 glyphs 60
+p905 act child reached
+p905 task 7 clean streak 7 wrong 0
+p905 task 8 wants fireman at 135
+p905 switch fireman first
+fps switchtest 17
+time switchtest step 2.6 paint 40.2 send 3.8 gc 9.4 fps 17 worst 363 slowest 360 = step 7 paint 349 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 309 over 0 title 0
+avg switchtest static 8.1 paint 26.8 fx 0.3 hud 4.8 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437984 glyphs 60
+p905 act fireman reached
+p905 task 8 clean streak 8 wrong 0
+p905 task 9 wants child at 123
+p905 switch child first
+p905 act child reached
+p905 task 9 clean streak 9 wrong 0
+p905 task 10 wants fireman at 217
+p905 switch fireman first
+fps switchtest 16
+time switchtest step 2.6 paint 42.0 send 3.9 gc 9.2 fps 16 worst 377 slowest 375 = step 7 paint 363 send 3 gc 0
+phases switchtest static 8 paint 35 fx 0 hud 319 over 0 title 0
+avg switchtest static 8.0 paint 24.5 fx 0.3 hud 8.9 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438528 glyphs 60
+p905 act fireman reached
+p905 task 10 clean streak 10 wrong 0
+p905 round auto ends control streak 10 best 10 tasks 10 wrong 0
+fps switchtest 13
+time switchtest step 3.1 paint 58.0 send 3.2 gc 10.1 fps 13 worst 732 slowest 730 = step 55 paint 671 send 3 gc 47
+phases switchtest static 8 paint 36 fx 0 hud 361 over 264 title 0
+avg switchtest static 8.1 paint 30.3 fx 0.3 hud 6.7 over 12.4 title 0.0 input 1.0
+heap switchtest alloc 438048 glyphs 60
+fps switchtest 11
+time switchtest step 2.0 paint 65.9 send 3.3 gc 9.3 fps 11 worst 1161 slowest 1159 = step 7 paint 1148 send 3 gc 0
+phases switchtest static 8 paint 822 fx 0 hud 317 over 33 title 0
+avg switchtest static 7.9 paint 37.2 fx 0.3 hud 6.8 over 13.5 title 0.0 input 1.0
+heap switchtest alloc 437776 glyphs 60
+fps switchtest 21
+time switchtest step 2.1 paint 14.1 send 3.0 gc 9.4 fps 21 worst 69 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437728 glyphs 60
+fps switchtest 21
+time switchtest step 2.1 paint 14.1 send 3.0 gc 9.5 fps 21 worst 69 slowest 20 = step 2 paint 15 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437472 glyphs 60
+fps switchtest 21
+time switchtest step 2.2 paint 14.3 send 3.0 gc 9.1 fps 21 worst 100 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438496 glyphs 60
+fps switchtest 21
+time switchtest step 2.1 paint 14.1 send 3.0 gc 9.5 fps 21 worst 69 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437472 glyphs 60
+fps switchtest 21
+time switchtest step 2.2 paint 14.3 send 3.0 gc 9.1 fps 21 worst 100 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438496 glyphs 60
+fps switchtest 21
+time switchtest step 2.1 paint 14.1 send 3.0 gc 9.4 fps 21 worst 69 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437728 glyphs 60
+fps switchtest 21
+time switchtest step 2.1 paint 14.1 send 3.0 gc 9.5 fps 21 worst 69 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437472 glyphs 60
+fps switchtest 21
+time switchtest step 2.2 paint 14.3 send 3.0 gc 9.1 fps 21 worst 99 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438496 glyphs 60
+fps switchtest 22
+time switchtest step 2.1 paint 14.1 send 3.0 gc 9.5 fps 22 worst 69 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 437472 glyphs 60
+fps switchtest 21
+time switchtest step 2.2 paint 14.3 send 3.0 gc 9.1 fps 21 worst 100 slowest 20 = step 2 paint 14 send 3 gc 0
+phases switchtest static 8 paint 4 fx 0 hud 1 over 0 title 0
+avg switchtest static 7.9 paint 4.6 fx 0.3 hud 1.2 over 0.0 title 0.0 input 1.0
+heap switchtest alloc 438496 glyphs 60
