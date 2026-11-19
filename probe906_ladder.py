@@ -61,6 +61,11 @@ READY_MS = 600  # a round starts with READY: a lean that starts in it is the rou
 TITLE_MS = 15000  # the intro shows this long, or until FIRE
 HOLD_PX = 24  # FIRE within this many px of his place makes the fireman hold the ladder
 PACE = 2  # the figures run at their captured speed divided by this: half, a start value
+CLIMB_PACE = 2  # the child climbs this many times the captured pace: about 3.3 s to the roof's edge, a start value
+STREAK = 5  # clean rounds in a row: the pick line (`streak 5 met`)
+SLOW_MS = 52  # a gap between two frames of a round over this many ms is slow (the end line's slow)
+QUIT_MS = 3000  # a second PICK at most this long after the first ends the sitting
+ON_LADDER = -1  # the child's facing on the ladder: it leans back to the station at the left, so forward is left
 WIDTH = 320  # the screen's width (gfx.WIDTH)
 FEET = 214  # the row the soles stand on (games/rescue.py's FEET, art/mission.py's FEET)
 FIREMAN, CHILD = 0, 1  # the list of the figures: the fireman is drawn first, the child in front of him
@@ -78,8 +83,14 @@ BLOCK_X, BLOCK_W = 2, 6  # the task block: its left and its size, beside the tas
 ARROW_GAP = 6  # from the arrow's tip, and the mark's lowest row, to the top of the picture under it
 # each shape's rows, from the top, each over a dark rim of 1 px all round (art/mission.py's Storyboard draws the same)
 ARROW = (7, 5, 3, 1)  # the white arrow over the active figure: its tip lowest
-MARK = (1, 3, 5, 7, 9, 7, 5, 3, 1)  # the yellow mark, the next thing to do: a diamond (drawn from step 5)
+MARK = (1, 3, 5, 7, 9, 7, 5, 3, 1)  # the yellow mark, the next thing to do: a diamond
 READY_AT = (100, 56)  # READY's top left: 5 letters of 24 px, under the bar and over the figures
+QUIT_RECT = (96, 228, 128, 12)  # "PICK again: quit", kept, in every state while the first PICK waits: under the feet
+QUIT_WORDS = "PICK again: quit"
+RESULT_KEY = "p906 result"  # the result screen's key with the round's number and whether FIRE starts the next
+ROUND_WORDS = ("clean", "wrong")  # a task's or a round's word in the log, by whether it had a wrong pick
+WARM = "PICK again: quit 0123456789 CLEAN WRONG time best s clean / 5 IN A ROW FIRE: again READY"  # glyphs made in the
+# intro, so no first draw of a letter falls in a round's clock (gfx.GLYPHS)
 INTRO = ("THE LADDER MISSION", "", "1 FIREMAN: stick DOWN picks him,", "  run to the ladder, FIRE: hold it",
          "2 CHILD: stick UP picks it,", "  run to the ladder, UP: climb", "",
          "FIRE = BOOT or the stick's click", "PICK twice: quit", "", "FIRE: start")
@@ -88,7 +99,7 @@ INTRO_KEY = ("p906 intro",)
 
 
 class Quit(Exception):
-    """PICK twice: the sitting ends (the way out comes with step 5's Exit)."""
+    """PICK twice (Exit): the sitting ends."""
 
 
 class Seen:
@@ -178,25 +189,28 @@ class Walker:
     SubPixel (games/engine/subpixel.py) that keeps the part of a px carried to the next step. speed: px a second;
     stride: px of one run cycle; lo and hi: its run's ends, its place at the ladder and the last place where its
     pictures stay whole on the screen. run: (right, left), each a tuple of its run's pictures (PackSource's); stand:
-    (right, left), its standing picture; hold_poses: (right, left), the picture it holds the ladder in, or None. holds:
-    whether it holds the ladder: then it does not move. up: px its soles are over the soles' row, 0 on the street (the
-    climb sets it, step 5)."""
+    (right, left), its standing picture; hold_poses: (right, left), the picture it holds the ladder in, or None;
+    climb_poses: (right, left), each a tuple of its climb's pictures, or None. holds: whether it holds the ladder;
+    on_ladder: whether it climbs or stands on the ladder; neither moves on the street. up: px its soles are over the
+    soles' row, 0 on the street; pose: its climb's pose. The round sets x, up and pose on the ladder."""
 
-    def __init__(self, sub, speed, stride, lo, hi, run, stand, hold_poses=None):
+    def __init__(self, sub, speed, stride, lo, hi, run, stand, hold_poses=None, climb_poses=None):
         self.sub, self.speed, self.stride, self.lo, self.hi = sub, speed, stride, lo, hi
-        self.run, self.stand, self.hold_poses = run, stand, hold_poses
+        self.run, self.stand, self.hold_poses, self.climb_poses = run, stand, hold_poses, climb_poses
         self.put(lo, -1)
 
     def put(self, x, facing):
         """At x facing facing, standing on the street with no carry and no hold: a round's start."""
         self.x, self.facing, self.ran, self.lean, self.holds, self.up = x, facing, 0, 0, False, 0
+        self.on_ladder, self.pose = False, 0
         self.sub.reset()
 
     def walk(self, ms, lean):
         """ms of a frame with the stick's lean (-1, 0 or 1): 0 stands, else it faces the lean and runs in whole px with
-        the carry. At an end of its run it stops, and the carry goes. While it holds it does not move."""
+        the carry. At an end of its run it stops, and the carry goes. While it holds or is on the ladder it does not
+        move."""
         self.lean = lean
-        if not lean or self.holds:
+        if not lean or self.holds or self.on_ladder:
             return
         self.facing = lean
         x = self.x + self.sub.step(lean * self.speed, ms)
@@ -213,9 +227,11 @@ class Walker:
         return self.holds
 
     def picture(self):
-        """Its picture now: the hold while it holds, the standing picture at rest or leaning into the end of its run
-        that it stands at, else the run's pose for the px it ran."""
+        """Its picture now: the climb's pose on the ladder, the hold while it holds, the standing picture at rest or
+        leaning into the end of its run that it stands at, else the run's pose for the px it ran."""
         side = 0 if self.facing > 0 else 1
+        if self.on_ladder:
+            return self.climb_poses[side][self.pose]
         if self.holds:
             return self.hold_poses[side]
         if not self.lean or self.x == (self.lo if self.lean < 0 else self.hi):
@@ -224,23 +240,99 @@ class Walker:
         return poses[self.ran * len(poses) // self.stride % len(poses)]
 
 
-class Round:
-    """One round, with no drawing. In the thin version it starts, runs READY and the pick, and the active figure runs;
-    its tasks, the climb, the tally and its end come with step 5. number: the round's number in the sitting; ended_ms:
-    the last round's end on the frame's clock, None in round 1; figures: the two Walkers, the fireman first, at their
-    start places; emit: where each `p906` line goes (print on the box, a list's append in a test). step(now_ms, ms,
-    actions, boot, click) runs one frame. Its first frame starts the round: its line, and READY from that frame's clock,
-    where the stick's lean is no pick (LeanEdge.reset). In READY the stick is read and its answer waits: a lean that
-    starts in READY is the round's first pick, at READY's end. Then each new lean of the stick's y picks a figure, and
-    the active figure runs with the stick's x while the other stands. The child is active at the start. The game draws
-    from its state: figures, active, task (the task of the moment, 1 or 2) and ready."""
+class Climb:
+    """The child's pose and place on the ladder from the ms it climbed, in small ints (moves.MovePictures.pose_at):
+    pose_ms the climb's ms a pose (the captured one's divided by CLIMB_PACE); travel: (forward, up) of each pose from a
+    play's start; advance: (forward, up) a play; end: the climb ends at its first pose this many px up or more.
+    set(ms) leaves ms, pose, forward and up in its attributes, so a frame makes no tuple."""
 
-    def __init__(self, number, ended_ms, figures, emit):
+    def __init__(self, pose_ms, travel, advance, end):
+        self.pose_ms, self.travel, self.advance, self.end = pose_ms, travel, advance, end
+        self.reset()
+
+    def reset(self):
+        """At the foot: no ms climbed."""
+        self.ms = self.pose = self.forward = self.up = 0
+
+    def set(self, ms):
+        self.ms = ms
+        n = ms // self.pose_ms
+        plays = n // len(self.travel)
+        self.pose = n - plays * len(self.travel)
+        forward, up = self.travel[self.pose]
+        self.forward = plays * self.advance[0] + forward
+        self.up = plays * self.advance[1] + up
+
+    def done(self):
+        return self.up >= self.end
+
+
+class Tally:
+    """The tally of a sitting, in small ints. A pick is right when it picks the figure that the task wants, else wrong,
+    also when it changes nothing. A task with a wrong pick is wrong, and so is its round, once. streak: the clean
+    rounds in a row; met: whether the streak reached STREAK in this sitting, said once; best_ms: the shortest round, or
+    -1 before the first. start() begins a round."""
+
+    def __init__(self):
+        self.streak, self.met, self.best_ms = 0, False, -1
+        self.start()
+
+    def start(self):
+        self.task_wrong = self.round_wrong = False
+
+    def pick(self, right):
+        if not right:
+            self.task_wrong = self.round_wrong = True
+
+    def task_ends(self):
+        """A task ends: answers whether it was wrong, and the next task starts clean."""
+        wrong, self.task_wrong = self.task_wrong, False
+        return wrong
+
+    def round_ends(self, ms):
+        """A round of ms ends: the streak grows or starts again. Answers whether the streak met STREAK only now."""
+        self.streak = 0 if self.round_wrong else self.streak + 1
+        if self.best_ms < 0 or ms < self.best_ms:
+            self.best_ms = ms
+        if self.streak >= STREAK and not self.met:
+            self.met = True
+            return True
+        return False
+
+
+class Round:
+    """One round, with no drawing. number: the round's number in the sitting; ended_ms: the last round's end on the
+    frame's clock, None in round 1; figures: the two Walkers, the fireman first, at their start places; emit: where each
+    `p906` line goes (print on the box, a list's append in a test); tally: the sitting's Tally (None: a new one); climb:
+    the child's Climb (None: a climb that never ends, as for a round of the thin version's tests). step(now_ms, ms,
+    actions, boot, click) runs one frame: ms is the frame's, cut at 60 ms (gfx.Game.step), for the run and the climb,
+    and now_ms the frame's clock, for the gaps and the ms of each line.
+
+    Its first frame starts the round: its line, and READY from that frame's clock, where the stick's lean is no pick
+    (LeanEdge.reset). In READY the stick is read and its answer waits: a lean that starts in READY is the round's first
+    pick, at READY's end. READY's end is the round's clock: each later frame is a gap, and each line's last number is
+    the ms since it. Then each frame, in this order: FIRE, which holds the ladder when the fireman is active within
+    HOLD_PX of his place and ends task 1, else holds nothing (`act none`, not scored); each new lean of the stick's y,
+    a pick (UP the child, the other way the fireman), scored by the tally; the active figure runs with the stick's x,
+    the other stands; the climb. The child climbs while it is active at the foot of the held ladder, or on it, and the
+    stick leans up (LeanEdge's lean: from LEAN until it rests under LEAN_REST), with a line at each start and stop. The
+    round ends at the climb's first pose climb.end px up or more, with task 2's line, its end line, and `p906 streak 5
+    met` once in a sitting. No round ends by itself, and an ended one reads nothing. The child is active at the start.
+    The game draws from its state: figures, active, task (1 or 2), ready and ended."""
+
+    def __init__(self, number, ended_ms, figures, emit, tally=None, climb=None):
         self.number, self.ended_ms, self.figures, self.emit = number, ended_ms, figures, emit
-        self.start_ms, self.ready, self.active, self.task = None, True, CHILD, 1
-        self.edge, self.waiting = LeanEdge(), 0  # waiting: a lean that started in READY
+        self.tally = tally or Tally()
+        self.climb = climb or Climb(1000, ((0, 0),), (0, 0), 1)  # stands still at 0 px: it never ends
+        self.tally.start()
+        self.climb.reset()
+        self.start_ms, self.ready, self.active, self.task, self.ended = None, True, CHILD, 1, False
+        self.edge, self.waiting, self.climbing = LeanEdge(), 0, False  # waiting: a lean that started in READY
+        self.play_ms = self.last_ms = self.gaps = self.worst = self.slow = 0  # the round's clock from READY's end
 
     def step(self, now_ms, ms, actions, boot, click):
+        if self.ended:
+            return
         if self.start_ms is None:
             self.start(now_ms, actions)
         side = self.edge.read(actions.y)
@@ -249,12 +341,23 @@ class Round:
                 self.waiting = side
             if time.ticks_diff(now_ms, self.start_ms) < READY_MS:
                 return
-            self.ready, side = False, self.waiting
+            self.ready, side, self.play_ms, self.last_ms = False, self.waiting, now_ms, now_ms
+        else:
+            gap = time.ticks_diff(now_ms, self.last_ms)
+            self.last_ms, self.gaps = now_ms, self.gaps + 1
+            if gap > self.worst:
+                self.worst = gap
+            if gap > SLOW_MS:
+                self.slow += 1
+        at = time.ticks_diff(now_ms, self.play_ms)
+        if actions.fire.pressed:
+            self.act(at, boot)
         if side:
-            self.pick(side)
+            self.pick(side, at)
         walk = lean(actions.x)
         for i in range(len(self.figures)):
             self.figures[i].walk(ms, walk if i == self.active else 0)
+        self.climb_step(ms, at, now_ms)
 
     def start(self, now_ms, actions):
         """The round's first frame of play."""
@@ -263,9 +366,83 @@ class Round:
         self.emit("p906 round %d starts after %d" % (
             self.number, 0 if self.ended_ms is None else time.ticks_diff(now_ms, self.ended_ms)))
 
-    def pick(self, side):
-        """A new lean of the stick's y: UP picks the child, the other way the fireman. Step 5 scores it and logs it."""
-        self.active = CHILD if side == UP else FIREMAN
+    def act(self, at, boot):
+        """FIRE at ms at: the fireman, active in task 1, holds the ladder within HOLD_PX of his place (his run's left
+        end) and task 1 ends; any other FIRE holds nothing and is not scored. The button is BOOT when BOOT saw a push,
+        else the click."""
+        button = "boot" if boot.pushed else "click"
+        fireman = self.figures[FIREMAN]
+        if self.task == 1 and self.active == FIREMAN and fireman.hold(fireman.lo):
+            self.emit("p906 act hold %s %d" % (button, at))
+            self.emit("p906 task 1 ends %s" % ROUND_WORDS[self.tally.task_ends()])
+            self.task = 2
+            return
+        self.emit("p906 act none %s %d" % (button, at))
+
+    def pick(self, side, at):
+        """A new lean of the stick's y at ms at: UP picks the child, the other way the fireman. It is right when it
+        picks the figure that the task wants, and a switch when it changes the active figure. Its place is the child's:
+        on the street, or on the ladder with its height."""
+        to = CHILD if side == UP else FIREMAN
+        right = to == (FIREMAN if self.task == 1 else CHILD)
+        self.tally.pick(right)
+        child = self.figures[CHILD]
+        place = "ladder %d" % child.up if child.on_ladder else "ground"
+        self.emit("p906 pick %s %s %s %s %d" % (FIGURES[to], "right" if right else "wrong",
+                                                "switch" if to != self.active else "same", place, at))
+        self.active = to
+
+    def climb_step(self, ms, at, now_ms):
+        """The climb in this frame: it starts, goes on or stops, and at its end the round ends."""
+        child, climb = self.figures[CHILD], self.climb
+        climbs = self.active == CHILD and self.edge.on == UP and self.figures[FIREMAN].holds and (
+            child.on_ladder or child.x == child.lo)
+        if climbs != self.climbing:
+            self.climbing = climbs
+            self.emit("p906 climb %s %d %d" % ("starts" if climbs else "stops", child.up, at))
+        if not climbs:
+            return
+        if child.on_ladder:
+            climb.set(climb.ms + ms)
+        else:
+            child.on_ladder, child.facing = True, ON_LADDER
+            climb.set(0)
+        child.x, child.up, child.pose = child.lo + ON_LADDER * climb.forward, climb.up, climb.pose
+        if climb.done():
+            self.climbing = False
+            self.emit("p906 climb stops %d %d" % (child.up, at))
+            self.finish(at, now_ms)
+
+    def finish(self, at, now_ms):
+        """The round's end at ms at: task 2's line, the end line and, once in a sitting, the streak's."""
+        tally = self.tally
+        self.emit("p906 task 2 ends %s" % ROUND_WORDS[tally.task_ends()])
+        wrong, met = tally.round_wrong, tally.round_ends(at)
+        self.emit("p906 round %d ends %s ms %d gaps %d worst %d slow %d streak %d" % (
+            self.number, ROUND_WORDS[wrong], at, self.gaps, self.worst, self.slow, tally.streak))
+        if met:
+            self.emit("p906 streak %d met" % STREAK)
+        self.ended, self.took = True, at
+
+
+class Exit:
+    """PICK twice within QUIT_MS ends the sitting. step(now_ms, pressed) reads PICK on the frame's clock and answers
+    whether to quit. The first PICK arms it (`p906 quit armed`); armed: whether a second PICK now quits, which shows
+    "PICK again: quit". A PICK later than QUIT_MS arms it again."""
+
+    def __init__(self, emit):
+        self.emit, self.armed, self.armed_ms = emit, False, 0
+
+    def step(self, now_ms, pressed):
+        if self.armed and time.ticks_diff(now_ms, self.armed_ms) > QUIT_MS:
+            self.armed = False
+        if not pressed:
+            return False
+        if self.armed:
+            return True
+        self.armed, self.armed_ms = True, now_ms
+        self.emit("p906 quit armed")
+        return False
 
 
 def pack_line(pool, size):
@@ -315,12 +492,18 @@ def game_class(boot, click, numbers, pool=None):
         stand = numbers["stand"][figure]
         art = pictures.art_index.ART
         reach = max(dx + art[poses[0][0]][0] - 1 for poses in run for _, dx, _ in poses[:1])
-        hold = None
+        hold = climb = None
         if figure == "fireman":
             right, left = source.poses(figure, "hold")
             hold = (right[0], left[0])
+        else:
+            climb = source.poses(figure, "climb")
         return Walker(SubPixel(), numbers["speed"][figure] // PACE, numbers["stride"][figure], numbers["place"][i],
-                      WIDTH - 1 - reach, run, (run[0][stand], run[1][stand]), hold)
+                      WIDTH - 1 - reach, run, (run[0][stand], run[1][stand]), hold, climb)
+
+    def seconds(ms):
+        """ms as seconds with one place, in whole numbers: 8460 is 8.4."""
+        return "%d.%d s" % (ms // 1000, ms % 1000 // 100)
 
     class Ladder(gfx.Game):
         name = "ladder"
@@ -332,8 +515,13 @@ def game_class(boot, click, numbers, pool=None):
         def __init__(self):
             source = PackSource(pictures.art_index.ART, numbers["pivot"])
             self.figures = [walker(source, i) for i in range(len(FIGURES))]
+            pose_ms, travel, advance = numbers["climb"]
+            self.climb = Climb(pose_ms // CLIMB_PACE, travel, advance, numbers["end"])
+            self.tally, self.exit = Tally(), Exit(print)
             self.number, self.ended_ms, self.round = 0, None, None
-            self.bar_draw, self.intro_draw = self.draw_bar, self.draw_intro  # bound once: a frame binds no method
+            # bound once: a frame binds no method
+            self.bar_draw, self.intro_draw, self.quit_draw = self.draw_bar, self.draw_intro, self.draw_quit
+            self.result_draw = self.draw_result
             gfx.Game.__init__(self)
 
         def setup(self):
@@ -343,16 +531,25 @@ def game_class(boot, click, numbers, pool=None):
             self.number += 1
             for i in range(len(self.figures)):
                 self.figures[i].put(starts[i], -1)
-            self.round = Round(self.number, self.ended_ms, self.figures, print)
+            self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb)
 
         def step(self, now_ms, pressed, held):
+            """Exit first, on the frame's clock and in every state, then the base game's states. The stick's record
+            is read only here: App.play sets it after setup() ran."""
+            if self.stick is not None and self.exit.step(now_ms, self.stick.pick.pressed):
+                raise Quit
             intro = self.state == gfx.TITLE
             gfx.Game.step(self, now_ms, pressed, held)
             if intro and self.state == gfx.PLAY:
                 print("p906 intro ends %s" % ("fire" if pressed else "time"))
 
         def play(self, pressed, held):
-            self.round.step(self.last, self.ms, self.stick, boot, click)
+            r = self.round
+            r.step(self.last, self.ms, self.stick, boot, click)
+            if r.ended:
+                self.ended_ms = self.last
+                self.die()
+                self.age = 0  # the base game took this frame's age before the end: the result screen's starts now
 
         def paint_static(self, cv):
             drawn(cv, night, 0, 0)
@@ -365,16 +562,25 @@ def game_class(boot, click, numbers, pool=None):
                 name, dx, dy = f.picture()
                 drawn(cv, name, f.x + dx, FEET - f.up + dy)
             f = r.figures[r.active]
-            top = FEET - f.up + f.picture()[2]
-            shape(cv, f.x, top - ARROW_GAP - len(ARROW) + 1, ARROW, gfx.WHITE)
+            shape(cv, f.x, FEET - f.up + f.picture()[2] - ARROW_GAP - len(ARROW) + 1, ARROW, gfx.WHITE)
+            if not r.ended:  # the yellow mark: the figure to pick, else the place to run to
+                wanted = FIREMAN if r.task == 1 else CHILD
+                if r.active != wanted:
+                    f = r.figures[wanted]
+                    shape(cv, f.x, FEET - f.up + f.picture()[2] - ARROW_GAP - len(MARK) + 1, MARK, gfx.YELLOW)
+                else:
+                    x, y = numbers["mark"][r.task - 1]
+                    shape(cv, x, y - len(MARK) // 2, MARK, gfx.YELLOW)
             if r.ready:
                 cv.big("READY", READY_AT[0], READY_AT[1], gfx.WHITE, 3)
 
         def hud(self, cv):
             """The bar, drawn once with its constant key and copied in each frame after, then the task block over the
-            copy, which covers what paint drew there."""
+            copy, which covers what paint drew there, then the way out while it is armed."""
             cv.keep(BAR_KEY, BAR_RECT, self.bar_draw)
             cv.fill(BLOCK_X, 8 * (self.round.task - 1) + 1, BLOCK_W, BLOCK_W, gfx.YELLOW)
+            if self.exit.armed:
+                cv.keep(QUIT_WORDS, QUIT_RECT, self.quit_draw)
 
         def draw_bar(self, cv):
             """All 24 rows, as a new strip is black: the dark, then the three rows, white."""
@@ -382,16 +588,47 @@ def game_class(boot, click, numbers, pool=None):
             for k in range(len(BAR)):
                 cv.text(BAR[k], BAR_X, 8 * k, gfx.WHITE)
 
+        def draw_quit(self, cv):
+            x, y, w, h = QUIT_RECT
+            cv.fill(x, y, w, h, gfx.DARK)
+            cv.text(QUIT_WORDS, x, y + 2, gfx.YELLOW)
+
         def draw_title(self, cv):
-            """The intro: its panel, kept, over the street and the ladder."""
+            """The intro: its panel, kept, over the street and the ladder, and the way out while it is armed."""
             cv.keep(INTRO_KEY, INTRO_RECT, self.intro_draw)
+            if self.exit.armed:
+                cv.keep(QUIT_WORDS, QUIT_RECT, self.quit_draw)
 
         def draw_intro(self, cv):
+            """The panel's lines, and every glyph that a later screen draws, made here once, outside every round."""
             x, y, w, h = INTRO_RECT
             cv.fill(x, y, w, h, gfx.DARK)
             cv.box(x, y, w, h, gfx.YELLOW)
             for k in range(len(INTRO)):
                 cv.text(INTRO[k], x + 8, y + 10 + 12 * k, gfx.YELLOW if k == 0 else gfx.WHITE)
+            for ch in WARM:
+                cv.glyph(ch)
+
+        def draw_over(self, cv):
+            """The result screen, kept with the round's number as its key, drawn again once when FIRE starts the next
+            round, OVER_MS after the end (the base game's rule)."""
+            cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), gfx.OVER_RECT, self.result_draw)
+
+        def draw_result(self, cv):
+            x, y, w, h = gfx.OVER_RECT
+            tally, r = self.tally, self.round
+            cv.fill(x, y, w, h, gfx.BLACK)
+            cv.box(x, y, w, h, self.accent)
+            word = ROUND_WORDS[tally.round_wrong].upper()
+            cv.big(word, x + w // 2 - 8 * len(word), y + 8, gfx.RED if tally.round_wrong else gfx.GREEN, 2)
+            lines = ["time " + seconds(r.took), "best " + seconds(tally.best_ms), "clean %d/%d" % (tally.streak,
+                                                                                                  STREAK)]
+            if tally.met:
+                lines.append("%d IN A ROW" % STREAK)
+            for k in range(len(lines)):
+                cv.text(lines[k], x + w // 2 - 4 * len(lines[k]), y + 32 + 12 * k, gfx.WHITE if k < 3 else gfx.YELLOW)
+            if self.age >= self.OVER_MS:
+                cv.text("FIRE: again", x + w // 2 - 44, y + h - 14, gfx.YELLOW)
 
     return Ladder
 

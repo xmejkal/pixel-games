@@ -473,8 +473,9 @@ class GameTest(unittest.TestCase):
                 rows = ((7, tip - 3), (5, tip - 2), (3, tip - 1), (1, tip))
                 rim = [((x - w // 2 - 1, r - 1, x + w // 2 + 2, r + 2), gfx.BLACK) for w, r in rows]
                 white = [((x - w // 2, r, x + w // 2 + 1, r + 1), gfx.WHITE) for w, r in rows]
-                drawn = [(op[:4], op[5]) for op in box.out.cv.ops if op[4] == 0 and op[5] in (gfx.WHITE, gfx.BLACK)]
-                self.assertEqual(rim + white, drawn)  # the rim first, the arrow over it
+                drawn = [(op[:4], op[5]) for op in box.out.cv.ops if op[4] == 0 and op[5] in (gfx.WHITE, gfx.BLACK)
+                         and x - 4 <= op[0] and op[2] <= x + 5 and tip - 4 <= op[1] and op[3] <= tip + 2]
+                self.assertEqual(rim + white, drawn)  # the rim first, the arrow over it; the mark's rim is elsewhere
                 box.frame()
 
     def test_the_shapes_the_gap_and_the_bar_are_the_storyboards(self):
@@ -835,6 +836,512 @@ class MacTest(unittest.TestCase):
                           "mpremote reset"], lines)
         self.assertFalse(os.path.exists(self.log))
 
+
+
+# --- the whole round (step 5) ----------------------------------------------------------------------------------
+
+STAND_TRAVEL = tuple((1 + k // 3, 1 + k) for k in range(12))  # a stand-in climb: 1 px up a pose, across plays too
+REAL_CLIMB = (201, ((0, 5), (1, 13), (1, 13), (1, 13), (1, 12), (2, 12), (2, 11), (3, 11), (4, 14), (5, 19), (5, 23),
+                    (5, 23)), (5, 19))  # art/mission.py's numbers from the CMU files (test_mission)
+ON = seen(True, True)  # a FIRE button pushed in this frame
+
+
+def stand_climb(end=54):
+    """The stand-in climb at 41 ms a pose: pose n of the climb is n + 1 px up."""
+    return probe.Climb(41, STAND_TRAVEL, (5, 12), end)
+
+
+class ClimbTest(unittest.TestCase):
+    """Climb: the child's pose and place on the ladder from the ms it climbed."""
+
+    def test_the_travel_at_1_ms_before_a_poses_end_and_at_it(self):
+        climb = stand_climb()
+        climb.set(41 * 5 - 1)
+        self.assertEqual((4, 2, 5), (climb.pose, climb.forward, climb.up))
+        climb.set(41 * 5)
+        self.assertEqual((5, 2, 6), (climb.pose, climb.forward, climb.up))
+
+    def test_a_play_starts_one_advance_further(self):
+        climb = stand_climb()
+        climb.set(41 * 12 + 40)
+        self.assertEqual((0, 5 + 1, 12 + 1), (climb.pose, climb.forward, climb.up))
+
+    def test_the_end_at_54_px_and_not_at_53(self):
+        climb = stand_climb()
+        climb.set(41 * 52)
+        self.assertEqual((53, False), (climb.up, climb.done()))
+        climb.set(41 * 53)
+        self.assertEqual((54, True), (climb.up, climb.done()))
+
+    def test_on_the_real_climbs_numbers_the_end_comes_at_57_px(self):
+        pose_ms, travel, advance = REAL_CLIMB
+        climb = probe.Climb(pose_ms // probe.CLIMB_PACE, travel, advance, 54)
+        ups = []
+        for n in range(60):
+            climb.set(climb.pose_ms * n)
+            ups.append(climb.up)
+            if climb.done():
+                break
+        self.assertEqual((57, 33, 3300), (climb.up, n, climb.ms))
+        self.assertNotIn(54, ups)
+        self.assertEqual(52, ups[-2])
+
+    def test_reset_puts_it_at_the_foot(self):
+        climb = stand_climb()
+        climb.set(999)
+        climb.reset()
+        self.assertEqual((0, 0, 0, 0), (climb.ms, climb.pose, climb.forward, climb.up))
+
+
+class TallyTest(unittest.TestCase):
+    """The tally of a sitting: a round is wrong at its first wrong pick, once, and the streak counts clean rounds."""
+
+    def test_a_wrong_pick_makes_its_task_and_its_round_wrong_once(self):
+        tally = probe.Tally()
+        tally.pick(False)
+        tally.pick(False)
+        self.assertEqual((True, False), (tally.task_ends(), tally.task_ends()))
+        self.assertTrue(tally.round_wrong)
+        tally.round_ends(4321)
+        self.assertEqual(0, tally.streak)
+
+    def test_the_streak_counts_clean_rounds_and_starts_again_after_a_wrong_one(self):
+        tally = probe.Tally()
+        for wrong in (False, False, True, False):
+            tally.start()
+            tally.pick(not wrong)
+            tally.round_ends(5000)
+        self.assertEqual(1, tally.streak)
+
+    def test_streak_5_is_met_at_5_and_not_at_4_and_only_once(self):
+        tally = probe.Tally()
+        met = []
+        for k in range(12):
+            tally.start()
+            tally.pick(k != 6)
+            met.append(tally.round_ends(5000 + k))
+        self.assertEqual([4], [k for k, m in enumerate(met) if m])  # the fifth round; after the wrong 7th, no second
+        self.assertEqual((True, 5), (tally.met, probe.STREAK))
+
+    def test_the_best_time_is_the_shortest_round(self):
+        tally = probe.Tally()
+        for ms in (8460, 7013, 9002):
+            tally.start()
+            tally.round_ends(ms)
+        self.assertEqual(7013, tally.best_ms)
+
+
+class Run(Play):
+    """A whole round on scripted frames, with the sitting's tally and a climb: Play's walkers, the fireman's place 127
+    and the child's foot 131."""
+
+    def __init__(self, number=1, ended=None, tally=None, climb=None):
+        self.lines, self.now = [], T0
+        self.figures = walkers()
+        self.tally, self.climb = tally or probe.Tally(), climb or stand_climb()
+        self.round = probe.Round(number, ended, self.figures, self.lines.append, self.tally, self.climb)
+
+    def holds(self):
+        """The fireman picked, at his place, and FIRE: task 1 ends."""
+        self.frame(y=70)
+        self.figures[probe.FIREMAN].x = 127
+        return self.frame(y=70, boot=ON, fire=True)
+
+    def at_foot(self):
+        self.figures[probe.CHILD].x = 131
+        return self
+
+    def ms(self):
+        """The ms since READY's end, at 600 ms."""
+        return self.now - T0 - 600
+
+
+class WholeRoundTest(unittest.TestCase):
+    """The whole round on scripted frames: the pick's words, FIRE, the climb, the end line and READY."""
+
+    def test_the_four_pairs_of_right_or_wrong_and_switch_or_same(self):
+        p = Run().ready()
+        p.frame(y=-70).frame().frame(y=70).frame().frame(y=70)  # task 1 wants the fireman; the child is active
+        self.assertEqual(["p906 pick child wrong same ground 41", "p906 pick fireman right switch ground 123",
+                          "p906 pick fireman right same ground 205"], p.lines[1:])
+        p.figures[probe.FIREMAN].x = 127
+        p.frame(fire=True, boot=ON).frame(y=-70).frame().frame(y=-70).frame(y=70)  # task 2 wants the child
+        self.assertEqual(["p906 pick child right switch ground 287", "p906 pick child right same ground 369",
+                          "p906 pick fireman wrong switch ground 410"], p.lines[-3:])
+
+    def test_ready_a_lean_that_starts_at_599_ms_is_a_pick_at_600_with_0_ms(self):
+        p = Run().frame(at=0).frame(at=599, y=70).frame(at=600, y=72)
+        self.assertEqual(["p906 round 1 starts after 0", "p906 pick fireman right switch ground 0"], p.lines)
+
+    def test_ready_a_lean_from_before_ready_is_no_pick(self):
+        p = Run().frame(at=0, y=-70).frame(at=599, y=-75).frame(at=600, y=-77).frame(at=641, y=-81)
+        self.assertEqual(["p906 round 1 starts after 0"], p.lines)
+
+    def test_fire_holds_within_24_px_and_ends_task_1_and_at_25_px_it_holds_nothing_and_is_not_scored(self):
+        p = Run().ready()
+        p.frame(y=70)
+        p.figures[probe.FIREMAN].x = 127 + 25
+        p.frame(y=70, fire=True, click=ON)
+        p.figures[probe.FIREMAN].x = 127 - 24
+        p.frame(y=70, fire=True, boot=ON)
+        self.assertEqual(["p906 act none click 82", "p906 act hold boot 123", "p906 task 1 ends clean"],
+                         p.lines[2:])
+        self.assertEqual((2, 127, False), (p.round.task, p.figures[probe.FIREMAN].x, p.tally.round_wrong))
+
+    def test_a_fire_of_the_child_or_a_second_fire_of_the_holding_fireman_is_listed_and_not_scored(self):
+        p = Run().ready()
+        p.frame(fire=True, boot=ON)
+        p.holds().frame(y=70, fire=True, click=ON)
+        self.assertEqual(["p906 act none boot 41", "p906 act hold boot 123", "p906 task 1 ends clean",
+                          "p906 act none click 164"], [line for line in p.lines if " act " in line or " task " in line])
+        self.assertFalse(p.tally.round_wrong)
+
+    def test_in_one_frame_the_fire_comes_first_and_the_pick_after_it(self):
+        p = Run().ready()
+        p.frame(y=70)
+        p.figures[probe.FIREMAN].x = 127
+        p.frame(y=-70, fire=True, boot=ON)
+        self.assertEqual(["p906 act hold boot 82", "p906 task 1 ends clean", "p906 pick child right switch ground 82"],
+                         p.lines[2:])
+
+    def test_no_climb_before_the_hold(self):
+        p = Run().ready().at_foot()
+        p.frame(y=-70).frame(y=-70)
+        self.assertEqual((False, []), (p.figures[probe.CHILD].on_ladder, [ln for ln in p.lines if " climb " in ln]))
+
+    def test_no_climb_1_px_from_the_foot_and_a_climb_at_it(self):
+        p = Run().ready().holds()
+        p.figures[probe.CHILD].x = 132
+        p.frame(y=-70).frame(y=-70)
+        self.assertFalse(p.figures[probe.CHILD].on_ladder)
+        p.at_foot().frame(y=-70)
+        self.assertEqual(("p906 climb starts 0 205", True), (p.lines[-1], p.figures[probe.CHILD].on_ladder))
+
+    def test_the_climb_starts_at_a_lean_of_40_and_not_at_39(self):
+        p = Run().ready().holds()
+        p.frame(y=-70).frame().at_foot().frame(y=-39)
+        self.assertFalse(p.figures[probe.CHILD].on_ladder)
+        p.frame(y=-40)
+        self.assertEqual(["p906 pick child right same ground %d" % p.ms(), "p906 climb starts 0 %d" % p.ms()],
+                         p.lines[-2:])
+
+    def test_the_climb_goes_on_at_20_and_stops_at_19_and_the_child_stays(self):
+        p = Run().ready().holds()
+        p.frame(y=-70).at_foot().frame(y=-70).frame(y=-60)
+        child = p.figures[probe.CHILD]
+        self.assertEqual((41, 2), (p.climb.ms, child.up))
+        p.frame(y=-20)
+        self.assertEqual((82, 3), (p.climb.ms, child.up))
+        p.frame(y=-19)
+        self.assertEqual("p906 climb stops 3 %d" % p.ms(), p.lines[-1])
+        p.frame(y=-3)
+        self.assertEqual((82, 3, True), (p.climb.ms, child.up, child.on_ladder))
+
+    def test_a_lean_up_that_lasts_from_the_pick_through_the_run_climbs_at_the_foot(self):
+        p = Run().ready().holds()
+        child = p.figures[probe.CHILD]
+        child.x = 131 + 4
+        p.frame(y=-70, x=-80, ms=60)  # the pick, and 43 px a second over 60 ms: 3 px to the left
+        self.assertEqual((132, False), (child.x, child.on_ladder))
+        p.frame(y=-70, x=-80, ms=60)  # past the foot: it stops at it, and climbs in this frame
+        self.assertTrue(child.on_ladder)
+        self.assertEqual("p906 climb starts 0 %d" % p.ms(), p.lines[-1])
+
+    def test_on_the_ladder_a_lean_down_picks_the_fireman_and_the_child_stays(self):
+        p = Run().ready().holds()
+        p.frame(y=-70).at_foot()
+        for _ in range(9):
+            p.frame(y=-70)
+        child = p.figures[probe.CHILD]
+        x, up = child.x, child.up
+        p.frame(y=70)
+        self.assertEqual(["p906 pick fireman wrong switch ladder %d %d" % (up, p.ms()),
+                          "p906 climb stops %d %d" % (up, p.ms())], p.lines[-2:])
+        p.frame(y=70, x=80)
+        self.assertEqual((x, up, probe.FIREMAN), (child.x, child.up, p.round.active))
+
+    def test_the_end_at_the_first_pose_54_px_up_with_its_lines_in_order(self):
+        tally = probe.Tally()
+        tally.streak = 3
+        p = Run(tally=tally).ready().holds()
+        p.frame(y=-70).at_foot()
+        while not p.round.ended:
+            p.frame(y=-70)
+        child = p.figures[probe.CHILD]
+        self.assertEqual((54, 41 * 53), (child.up, p.climb.ms))
+        self.assertEqual(["p906 climb stops 54 %d" % p.ms(), "p906 task 2 ends clean"], p.lines[-3:-1])
+        self.assertTrue(p.lines[-1].startswith("p906 round 1 ends clean ms %d gaps " % p.ms()), p.lines[-1])
+        self.assertTrue(p.lines[-1].endswith(" streak 4"), p.lines[-1])
+        lines = len(p.lines)
+        p.frame(y=70, fire=True, boot=ON)
+        self.assertEqual(lines, len(p.lines))  # an ended round reads nothing
+
+    def test_the_end_lines_gaps_ms_worst_and_slow_from_the_frames_clock(self):
+        p = Run().ready().holds()
+        p.frame(y=-70).at_foot()
+        frames = 3  # after READY's end: the two of holds() and the pick
+        for gap in (52, 53, 300) + (41,) * 200:  # a gap of 52 is not slow, 53 and 300 are; the ms is capped at 60
+            p.frame(at=p.now - T0 + gap, ms=min(gap, 60), y=-70)
+            frames += 1
+            if p.round.ended:
+                break
+        words = p.lines[-1].split()
+        self.assertEqual((["ms", "gaps", "worst", "slow"], [p.ms(), frames, 300, 2]),
+                         (words[5:13:2], [int(n) for n in words[6:13:2]]))
+
+    def test_no_round_ends_by_itself(self):
+        p = Run().ready()
+        for _ in range(1500):
+            p.frame()
+        self.assertEqual((False, 1), (p.round.ended, len(p.lines)))
+
+    def test_streak_5_met_comes_right_after_its_rounds_end_line(self):
+        tally = probe.Tally()
+        tally.streak = 4
+        p = Run(number=5, tally=tally).ready().holds()
+        p.frame(y=-70).at_foot()
+        while not p.round.ended:
+            p.frame(y=-70)
+        self.assertTrue(p.lines[-2].startswith("p906 round 5 ends clean "), p.lines[-2])
+        self.assertEqual("p906 streak 5 met", p.lines[-1])
+
+
+def schedule(*stops):
+    """Frame times from READY's end: each stop (time, n) reached in n gaps as even as whole ms allow."""
+    times, last = [0], 0
+    for to, n in stops:
+        times += [last + (to - last) * k // n for k in range(1, n + 1)]
+        last = to
+    return times
+
+
+EXAMPLE = """p906 round 3 starts after 2140
+p906 pick fireman right switch ground 610
+p906 act hold boot 2980
+p906 task 1 ends clean
+p906 pick child right switch ground 3350
+p906 climb starts 0 5120
+p906 climb stops 57 8460
+p906 task 2 ends clean
+p906 round 3 ends clean ms 8460 gaps 199 worst 96 slow 2 streak 3
+p906 round 4 starts after 1310
+p906 pick child wrong same ground 420
+p906 pick fireman right switch ground 980
+p906 act hold click 2710
+p906 task 1 ends wrong
+p906 pick child right switch ground 3020
+p906 climb starts 0 4700
+p906 climb stops 57 8010
+p906 task 2 ends clean
+p906 round 4 ends wrong ms 8010 gaps 188 worst 88 slow 1 streak 0""".splitlines()  # the plan's example log
+
+
+class ExampleTest(unittest.TestCase):
+    """The plan's example log, from round 3's start line on, from the events it names on scripted frames, on the real
+    climb's numbers."""
+
+    def play(self, lines, number, ended, start, tally, stops, events):
+        """One round: its first frame at start, READY, then the schedule's frames with each event at its ms (the
+        stick's y from then on, FIRE with its button, or a figure put at its place before the frame). Answers the
+        clock of its end."""
+        figures = walkers()
+        pose_ms, travel, advance = REAL_CLIMB
+        r = probe.Round(number, ended, figures, lines.append, tally,
+                        probe.Climb(pose_ms // probe.CLIMB_PACE, travel, advance, 54))
+        r.step(start, 41, frame(), NONE, NONE)
+        r.step(start + 300, 41, frame(), NONE, NONE)
+        y, last = 0, None
+        for t in schedule(*stops):
+            now, fire, boot, click = start + 600 + t, False, NONE, NONE
+            for what in events.get(t, ()):
+                if what in ("up", "down"):
+                    y = -70 if what == "up" else 70
+                elif what in ("boot", "click"):
+                    fire, boot, click = True, ON if what == "boot" else NONE, ON if what == "click" else NONE
+                else:
+                    figures[what].x = figures[what].lo
+            r.step(now, 41 if last is None else min(now - last, 60), frame(fire=fire, y=y), boot, click)
+            last = now
+            if r.ended:
+                return now
+        raise AssertionError("the round did not end")
+
+    def test_the_plans_example_line_by_line(self):
+        lines, tally = [], probe.Tally()
+        tally.streak = 2
+        end = self.play(lines, 3, T0 - 2140, T0, tally,
+                        ((96, 1), (153, 1), (610, 10), (2980, 56), (3350, 9), (5120, 42), (8460, 80)),
+                        {610: ("down",), 2980: (probe.FIREMAN, "boot"), 3350: ("up",), 5120: (probe.CHILD,)})
+        self.play(lines, 4, end, end + 1310, tally,
+                  ((88, 1), (420, 8), (980, 13), (2710, 41), (3020, 7), (4700, 40), (8010, 78)),
+                  {420: ("up",), 980: ("down",), 2710: (probe.FIREMAN, "click"), 3020: ("up",),
+                   4700: (probe.CHILD,)})
+        for k, (expected, line) in enumerate(zip(EXAMPLE, lines)):
+            with self.subTest(line=k):
+                self.assertEqual(expected, line)
+        self.assertEqual(len(EXAMPLE), len(lines))
+
+
+class ExitTest(unittest.TestCase):
+    """Exit: PICK twice within 3 s."""
+
+    def test_a_second_pick_at_3000_ms_quits_and_at_3001_it_arms_again(self):
+        lines = []
+        door = probe.Exit(lines.append)
+        self.assertFalse(door.step(T0, True))
+        self.assertTrue(door.step(T0 + 3000, True))
+        door = probe.Exit(lines.append)
+        door.step(T0, True)
+        self.assertFalse(door.step(T0 + 3001, True))
+        self.assertEqual(["p906 quit armed"] * 3, lines)
+
+    def test_it_shows_armed_for_3000_ms_and_not_at_3001(self):
+        door = probe.Exit(lambda line: None)
+        door.step(T0, True)
+        door.step(T0 + 3000, False)
+        self.assertTrue(door.armed)
+        door.step(T0 + 3001, False)
+        self.assertFalse(door.armed)
+
+
+def finish(box):
+    """A clean round through the App from READY's end: down picks the fireman, he stands at his place and FIRE holds;
+    up picks the child, it stands at the foot and climbs until the round ends."""
+    game = box.app.game
+    fireman, child = game.figures
+    box.frame(y=70)
+    fireman.x = fireman.lo
+    box.frame(y=70, fire=True)
+    box.frame(y=-70)
+    child.x = child.lo
+    for _ in range(3000):
+        box.frame(y=-70)
+        if game.state == gfx.OVER:
+            return box
+    raise AssertionError("the round did not end")
+
+
+def again(box):
+    """FIRE on the result screen at 900 ms, then the next round's first frame and READY."""
+    return box.frame(ms=900, fire=True).frame().frame(ms=600)
+
+
+class WholeGameTest(unittest.TestCase):
+    """The whole game through app.App: rounds, the result screen, the marks and the way out."""
+
+    def test_the_bar_is_drawn_once_in_three_rounds_and_the_task_block_follows_its_copy(self):
+        box = Box(self)
+        box.out.cv.seen.clear()
+        box.play()
+        for _ in range(3):
+            finish(box)
+            again(box)
+        self.assertEqual([1, 1, 1], [box.out.cv.seen.count(row) for row in probe.BAR])
+        box.frame(y=70)
+        box.app.game.figures[0].x = box.app.game.figures[0].lo
+        box.frame(y=70, fire=True).frame()  # task 2: the block on the second row
+        ops = box.out.cv.ops
+        bar = [i for i, op in enumerate(ops) if op[4] == 3 and op[5] in probe.BAR]
+        block = [i for i, op in enumerate(ops) if op[:6] == (2, 9, 8, 15, 0, gfx.YELLOW)]
+        self.assertEqual(1, len(block))
+        self.assertGreater(block[0], max(bar))
+
+    def test_fire_on_the_result_screen_starts_the_next_round_at_900_ms_and_not_at_899(self):
+        box = finish(Box(self).play())
+        box.frame(ms=899, fire=True)
+        self.assertEqual(gfx.OVER, box.app.game.state)
+        box.frame(ms=1, fire=True)
+        self.assertEqual(gfx.PLAY, box.app.game.state)
+        box.frame()
+        self.assertEqual("p906 round 2 starts after 941", box.lines()[-1])
+
+    def test_the_next_round_starts_with_the_child_active_and_both_figures_at_their_start_places(self):
+        box = again(finish(Box(self).play()))
+        game, start = box.app.game, box.numbers["start"]
+        self.assertEqual((probe.CHILD, [start[0], start[1]], [False, False], [0, 0]), (
+            game.round.active, [f.x for f in game.figures], [f.holds or f.on_ladder for f in game.figures],
+            [f.up for f in game.figures]))
+
+    def test_the_result_screen_is_kept_with_the_rounds_time_the_best_and_the_streak(self):
+        box = finish(Box(self).play())
+        r = box.app.game.round
+        ms = int(box.lines()[-1].split()[6])
+        box.frame()
+        seen = box.out.cv.seen
+        self.assertIn("time %d.%d s" % (ms // 1000, ms % 1000 // 100), seen)
+        self.assertIn("best %d.%d s" % (ms // 1000, ms % 1000 // 100), seen)
+        self.assertIn("clean 1/5", seen)
+        self.assertNotIn("5 IN A ROW", seen)
+        self.assertNotIn("FIRE: again", seen)
+        box.frame()
+        self.assertEqual([], box.out.cv.words)  # kept
+        box.frame(ms=900)
+        self.assertIn("FIRE: again", box.out.cv.words)
+        self.assertIs(r, box.app.game.round)
+
+    def test_after_five_clean_rounds_the_log_says_streak_5_met_once_and_the_screen_5_in_a_row(self):
+        box = Box(self).play()
+        for k in range(6):
+            finish(box)
+            box.frame(ms=900)
+            if k < 5:
+                again(box)
+        lines = box.lines()
+        self.assertEqual(1, lines.count("p906 streak 5 met"))
+        self.assertTrue(lines[lines.index("p906 streak 5 met") - 1].startswith("p906 round 5 ends clean "))
+        self.assertIn("5 IN A ROW", box.out.cv.seen)
+
+    def test_a_pick_pair_quits_in_the_intro_in_play_and_on_the_result_screen(self):
+        for where in ("intro", "play", "result"):
+            with self.subTest(where=where):
+                box = Box(self)
+                if where != "intro":
+                    box.play()
+                if where == "result":
+                    finish(box)
+                box.frame(pick=True)
+                self.assertEqual("p906 quit armed", box.lines()[-1])
+                self.assertIn("PICK again: quit", box.out.cv.words)
+                with self.assertRaises(probe.Quit):
+                    box.frame(ms=2959, pick=True)
+
+    def test_the_mark_is_over_the_figure_to_pick_then_at_the_place_to_run_to(self):
+        box = Box(self).play()
+        fireman, child = box.app.game.figures
+
+        def mark():
+            """The yellow fills but the task block: their middle column and their lowest row."""
+            fills = [op for op in box.out.cv.ops if op[4] == 0 and op[5] == gfx.YELLOW and op[0] > 8]
+            return (min(op[0] for op in fills) + max(op[2] for op in fills)) // 2, max(op[3] for op in fills) - 1
+
+        def over(f):
+            return f.x, probe.FEET - f.up + f.picture()[2] - 6
+
+        box.frame()
+        self.assertEqual(over(fireman), mark())  # task 1, the child active: pick the fireman
+        box.frame(y=70)
+        self.assertEqual((115, 222 + 4), mark())  # run to his place
+        fireman.x = fireman.lo
+        box.frame(y=70, fire=True)
+        self.assertEqual(over(child), mark())  # task 2: pick the child
+        box.frame(y=-70)
+        self.assertEqual((80, 88 + 4), mark())  # run to the roof's edge
+
+    def test_the_child_climbs_in_its_climbs_pictures_and_the_fireman_holds_in_his_hold(self):
+        box = Box(self).play()
+        fireman, child = box.app.game.figures
+        box.frame(y=70)
+        fireman.x = fireman.lo
+        box.frame(y=70, fire=True).frame(y=-70)
+        child.x = child.lo
+        box.frame(y=-70).frame(y=-70)
+        box.pictures.drawn.clear()
+        box.frame(y=-70)
+        names = [name for name, _, _ in box.pictures.drawn]
+        self.assertEqual("mission_fireman_hold_l0", names[2])
+        self.assertTrue(names[3].startswith("mission_child_climb_l"), names)
+        name, dx, dy = child.picture()
+        self.assertEqual((name, child.x + dx, probe.FEET - child.up + dy), box.pictures.drawn[3])
 
 
 class MacValuesTest(unittest.TestCase):
