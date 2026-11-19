@@ -48,7 +48,7 @@ flowchart LR
 | 2 | sees which figure he holds | — | no mark exists | not yet | — |
 | 3 | moves the held figure to its place | E ★C6 | at the captured speed it crosses the screen in about 1.5 s | not yet | — |
 | 4 | switches to the other figure | E ★C5 | no free button; a long hold of PICK can power an older board off (★C7) | not yet | Which input? (Q5) |
-| 5 | the first figure keeps its place or its job | H A5 | no idle pose exists (H council/user.md USER-20) | not yet | What does it do? (Q7) |
+| 5 | the first figure keeps its place or its job | H A5 | no idle pose exists (H council/user.md USER-20) | not yet | What does it do? (Q7. D46 then answered it for the walking skeleton: it stands still. The slices after it are Q18) |
 | 6 | both act, and the mission ends | D1's example | — | not yet | — |
 
 ```mermaid

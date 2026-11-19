@@ -1183,3 +1183,49 @@ The refuter read `git diff ef22773..f064717` for brief.md, risks-and-tests.md, v
 Not checked: whether a narration block reaches the PO's screen, and the code that gives the `time` lines their unit.
 
 2 refuted, 6 partly, 16 hold, 4 missing actions; 1 of my own twelfth-pass points withdrawn
+
+# Fourteenth pass (2026-11-19, after D45 to D47)
+
+The refuter read the diff from bb4e2cf to 28b2c31 in full, the approved plan, the card's comment, the three session transcripts, the board fields, the build worktree, the play log of P905 and the entry of bench.md for it. It wrote nothing in the tree.
+
+1. **REFUTED.** D46, third point: "the prototype's mapping the other way round, which he played for 15 minutes on the same day". The sitting ran from 14:46:14 to 15:02:34 Prague (bench.md:1964) and had 11 rounds across seven ways. The stick, with up for the fireman, ran in only 2 of those rounds: log lines 185 to 225 and 891 to 1052, which hold 22 of the log's 192 `time` lines. Fix: say that the 16-minute sitting played this mapping in 2 of its 11 rounds.
+
+2. **Partly.** D46 says "the yes holds what the plan's section ... lists, and nothing more". It then says "the facilitator reads his yes as carrying all of them as start values (H)". But the plan calls only the speeds and the places start values (plan:486-489). The lean's 40 and 20 and READY define what counts as a pick, so they are part of the pick line. Fix: hold those values fixed with the pass lines, and keep only the speeds and places as start values.
+
+3. **Partly.** Q7 and Q10 both read "answered D46 for the walking skeleton". The discovery check now prints "15 asked, 2 queued", so what stays open beyond the skeleton has left the queue. The Appetite slot still reads "—: —". D46's fifth point and Q10 also drop the plan's stop rule: "If the time ends before "ready to play", I stop and report what is missing". Fix: keep a queued remainder for each question, and quote the stop rule.
+
+4. **Partly.** The Hand-off says "approved it in plan mode (D46)" but leaves out "with no words of his" and the caveat that a yes does not show he weighed each line. It also keeps "(Q8, Q14) are unconfirmed", while this commit's items.md says "D44 answered it". Fix: carry the caveat over, and make the Q14 wording the same in both files.
+
+5. **Partly.** Lines the commit left stale:
+   - story-map slice 0's tag ("H A10's frame half, A2, A7") lacks A4.
+   - risks-and-tests' P905 Results row says "possibly wants the same axis (H, the facilitator's)".
+   - jobs-and-journeys:51 still asks "What does it do? (Q7)".
+   - The revision row says "The way that he chose uses no PICK", yet Decision needed cites it for the skeleton's PICK.
+
+   Fix: add A4 to the tag, and a "D46 then ..." note on each of the other three.
+
+6. **Partly.**
+   - D45 says the message "ends with three lessons ... and "Go on."". The sentence "The state is in the memory note ... and on the card." stands between them.
+   - D47 quotes "(16:41 Prague". The approval's stamp is 16:40:14, and 16:41:03 is the facilitator's clock read after it.
+   - The plan file is 35,396 characters with its last newline. It matches the other two texts once the ends are stripped.
+
+   Fix: one clause for each.
+
+7. **Holds**, 11 checks:
+   - D45's and D47's texts match the replies' code blocks (924 and 549 characters).
+   - The plan was submitted at 15:29:27Z and is the same as the approved text, so "he changed nothing" holds.
+   - The approval is 16:40 Prague; the comment was created 15:41:13Z.
+   - Status Build was set at 14:50:32Z, with Slice pixel-games and "the limits hold".
+   - The branch was made at 16:41:17. ls-remote prints nothing, and none of the 24 worktrees has a p906 log, still true at 16:58.
+   - The seven points cover the plan's eight bullets.
+   - The pass lines, the tally, when a line is not read, and the verdict are restated correctly.
+   - The PICK claim matches plan:192-193.
+   - Waiting on is empty on both cards.
+
+8. **Missing.** The body of #1285 still says "Open for this card's plan: how the child's climb is steered ..." and "A fresh session pulls the card and plans it". Fix: add a line with D45 to D47.
+
+## Searches: none
+
+Not checked: what he read while the dialog was open for 11 minutes, the plan's other code citations, and whether `time` lines are evenly spaced.
+
+1 refuted, 5 partly, 11 hold, 1 missing action
