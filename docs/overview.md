@@ -159,11 +159,12 @@ sequenceDiagram
     C->>P: copies build/firmware/pins.py to games/pins.py
     D->>P: import pins: JOY_X, JOY_Y, JOY_SW, ENC_A, ENC_B
     C->>B: tools/box.py deploy (the games, with pins.py)
-    C->>S: the deploy runs spark's launcher: bench.py record pixel-games
 ```
 
 The other places where they touch:
 
+- The deploy's record (P921): before its reset, `tools/box.py deploy` runs spark's launcher in the store once
+  (`bench.py record pixel-games`), and after a recorded line spark's `bench.py show` names pixel-games for the box.
 - Part records: `parts/` in this repository holds one spark record, the microphone's, made from a photo
   (README.md names `/spark:identify` as its source).
 - The wiring guide: [wiring.html](wiring.html) shows every wire with pictures. spark's README shows it as its example.
@@ -174,7 +175,7 @@ What is not joined yet:
 | Step | spark | pixel-games |
 | --- | --- | --- |
 | Flash the firmware | `/spark:deploy` (`deploy.py`): looks at the board, asks for a yes, erases, writes the image a passed simulation tested, copies a facts file and reads it back | `./build.sh engine`, then esptool by hand (README.md, "Build and run") |
-| Copy the program | the project's files, with the image | `tools/box.py deploy`: compiles `.mpy`, copies the games, the engine package, the packs and `:lineup.py`, refuses a firmware with no `_engine`. Before its reset it records the deploy in spark's store through spark's launcher (P921), so spark's `bench.py show` names pixel-games for the box |
+| Copy the program | the project's files, with the image | `tools/box.py deploy`: compiles `.mpy`, copies the games, the engine package, the packs and `:lineup.py`, refuses a firmware with no `_engine` |
 | Look at the board | `look.py` asks before it reads a board that the project does not know (P865). It remembers a board by a MAC-shaped USB serial after one yes, and asks each time for a board with no serial or a serial its firmware set | `tools/box.py log` reads the console |
 
 P892 ([#1266](https://github.com/xmejkal/spark/issues/1266)) puts the same question in front of every board touch in

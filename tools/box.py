@@ -40,13 +40,13 @@ log: resets the board itself (a hard reset, trying again while the board still r
 its console for N seconds (20 by default), opening the port again while USB comes back: the `engine`, `lineup`,
 `import`, `pick`, `game` and `switch` lines, each after the seconds since the log started, on the Mac's clock
 (`12.345 pick runner`; logs from before P822 have none). The port is the one mpremote's auto picks: the first USB serial port, sorted.
-A deploy tells spark's store (P921): after the last copy and before the reset it runs spark's launcher once,
-`python3 <store>/launcher/bench.py record pixel-games --json`, which lists the boards on USB and opens no port, and
-says one line: `spark's store: recorded pixel-games, <time>`, or `spark's store: not recorded (<code>)` with the
-code of spark's stop (no_port, two_boards, not_registered, launcher_stale, ...), or `not known` after 30 s. The
-deploy goes on whatever the line says. <store> is SPARK_HOME, else XDG_DATA_HOME/spark, else ~/.local/share/spark.
-With no launcher there, register once from a spark checkout that stays: `bench.py register pixel-games --origin
-https://github.com/xmejkal/pixel-games.git --tool box.py`. Then spark's `bench.py show` names pixel-games for the box.
+A deploy tells spark's store (P921): after the last copy and before the reset it runs spark's launcher once, with
+this Python, `<store>/launcher/bench.py record pixel-games --json`, which lists the boards on USB and opens no port,
+and says one line: `spark's store: recorded pixel-games, <time>`, or `spark's store: not recorded (<reason>)` with
+the code of spark's stop (no_port, two_boards, not_registered, launcher_stale, ...), no launcher, or no answer that
+box.py can read, or `not known` after 30 s. The deploy goes on whatever the line says. After a recorded line, spark's
+`bench.py show` names pixel-games for the box. <store> is SPARK_HOME, else XDG_DATA_HOME/spark, else
+~/.local/share/spark. With no launcher there, register once (README, Build and run, step 5).
 A failed mpremote command prints its error and box.py exits with 1. Claude picks a lineup with list, then deploy NAME..., then log.
 --- MVP (P817) ---"""
 
@@ -83,10 +83,7 @@ MOVED = ("signals", "buttons", "encoder")  # flat modules that moved into a pack
 ENGINE_VALUE = re.compile(r"reference(=[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)*)?")  # --engine's whole value (P850)
 SPARK_NAME = "pixel-games"  # the name this project has in spark's store, from spark's bench.py register (P921)
 RECORD_S = 30  # the launcher's time limit; spark's own list of the boards stops at 15 s
-SPARK = "spark's store: "
-NOT_READ = "not recorded (no answer that box.py can read)"
-STOP_CODE = re.compile(r"[a-z_]+")  # a stop's code, as spark writes them
-DEPLOYED = re.compile(r"[0-9T:.+Z-]+")  # an entry's time, as spark's clock writes it
+SAYS = "spark's store: "  # how each line about the record starts
 ENGINE_USAGE = "--engine takes reference or reference=PART[,PART...], each PART a lower-case name: got %r"
 
 
@@ -211,14 +208,14 @@ def record_said(stdout):
     It decides on the status and the code, never on a sentence. Raises when the answer has another shape."""
     answer = json.loads(stdout.strip().splitlines()[-1])
     if answer["status"] == "ok":
-        said, shape = answer["data"]["entry"]["deployed"], DEPLOYED
-        line = "recorded %s, %%s" % SPARK_NAME
+        deployed = answer["data"]["entry"]["deployed"]  # spark's clock: 2026-11-19T10:15:00+01:00
+        if re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d([+-]\d\d:\d\d)?", deployed):
+            return "recorded %s, %s" % (SPARK_NAME, deployed)
     else:
-        said, shape = answer["unchecked"][0]["code"], STOP_CODE
-        line = "not recorded (%s)"
-    if not shape.fullmatch(said):
-        raise ValueError("neither a time nor a code")
-    return line % said
+        code = answer["unchecked"][0]["code"]
+        if re.fullmatch(r"[a-z_]+", code):
+            return "not recorded (%s)" % code
+    raise ValueError("neither a time nor a code")
 
 
 class SparkLauncher:
@@ -227,25 +224,25 @@ class SparkLauncher:
     answers the command, with <store> for the folder, and runs nothing."""
 
     def __init__(self, folder, run=None, dry_run=False):
-        self.folder, self.run, self.dry_run = folder, run, dry_run
+        self.folder, self.run, self.dry_run = os.path.abspath(folder), run, dry_run  # whole: record runs from ROOT
 
     def record(self):
         """Tells spark's store that this project deployed to the board on USB, and answers the line to say. It
         never raises: a record that could not run leaves the deploy as it is."""
         if self.dry_run:
             return "python3 <store>/launcher/bench.py record %s --json" % SPARK_NAME
-        launcher = os.path.join(self.folder, "launcher", "bench.py")
-        if not os.path.isfile(launcher):
-            return SPARK + "not recorded (no launcher: run spark's bench.py register for %s)" % SPARK_NAME
+        script = os.path.join(self.folder, "launcher", "bench.py")
+        if not os.path.isfile(script):
+            return SAYS + "not recorded (no launcher: run spark's bench.py register for %s)" % SPARK_NAME
         try:
             done = (self.run or subprocess.run)(
-                [sys.executable, launcher, "record", SPARK_NAME, "--json"], cwd=ROOT, capture_output=True, text=True,
+                [sys.executable, script, "record", SPARK_NAME, "--json"], cwd=ROOT, capture_output=True, text=True,
                 errors="replace", stdin=subprocess.DEVNULL, timeout=RECORD_S)  # no check: a stop exits 2
-            return SPARK + record_said(done.stdout)
+            return SAYS + record_said(done.stdout)
         except subprocess.TimeoutExpired:  # the launcher's own child can still write the entry
-            return SPARK + "not known (time limit of %d s)" % RECORD_S
-        except (OSError, subprocess.SubprocessError, ValueError, LookupError, TypeError, AttributeError):
-            return SPARK + NOT_READ  # no text of the error: it can hold a path
+            return SAYS + "not known (time limit of %d s)" % RECORD_S
+        except Exception:  # whatever the answer was, the deploy goes on; no text of the error: it can hold a path
+            return SAYS + "not recorded (no answer that box.py can read)"
 
 
 class Deploy:

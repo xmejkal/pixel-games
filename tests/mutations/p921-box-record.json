@@ -20,20 +20,20 @@
  {
   "file": "tools/box.py",
   "name": "an answer that cannot be read raises, so the deploy never resets",
-  "find": "        except (OSError, subprocess.SubprocessError, ValueError, LookupError, TypeError, AttributeError):\n",
-  "replace": "        except (OSError, subprocess.SubprocessError):\n"
+  "find": "        except Exception:  # whatever the answer was",
+  "replace": "        except (OSError, subprocess.SubprocessError):  # whatever the answer was"
  },
  {
   "file": "tools/box.py",
-  "name": "a launcher that cannot start raises",
-  "find": "        except (OSError, subprocess.SubprocessError, ValueError, LookupError, TypeError, AttributeError):\n",
-  "replace": "        except (subprocess.SubprocessError, ValueError, LookupError, TypeError, AttributeError):\n"
+  "name": "only an answer of the wrong shape is caught, so JSON nested too deep raises",
+  "find": "        except Exception:  # whatever the answer was",
+  "replace": "        except (OSError, subprocess.SubprocessError, ValueError, LookupError, TypeError, AttributeError):  # whatever the answer was"
  },
  {
   "file": "tools/box.py",
   "name": "a time limit says not recorded",
-  "find": "            return SPARK + \"not known (time limit of %d s)\" % RECORD_S\n",
-  "replace": "            return SPARK + NOT_READ\n"
+  "find": "            return SAYS + \"not known (time limit of %d s)\" % RECORD_S\n",
+  "replace": "            return SAYS + \"not recorded (no answer that box.py can read)\"\n"
  },
  {
   "file": "tools/box.py",
@@ -68,8 +68,8 @@
  {
   "file": "tools/box.py",
   "name": "the launcher runs from the caller's folder",
-  "find": "[sys.executable, launcher, \"record\", SPARK_NAME, \"--json\"], cwd=ROOT, capture_output=True, text=True,",
-  "replace": "[sys.executable, launcher, \"record\", SPARK_NAME, \"--json\"], capture_output=True, text=True,"
+  "find": "[sys.executable, script, \"record\", SPARK_NAME, \"--json\"], cwd=ROOT, capture_output=True, text=True,",
+  "replace": "[sys.executable, script, \"record\", SPARK_NAME, \"--json\"], capture_output=True, text=True,"
  },
  {
   "file": "tools/box.py",
@@ -86,14 +86,14 @@
  {
   "file": "tools/box.py",
   "name": "a code is said as read, whatever it holds",
-  "find": "    if not shape.fullmatch(said):\n",
-  "replace": "    if not isinstance(said, str):\n"
+  "find": "        if re.fullmatch(r\"[a-z_]+\", code):\n",
+  "replace": "        if isinstance(code, str):\n"
  },
  {
   "file": "tools/box.py",
   "name": "the line says the board's port",
-  "find": "    return line % said\n",
-  "replace": "    return line % said + \" \" + str((answer[\"data\"] or {}).get(\"device\", \"\"))\n"
+  "find": "            return \"recorded %s, %s\" % (SPARK_NAME, deployed)\n",
+  "replace": "            return \"recorded %s, %s %s\" % (SPARK_NAME, deployed, answer[\"data\"].get(\"device\"))\n"
  },
  {
   "file": "tools/box.py",
@@ -104,13 +104,13 @@
  {
   "file": "tools/box.py",
   "name": "a dry run looks for the launcher first",
-  "find": "        if self.dry_run:\n            return \"python3 <store>/launcher/bench.py record %s --json\" % SPARK_NAME\n        launcher = os.path.join(self.folder, \"launcher\", \"bench.py\")\n        if not os.path.isfile(launcher):\n            return SPARK + \"not recorded (no launcher: run spark's bench.py register for %s)\" % SPARK_NAME\n",
-  "replace": "        launcher = os.path.join(self.folder, \"launcher\", \"bench.py\")\n        if not os.path.isfile(launcher):\n            return SPARK + \"not recorded (no launcher: run spark's bench.py register for %s)\" % SPARK_NAME\n        if self.dry_run:\n            return \"python3 <store>/launcher/bench.py record %s --json\" % SPARK_NAME\n"
+  "find": "        if self.dry_run:\n            return \"python3 <store>/launcher/bench.py record %s --json\" % SPARK_NAME\n        script = os.path.join(self.folder, \"launcher\", \"bench.py\")\n        if not os.path.isfile(script):\n            return SAYS + \"not recorded (no launcher: run spark's bench.py register for %s)\" % SPARK_NAME\n",
+  "replace": "        script = os.path.join(self.folder, \"launcher\", \"bench.py\")\n        if not os.path.isfile(script):\n            return SAYS + \"not recorded (no launcher: run spark's bench.py register for %s)\" % SPARK_NAME\n        if self.dry_run:\n            return \"python3 <store>/launcher/bench.py record %s --json\" % SPARK_NAME\n"
  },
  {
   "file": "tools/box.py",
   "name": "a missing launcher is started all the same",
-  "find": "        if not os.path.isfile(launcher):\n",
+  "find": "        if not os.path.isfile(script):\n",
   "replace": "        if False:\n"
  },
  {
@@ -148,5 +148,41 @@
   "name": "main's launcher ignores --dry-run",
   "find": "launcher=SparkLauncher(spark_store(), dry_run=args.dry_run)",
   "replace": "launcher=SparkLauncher(spark_store())"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a stop's code may hold digits and colons, so a MAC passes",
+  "find": "        if re.fullmatch(r\"[a-z_]+\", code):\n",
+  "replace": "        if re.fullmatch(r\"[a-z_0-9:]+\", code):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a time is any text of digits and time marks, so a MAC of digits passes",
+  "find": "        if re.fullmatch(r\"\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d)?\", deployed):\n",
+  "replace": "        if re.fullmatch(r\"[0-9T:.+Z-]+\", deployed):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a time is any text with no space",
+  "find": "        if re.fullmatch(r\"\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d)?\", deployed):\n",
+  "replace": "        if re.fullmatch(r\"\\S+\", deployed):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a time is matched at its start only, so a second line passes",
+  "find": "        if re.fullmatch(r\"\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d)?\", deployed):\n",
+  "replace": "        if re.match(r\"\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d([+-]\\d\\d:\\d\\d)?\", deployed):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a folder in the launcher's place is started",
+  "find": "        if not os.path.isfile(script):\n",
+  "replace": "        if not os.path.exists(script):\n"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a relative store is run as given, from the repository root",
+  "find": "os.path.abspath(folder), run, dry_run",
+  "replace": "folder, run, dry_run"
  }
 ]
