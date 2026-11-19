@@ -250,5 +250,228 @@ class WaysTest(unittest.TestCase):
                                                   seen(False, True)))
 
 
+class TallyTest(unittest.TestCase):
+    """The count of one round: each switch and each act gets its word, and a task is wrong once."""
+
+    def clean(self, tally, n=1):
+        for _ in range(n):
+            tally.start()
+            tally.switch(True)
+            tally.act(True, True)
+
+    def test_a_clean_task_is_one_first_switch_and_a_reached_act(self):
+        tally = probe.Tally()
+        tally.start()
+        self.assertEqual(probe.FIRST, tally.switch(True))
+        self.assertEqual(probe.REACHED, tally.act(True, True))
+        self.assertEqual((1, 1, 0, 1), (tally.streak, tally.best, tally.wrong, tally.tasks))
+
+    def test_an_extra_switch_makes_the_task_wrong_and_the_streak_0_at_once(self):
+        tally = probe.Tally()
+        self.clean(tally, 4)
+        tally.start()
+        tally.switch(True)
+        self.assertEqual(probe.EXTRA, tally.switch(False))
+        self.assertEqual((0, 4, 1, 4), (tally.streak, tally.best, tally.wrong, tally.tasks))
+
+    def test_the_switch_back_is_neither_and_a_fourth_switch_is_extra_but_the_task_is_wrong_once(self):
+        tally = probe.Tally()
+        tally.start()
+        self.assertEqual([probe.FIRST, probe.EXTRA, probe.BACK, probe.EXTRA, probe.BACK],
+                         [tally.switch(to) for to in (True, False, True, False, True)])
+        self.assertEqual(1, tally.wrong)
+        self.assertEqual(probe.REACHED, tally.act(True, True))
+        self.assertEqual((0, 1, 1), (tally.streak, tally.wrong, tally.tasks))
+
+    def test_an_act_of_the_figure_the_task_does_not_want_is_other_and_wrong(self):
+        tally = probe.Tally()
+        self.clean(tally, 3)
+        tally.start()
+        self.assertEqual(probe.OTHER, tally.act(False, True))
+        self.assertEqual((0, 1), (tally.streak, tally.wrong))
+        self.assertEqual(probe.OTHER, tally.act(False, False))  # away from the ring too
+        self.assertEqual(1, tally.wrong)
+
+    def test_an_act_of_the_wanted_figure_away_from_the_ring_is_stray_and_not_wrong(self):
+        tally = probe.Tally()
+        self.clean(tally, 2)
+        tally.start()
+        tally.switch(True)
+        self.assertEqual(probe.STRAY, tally.act(True, False))
+        self.assertEqual(probe.REACHED, tally.act(True, True))
+        self.assertEqual((3, 0, 3), (tally.streak, tally.wrong, tally.tasks))
+
+    def test_a_task_with_an_extra_and_an_other_is_wrong_once(self):
+        tally = probe.Tally()
+        tally.start()
+        self.assertEqual(probe.OTHER, tally.act(False, True))
+        tally.switch(True)
+        self.assertEqual(probe.EXTRA, tally.switch(False))
+        self.assertEqual(1, tally.wrong)
+
+    def test_the_streak_starts_again_after_a_wrong_task_and_the_best_stays(self):
+        tally = probe.Tally()
+        self.clean(tally, 2)
+        tally.start()
+        tally.act(False, True)
+        tally.switch(True)
+        tally.act(True, True)
+        self.clean(tally)
+        self.assertEqual((1, 2, 1, 4), (tally.streak, tally.best, tally.wrong, tally.tasks))
+
+    def test_a_pass_at_a_streak_of_10_and_not_at_9(self):
+        tally = probe.Tally()
+        self.clean(tally, 9)
+        self.assertFalse(tally.passed())  # outside: 9
+        self.clean(tally)
+        self.assertTrue(tally.passed())  # inside: 10
+        self.assertEqual((10, 3), (probe.STREAK_TO_PASS, probe.WRONG_MAX))
+
+    def test_a_fail_at_the_event_of_the_third_wrong_task_and_not_at_the_second(self):
+        tally = probe.Tally()
+        for _ in range(2):
+            tally.start()
+            tally.switch(True)
+            tally.switch(False)
+            tally.switch(True)
+            tally.act(True, True)
+        self.assertFalse(tally.failed())  # outside: 2 wrong tasks
+        tally.start()
+        tally.switch(True)
+        self.assertFalse(tally.failed())
+        tally.switch(False)
+        self.assertTrue(tally.failed())  # inside: the third
+
+    def test_each_word_of_the_log_is_its_constants(self):
+        self.assertEqual(["first", "extra", "back", "same", "reached", "other", "stray"],
+                         [probe.WORDS[k] for k in (probe.FIRST, probe.EXTRA, probe.BACK, probe.SAME, probe.REACHED,
+                                                   probe.OTHER, probe.STRAY)])
+
+
+class Dice:
+    """gfx.Dice stood in: below(n) answers the next of its values, which must be under n."""
+
+    def __init__(self, *values):
+        self.values, self.asked = list(values), []
+
+    def below(self, n):
+        self.asked.append(n)
+        v = self.values.pop(0)
+        assert v < n, (v, n)
+        return v
+
+
+class RingTest(unittest.TestCase):
+    """ring_x: the next ring on the walk, at least TASK_MIN_PX from the wanted figure, and the reach."""
+
+    def test_its_values_are_the_plans(self):
+        self.assertEqual((60, 8, 96, 304), (probe.TASK_MIN_PX, probe.REACH_PX, probe.WALK_LEFT, probe.WALK_RIGHT))
+
+    def test_one_draw_picks_a_place_left_or_right_of_the_figure(self):
+        # x 200: 96 to 140 on the left (45 places), 260 to 304 on the right (45)
+        for value, ring in ((0, 96), (44, 140), (45, 260), (89, 304), (17, 113)):
+            with self.subTest(value=value):
+                dice = Dice(value)
+                self.assertEqual(ring, probe.ring_x(dice, 200))
+                self.assertEqual([90], dice.asked)
+
+    def test_a_ring_is_60_px_away_and_never_59_and_always_on_the_walk(self):
+        import gfx
+
+        for x in (96, 131, 200, 263, 304):
+            with self.subTest(x=x):
+                dice = gfx.Dice(905)
+                rings = [probe.ring_x(dice, x) for _ in range(3000)]
+                self.assertEqual(60, min(abs(r - x) for r in rings))  # inside: 60; 59 never
+                self.assertEqual(96 if x - 60 >= 96 else x + 60, min(rings))
+                self.assertEqual(304 if x + 60 <= 304 else x - 60, max(rings))
+
+    def test_a_ring_is_in_reach_for_a_figure_at_96_at_200_and_at_304(self):
+        for x in (96, 200, 304):
+            with self.subTest(x=x):
+                dice = gfx_dice()
+                for _ in range(500):
+                    ring = probe.ring_x(dice, x)
+                    self.assertTrue(probe.WALK_LEFT <= ring <= probe.WALK_RIGHT, ring)
+
+    def test_a_reach_at_8_px_and_not_at_9(self):
+        self.assertEqual([True, True, True, False, False], [probe.reaches(x, 173) for x in (165, 181, 173, 164, 182)])
+
+
+def gfx_dice():
+    import gfx
+
+    return gfx.Dice(1284)
+
+
+RUN_R = tuple(("run_r%d" % i, 26) for i in range(12))
+RUN_L = tuple(("run_l%d" % i, 26) for i in range(12))
+ACT_R = tuple(("act_r%d" % i, 40) for i in range(6))
+ACT_L = tuple(("act_l%d" % i, 40) for i in range(6))
+STAND = (("stand_r", 38), ("stand_l", 38))
+STEPS = (37, 23, 41, 60, 17)  # ms: 56 px a second times none of them is a whole px
+
+
+def figure(x=200, facing=1, stands=STAND):
+    """A figure at the fireman's speed and stride, on stand-in pictures."""
+    return probe.SteeredFigure(x, facing, 56, 41, 30, (RUN_R, RUN_L), (ACT_R, ACT_L), 83, stands)
+
+
+class SteeredFigureTest(unittest.TestCase):
+    """One figure that the stick's x walks."""
+
+    def test_it_walks_in_whole_px_with_a_carry_in_thousandths(self):
+        # 56 px a second over 178 ms is 9.968 px. To the right the floors give 9 px and keep 968 thousandths; to the
+        # left each step floors toward the left: 10 px, and 32 thousandths kept, as games/rescue.py's Fireman.run
+        for lean, x, ran, rest in ((1, 209, 9, 968), (-1, 190, 10, 32)):
+            with self.subTest(lean=lean):
+                f = figure()
+                for ms in STEPS:
+                    f.walk(ms, lean)
+                self.assertEqual((x, ran, rest, lean), (f.x, f.ran, f.rest, f.facing))
+
+    def test_a_lean_of_0_stands_and_keeps_its_facing(self):
+        f = figure(facing=-1)
+        f.walk(43, 0)
+        self.assertEqual((200, 0, -1), (f.x, f.ran, f.facing))
+
+    def test_it_stops_at_both_ends_of_the_walk(self):
+        for lean, start, end in ((1, 290, 304), (-1, 110, 96)):
+            with self.subTest(lean=lean):
+                f = figure(start)
+                for _ in range(20):
+                    f.walk(47, lean)
+                self.assertEqual((end, abs(end - start), 0), (f.x, f.ran, f.rest))
+
+    def test_its_run_pose_follows_the_px_it_ran_and_its_side_its_facing(self):
+        f = figure()
+        f.walk(41, 1)  # it runs: the run's poses
+        for ran, pose in ((0, 0), (3, 0), (4, 1), (20, 5), (41, 0), (45, 1), (81, 11)):
+            for facing, side in ((1, "r"), (-1, "l")):
+                with self.subTest(ran=ran, facing=facing):
+                    f.ran, f.facing = ran, facing
+                    self.assertEqual(("run_%s%d" % (side, pose), 26), f.picture(-1))
+
+    def test_standing_it_shows_its_stand_picture_or_its_run_pose_where_it_stopped(self):
+        f = figure(facing=-1)
+        f.ran = 20
+        f.walk(43, 0)
+        self.assertEqual(("stand_l", 38), f.picture(-1))
+        f = figure(stands=None)
+        f.ran = 20
+        f.walk(43, 0)
+        self.assertEqual(("run_r5", 26), f.picture(-1))
+
+    def test_acting_it_shows_its_act_poses_by_the_ms_since_the_act(self):
+        f = figure()
+        self.assertEqual([("act_r0", 40), ("act_r0", 40), ("act_r1", 40), ("act_r4", 40)],
+                         [f.picture(ms) for ms in (0, 82, 83, 399)])
+
+    def test_each_picture_is_one_pair_made_once(self):
+        f = figure()
+        f.walk(41, 1)
+        self.assertIs(RUN_R[f.ran * 12 // 41 % 12], f.picture(-1))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -13,6 +13,15 @@ LEAN = 40  # engine.actions.LEAN: an axis this far from the middle, of 100, lean
 LEAN_REST = 20  # an axis under this far from the middle rests: the next lean is a new one
 DOUBLE_MS = 300  # a second push at most this long after the first is a double tap (Android's DOUBLE_TAP_TIMEOUT)
 HOLD_MS = 400  # FIRE held this long is a hold (Android's DEFAULT_LONG_PRESS_TIMEOUT)
+STREAK_TO_PASS = 10  # clean tasks in a row that pass a round: the PO's line (D35)
+WRONG_MAX = 3  # the wrong tasks that end a round with fail
+WALK_LEFT, WALK_RIGHT = 96, 304  # px: the hips walk between these, the street that both of Rescue's ranges share
+TASK_MIN_PX = 60  # px at least from the wanted figure to its ring
+REACH_PX = 8  # px from the hips to the ring's middle that reach it
+
+# What a switch or an act counts as (Tally), and its word in the log
+FIRST, EXTRA, BACK, SAME, REACHED, OTHER, STRAY = range(7)
+WORDS = ("first", "extra", "back", "same", "reached", "other", "stray")
 
 
 class Quit(Exception):
@@ -200,3 +209,113 @@ class AutoWay(Way):
 
 
 WAYS = (StickWay, ClickWay, DoubleWay, HoldWay, PickWay, KnobWay, AutoWay)  # the menu's order
+
+
+class Tally:
+    """The count of one round, in whole numbers. A task wants the figure that is not active at its start, so its first
+    switch gives the wanted figure: FIRST. Then a switch away from the wanted figure is EXTRA, and the switch that
+    brings it back is BACK, neither wrong nor clean. An act of the figure that the task does not want is OTHER, an act
+    of the wanted figure away from the ring STRAY (not wrong), and at the ring REACHED, which ends the task. A task is
+    wrong at its first EXTRA or OTHER, once however many it had, and the streak goes to 0 at once. A task that ends
+    with no EXTRA and no OTHER had one switch: it is clean, and the streak grows. streak: the clean tasks in a row;
+    best: the round's longest streak; wrong: its wrong tasks; tasks: its tasks that ended."""
+
+    def __init__(self):
+        self.streak = self.best = self.wrong = self.tasks = 0
+        self.switches, self.marked = 0, False  # the task's switches, and whether it is wrong
+
+    def start(self):
+        """A new task."""
+        self.switches, self.marked = 0, False
+
+    def switch(self, to_wanted):
+        """A change of the active figure: to_wanted, whether it now is the wanted one. Answers FIRST, EXTRA or BACK."""
+        self.switches += 1
+        if self.switches == 1:
+            return FIRST
+        if to_wanted:
+            return BACK
+        self.mark()
+        return EXTRA
+
+    def act(self, wanted, at_ring):
+        """An act of the active figure: wanted, whether it is the wanted one; at_ring, whether it is in reach of the
+        ring. Answers OTHER, STRAY or REACHED."""
+        if not wanted:
+            self.mark()
+            return OTHER
+        if not at_ring:
+            return STRAY
+        self.tasks += 1
+        if not self.marked:
+            self.streak += 1
+            self.best = max(self.best, self.streak)
+        return REACHED
+
+    def mark(self):
+        """The task is wrong, once."""
+        if not self.marked:
+            self.marked, self.streak = True, 0
+            self.wrong += 1
+
+    def passed(self):
+        return self.streak >= STREAK_TO_PASS
+
+    def failed(self):
+        return self.wrong >= WRONG_MAX
+
+
+def ring_x(dice, x):
+    """The next ring's x for the wanted figure at x: one draw of dice (a gfx.Dice) over the places of the walk that are
+    TASK_MIN_PX or more from x, left of it first."""
+    left = max(0, x - TASK_MIN_PX - WALK_LEFT + 1)  # WALK_LEFT to x - TASK_MIN_PX
+    right = max(0, WALK_RIGHT - (x + TASK_MIN_PX) + 1)  # x + TASK_MIN_PX to WALK_RIGHT
+    k = dice.below(left + right)
+    return WALK_LEFT + k if k < left else x + TASK_MIN_PX + k - left
+
+
+def reaches(x, ring):
+    """Whether hips at x reach the ring: within REACH_PX of its middle."""
+    return abs(x - ring) <= REACH_PX
+
+
+class SteeredFigure:
+    """One figure that the stick's x walks: its hips' x, its facing (1 right, -1 left), the px it ran, the thousandths
+    of a px carried to its next step (rest) and the lean of its last walk, all whole numbers, as games/rescue.py's
+    Fireman.run. speed in px a second, stride the px of one run cycle, h its pictures' height. runs and acts are
+    (right, left), each a tuple of (name, width) pairs made once, so a frame makes no name: its run cycle, and the act's
+    cycle at act_pose_ms a pose. stands: (right, left), one pair each, for the picture it stands in, or None to stand
+    in the run's pose where it stopped. Its hips are at its picture's middle."""
+
+    def __init__(self, x, facing, speed, stride, h, runs, acts, act_pose_ms, stands=None):
+        self.x, self.facing, self.ran, self.rest, self.lean = x, facing, 0, 0, 0
+        self.speed, self.stride, self.h = speed, stride, h
+        self.runs, self.acts, self.act_pose_ms, self.stands = runs, acts, act_pose_ms, stands
+
+    def walk(self, ms, lean):
+        """ms of a frame with the stick's lean (-1, 0 or 1): 0 stands, else it faces the lean and walks, in whole px
+        with the carry. At an end of the walk it stops, and the carry goes."""
+        self.lean = lean
+        if not lean:
+            return
+        self.facing = lean
+        self.rest += lean * self.speed * ms
+        px = self.rest // 1000
+        self.rest -= px * 1000
+        x = self.x + px
+        if x < WALK_LEFT or x > WALK_RIGHT:
+            x, self.rest = WALK_LEFT if x < WALK_LEFT else WALK_RIGHT, 0
+        self.ran += abs(x - self.x)
+        self.x = x
+
+    def picture(self, act_ms):
+        """Its (name, width) now: the act's pose act_ms after its act started (act_ms -1: no act), else standing its
+        stand picture, else the run's pose for the px it ran."""
+        side = 0 if self.facing > 0 else 1
+        if act_ms >= 0:
+            names = self.acts[side]
+            return names[act_ms // self.act_pose_ms % len(names)]
+        if not self.lean and self.stands:
+            return self.stands[side]
+        names = self.runs[side]
+        return names[self.ran * len(names) // self.stride % len(names)]
