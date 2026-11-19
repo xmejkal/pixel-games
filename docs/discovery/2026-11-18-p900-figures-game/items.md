@@ -19,7 +19,7 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - type: story <!-- REQUIRED:item-type -->
 - needed by: "one can pick who to control, and there is some collaboration mission always" (the PO, 2026-11-18) <!-- REQUIRED:needed-by -->
 - value proven by: he plays it on the board (a feel slice: it stops at ready to play) <!-- REQUIRED:value-proven-by -->
-- depends on: the two spikes. Its order against P901 (https://github.com/xmejkal/spark/issues/1280), whose card says "Needed by P900", is Q14 <!-- REQUIRED:depends-on -->
+- depends on: the two spikes, which are both done. Its order against P901 (https://github.com/xmejkal/spark/issues/1280), whose card says "Needed by P900", was Q14, and D44 answered it: the skeleton first <!-- REQUIRED:depends-on -->
 - status: filed D21 <!-- REQUIRED:item-status -->
 - label (the repository's type label): story <!-- REQUIRED:spark-process:label -->
 - parent (the epic, as a sub-issue): P900, https://github.com/xmejkal/spark/issues/1279 <!-- REQUIRED:spark-process:parent -->
@@ -57,3 +57,4 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - pull the card of the switch prototype into Build · taken 2026-11-19, 12:19 Prague · D35: P905 #1284
 - the card of the switch prototype is Done and closed · taken 2026-11-19, 15:31 Prague · D40: P905 #1284
 - order the walking skeleton's card into Ready · taken 2026-11-19, 15:36 Prague · D44: P906 #1285
+- pull the walking skeleton's card into Build · taken 2026-11-19, 15:50 Prague · D45: P906 #1285
