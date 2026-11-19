@@ -157,7 +157,7 @@ MOTIONS = (("fireman", "run", MISSION[0], None), ("fireman", "hold", MISSION[1],
 # face left at a round's start, toward the ladder.
 FEET = 214  # the row the soles stand on (games/rescue.py's FEET)
 LADDER_FOOT = 111  # the ladder's foot on the soles' row
-LADDER_TOP = 96  # the ladder's top row: the station's roof at its right corner, x 80 (art/sets/rescue.py, paint_station)
+LADDER_TOP = 96  # the ladder's top row: the station's roof at its right corner, x 80 (art/sets/rescue.py)
 START = (220, 282)  # each figure's place at a round's start, the fireman first
 HOLD_PLACE = 115  # the fireman's place by the ladder: in the hold his near hand is on the rail
 FOOT_PLACE = 117  # the child's place at the ladder's foot: in the climb's first pose its toes are on the rail
@@ -262,7 +262,8 @@ class Storyboard:
         self.painted, self.street = painted, street
 
     def placed(self, figure, motion, pose, x, up=0):
-        """A picture of the figure facing left with its pivot on column x, its soles up px over FEET: (img, left, top)."""
+        """A picture of the figure facing left, its pivot on column x and its soles up px over FEET: (img, left,
+        top)."""
         p = self.painted[figure, motion]
         w, h = p.size
         return p.left[pose], x - (w - 1 - p.pivot[0]), FEET - up - h + 1
@@ -280,7 +281,8 @@ class Storyboard:
     def moments(self):
         """Each frame's figures (the fireman's, then the child's (img, left, top)), the column of each one's place, its
         active figure (0 the fireman, 1 the child), its task, and its mark: ("over", figure) or ("at", (x, y))."""
-        fireman, child = (self.placed(figure, "run", STAND[figure], x) for figure, x in zip(("fireman", "child"), START))
+        fireman, child = (self.placed(figure, "run", STAND[figure], x)
+                          for figure, x in zip(("fireman", "child"), START))
         hold = self.placed("fireman", "hold", 0, HOLD_PLACE)
         pose, (f, u) = self.end()
         return [{"figures": (fireman, child), "columns": START, "active": 1, "task": 1, "mark": ("over", 0)},
