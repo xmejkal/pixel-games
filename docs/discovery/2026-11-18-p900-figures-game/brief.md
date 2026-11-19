@@ -220,6 +220,8 @@ None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - a comment on #1279 with D35 · taken 2026-11-19, 12:31 Prague · https://github.com/xmejkal/spark/issues/1279#issuecomment-7007855968 · D35: the card holds his words
 - Waiting on the PO stays set on #1279, with Waiting since 2026-11-19 · read 2026-11-19, 12:30 Prague, the minute of the commit 8487a37 · his standing rule "It moves as the work moves", as in D9: the pass line is answered (D35), and his look at the chip is still asked of him, now in that comment
 - the plan of the switch prototype as a comment on P905 #1284 · taken 2026-11-19, 13:06 Prague, GitHub's time · https://github.com/xmejkal/spark/issues/1284#issuecomment-7008603680 · D36: the card holds the plan that he approved. One sentence of the comment held a time that the facilitator typed by hand, and it now says the clock's first read after his yes
+- a comment on #1279 with D36 · taken 2026-11-19, 13:13 Prague, GitHub's time · https://github.com/xmejkal/spark/issues/1279#issuecomment-7008773661 · D36: the card holds what his yes holds. The refuter's eleventh pass named it as a missing action
+- the title and the head lines of the draft PR #104 name D36 · taken 2026-11-19, 13:13 Prague, GitHub's time · the refuter's eleventh pass named them as a missing action
 <!-- EXTEND:brief-sections -->
 
 ## Hand-off
