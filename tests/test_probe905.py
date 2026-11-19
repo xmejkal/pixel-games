@@ -1072,6 +1072,26 @@ class SourceTest(unittest.TestCase):
             self.assertGreater(os.path.getsize(out[0]), 1000)
 
 
+def output(out):
+    """An error's output as text: a timed-out run's is bytes, or None."""
+    return out.decode("utf-8", "replace") if isinstance(out, bytes) else out or ""
+
+
+class StreamBoard(Board):
+    """P904's fake runner with stream: the board run's lines go to each one by one, then its run_error is raised. A
+    run_error with no output (a KeyboardInterrupt) comes after the lines of said."""
+
+    def stream(self, args, each, timeout=None):
+        try:
+            said, error = self.run(args, timeout), None
+        except BaseException as e:  # noqa: B902  raised again after the lines
+            said, error = output(getattr(e, "output", None)) + output(getattr(e, "stderr", None)) or self.said, e
+        for line in said.splitlines(True):
+            each(line)
+        if error:
+            raise error
+
+
 SAID = "p905 ways stick,click,double,hold,pick,knob,auto streak 10 wrong 3 double 300 hold 400\n" \
        "p905 inputs stick yes knob yes\ngame switchtest\np905 round knob starts\ndone\n"
 
@@ -1102,7 +1122,7 @@ class MacTest(unittest.TestCase):
             return f.read()
 
     def test_a_run_reads_the_box_resets_waits_runs_the_file_once_and_resets_again(self):
-        board = Board(said=SAID)
+        board = StreamBoard(said=SAID)
         said, err, refused = self.mac([], board)
         self.assertIsNone(refused)
         self.assertEqual([["ls", ":"], ["ls", ":packs"], ["reset"], ["exec", "pass"], ["run", "probe905_switch.py"],
@@ -1114,31 +1134,31 @@ class MacTest(unittest.TestCase):
             self.assertEqual(f.read(), board.copy)  # the file itself, with nothing filled in
 
     def test_minutes_set_the_time_limit(self):
-        board = Board(said=SAID)
+        board = StreamBoard(said=SAID)
         self.mac(["--minutes", "7"], board)
         self.assertEqual(7 * 60, board.limits[4])
         for value in ("0", "-3", "x"):
             with self.subTest(minutes=value):
-                board = Board(said=SAID)
+                board = StreamBoard(said=SAID)
                 said, err, refused = self.mac(["--minutes", value], board)
                 self.assertEqual(2, refused.code)
                 self.assertEqual([], board.commands)
 
     def test_a_box_without_the_rescue_pack_is_refused_and_reset(self):
-        board = Board(packs=("meteors.pak",))
+        board = StreamBoard(packs=("meteors.pak",))
         said, err, refused = self.mac([], board)
         self.assertIn("deploy first: python3 tools/box.py deploy --all", str(refused.code))
         self.assertEqual([["ls", ":"], ["ls", ":packs"], ["reset"]], board.commands)
         self.assertFalse(os.path.exists(self.log))
 
     def test_a_box_without_the_packs_folder_is_refused_and_reset(self):
-        board = Board(root=("boot.py", "main.py", "app.mpy"))
+        board = StreamBoard(root=("boot.py", "main.py", "app.mpy"))
         said, err, refused = self.mac([], board)
         self.assertIn("deploy first", str(refused.code))
         self.assertEqual([["ls", ":"], ["reset"]], board.commands)
 
     def test_the_box_is_read_again_while_a_game_keeps_mpremote_out(self):
-        board = Board(said=SAID, fails=["ls :", "ls :"])
+        board = StreamBoard(said=SAID, fails=["ls :", "ls :"])
         said, err, refused = self.mac([], board)
         self.assertIsNone(refused)
         self.assertEqual([["ls", ":"]] * 3 + [["ls", ":packs"]], board.commands[:4])
@@ -1146,7 +1166,7 @@ class MacTest(unittest.TestCase):
 
     def test_a_limit_with_a_p905_ways_line_is_a_play_and_exits_0(self):
         out = b"p905 ways stick,click\np905 inputs stick yes knob yes\np905 round stick starts\n"
-        board = Board(run_error=subprocess.TimeoutExpired(["mpremote", "run"], 3600, output=out, stderr=None))
+        board = StreamBoard(run_error=subprocess.TimeoutExpired(["mpremote", "run"], 3600, output=out, stderr=None))
         said, err, refused = self.mac([], board)
         self.assertIsNone(refused)
         self.assertIn("the time limit of 60 minutes ended the run", said)
@@ -1155,7 +1175,7 @@ class MacTest(unittest.TestCase):
 
     def test_a_limit_with_no_p905_ways_line_is_refused(self):
         out = b"lineup 1: switchtest\nimport 3012 ms\n"
-        board = Board(run_error=subprocess.TimeoutExpired(["mpremote", "run"], 3600, output=out, stderr=None))
+        board = StreamBoard(run_error=subprocess.TimeoutExpired(["mpremote", "run"], 3600, output=out, stderr=None))
         said, err, refused = self.mac([], board)
         self.assertIn("the run took over 3600 s", str(refused.code))
         self.assertIn("import 3012 ms", str(refused.code))
@@ -1163,7 +1183,7 @@ class MacTest(unittest.TestCase):
         self.assertEqual(["reset"], board.commands[-1])
 
     def test_a_failed_run_is_refused_with_its_last_line_and_the_log(self):
-        board = Board(run_error=subprocess.CalledProcessError(
+        board = StreamBoard(run_error=subprocess.CalledProcessError(
             1, ["mpremote", "run"], output="p905 ways stick\n",
             stderr="Traceback (most recent call last):\nRuntimeError: p905 refused: no stick in the pin map\n"))
         said, err, refused = self.mac([], board)
@@ -1174,7 +1194,7 @@ class MacTest(unittest.TestCase):
         self.assertEqual(["reset"], board.commands[-1])
 
     def test_a_failed_command_is_said_as_box_main_says_it_and_the_box_is_reset(self):
-        board = Board(fails=["exec pass"] * 3 + ["exec pass"] * 2)
+        board = StreamBoard(fails=["exec pass"] * 3 + ["exec pass"] * 2)
         said, err, refused = self.mac([], board)
         self.assertEqual("mpremote exec pass failed: could not enter raw repl", refused.code)
         self.assertEqual(["reset"], board.commands[-1])
@@ -1187,6 +1207,21 @@ class MacTest(unittest.TestCase):
         self.assertEqual(["mpremote ls :", "mpremote ls :packs", "mpremote reset", "mpremote exec pass",
                           "mpremote run probe905_switch.py", "mpremote reset"], said.splitlines())
         self.assertFalse(os.path.exists(self.log))
+
+
+    def test_a_run_that_ends_without_done_is_refused(self):
+        board = StreamBoard(said="p905 ways stick\np905 round stick starts\n")
+        said, err, refused = self.mac([], board)
+        self.assertEqual("refused: the run ended with no done line: p905 round stick starts; the log is %s" % self.log,
+                         refused.code)
+        self.assertEqual(["reset"], board.commands[-1])
+
+    def test_a_ctrl_c_keeps_the_log_and_resets_the_box(self):
+        board = StreamBoard(said="p905 ways stick\n", run_error=KeyboardInterrupt())
+        with self.assertRaises(KeyboardInterrupt):
+            self.mac([], board)
+        self.assertEqual("p905 ways stick\n", self.logged())
+        self.assertEqual(["reset"], board.commands[-1])
 
 
 if __name__ == "__main__":

@@ -48,8 +48,6 @@ box.py can read, or `not known` after 30 s. The deploy goes on whatever the line
 `bench.py show` names pixel-games for the box. <store> is SPARK_HOME, else XDG_DATA_HOME/spark, else
 ~/.local/share/spark. With no launcher there, register once (README, Build and run, step 5).
 A failed mpremote command prints its error and box.py exits with 1. Claude picks a lineup with list, then deploy NAME..., then log.
-ProbeRun runs one probe's file once on the board within a time limit, for a probe's Mac part, and keeps its lines in
-the first free log (P905).
 --- MVP (P817) ---"""
 
 import argparse
@@ -59,6 +57,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -125,6 +124,44 @@ class Tool:
         limit = {} if timeout is None else {"timeout": timeout}  # no limit: the call as before
         return subprocess.run([self.name] + args, cwd=ROOT, check=True, capture_output=True, text=True,
                               **limit).stdout
+
+    def stream(self, args, each, timeout=None):
+        """Runs the command from the repository root with its stdout and stderr as one stream, and calls each(line)
+        for each line as it comes (P905: a probe's board run, so its log holds each line at once). Past timeout
+        seconds it kills the command and raises TimeoutExpired. A non-zero exit raises CalledProcessError. When each
+        raises, or a KeyboardInterrupt comes, it kills the command and the exception goes on. With dry_run it prints
+        the command and calls nothing."""
+        if self.dry_run:
+            print(" ".join([self.name] + args))
+            return
+        command, killed = [self.name] + args, []
+        proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+                                errors="replace")
+
+        def kill():
+            killed.append(True)
+            proc.kill()
+
+        timer = threading.Timer(timeout, kill) if timeout is not None else None
+        try:
+            if timer:
+                timer.daemon = True
+                timer.start()
+            for line in proc.stdout:
+                each(line)
+            proc.wait()
+        except BaseException:
+            proc.kill()
+            proc.wait()
+            raise
+        finally:
+            if timer:
+                timer.cancel()
+            proc.stdout.close()
+        if killed and proc.returncode != 0:
+            raise subprocess.TimeoutExpired(command, timeout)
+        if proc.returncode:
+            raise subprocess.CalledProcessError(proc.returncode, command)
 
 
 class Mpremote(Tool):
@@ -513,36 +550,56 @@ def serial_port(name=None):
 
 
 class ProbeRun:
-    """One file run once on the box through a runner (an Mpremote, or a test's) within a time limit, its lines kept: it
-    prints them and writes them to the first free log, also after the limit or a failed run (P905, from P904's probe).
-    run(path, limit_s) answers how the run ended: DONE (the file ended), LIMIT (the limit stopped mpremote; the box
-    runs on until a reset) or FAILED (mpremote failed: the file raised, or the board did not answer). The caller
-    decides what each end means. lines: the run's lines; logged: the log's path, or None (a dry run writes none); why:
-    how a LIMIT or a FAILED came, or None. A missing mpremote raises FileNotFoundError."""
+    """One file run once on the box through a runner (an Mpremote, or a test's) within a time limit, its lines kept
+    (P905, from P904's probe). run(path, limit_s) opens the first free log before the command starts, then prints each
+    line as it comes and writes it to the log at once, so a Ctrl-C or a killed Mac session keeps every line that came.
+    It answers how the run ended: DONE (the file ended), LIMIT (the limit stopped mpremote; the box runs on until a
+    reset) or FAILED (mpremote failed: the file raised, or the board did not answer). The caller decides what each end
+    means. lines: the run's lines, stripped, with no blank one; logged: the log's path, or None (a dry run writes none);
+    why: how a LIMIT or a FAILED came, or None. A missing mpremote raises FileNotFoundError and leaves no log."""
 
     DONE, LIMIT, FAILED = 1, 2, 3
 
     def __init__(self, runner, log):
         self.runner, self.log = runner, log  # log: the first log's path (free_log picks the one written)
-        self.lines, self.logged, self.why = [], None, None
+        self.lines, self.logged, self.why, self.file = [], None, None, None
 
     def run(self, path, limit_s):
+        self.lines, self.why, end = [], None, self.DONE
+        if not self.runner.dry_run:
+            self.logged = self.free_log(self.log)
+            self.file = open(self.logged, "w")
         try:
-            said, end = self.runner.run(["run", path], timeout=limit_s), self.DONE
+            self.runner.stream(["run", path], self.keep, timeout=limit_s)
         except subprocess.TimeoutExpired as e:
-            said, end, self.why = self.text(e.stdout) + self.text(e.stderr), self.LIMIT, \
-                "the run took over %d s" % e.timeout
+            end, self.why = self.LIMIT, "the run took over %d s" % e.timeout
         except subprocess.CalledProcessError as e:
-            said, end, self.why = self.text(e.stdout) + self.text(e.stderr), self.FAILED, \
-                "the run failed with exit %d" % e.returncode
-        self.keep(said)
+            end, self.why = self.FAILED, "the run failed with exit %d" % e.returncode
+        except FileNotFoundError:
+            self.close()
+            if self.logged:
+                os.remove(self.logged)  # empty: the command never started
+                self.logged = None
+            raise
+        finally:
+            self.close()
         return end
 
-    @staticmethod
-    def text(out):
-        """A run's output as text: a timed-out one's is bytes (subprocess.run decodes only a finished command's), or
-        None."""
-        return out.decode("utf-8", "replace") if isinstance(out, bytes) else out or ""
+    def keep(self, line):
+        """One line of the run: stripped, a blank one dropped, kept, printed and written to the log at once."""
+        line = line.strip()
+        if not line:
+            return
+        self.lines.append(line)
+        print(line, flush=True)
+        if self.file:
+            self.file.write(line + "\n")
+            self.file.flush()
+
+    def close(self):
+        if self.file:
+            self.file.close()
+            self.file = None
 
     @staticmethod
     def free_log(path):
@@ -553,16 +610,6 @@ class ProbeRun:
             k += 1
             path = "%s-%d%s" % (stem, k, ext)
         return path
-
-    def keep(self, said):
-        """The run's lines, printed and written to the first free log (a dry run's are none, and it writes no log)."""
-        self.lines = [line.strip() for line in said.splitlines() if line.strip()]
-        for line in self.lines:
-            print(line)
-        if not self.runner.dry_run:
-            self.logged = self.free_log(self.log)
-            with open(self.logged, "w") as f:
-                f.write("".join(line + "\n" for line in self.lines))
 
 
 def failure(e):

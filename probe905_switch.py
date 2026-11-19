@@ -13,11 +13,12 @@ on the Mac:
 The Mac part:
 1. reads `ls :`, then `ls :packs` when the box has that folder, and refuses a box without :packs/rescue.pak.
 2. hard-resets the box and waits with `exec pass` until the box answers.
-3. runs this file once on the box, from RAM, within N minutes (60 by default). It prints each line and writes the
-   lines to the first free log of logs/run-p905-switch.log, logs/run-p905-switch-2.log and on, so a log is never
-   overwritten, also after the limit or a failed run (tools/box.py, ProbeRun).
+3. runs this file once on the box, from RAM, within N minutes (60 by default). It shows each line on the Mac as it
+   comes and writes it at once to the first free log of logs/run-p905-switch.log, logs/run-p905-switch-2.log and on,
+   so a log is never overwritten, and a Ctrl-C or a killed Mac session keeps every line that was played
+   (tools/box.py, ProbeRun).
 4. hard-resets the box in every case, so the box plays its lineup again.
-A run that QUIT ended exits 0. A run that the time limit ended exits 0 when its lines hold a `p905 ways` line, so a
+A run that QUIT ended, whose last line is `done`, exits 0. A run that the time limit ended exits 0 when its lines hold a `p905 ways` line, so a
 run that hung before the menu does not pass as a play. Any other end is refused with its last line and the log's path.
 --dry-run prints each board command and runs none, and writes no log.
 
@@ -802,9 +803,9 @@ def mac(argv, runner=None, sleep=None):
         raise SystemExit(box.failure(e))
     if end == run.LIMIT and [line for line in run.lines if line.startswith("p905 ways ")]:
         print("the time limit of %d minutes ended the run" % args.minutes)
-    elif end != run.DONE:
+    elif not runner.dry_run and (end != run.DONE or run.lines[-1:] != ["done"]):  # P904's probe also needs done
         raise SystemExit("refused: %s: %s; the log is %s" % (
-            run.why, run.lines[-1] if run.lines else "no output", run.logged))
+            run.why or "the run ended with no done line", run.lines[-1] if run.lines else "no output", run.logged))
     if run.logged:
         print("the log is %s" % run.logged)
 
