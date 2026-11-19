@@ -28,7 +28,7 @@ sys.path.append(REPO)  # the probe, last: the root's engine/ is the submodule, g
 
 from drawing_tft import DrawingTft  # noqa: E402,F401  first: it puts games/ and the stubs on the path
 
-if not hasattr(time, "ticks_add"):  # the stubs give ticks_diff, ticks_us and ticks_ms; app.run adds
+if not hasattr(time, "ticks_add"):  # the stubs give ticks_diff, ticks_us and ticks_ms. app.run adds
     time.ticks_add = lambda a, b: a + b
 
 import app  # noqa: E402
@@ -481,7 +481,7 @@ class GameTest(unittest.TestCase):
                 white = [((x - w // 2, r, x + w // 2 + 1, r + 1), gfx.WHITE) for w, r in rows]
                 drawn = [(op[:4], op[5]) for op in box.out.cv.ops if op[4] == 0 and op[5] in (gfx.WHITE, gfx.BLACK)
                          and x - 4 <= op[0] and op[2] <= x + 5 and tip - 4 <= op[1] and op[3] <= tip + 2]
-                self.assertEqual(rim + white, drawn)  # the rim first, the arrow over it; the mark's rim is elsewhere
+                self.assertEqual(rim + white, drawn)  # the rim first, the arrow over it. the mark's rim is elsewhere
                 box.frame()
 
     def test_the_shapes_the_gap_and_the_bar_are_the_storyboards(self):
@@ -926,7 +926,7 @@ class TallyTest(unittest.TestCase):
             tally.start()
             tally.pick(k != 6)
             met.append(tally.round_ends(5000 + k))
-        self.assertEqual([4], [k for k, m in enumerate(met) if m])  # the fifth round; after the wrong 7th, no second
+        self.assertEqual([4], [k for k, m in enumerate(met) if m])  # the fifth round. after the wrong 7th, no second
         self.assertEqual((True, 5), (tally.met, probe.STREAK))
 
     def test_the_best_time_is_the_shortest_round(self):
@@ -967,7 +967,7 @@ class WholeRoundTest(unittest.TestCase):
 
     def test_the_four_pairs_of_right_or_wrong_and_switch_or_same(self):
         p = Run().ready()
-        p.frame(y=-70).frame().frame(y=70).frame().frame(y=70)  # task 1 wants the fireman; the child is active
+        p.frame(y=-70).frame().frame(y=70).frame().frame(y=70)  # task 1 wants the fireman. the child is active
         self.assertEqual(["p906 pick child wrong same ground 41", "p906 pick fireman right switch ground 123",
                           "p906 pick fireman right same ground 205"], p.lines[1:])
         p.figures[probe.FIREMAN].x = 127
@@ -1087,7 +1087,7 @@ class WholeRoundTest(unittest.TestCase):
         p = Run().ready().holds()
         p.frame(y=-70).at_foot()
         frames = 3  # after READY's end: the two of holds() and the pick
-        for gap in (52, 53, 300) + (41,) * 200:  # a gap of 52 is not slow, 53 and 300 are; the ms is capped at 60
+        for gap in (52, 53, 300) + (41,) * 200:  # a gap of 52 is not slow, 53 and 300 are. the ms is capped at 60
             p.frame(at=p.now - T0 + gap, ms=min(gap, 60), y=-70)
             frames += 1
             if p.round.ended:
@@ -1212,7 +1212,7 @@ class ExitTest(unittest.TestCase):
 
 
 def finish(box):
-    """A clean round through the App from READY's end: down picks the fireman, he stands at his place and FIRE holds;
+    """A clean round through the App from READY's end: down picks the fireman, he stands at his place and FIRE holds.
     up picks the child, it stands at the foot and climbs until the round ends."""
     game = box.app.game
     fireman, child = game.figures

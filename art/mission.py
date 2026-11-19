@@ -25,8 +25,8 @@ the set mission's scene at three moments (below). It needs the CMU files of the 
 
 The set mission (P906): the pictures of the ladder mission for probe906_ladder.py, the walking skeleton of P900. It is
 in no ART_SETS: art/paint.py does not write it, and no pack of it is committed. painted(capture) paints its four
-motions, the first four rows of MISSION; write(folder, painted) writes its pack and an index of that pack alone, as
-art/figures.py's write does; numbers(painted) answers what the probe's board part cannot derive, as plain literals for
+motions, the first four rows of MISSION. write(folder, painted) writes its pack and an index of that pack alone, as
+art/figures.py's write does. numbers(painted) answers what the probe's board part cannot derive, as plain literals for
 the probe's copy. Its pictures, in their order: mission_night (Rescue's street, not keyed), mission_ladder, then for
 each motion mission_<figure>_<motion>_r<pose> and _l<pose>, each keyed. The hold keeps one pose, the spray's first:
 the hose ready, as Rescue's fireman stands (games/rescue.py, Rescue.fireman_picture).
@@ -204,7 +204,7 @@ def paint_set(painted):
 
 def write(folder, painted):
     """The set's pack as folder/packs/mission.pak and its index as folder/art_index.py, by the product's writers on a
-    set that owns the index's layers (it has none; write_index asks for one owner), as art/figures.py's write. The
+    set that owns the index's layers (it has none, and write_index asks for one owner), as art/figures.py's write. The
     folder is laid out as the board's root, so the index's path to the pack holds in both. Answers the two paths."""
     art_set = ArtSet(SET, SEED, lambda: paint_set(painted), index_layers=True)
     paintings = {SET: art_set.paint()}
@@ -245,7 +245,7 @@ class Storyboard:
     the eye that sets them: a round's start, the fireman holding the ladder at his place, and the child at the climb's
     first pose END_UP px up or more. Each frame has the bar's three rows with the task block, the white arrow over the
     active figure and the yellow mark, as probe906_ladder.py draws them. The bar's words are in PIL's default font,
-    not the box's 8x8 one. painted: painted()'s pictures; street: the street's picture."""
+    not the box's 8x8 one. painted: painted()'s pictures. street: the street's picture."""
 
     BAR = ("1 FIREMAN: stick DOWN to ladder, FIRE", "2 CHILD: stick UP to ladder, UP climbs", "PICK twice: quit")
     LABELS = ("a round's start: the child is active, task 1 wants the fireman",
