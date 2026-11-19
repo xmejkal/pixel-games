@@ -17,7 +17,9 @@ The Mac part:
    comes and writes it at once to the first free log of logs/run-p905-switch.log, logs/run-p905-switch-2.log and on,
    so a log is never overwritten, and a Ctrl-C or a killed Mac session keeps every line that was played
    (tools/box.py, ProbeRun).
-4. hard-resets the box in every case, so the box plays its lineup again.
+4. hard-resets the box, so the box plays its lineup again: after QUIT, the limit or a failed run, and also after a
+   Ctrl-C, a SIGTERM or a closed terminal (SIGHUP), which end the Mac part and kill the board run's mpremote. After a
+   `kill -9` nothing is reset: end the mpremote that is left and run `mpremote reset` by hand.
 A run that QUIT ended, whose last line is `done`, exits 0. A run that the time limit ended exits 0 when its lines hold a
 `p905 ways` line, so a run that hung before the menu does not pass as a play. Any other end is refused with its last
 line and the log's path.
@@ -68,8 +70,8 @@ The lines, from the box. Each line of the game starts with `p905`:
 The App's own lines come between them, for example `backend s3lcd`, `lineup 1: switchtest`, `import N ms`, `ready`,
 `game switchtest` and every 5 s `fps` and `heap`. The probe reads none of them. The box is silent.
 
-By hand, when the box does not come back: `mpremote reset`. Nothing is copied to the box, so the reset is the whole
-cleanup.
+By hand, when the box does not come back, or after a `kill -9` of the Mac part: end the `mpremote` that is left, then
+run `mpremote reset`. Nothing is copied to the box, so the reset is the whole cleanup.
 """
 
 import sys
@@ -274,7 +276,7 @@ class PickWay(Way):
     """A push of PICK (the board's D14 button) takes the other figure, and FIRE acts. Never a hold: a hold of about 5 s
     powered an older board off (bench.md)."""
 
-    name, label, hint = "pick", "PICK (D14)", "press PICK, never hold  FIRE at ring"
+    name, label, hint = "pick", "PICK (D14)", "PICK: switch, never hold  FIRE at ring"
 
     def read(self, now_ms, actions, boot, click):
         self.steps, self.acts = 1 if actions.pick.pressed else 0, actions.fire.pressed
@@ -807,7 +809,7 @@ def mac(argv, runner=None, sleep=None):
             box.retried(runner, WAIT, box.RESET_TRIES, box.RESET_PAUSE_S, sleep)
             end = run.run(os.path.relpath(os.path.abspath(__file__), box.ROOT), args.minutes * 60)
         finally:
-            box.reset(runner, sleep=sleep)  # in every case: the box plays its lineup again
+            box.reset(runner, sleep=sleep)  # also after a Ctrl-C, a SIGTERM or a SIGHUP (main): the lineup again
     except (box.subprocess.CalledProcessError, FileNotFoundError) as e:
         raise SystemExit(box.failure(e))
     if end == run.LIMIT and [line for line in run.lines if line.startswith("p905 ways ")]:
@@ -819,7 +821,20 @@ def mac(argv, runner=None, sleep=None):
         print("the log is %s" % run.logged)
 
 
+def main(argv):
+    """The Mac part from the command line. A SIGTERM or a SIGHUP (a closed terminal, a session that ends) ends it as a
+    Ctrl-C does: the handler raises SystemExit, so stream kills the board run's mpremote and mac() resets the box."""
+    import signal
+
+    def stop(signum, frame):
+        raise SystemExit("stopped by signal %d: the box is reset" % signum)
+
+    signal.signal(signal.SIGTERM, stop)
+    signal.signal(signal.SIGHUP, stop)
+    mac(argv)
+
+
 if sys.implementation.name == "micropython":
     board()
 elif __name__ == "__main__":
-    mac(sys.argv[1:])
+    main(sys.argv[1:])

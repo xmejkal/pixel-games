@@ -230,7 +230,7 @@
  {
   "file": "tools/box.py",
   "name": "a killed command is no TimeoutExpired",
-  "find": "        if killed and proc.returncode != 0:\n            raise subprocess.TimeoutExpired",
+  "find": "        if killed:  # the timer fired: past the limit\n            raise subprocess.TimeoutExpired",
   "replace": "        if False:\n            raise subprocess.TimeoutExpired"
  },
  {
@@ -388,5 +388,41 @@
   "name": "the fireman at the child's speed",
   "find": "SteeredFigure(START_X[FIREMAN], 1, rescue.SPEED_PX_S,",
   "replace": "SteeredFigure(START_X[FIREMAN], 1, rescue.PERSON_PX_S[rescue.CHILD],"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a SIGTERM does not end the Mac part as a Ctrl-C does",
+  "find": "    signal.signal(signal.SIGTERM, stop)\n",
+  "replace": ""
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "a SIGHUP does not end the Mac part as a Ctrl-C does",
+  "find": "    signal.signal(signal.SIGHUP, stop)\n",
+  "replace": ""
+ },
+ {
+  "file": "tools/box.py",
+  "name": "bytes that are not UTF-8 raise",
+  "find": "encoding=\"utf-8\", errors=\"replace\")",
+  "replace": "encoding=\"utf-8\")"
+ },
+ {
+  "file": "probe905_switch.py",
+  "name": "done anywhere passes the run",
+  "find": "(end != run.DONE or run.lines[-1:] != [\"done\"])",
+  "replace": "(end != run.DONE or \"done\" not in run.lines)"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "the timer is not cancelled",
+  "find": "        finally:\n            if timer:\n                timer.cancel()\n            proc.stdout.close()",
+  "replace": "        finally:\n            proc.stdout.close()"
+ },
+ {
+  "file": "tools/box.py",
+  "name": "a line is printed before it is logged",
+  "find": "        if self.file:\n            self.file.write(line + \"\\n\")\n            self.file.flush()\n        print(line, flush=True)",
+  "replace": "        print(line, flush=True)\n        if self.file:\n            self.file.write(line + \"\\n\")\n            self.file.flush()"
  }
 ]

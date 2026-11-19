@@ -159,6 +159,7 @@ class WaysTest(unittest.TestCase):
                 self.assertLessEqual(len(w.hint), 38)  # x 6 to 314: the base bar's edges
                 self.assertTrue(w.hint.endswith(" at ring"), w.hint)  # each names its act
         self.assertIn("never hold", way("pick").hint)
+        self.assertTrue(way("pick").hint.startswith("PICK: switch"), way("pick").hint)
         self.assertIn("FIREMAN or CHILD", way("knob").hint)  # the encoder's sign: no direction
 
     def test_the_stick_steps_up_minus_1_and_down_plus_1_once_a_lean_and_fire_acts(self):
@@ -1465,6 +1466,73 @@ class MacTest(unittest.TestCase):
         said, err, refused = self.mac(["--minutes", "1"], board)
         self.assertIsNone(refused)
         self.assertEqual(60, board.limits[4])
+
+    def test_a_run_whose_done_is_not_its_last_line_is_refused(self):
+        board = StreamBoard(said=SAID + "p905 round stick starts\n")
+        said, err, refused = self.mac([], board)
+        self.assertIn("the run ended with no done line: p905 round stick starts", str(refused.code))
+
+
+STAND_IN = """#!PYTHON -u
+import os, sys, time
+with open(os.environ["P905_RECORD"], "a") as f:  # each command, so the test sees the final reset
+    f.write(" ".join(sys.argv[1:]) + "\\n")
+if sys.argv[1:] == ["ls", ":"]:
+    print("        0 packs/")
+elif sys.argv[1:] == ["ls", ":packs"]:
+    print("   660008 rescue.pak")
+elif sys.argv[1] == "run":
+    print("p905 ways stick")
+    with open(os.environ["P905_RECORD"], "a") as f:
+        f.write("pid %d\\n" % os.getpid())
+    time.sleep(30)
+"""
+
+
+def end_if_left(pid):
+    try:
+        os.kill(pid, 9)
+    except ProcessLookupError:
+        pass
+
+
+class SignalTest(unittest.TestCase):
+    """The Mac part from the command line in a real process, with a stand-in mpremote on PATH: a SIGTERM or a SIGHUP
+    ends it as a Ctrl-C does."""
+
+    def test_a_sigterm_or_a_sighup_kills_the_board_runs_mpremote_and_resets_the_box(self):
+        import signal
+
+        for signum in (signal.SIGTERM, signal.SIGHUP):
+            with self.subTest(signal=signum), tempfile.TemporaryDirectory() as tmp:
+                record, log = os.path.join(tmp, "record"), os.path.join(tmp, "run.log")
+                stand_in = os.path.join(tmp, "mpremote")
+                with open(stand_in, "w") as f:
+                    f.write(STAND_IN.replace("PYTHON", sys.executable))
+                os.chmod(stand_in, 0o755)
+                env = dict(os.environ, PATH=tmp + os.pathsep + os.environ["PATH"], P905_RECORD=record)
+                code = "import sys; sys.path.insert(0, %r); import probe905_switch as p; p.LOG = %r; p.main([])" % (
+                    REPO, log)
+                mac = subprocess.Popen([sys.executable, "-B", "-c", code], env=env, stdout=subprocess.DEVNULL,
+                                       stderr=subprocess.DEVNULL)
+                self.addCleanup(mac.kill)
+                end = time.monotonic() + 20
+                while time.monotonic() < end and mac.poll() is None and not (
+                        os.path.exists(log) and open(log).read()):
+                    time.sleep(0.05)  # the board run's first line is in the log: the Mac part reads its lines
+                mac.send_signal(signum)
+                self.assertNotEqual(0, mac.wait(timeout=20))
+                with open(record) as f:
+                    said = f.read().splitlines()
+                pid = int([line for line in said if line.startswith("pid ")][0].split()[1])
+                self.addCleanup(end_if_left, pid)  # only when a fault leaves it
+                self.assertEqual(["ls :", "ls :packs", "reset", "exec pass", "run probe905_switch.py"],
+                                 [line for line in said if not line.startswith("pid ")][:5])
+                self.assertEqual("reset", said[-1])  # the final reset
+                with self.assertRaises(ProcessLookupError):
+                    os.kill(pid, 0)  # no child left
+                with open(log) as f:
+                    self.assertEqual("p905 ways stick\n", f.read())
 
 if __name__ == "__main__":
     unittest.main()

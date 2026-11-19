@@ -127,16 +127,17 @@ class Tool:
 
     def stream(self, args, each, timeout=None):
         """Runs the command from the repository root with its stdout and stderr as one stream, and calls each(line)
-        for each line as it comes (P905: a probe's board run, so its log holds each line at once). Past timeout
-        seconds it kills the command and raises TimeoutExpired. A non-zero exit raises CalledProcessError. When each
-        raises, or a KeyboardInterrupt comes, it kills the command and the exception goes on. With dry_run it prints
-        the command and calls nothing."""
+        for each line as it comes (P905: a probe's board run, so its log holds each line at once). Bytes that are
+        not UTF-8, as a serial line gives at a reset, come replaced. Past timeout seconds it kills the command and
+        raises TimeoutExpired, also when the command ended in that moment. A non-zero exit raises CalledProcessError.
+        When each raises, or a KeyboardInterrupt or a SystemExit comes, it kills the command and the exception goes on.
+        With dry_run it prints the command and calls nothing."""
         if self.dry_run:
             print(" ".join([self.name] + args))
             return
         command, killed = [self.name] + args, []
         proc = subprocess.Popen(command, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
-                                errors="replace")
+                                encoding="utf-8", errors="replace")
 
         def kill():
             killed.append(True)
@@ -158,7 +159,7 @@ class Tool:
             if timer:
                 timer.cancel()
             proc.stdout.close()
-        if killed and proc.returncode != 0:
+        if killed:  # the timer fired: past the limit
             raise subprocess.TimeoutExpired(command, timeout)
         if proc.returncode:
             raise subprocess.CalledProcessError(proc.returncode, command)
@@ -569,7 +570,7 @@ class ProbeRun:
         self.lines, self.why, end = [], None, self.DONE
         if not self.runner.dry_run:
             self.logged = self.free_log(self.log)
-            self.file = open(self.logged, "w")
+            self.file = open(self.logged, "w", encoding="utf-8")
         try:
             self.runner.stream(["run", path], self.keep, timeout=limit_s)
         except subprocess.TimeoutExpired as e:
@@ -587,15 +588,16 @@ class ProbeRun:
         return end
 
     def keep(self, line):
-        """One line of the run: stripped, a blank one dropped, kept, printed and written to the log at once."""
+        """One line of the run: stripped, a blank one dropped, kept, written to the log at once and then printed, so a
+        print that fails (a broken pipe, a closed terminal) loses no line of the log."""
         line = line.strip()
         if not line:
             return
         self.lines.append(line)
-        print(line, flush=True)
         if self.file:
             self.file.write(line + "\n")
             self.file.flush()
+        print(line, flush=True)
 
     def close(self):
         if self.file:

@@ -15,6 +15,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import types
 import unittest
@@ -1230,6 +1231,12 @@ class ProbeRunTest(unittest.TestCase):
         self.assertEqual((box.ProbeRun.DONE, [], None), (end, probe.lines, probe.logged))
         self.assertFalse(os.path.exists(self.log))
 
+    def test_a_print_that_fails_leaves_its_line_in_the_log(self):
+        with mock.patch.object(box, "print", side_effect=BrokenPipeError, create=True), \
+                self.assertRaises(BrokenPipeError):
+            box.ProbeRun(ProbeRunner("p905 ways stick\n"), self.log).run("probe905_switch.py", 3601)
+        self.assertEqual("p905 ways stick\n", self.logged())
+
     def test_a_missing_mpremote_raises(self):
         error = FileNotFoundError(2, "No such file or directory", "mpremote")
         with self.assertRaises(FileNotFoundError):
@@ -1309,6 +1316,15 @@ class StreamTest(unittest.TestCase):
             Python().stream(self.script("print('one')\nraise SystemExit(3)\n"), lines.append)
         self.assertEqual((["one\n"], 3), (lines, raised.exception.returncode))
 
+    def test_a_command_that_ends_before_its_limit_leaves_no_timer(self):
+        lines = []
+        Python().stream(["-c", "print('one')"], lines.append, timeout=30)
+        timers = [t for t in threading.enumerate() if isinstance(t, threading.Timer)]
+        for t in timers:
+            t.join(1)
+        self.assertEqual(["one\n"], lines)
+        self.assertEqual([], [t for t in timers if t.is_alive()])
+
     def test_a_dry_run_prints_the_command_and_runs_nothing(self):
         lines = []
         with contextlib.redirect_stdout(io.StringIO()) as said:
@@ -1330,6 +1346,8 @@ elif how == "fail":
 elif how == "interrupt":
     print(os.getpid())
     time.sleep(30)
+elif how == "bytes":  # a serial line at a reset gives bytes that are not UTF-8
+    sys.stdout.buffer.write(b"\\xff\\xfe at reset\\n")
 elif how == "watch":  # whether the log on disk holds the first line while this run goes on
     end = time.time() + 5
     while time.time() < end:
@@ -1397,6 +1415,12 @@ class ProbeRunProcessTest(unittest.TestCase):
         self.assertEqual(box.ProbeRun.FAILED, end)
         self.assertEqual("p905 ways stick\nTraceback (most recent call last):\nRuntimeError: no art\n", self.logged())
         self.assertEqual("the run failed with exit 1", probe.why)
+
+    def test_bytes_that_are_not_utf_8_reach_the_log_replaced(self):
+        probe, end, said = self.run_probe(FakeMpremote(self.fake), "bytes")
+        self.assertEqual(box.ProbeRun.DONE, end)
+        with open(self.log, encoding="utf-8") as f:
+            self.assertEqual("p905 ways stick\n\ufffd\ufffd at reset\n", f.read())
 
     def test_each_line_is_in_the_log_on_disk_while_the_run_goes_on(self):
         with mock.patch.dict(os.environ, {"P905_LOG": self.log}):
