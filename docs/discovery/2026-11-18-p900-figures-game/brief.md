@@ -202,6 +202,7 @@ None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - file P929 (https://github.com/xmejkal/spark/issues/1315, the discovery check's design gate), in Idea, under #158 · taken 2026-11-19, 11:15 Prague · the raised finding of the fourth pass, by his rule that a finding is fixed, filed as a card or dropped (his rules file, the section "What every PR needs")
 - a comment on #1279 with the count's result and Q1's first importance question · taken 2026-11-19, 11:20 Prague · https://github.com/xmejkal/spark/issues/1279#issuecomment-7006300274 · D27: the result of the test that he chose goes to the card
 - Waiting on the PO and Waiting since 2026-11-19 on #1279 · taken 2026-11-19, 11:21 Prague · his standing rule "It moves as the work moves", as in D9: Q1's first importance question is asked of him
+- a comment on #1279 with D31, the facilitator's proposal for Q1's nine ratings and the board's revision · taken 2026-11-19, 11:37 Prague · https://github.com/xmejkal/spark/issues/1279#issuecomment-7006678229 · D31: the card holds his words, and the discovery goes on
 <!-- EXTEND:brief-sections -->
 
 ## Hand-off
