@@ -269,6 +269,12 @@ None is taken without a D. e.g. `- move #16 to Discovery · pending` -->
 - the finding's comment on P905 #1284 and the photo's comment on P932 #1320 corrected after the thirteenth pass · taken 2026-11-19, 15:44 Prague, GitHub's time · the finding names the guide that the transcript does not hold as written, and the photo's comment says "no fifth label" and names the record's five parts against the photo's six
 - move P906 #1285 to Build · taken 2026-11-19, 15:50 Prague · D45 ("pull it"). The fields were read back: Status Build, Slice pixel-games. `tools/check_backlog.py` then said "the limits hold"
 - the plan of the walking skeleton as a comment on P906 #1285 · taken 2026-11-19, 16:41 Prague, GitHub's time · https://github.com/xmejkal/spark/issues/1285#issuecomment-7013959052 · D46: the card holds the plan that he approved
+- a note on the card P901 #1280 with the classes that the probe of P906 repeats from P905's file, and with `PackSource` · taken 2026-11-19, 16:57 Prague, GitHub's time · https://github.com/xmejkal/spark/issues/1280#issuecomment-7014405183 · D47
+- a note on the card P931 #1318 with `LentPack`, which P904's probe moves onto after the merge of P906's PR · taken 2026-11-19, 16:57 Prague, GitHub's time · https://github.com/xmejkal/spark/issues/1318#issuecomment-7014405951 · D47
+- the body of P906 #1285 now holds his order of D45, his yes of D46 with the three pass lines, and his order of D47 for the build · taken 2026-11-19, 17:07 Prague · D45 to D47: the card holds his words. The refuter's fourteenth pass named it as a missing action
+- the title and the head lines of the draft PR #104 name D46 and the three pass lines · taken 2026-11-19, 17:07 Prague · D47: his order for this record, as after D36 and D44
+- a comment on #1279 with D45 to D47 · taken 2026-11-19, 17:07 Prague, GitHub's time · https://github.com/xmejkal/spark/issues/1279#issuecomment-7014670246 · D47: the card holds his words
+- Waiting on and Waiting since stay cleared on #1279 and on P906 #1285 · read 2026-11-19, before 17:00 Prague, by the refuter in its fourteenth pass · his standing rule "It moves as the work moves", as in D9: no question is asked of him, and his yes for his play is asked at "ready to play"
 <!-- EXTEND:brief-sections -->
 
 ## Hand-off
