@@ -1302,3 +1302,38 @@ None.
 Not checked: the captured speeds 199 and 108 (they need a paint with the CMU files), and what the box held, because I did not touch it.
 
 2 refuted, 5 partly, 11 hold, 3 missing actions.
+
+# Sixteenth pass (2026-11-20, after the sheet of sizes, D52)
+
+I read both diffs, the picture, sizes_sheet.py, art/mission.py and moves.Ladder at 92569c5, probe906_ladder.py, log lines 60 to 194, D36, the transcripts (spark 90ee8eec, pixel-games 87e18361 and ad4bec61) and the store's morning note. I ran the script once and measured each height with three more scripts in scratch.
+
+1. **Holds.** C42's numbers match my printed lines: fireman 50/66/81/97 and child 34/46/57/68. My picture is `(640, 1016)`, and its sha256 813f418c… matches the committed file. ad4bec61 shows two earlier runs, at 00:21 and 00:24, with "same picture: cmp exit 0".
+
+2. **REFUTED: "so a smaller fireman does not reach the rail".** The picture and my measurement say otherwise. At 48 px his glove (row 172, column 98) touches the rail, which is in columns 96 and 97. At 64, 80 and 96 px his hands reach 5, 8 and 9 columns past it. The small rows go wrong in a different place, the child's climb. END_UP is 54 px, so the child's top row is 29, 19 and 6 px under the roof's row 96 at 48, 64 and 80 px. Only at 96 px is it over the roof. Fix: write the child's shortfall instead. The morning note's line 19 needs the same fix: "a smaller fireman stands a little off the ladder".
+
+3. **Missing caveats.**
+   - The ladder's slant follows each height's climb, at (3,9), (3,12), (4,16) and (5,19). So the ladder's top is at column 72 at 48 px and at 80 to 82 at the other heights.
+   - The child's height is not chosen on its own: it is about 0.7 of the fireman's.
+   - The bar uses PIL's font, not the box's 8x8 font (Storyboard's docstring). Yet sizes_sheet.py says "each as the box shows it".
+
+   Fix: add these to the caveat in one sentence.
+
+4. **Holds.** Both quotes in D52 match the transcript character for character (checked as substrings). The 00:18 and 00:20 times are right. The spark session passed the words on with SendMessage at 23:18:23Z and 23:20:28Z.
+
+5. **Missing.** His second message says: "when you need my input, use fable and the council … to decide for me". The record still asks Q20 of him and calls each part "his", and no (H) gives the reason. Nor does D52 say how "prioriittize spark" was applied. This session offered to take a spark card, and the spark session declined at 00:23. Fix: add one (H) sentence on each.
+
+6. **Partly.** "under his words of D52" (in the Decision-needed line and in Q20) reads as if his words covered the sheet, and D52 says they do not. "status: asked 2026-11-20" was committed at 00:24:45. The morning note was written "from 00:27 Prague on", and Q20 names no place where it was asked (compare Q16). The rule: "If the decider cannot be asked, the queue stays here". Fix: "on the facilitator's reading of D52 (H)", and "asked 2026-11-20, 00:27, in the store's morning note". The collection row and the value row hold.
+
+7. **Missing.** The Hand-off still ends at the fifteenth pass and names neither D52 nor the sheet. The Files line lists neither new file. Fix: add them.
+
+8. **Holds.** D50's times match the enqueue at 22:25:58Z and the remove at 22:26:35Z. The Riskiest line and the sentences of C38 and C39 hold: 17 picks, 8 wrong, and lines 80, 118, 172, 173 and 179 are `same`. "slow 5" and "slow 0" are in lines 105 and 145. So do both rows in verification.md. The facilitator is right to reject the fifteenth pass's sentence. Line 79, `act none click 52099`, comes before line 80, `pick child wrong same`, so the child was active in task 1. D36 counts "an act of the figure that the task does not want". The probe leaves `act none` out of its tally, so ★C38's wording holds.
+
+## Searches
+
+"with no answer yet": 0 hits. "no D chooses": only the Ready-for line, still true. "offer": Q20's offer is real (reply at 22:28:13Z). "collecting evidence": consistent.
+
+The check printed: "Questions: 16 asked, 6 queued", "Output check: pass", "Ready for: collecting evidence · stands on 9 H, 3 would change the decision".
+
+Not checked: how big the box's screen looks against a monitor (no bench); the council brief this session wrote at 00:26, after the commit.
+
+3 hold, 1 refuted, 1 partly, 3 missing.

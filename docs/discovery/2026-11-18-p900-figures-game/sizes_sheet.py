@@ -4,8 +4,9 @@ Run it with a checkout of pixel-games master (92569c5 or later) as the working f
 mocap.CMU_DIR:
     python3 -B <this file> OUT.png
 It changes no file of the repository. This branch's own art/ is older than P906 and cannot paint the scene. Each row is one height: the round's start at the left, and the child at the
-climb's end at the right, each as the box shows it, 320 by 240 px (art/mission.py's Storyboard.frame). The places are
-the ones set by eye for 96 px (art/mission.py), not moved for a smaller figure.
+climb's end at the right, each as art/mission.py's Storyboard.frame draws it, 320 by 240 px, with the bar's words in
+PIL's font and not the box's. The places are the ones set by eye for 96 px (art/mission.py), not moved for a smaller
+figure.
 """
 import argparse
 import sys
