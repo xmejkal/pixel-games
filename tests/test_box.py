@@ -950,6 +950,7 @@ class LauncherTest(unittest.TestCase):
                              ("a list", "[1]\n"), ("a number", "7\n"), ("ok with no time", no_time),
                              ("a time that is no text", envelope(data={"entry": {"deployed": 5}})),
                              ("data that is no object", envelope(data=[1])),
+                             ("a time that is a path", envelope(data={"entry": {"deployed": "/Users/someone/x"}})),
                              ("unchecked that is no list", envelope("could-not-run", unchecked=())[:-1]
                               .replace('"unchecked":[]', '"unchecked":7')),
                              ("a code with a space", stopped("no port")),

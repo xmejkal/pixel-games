@@ -40,10 +40,18 @@ log: resets the board itself (a hard reset, trying again while the board still r
 its console for N seconds (20 by default), opening the port again while USB comes back: the `engine`, `lineup`,
 `import`, `pick`, `game` and `switch` lines, each after the seconds since the log started, on the Mac's clock
 (`12.345 pick runner`; logs from before P822 have none). The port is the one mpremote's auto picks: the first USB serial port, sorted.
+A deploy tells spark's store (P921): after the last copy and before the reset it runs spark's launcher once,
+`python3 <store>/launcher/bench.py record pixel-games --json`, which lists the boards on USB and opens no port, and
+says one line: `spark's store: recorded pixel-games, <time>`, or `spark's store: not recorded (<code>)` with the
+code of spark's stop (no_port, two_boards, not_registered, launcher_stale, ...), or `not known` after 30 s. The
+deploy goes on whatever the line says. <store> is SPARK_HOME, else XDG_DATA_HOME/spark, else ~/.local/share/spark.
+With no launcher there, register once from a spark checkout that stays: `bench.py register pixel-games --origin
+https://github.com/xmejkal/pixel-games.git --tool box.py`. Then spark's `bench.py show` names pixel-games for the box.
 A failed mpremote command prints its error and box.py exits with 1. Claude picks a lineup with list, then deploy NAME..., then log.
 --- MVP (P817) ---"""
 
 import argparse
+import json
 import os
 import re
 import subprocess
@@ -73,6 +81,12 @@ PACKAGES = ("engine", "drivers")  # the folders of games/ that go to the board a
 MOVED = ("signals", "buttons", "encoder")  # flat modules that moved into a package: the deploy removes their .py and
 # .mpy at the root (P849; buttons and encoder into drivers, P851)
 ENGINE_VALUE = re.compile(r"reference(=[a-z][a-z0-9_]*(,[a-z][a-z0-9_]*)*)?")  # --engine's whole value (P850)
+SPARK_NAME = "pixel-games"  # the name this project has in spark's store, from spark's bench.py register (P921)
+RECORD_S = 30  # the launcher's time limit; spark's own list of the boards stops at 15 s
+SPARK = "spark's store: "
+NOT_READ = "not recorded (no answer that box.py can read)"
+STOP_CODE = re.compile(r"[a-z_]+")  # a stop's code, as spark writes them
+DEPLOYED = re.compile(r"[0-9T:.+Z-]+")  # an entry's time, as spark's clock writes it
 ENGINE_USAGE = "--engine takes reference or reference=PART[,PART...], each PART a lower-case name: got %r"
 
 
@@ -183,18 +197,71 @@ class Compiler:
         return out
 
 
+def spark_store(environ=None):
+    """spark's store folder, where spark itself looks: SPARK_HOME, else XDG_DATA_HOME/spark, else
+    ~/.local/share/spark. An empty value counts as unset."""
+    environ = os.environ if environ is None else environ
+    return environ.get("SPARK_HOME") or os.path.join(
+        environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share"), "spark")
+
+
+def record_said(stdout):
+    """What spark's `bench.py record --json` answered, for a person: its envelope is the last line of stdout. Only the
+    entry's time or the stop's code is said: the envelope also holds the board's MAC and port, and logs/ is public.
+    It decides on the status and the code, never on a sentence. Raises when the answer has another shape."""
+    answer = json.loads(stdout.strip().splitlines()[-1])
+    if answer["status"] == "ok":
+        said, shape = answer["data"]["entry"]["deployed"], DEPLOYED
+        line = "recorded %s, %%s" % SPARK_NAME
+    else:
+        said, shape = answer["unchecked"][0]["code"], STOP_CODE
+        line = "not recorded (%s)"
+    if not shape.fullmatch(said):
+        raise ValueError("neither a time nor a code")
+    return line % said
+
+
+class SparkLauncher:
+    """spark's launcher in spark's store (folder), which bench.py register wrote: it runs spark's bench.py from any
+    folder with any python3 (P921). run: subprocess.run when None, looked up at the call; with dry_run record
+    answers the command, with <store> for the folder, and runs nothing."""
+
+    def __init__(self, folder, run=None, dry_run=False):
+        self.folder, self.run, self.dry_run = folder, run, dry_run
+
+    def record(self):
+        """Tells spark's store that this project deployed to the board on USB, and answers the line to say. It
+        never raises: a record that could not run leaves the deploy as it is."""
+        if self.dry_run:
+            return "python3 <store>/launcher/bench.py record %s --json" % SPARK_NAME
+        launcher = os.path.join(self.folder, "launcher", "bench.py")
+        if not os.path.isfile(launcher):
+            return SPARK + "not recorded (no launcher: run spark's bench.py register for %s)" % SPARK_NAME
+        try:
+            done = (self.run or subprocess.run)(
+                [sys.executable, launcher, "record", SPARK_NAME, "--json"], cwd=ROOT, capture_output=True, text=True,
+                errors="replace", stdin=subprocess.DEVNULL, timeout=RECORD_S)  # no check: a stop exits 2
+            return SPARK + record_said(done.stdout)
+        except subprocess.TimeoutExpired:  # the launcher's own child can still write the entry
+            return SPARK + "not known (time limit of %d s)" % RECORD_S
+        except (OSError, subprocess.SubprocessError, ValueError, LookupError, TypeError, AttributeError):
+            return SPARK + NOT_READ  # no text of the error: it can hold a path
+
+
 class Deploy:
     """Puts a lineup's games on the board through a runner: names, or None for every game and no lineup.py. With a
     compiler the modules go as .mpy files and main.py as itself; with None (--py) every module goes as its .py.
     crackle: the path of _crackle.mpy from the repository root (CRACKLE when None); say: where a note goes; sleep:
     the pause between the probe's tries (time.sleep when None); reference: REFERENCE for :engine_config.py
-    (engine_reference's), or None to remove the board's file (P850)."""
+    (engine_reference's), or None to remove the board's file (P850); launcher: a SparkLauncher that records the
+    deploy in spark's store after the last copy, or None to record nothing (P921)."""
 
     def __init__(self, runner, compiler=None, games=GAMES, crackle=None, say=print, sleep=None, reference=None,
-                 volume=None):
+                 volume=None, launcher=None):
         self.runner, self.compiler, self.games = runner, compiler, games  # games: the folder, named as games/<file>
         self.crackle, self.say = CRACKLE if crackle is None else crackle, say
         self.sleep, self.reference, self.volume = sleep or time.sleep, reference, volume
+        self.launcher = launcher
 
     def run(self, names):
         if names is not None:
@@ -226,6 +293,8 @@ class Deploy:
             self.runner.run(["rm", ":engine_config.py"])
         if self.volume is not None:  # the start step (P866); without --volume the board keeps its own
             write_file(self.runner, VOLUME_FILE, str(self.volume))
+        if self.launcher:  # before the reset: the board is on USB for certain, and the record opens no port
+            self.say(self.launcher.record())
         self.runner.run(["reset"])
 
     def copy_code(self, on_board):
@@ -492,7 +561,8 @@ def main(argv=None):
             reference = None if args.engine is None else engine_reference(args.engine)  # before any command
             step = None if args.volume is None else volume_step(args.volume)
             Deploy(Mpremote(args.dry_run), None if args.py else Compiler(MpyCross(args.dry_run)),
-                   reference=reference, volume=step).run(None if args.all else args.names)
+                   reference=reference, volume=step,
+                   launcher=SparkLauncher(spark_store(), dry_run=args.dry_run)).run(None if args.all else args.names)
         elif args.command == "volume":
             if args.step is None:
                 print(Volume(Mpremote()).show())

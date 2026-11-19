@@ -33,6 +33,7 @@ flowchart LR
     C -- "writes games, engine package, drivers" --> PG
     PG -- "includes" --> EN
     PG -- "tools/box.py deploy (mpremote)" --> BOX
+    PG -- "tools/box.py deploy records itself (spark's launcher, P921)" --> ST
     C -- "moves cards, opens PRs" --> GH
     PO -- "orders Ready, merges rules" --> GH
 ```
@@ -158,6 +159,7 @@ sequenceDiagram
     C->>P: copies build/firmware/pins.py to games/pins.py
     D->>P: import pins: JOY_X, JOY_Y, JOY_SW, ENC_A, ENC_B
     C->>B: tools/box.py deploy (the games, with pins.py)
+    C->>S: the deploy runs spark's launcher: bench.py record pixel-games
 ```
 
 The other places where they touch:
@@ -172,7 +174,7 @@ What is not joined yet:
 | Step | spark | pixel-games |
 | --- | --- | --- |
 | Flash the firmware | `/spark:deploy` (`deploy.py`): looks at the board, asks for a yes, erases, writes the image a passed simulation tested, copies a facts file and reads it back | `./build.sh engine`, then esptool by hand (README.md, "Build and run") |
-| Copy the program | the project's files, with the image | `tools/box.py deploy`: compiles `.mpy`, copies the games, the engine package, the packs and `:lineup.py`, refuses a firmware with no `_engine` |
+| Copy the program | the project's files, with the image | `tools/box.py deploy`: compiles `.mpy`, copies the games, the engine package, the packs and `:lineup.py`, refuses a firmware with no `_engine`. Before its reset it records the deploy in spark's store through spark's launcher (P921), so spark's `bench.py show` names pixel-games for the box |
 | Look at the board | `look.py` asks before it reads a board that the project does not know (P865). It remembers a board by a MAC-shaped USB serial after one yes, and asks each time for a board with no serial or a serial its firmware set | `tools/box.py log` reads the console |
 
 P892 ([#1266](https://github.com/xmejkal/spark/issues/1266)) puts the same question in front of every board touch in
