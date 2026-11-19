@@ -12,14 +12,15 @@ for the hold of the ladder and for a figure that stands idle. A placeholder row 
 motion can take more or fewer. The wave, the other standing loop, is no placeholder: at 96 px the painter's box cuts
 the fireman's raised arm.
 
-Not in the count: a turn (every row holds both facings), the ladder (art/moves.py draws it as lines) and any other
-picture of the mission. The count says nothing about the frame rate.
+Not in the count: a turn (every row holds both facings), the ladder (the Mac clip of art/moves.py draws it as lines,
+and how the board draws it is open) and any other picture of the mission, such as the wall. The count says nothing
+about the frame rate.
 
 Run from the repository root: python3 art/mission.py [--out DIR] prints a line a row with its box and its bytes, the
 street's line, the bytes of a pack with only the rows that his words name and of one with every row, and what the pass
 line leaves beside the pack, or by how much the pack is over it. With --out it writes mission-sheet.png, each row's
-poses, for the eye to judge the placeholders. It needs the CMU files in mocap.CMU_DIR: without one of the rows' files
-it paints nothing and exits 2.
+poses, for the eye to judge the placeholders. It needs the CMU files of the rows' cycles in the --cmu folder
+(mocap.CMU_DIR when none is given): without one of them it paints nothing and exits 2.
 """
 
 import argparse
@@ -29,7 +30,7 @@ from collections import namedtuple
 
 import mocap
 from detailed import CHILD, FIREMAN, TALL, Pictures, on_dark
-from export import HEADER, Sheet, committed_index
+from export import HEADER, committed_index, stacked
 from moves import MovePictures
 
 # bytes: the PO's pass line for the pack (D28 of P900's discovery). It is the one pack size that the board loaded, into
@@ -127,12 +128,7 @@ class MissionSheet:
                 for row, p in self.pack.painted]
 
     def image(self):
-        rows = self.rows()
-        sheet = Sheet(max(img.width for _, img in rows) + 20, sum(img.height + 28 for _, img in rows) + 10)
-        y = 6
-        for label, img in rows:
-            y = sheet.put(label, img, 10, y) + 10
-        return sheet.image
+        return stacked(self.rows())
 
 
 def main(argv=None):

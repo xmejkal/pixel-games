@@ -33,8 +33,9 @@ RUN = mocap.named("run")
 HOP = 80  # the hopper's period in frames, within the run's (70, 110): its only loop is one hop
 STREET = (32, 24)  # a stand-in street's size: 32 * 24 * 2 = 1,536 bytes
 # each stand-in row's box and poses, in MISSION's order: 10,368, 1,296, 5,184, 2,688, 720 and 288 bytes with both
-# facings. Each is more than all lighter ones together, so no two sets of rows weigh the same
-BOXES = (((12, 18), 12), ((6, 9), 6), ((9, 12), 12), ((7, 8), 12), ((5, 6), 6), ((3, 4), 6))
+# facings. Each is more than all lighter ones together, so no two sets of rows weigh the same. The third row's strip
+# is the widest, so a page as wide as its first strip is too narrow
+BOXES = (((6, 36), 12), ((6, 9), 6), ((9, 12), 12), ((7, 8), 12), ((5, 6), 6), ((3, 4), 6))
 HOLD = "no hold is captured: the spray's stance, both arms held out in front"
 IDLE = "no idle is captured: the spray's stance, a standing loop"
 
@@ -92,6 +93,9 @@ class MissionTest(unittest.TestCase):
     def test_the_pass_line_is_his(self):
         self.assertEqual(2464000, mission.PASS_LINE)
 
+    def test_the_street_is_rescues_night(self):
+        self.assertEqual("rescue_night", mission.STREET)
+
 
 class RowPicturesTest(unittest.TestCase):
     """Row.pictures on the stand-in capture at SMALL px: a move's poses are snapped to the floor, any other cycle's
@@ -140,7 +144,7 @@ class LinesTest(unittest.TestCase):
 
     def test_a_line_a_row_then_the_street_the_two_sums_and_the_pass_line(self):
         self.assertEqual([
-            "fireman's run (9:1 at 120 fps), moves to the wall: 12 poses of 12 by 18 px, 10368 bytes with both "
+            "fireman's run (9:1 at 120 fps), moves to the wall: 12 poses of 6 by 36 px, 10368 bytes with both "
             "facings",
             "fireman's spray (13:27 at 120 fps), holds a ladder: 6 poses of 6 by 9 px, 1296 bytes with both facings; "
             "a placeholder: " + HOLD,
@@ -182,7 +186,8 @@ class MissionSheetTest(unittest.TestCase):
         for (_, pictures), (_, strip) in zip(self.pack.painted, self.sheet.rows()):
             with self.subTest(size=pictures.size):
                 expected = detailed.on_dark(pictures.pictures)
-                self.assertEqual((expected.size, expected.tobytes()), (strip.size, strip.tobytes()))
+                self.assertEqual(expected.size, strip.size)
+                self.assertTrue(expected.tobytes() == strip.tobytes())
 
     def test_the_page_holds_each_strip_18_px_under_its_label_the_next_10_px_under_the_strip(self):
         strips = [strip for _, strip in self.sheet.rows()]
@@ -190,8 +195,8 @@ class MissionSheetTest(unittest.TestCase):
         self.assertEqual((max(s.width for s in strips) + 20, sum(s.height + 28 for s in strips) + 10), image.size)
         for strip in strips:
             with self.subTest(y=y):
-                self.assertEqual(strip.tobytes(), image.crop((10, y + 18, 10 + strip.width, y + 18 + strip.height))
-                                 .tobytes())
+                pasted = image.crop((10, y + 18, 10 + strip.width, y + 18 + strip.height))
+                self.assertTrue(strip.tobytes() == pasted.tobytes())
             y += 18 + strip.height + 10
 
 
@@ -245,13 +250,27 @@ class MissionFromCaptureTest(unittest.TestCase):
             raise unittest.SkipTest("the CMU files are not in %s" % mocap.CMU_DIR)
         cls.pictures = dict(captured())
 
+    def setUp(self):
+        self.folders = []  # the folder of the capture that main hands to each row's painter
+
+    def painter(self, row, capture):
+        self.folders.append(capture.folder)
+        return self.pictures[row]
+
     def main(self, *argv):
-        """What main prints with these arguments, as lines."""
+        """What main prints with these arguments, as lines. It answers nothing: its exit code is 0."""
         out = io.StringIO()
-        with mock.patch.object(mission.Row, "pictures", lambda row, capture: self.pictures[row]):
+        with mock.patch.object(mission.Row, "pictures", lambda row, capture: self.painter(row, capture)):
             with contextlib.redirect_stdout(out):
-                mission.main(list(argv))
+                self.assertIsNone(mission.main(list(argv)))
         return out.getvalue().splitlines()
+
+    def test_every_row_is_painted_from_the_capture_of_the_cmu_folder(self):
+        with tempfile.TemporaryDirectory() as folder:
+            link = os.path.join(folder, "cmu")
+            os.symlink(os.path.expanduser(mocap.CMU_DIR), link)
+            self.main("--cmu", link)
+        self.assertEqual([link] * 6, self.folders)
 
     def test_it_prints_the_rows_the_street_the_sums_and_what_the_pass_line_leaves(self):
         self.assertEqual(self.LINES, self.main())
@@ -283,7 +302,8 @@ class MissionFromCaptureTest(unittest.TestCase):
             self.assertEqual(["mission-sheet.png"], os.listdir(out))
             with Image.open(os.path.join(out, "mission-sheet.png")) as image:
                 expected = sheet.image()
-                self.assertEqual((expected.size, expected.tobytes()), (image.size, image.convert("RGB").tobytes()))
+                self.assertEqual(expected.size, image.size)
+                self.assertTrue(expected.tobytes() == image.convert("RGB").tobytes())
         font = Sheet(1, 1).font
         for label, _ in sheet.rows():
             with self.subTest(label=label):

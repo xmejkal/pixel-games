@@ -124,5 +124,29 @@
   "name": "main writes the sheet only with no --out",
   "find": "    if args.out:",
   "replace": "    if not args.out:"
+ },
+ {
+  "file": "art/export.py",
+  "name": "a stacked page is as wide as its first picture",
+  "find": "sheet = Sheet(max(img.width for _, img in rows) + 20,",
+  "replace": "sheet = Sheet(rows[0][1].width + 20,"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the street is another picture of the same size",
+  "find": "STREET = \"rescue_night\"",
+  "replace": "STREET = \"stack_noon\""
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main paints from another capture than the --cmu folder's",
+  "find": "[(row, row.pictures(capture)) for row in MISSION]",
+  "replace": "[(row, row.pictures(mocap.Capture())) for row in MISSION]"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main answers an exit code of 1 after a count",
+  "find": "    print(\"\\n\".join(pack.lines()))\n",
+  "replace": "    print(\"\\n\".join(pack.lines()))\n    return 1\n"
  }
 ]
