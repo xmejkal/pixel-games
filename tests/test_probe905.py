@@ -1,6 +1,9 @@
 """probe905_switch.py (P905): the switch prototype on the Mac, with no board. The wrapped FIRE buttons, the edge of a
-lean, the seven ways to switch, each threshold pinned on both sides 1 ms or 1 px apart. Run from the repository root:
-python3 -B -m unittest tests.test_probe905."""
+lean, the seven ways to switch, the count, the ring, the steered figure, the round on scripted frames, the menu, the
+game through the real app.App with the fake buttons of tests/test_actions.py and pictures stood in (no pack, so it
+never skips), board() on stand-in modules, the Mac part with the fake runner of tests/test_probe904.py, and
+mpy-cross on the file (skipped without mpy-cross, and a skip is not a pass). Each threshold is pinned on both sides,
+1 ms or 1 px apart. Run from the repository root: python3 -B -m unittest tests.test_probe905."""
 
 import ast
 import contextlib

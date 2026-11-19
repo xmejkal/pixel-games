@@ -3,7 +3,8 @@
 across a reset. The firmware check (P848) reads the answers tools/firmware_probe.py prints, run here on the Mac with
 stand-in modules, and the answers a board gave, kept in tests/fixtures/firmware/. deploy --engine (P850) writes or
 removes :engine_config.py. A deploy tells spark's store through spark's launcher (P921): here a stand-in run and a
-temp store, so no test starts the real launcher. Run from the repository root:
+temp store, so no test starts the real launcher. ProbeRun (P905) runs a probe's file on a fake runner. Run from
+the repository root:
 python3 -B -m unittest tests.test_box. --- MVP (P817) ---"""
 
 import contextlib

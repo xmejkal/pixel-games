@@ -48,6 +48,8 @@ box.py can read, or `not known` after 30 s. The deploy goes on whatever the line
 `bench.py show` names pixel-games for the box. <store> is SPARK_HOME, else XDG_DATA_HOME/spark, else
 ~/.local/share/spark. With no launcher there, register once (README, Build and run, step 5).
 A failed mpremote command prints its error and box.py exits with 1. Claude picks a lineup with list, then deploy NAME..., then log.
+ProbeRun runs one probe's file once on the board within a time limit, for a probe's Mac part, and keeps its lines in
+the first free log (P905).
 --- MVP (P817) ---"""
 
 import argparse

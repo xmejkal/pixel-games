@@ -2,7 +2,72 @@
 P905 (#1284): the switch prototype. The game box runs a small test game with two of Rescue's figures, the fireman and
 the child, and seven ways to switch between them. The game counts each switch, so the log shows for each way whether
 the PO met his pass line: 10 switches in a row with no wrong figure (D35). The app, the catalog and the box's lineup
-do not change.
+do not change. The probe runs one game, so PICK picks no other game and the game reads it, and the App has no knob,
+so the knob's turn steps no volume and the game reads it (games/app.py, App.frame).
+
+Deploy the game code and the rescue pack first (`python3 tools/box.py deploy --all`), then, from the repository root,
+on the Mac:
+
+    python3 probe905_switch.py [--dry-run] [--minutes N]
+
+The Mac part:
+1. reads `ls :`, then `ls :packs` when the box has that folder, and refuses a box without :packs/rescue.pak.
+2. hard-resets the box and waits with `exec pass` until the box answers.
+3. runs this file once on the box, from RAM, within N minutes (60 by default). It prints each line and writes the
+   lines to the first free log of logs/run-p905-switch.log, logs/run-p905-switch-2.log and on, so a log is never
+   overwritten, also after the limit or a failed run (tools/box.py, ProbeRun).
+4. hard-resets the box in every case, so the box plays its lineup again.
+A run that QUIT ended exits 0. A run that the time limit ended exits 0 when its lines hold a `p905 ways` line, so a
+run that hung before the menu does not pass as a play. Any other end is refused with its last line and the log's path.
+--dry-run prints each board command and runs none, and writes no log.
+
+The game. FIRE is BOOT or the stick's push-button, which this file calls the click. The menu lists the seven ways,
+each with its best streak and PASS once a round of it passed, and QUIT. The stick's up and down move the cursor, and
+FIRE starts a round of the row's way. QUIT asks for FIRE a second time. A round starts with READY for 600 ms. Then
+each task wants the figure that is not active (the one he holds), with a ring on the street and the wanted figure's
+name. He switches, walks the wanted figure to the ring with the stick's x, and presses FIRE there. The fireman sprays
+and the child waves for 400 ms. WRONG shows for 400 ms when a task turns wrong. The result card names the way, the
+end, the streak and the best streak. After 900 ms FIRE goes back to the menu, and the cursor is on the way he played.
+
+The seven ways (WAYS):
+- stick: a new lean of the stick's y. Up picks the fireman, down the child. FIRE acts.
+- click: a push of the click takes the other figure. BOOT acts.
+- double: a second push of FIRE at most 300 ms (DOUBLE_MS) after the first takes the other figure. A push with no
+  second one acts 300 ms later, where the figure then stands.
+- hold: FIRE held 400 ms (HOLD_MS) or longer takes the other figure, once for each hold. A release before it acts, and
+  so does a tap so short that the box saw no level.
+- pick: a push of PICK (D14) takes the other figure. Never hold it: a hold of about 5 s powered an older board off
+  (bench.md). FIRE acts.
+- knob: a turn. Its positive detents pick the child and the other way the fireman, by the encoder's sign. FIRE acts.
+- auto: the control. The game makes the wanted figure active at each task's start. FIRE acts.
+The stick and the knob stop at the list's ends, so a step past an end changes nothing (`same`). The four button ways
+take the other figure. 300 ms and 400 ms are Android's DOUBLE_TAP_TIMEOUT and DEFAULT_LONG_PRESS_TIMEOUT
+(core/java/android/view/ViewConfiguration.java at commit 8b948e5 of the aosp-mirror). His play decides them.
+
+The count (Tally). A switch is each change of the active figure. In a task the first switch gives the wanted figure:
+`first`. A switch away from the wanted figure is `extra`, and the switch that brings it back is `back`. An act of the
+figure that the task does not want is `other`. An act of the wanted figure away from its ring is `stray`, and at the
+ring (REACH_PX) `reached`, which ends the task. A task with an `extra` or an `other` is wrong, once. A task that ends
+with neither is clean, and the streak is the clean tasks in a row. In one frame the act comes before the switches. A
+round ends with `pass` at a streak of 10, with `fail` at the event that makes its third wrong task, with `idle` after
+20 s with no task ended, and the control way with `control` after 10 tasks, never with `pass`.
+
+The lines, from the box. Each line of the game starts with `p905`:
+- `p905 ways stick,click,double,hold,pick,knob,auto streak 10 wrong 3 double 300 hold 400`: the ways and the values
+- `p905 inputs stick yes knob yes`: whether the box has a stick and a knob
+- `p905 round <way> starts`
+- `p905 task <n> wants <figure> at <x>`: a task, its wanted figure and its ring's x
+- `p905 switch <figure> first|extra|back|same`: the active figure after a step of the way
+- `p905 act <figure> reached|other|stray`: the figure that acted
+- `p905 task <n> clean|wrong streak <s> wrong <w>`: a task that ended, the round's streak and wrong tasks after it
+- `p905 round <way> ends pass|fail|idle|control streak <s> best <b> tasks <t> wrong <w>`
+- `done`, after QUIT. A traceback and no `done` when the run failed. A box with no stick is refused with
+  `p905 refused` before any `p905 ways` line.
+The App's own lines come between them: `game switchtest`, `switch switchtest ...`, and every 5 s `fps`, `time`,
+`phases`, `avg` and `heap`. The box is silent.
+
+By hand, when the box does not come back: `mpremote reset`. Nothing is copied to the box, so the reset is the whole
+cleanup.
 """
 
 import sys
