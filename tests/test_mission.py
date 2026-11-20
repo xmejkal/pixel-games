@@ -638,7 +638,9 @@ class StoryboardMainTest(unittest.TestCase):
     def test_the_storyboard_gets_the_committed_street_and_main_saves_its_picture(self):
         self.saved("--height", "64")
         street = read_committed([mission.STREET])[mission.STREET]
-        self.assertEqual([(street.size, street.tobytes())], [(s.size, s.tobytes()) for s in self.streets])
+        self.assertEqual([street.size], [s.size for s in self.streets])
+        # the pixels by ==: assertEqual would spend minutes on a diff of 230,400 bytes when they differ
+        self.assertTrue(all(s.tobytes() == street.tobytes() for s in self.streets), "the storyboard got another street")
         self.assertEqual([(self.PICTURE.size, self.PICTURE.tobytes())], self.files)
 
     def test_a_height_paints_the_storyboard_at_it_and_names_its_file_by_it(self):
