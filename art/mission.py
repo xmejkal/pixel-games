@@ -26,8 +26,9 @@ the set mission's scene at three moments (below). It needs the CMU files of the 
 The set mission (P906): the pictures of the ladder mission for probe906_ladder.py, the walking skeleton of P900. It is
 in no ART_SETS: art/paint.py does not write it, and no pack of it is committed. painted(capture) paints its four
 motions, the first four rows of MISSION. write(folder, painted) writes its pack and an index of that pack alone, as
-art/figures.py's write does. numbers(painted) answers what the probe's board part cannot derive, as plain literals for
-the probe's copy. Its pictures, in their order: mission_night (Rescue's street, not keyed), mission_ladder, then for
+art/figures.py's write does. numbers(painted, height) answers what the probe's board part cannot derive, as plain
+literals for the probe's copy, with places(height): the places for figures of that height, scaled from the constants
+at 96 px. Its pictures, in their order: mission_night (Rescue's street, not keyed), mission_ladder, then for
 each motion mission_<figure>_<motion>_r<pose> and _l<pose>, each keyed. The hold keeps one pose, the spray's first:
 the hose ready, as Rescue's fireman stands (games/rescue.py, Rescue.fireman_picture).
 """
@@ -152,9 +153,10 @@ SET = "mission"  # the set's name: its pack's, its index's and the start of each
 MOTIONS = (("fireman", "run", MISSION[0], None), ("fireman", "hold", MISSION[1], 1), ("child", "run", MISSION[3], None),
            ("child", "climb", MISSION[2], None))
 
-# The places, in screen px: start values, set by eye on docs/screenshots/p906/storyboard.png, and the one spot to change
-# them. A figure's place is the column of its pivot, its hips on the soles' row (detailed.Pictures.pivot). Both figures
-# face left at a round's start, toward the ladder.
+# The places at TALL px, in screen px: start values, set by eye on docs/screenshots/p906/storyboard.png, and the one
+# spot to change them. places(height) scales them for figures of another height. A figure's place is the column of its
+# pivot, its hips on the soles' row (detailed.Pictures.pivot). Both figures face left at a round's start, toward the
+# ladder.
 FEET = 214  # the row the soles stand on (games/rescue.py's FEET)
 LADDER_FOOT = 111  # the ladder's foot on the soles' row
 LADDER_TOP = 96  # the ladder's top row: the station's roof at its right corner, x 80 (art/sets/rescue.py)
@@ -165,6 +167,20 @@ END_UP = 54  # px: the climb ends at its first pose this far up or more, the chi
 MARK_HOLD = (115, 222)  # the yellow mark's middle at the fireman's place: on the street under his feet
 MARK_ROOF = (80, 88)  # the yellow mark's middle at the roof's edge: over the station's right corner
 STAND = {"fireman": 8, "child": 0}  # each figure's standing picture: the pose of its run with the feet together
+Places = namedtuple("Places", "start place end mark")  # the places at one height, as numbers() names them
+
+
+def places(height=TALL):
+    """The places for figures height px tall: START, the place (the fireman's by the ladder and the child's at its
+    foot), the end and the mark (MARK_HOLD's row under the fireman's place, then MARK_ROOF). At TALL they are the
+    constants above. At another height, the px from the ladder's foot to each place and the px from the soles at the
+    end to the roof's row scale with the height, to whole px a half up: a smaller figure stands nearer the foot and
+    climbs higher, so that its head is over the roof's edge. START and MARK_ROOF stay."""
+    def scaled(px):  # px at TALL, at height: whole px, a half up
+        return (px * height + TALL // 2) // TALL
+    hold, foot = LADDER_FOOT + scaled(HOLD_PLACE - LADDER_FOOT), LADDER_FOOT + scaled(FOOT_PLACE - LADDER_FOOT)
+    return Places(START, (hold, foot), FEET - LADDER_TOP - scaled(FEET - LADDER_TOP - END_UP),
+                  ((hold, MARK_HOLD[1]), MARK_ROOF))
 
 
 def painted(capture, height=TALL):
@@ -223,12 +239,14 @@ def gait(run):
     return stride, stride * run.cycle.fps / run.capture.loop(run.cycle)[1]
 
 
-def numbers(painted):
+def numbers(painted, height=TALL):
     """What the probe's board part cannot derive, as plain ints, tuples and dicts, so repr gives its copy a literal
     (probe906_ladder.py's NUMBERS): each run's stride and speed (rounded to a whole px a second), each motion's pivot
     column facing right, each standing pose, the climb's (ms a pose, (forward, up) of each pose from a play's start,
-    (forward, up) a play), the ladder's top left, and the places: start, place (the fireman's by the ladder and the
-    child's at its foot), end (END_UP) and mark (MARK_HOLD and MARK_ROOF)."""
+    (forward, up) a play), the ladder's top left, and places(height): start, place (the fireman's by the ladder and the
+    child's at its foot), end and mark. height: the px that painted was painted at. It is given, not read from the
+    pictures, and the answer holds no "height" key."""
+    at = places(height)
     gaits = {figure: gait(painted[figure, "run"]) for figure in ("fireman", "child")}
     climb = painted["child", "climb"]
     return {"stride": {figure: stride for figure, (stride, _) in gaits.items()},
@@ -237,7 +255,7 @@ def numbers(painted):
             "stand": dict(STAND),
             "climb": (round(climb.pose_ms), tuple(climb.travel), climb.advance),
             "ladder": ladder(climb.advance)[1],
-            "start": START, "place": (HOLD_PLACE, FOOT_PLACE), "end": END_UP, "mark": (MARK_HOLD, MARK_ROOF)}
+            "start": at.start, "place": at.place, "end": at.end, "mark": at.mark}
 
 
 class Storyboard:

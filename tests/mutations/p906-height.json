@@ -1,0 +1,38 @@
+[
+ {
+  "file": "art/mission.py",
+  "name": "a half px rounds down",
+  "find": "return (px * height + TALL // 2) // TALL",
+  "replace": "return px * height // TALL"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the end does not follow the height",
+  "find": "return Places(START, (hold, foot), FEET - LADDER_TOP - scaled(FEET - LADDER_TOP - END_UP),",
+  "replace": "return Places(START, (hold, foot), END_UP,"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the hold place does not follow the height",
+  "find": "hold, foot = LADDER_FOOT + scaled(HOLD_PLACE - LADDER_FOOT),",
+  "replace": "hold, foot = HOLD_PLACE,"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the foot place does not follow the height",
+  "find": "LADDER_FOOT + scaled(FOOT_PLACE - LADDER_FOOT)",
+  "replace": "FOOT_PLACE"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the mark at the hold stays at 96 px's",
+  "find": "((hold, MARK_HOLD[1]), MARK_ROOF))",
+  "replace": "(MARK_HOLD, MARK_ROOF))"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "numbers' places are 96 px's",
+  "find": "    at = places(height)",
+  "replace": "    at = places()"
+ }
+]

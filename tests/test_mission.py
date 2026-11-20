@@ -372,6 +372,18 @@ class SetTest(unittest.TestCase):
                           mission.FOOT_PLACE, mission.END_UP, mission.MARK_HOLD, mission.MARK_ROOF))
         self.assertEqual({"fireman": 8, "child": 0}, mission.STAND)
 
+    def test_the_places_at_96_px_are_the_constants(self):
+        constants = (mission.START, (mission.HOLD_PLACE, mission.FOOT_PLACE), mission.END_UP,
+                     (mission.MARK_HOLD, mission.MARK_ROOF))
+        self.assertEqual([constants, constants], [mission.places(), mission.places(96)])
+
+    def test_the_places_at_80_64_and_48_px_scale_the_px_from_the_ladders_foot_and_to_the_roof_a_half_up(self):
+        self.assertEqual([((220, 282), (114, 116), 65, ((114, 222), (80, 88))),
+                          ((220, 282), (114, 115), 75, ((114, 222), (80, 88))),
+                          ((220, 282), (113, 114), 86, ((113, 222), (80, 88)))],
+                         [mission.places(height) for height in (80, 64, 48)])
+        self.assertEqual(((114, 115), 75), (mission.places(64).place, mission.places(64).end))
+
 
 class LadderPictureTest(unittest.TestCase):
     """ladder(advance): art/moves.py's Ladder from the foot on the soles' row up to the roof's row, at the climb's
@@ -454,6 +466,12 @@ class SetPaintTest(unittest.TestCase):
         self.assertEqual(mission.ladder(climb.advance)[1], got["ladder"])
         self.assertEqual(({"fireman": 8, "child": 0}, (220, 282), (115, 117), 54, ((115, 222), (80, 88))),
                          (got["stand"], got["start"], got["place"], got["end"], got["mark"]))
+
+    def test_the_numbers_at_another_height_hold_its_places_and_no_height(self):
+        got = mission.numbers(set_painted(), 64)
+        self.assertEqual(((220, 282), (114, 115), 75, ((114, 222), (80, 88))),
+                         (got["start"], got["place"], got["end"], got["mark"]))
+        self.assertNotIn("height", got)
 
     def test_the_numbers_are_plain_literals_for_the_probes_copy(self):
         got = mission.numbers(set_painted())
