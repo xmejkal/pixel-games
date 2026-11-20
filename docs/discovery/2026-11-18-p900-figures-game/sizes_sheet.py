@@ -1,12 +1,12 @@
 """The ladder scene of P906 at four figure heights, for the PO's eye (P900, Q20: which height do the figures get?).
 
-Run it with a checkout of pixel-games master (92569c5 or later) as the working folder, and the CMU files in
-mocap.CMU_DIR:
+Run it with a checkout of pixel-games that holds the places for each height (the branch p906-height, 839cc45 or
+later) as the working folder, and the CMU files in mocap.CMU_DIR:
     python3 -B <this file> OUT.png
 It changes no file of the repository. This branch's own art/ is older than P906 and cannot paint the scene. Each row is one height: the round's start at the left, and the child at the
 climb's end at the right, each as art/mission.py's Storyboard.frame draws it, 320 by 240 px, with the bar's words in
-PIL's font and not the box's. The places are the ones set by eye for 96 px (art/mission.py), not moved for a smaller
-figure.
+PIL's font and not the box's. The places follow from the height (art/mission.py's places): at 96 px they are the
+ones set by eye, and the climb ends higher for a smaller child, so that its head is over the roof.
 """
 import argparse
 import sys
@@ -34,7 +34,7 @@ def main():
     draw = ImageDraw.Draw(sheet)
     for row, height in enumerate(HEIGHTS):
         painted = mission.painted(capture, height)
-        board = mission.Storyboard(painted, street)
+        board = mission.Storyboard(painted, street, height)
         top = row * (H + LABEL_H)
         boxes = {figure: painted[figure, "run"].size for figure in ("fireman", "child")}
         tall = {}
