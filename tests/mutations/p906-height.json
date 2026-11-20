@@ -58,5 +58,29 @@
   "name": "the storyboard at 96 px gets a height in its name",
   "find": "return \"storyboard.png\" if height == TALL else \"storyboard-%d.png\" % height",
   "replace": "return \"storyboard-%d.png\" % height"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part paints at 96 px",
+  "find": "painted = art.painted(capture, args.height)",
+  "replace": "painted = art.painted(capture)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part's places are 96 px's",
+  "find": "art.numbers(painted, args.height)",
+  "replace": "art.numbers(painted)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part sends 96 as the height",
+  "find": "pace=args.pace, height=args.height)",
+  "replace": "pace=args.pace, height=TALL)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "--height takes any whole number",
+  "find": "parser.add_argument(\"--height\", type=int, choices=HEIGHTS, default=TALL,",
+  "replace": "parser.add_argument(\"--height\", type=int, default=TALL,"
  }
 ]

@@ -658,19 +658,21 @@ STAND_IN_NUMBERS = {"stride": {"fireman": 141, "child": 79}, "speed": {"fireman"
 
 class StandInArt:
     """art/mission.py stood in: the capture, the paint, write (small files where mission.write puts the pack and the
-    index) and numbers (STAND_IN_NUMBERS). It keeps what it was asked."""
+    index) and numbers (STAND_IN_NUMBERS). It keeps what it was asked, and apart from that the height that the paint
+    and numbers were given (None: none)."""
 
     SET = "mission"
 
     def __init__(self):
-        self.asked = []
+        self.asked, self.heights = [], []
 
     def capture(self, parser):
         self.asked.append("capture")
         return "the capture"
 
-    def painted(self, capture):
+    def painted(self, capture, height=None):
         self.asked.append(capture)
+        self.heights.append(("painted", height))
         return "the painted set"
 
     def write(self, folder, painted):
@@ -682,8 +684,9 @@ class StandInArt:
                 f.write("stand-in\n")
         return pack, index
 
-    def numbers(self, painted):
+    def numbers(self, painted, height=None):
         self.asked.append(painted)
+        self.heights.append(("numbers", height))
         return STAND_IN_NUMBERS
 
 
@@ -768,6 +771,35 @@ class MacTest(unittest.TestCase):
                 board = StreamBoard(said=DONE)
                 said, err, refused = self.mac(argv, board)
                 self.assertEqual((2, []), (refused.code, board.commands))
+
+    def copied(self, board):
+        """The NUMBERS of the copy that the board was told to run."""
+        module = {"__name__": "copy"}
+        exec(compile(board.copy, "copy", "exec"), module)
+        return module["NUMBERS"]
+
+    def test_the_height_reaches_the_paint_the_places_and_the_copys_numbers(self):
+        board = StreamBoard(said=DONE)
+        said, err, refused = self.mac(["--height", "64"], board)
+        self.assertIsNone(refused)
+        self.assertEqual([("painted", 64), ("numbers", 64)], self.art.heights)
+        self.assertEqual(dict(STAND_IN_NUMBERS, way="up", pace=50, height=64), self.copied(board))
+
+    def test_a_bare_run_gives_96_px_to_the_paint_the_places_and_the_copy(self):
+        board = StreamBoard(said=DONE)
+        said, err, refused = self.mac([], board)
+        self.assertIsNone(refused)
+        self.assertEqual(([("painted", 96), ("numbers", 96)], 96), (self.art.heights, self.copied(board)["height"]))
+
+    def test_a_height_that_is_not_one_of_the_four_runs_nothing(self):
+        for value in ("72", "x"):
+            with self.subTest(height=value):
+                board = StreamBoard(said=DONE)
+                said, err, refused = self.mac(["--height", value], board)
+                self.assertEqual((2, []), (refused.code, board.commands))
+
+    def test_the_heights_are_48_64_80_and_96_px(self):
+        self.assertEqual((48, 64, 80, 96), probe.HEIGHTS)
 
     def test_filled_refuses_a_source_without_exactly_one_numbers_line(self):
         with open(os.path.join(REPO, "probe906_ladder.py")) as f:
@@ -1539,7 +1571,7 @@ class Art:
     def capture(self, parser):
         return None
 
-    def painted(self, capture):
+    def painted(self, capture, height=None):
         return None
 
     def write(self, folder, painted):
@@ -1549,7 +1581,7 @@ class Art:
             open(path, "w").close()
         return pack, index
 
-    def numbers(self, painted):
+    def numbers(self, painted, height=None):
         return {}
 
 

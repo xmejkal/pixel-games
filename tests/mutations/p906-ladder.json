@@ -668,7 +668,7 @@
  {
   "file": "probe906_ladder.py",
   "name": "the Mac part sends no height",
-  "find": "pace=args.pace, height=TALL)",
+  "find": "pace=args.pace, height=args.height)",
   "replace": "pace=args.pace)"
  },
  {

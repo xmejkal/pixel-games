@@ -137,7 +137,7 @@ TITLE_MS = 15000  # the intro shows this long, or until FIRE
 HOLD_PX = 24  # FIRE within this many px of his place makes the fireman hold the ladder
 PACE = 50  # percent of the captured speed: sitting 1's, a bare run's (--pace)
 WAY = "up"  # the way to climb of a bare run, a key of WAYS: sitting 1's (--way)
-TALL = 96  # px: the figures' height of a bare run, art's detailed.TALL
+TALL = 96  # px: the figures' height of a bare run, art's detailed.TALL (--height)
 CLIMB_PACE = 2  # a multiple of the captured climb's pace, which --pace does not change: 3.3 s to the roof at 96 px
 STREAK = 5  # clean rounds in a row: the pick line (`streak 5 met`)
 SLOW_MS = 52  # a gap between two frames of a round over this many ms is slow (the end line's slow)
@@ -847,6 +847,7 @@ def board():
 
 LOG = "logs/run-p906-ladder.log"  # from the repository root: the first log's path (box.ProbeRun.free_log)
 MINUTES = 60  # the run's time limit. PICK twice ends it sooner
+HEIGHTS = (48, 64, 80, 96)  # px: the figures' heights that --height takes, the storyboards' (art/mission.py)
 WAIT = ["exec", "pass"]  # a cheap command: the box answers it once it is back from the hard reset
 
 
@@ -927,18 +928,21 @@ def mac(argv, runner=None, sleep=None, art=None):
     parser.add_argument("--pace", type=whole_arg, default=PACE, metavar="P",
                         help="the run's speed in percent of the captured speed (%(default)s): 50 is sitting 1's, 100 "
                              "the captured speed. The climb does not follow it")
+    parser.add_argument("--height", type=int, choices=HEIGHTS, default=TALL,
+                        help="the figures' height in px (%(default)s). The places follow from it")
     args = parser.parse_args(argv)
     capture = art.capture(parser)  # before any board command: the box plays on while the set is painted
     runner, sleep = runner or box.Mpremote(args.dry_run), sleep or time.sleep
     lent, run = box.LentPack(runner, art.SET, sleep), box.ProbeRun(runner, os.path.join(here, LOG))
     with tempfile.TemporaryDirectory() as tmp:
-        painted = art.painted(capture)
+        painted = art.painted(capture, args.height)
         pack, index = art.write(tmp, painted)
         copy = os.path.join(tmp, os.path.basename(__file__))
         with open(os.path.abspath(__file__)) as f:
             source = f.read()
         with open(copy, "w") as f:
-            f.write(filled(source, dict(art.numbers(painted), way=args.way, pace=args.pace, height=TALL)))
+            f.write(filled(source, dict(art.numbers(painted, args.height),
+                                        way=args.way, pace=args.pace, height=args.height)))
         try:
             try:
                 lent.check()
