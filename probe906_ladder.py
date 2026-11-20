@@ -154,9 +154,15 @@ NUMBERS = None  # the Mac part fills a copy: art/mission.py's places, gaits and 
 
 # --- what the screen shows, in px ---
 BAR = ("1 FIREMAN: stick DOWN to ladder, FIRE", "2 CHILD: stick UP to ladder, UP climbs", "PICK twice: quit")
-BARS = {"up": BAR,
-        "fire": ("1 FIREMAN: UP to ladder, FIRE", "2 CHILD: DOWN to ladder, FIRE climbs", BAR[2]),
-        "left": ("1 FIREMAN: UP to ladder, FIRE", "2 CHILD: DOWN to ladder, LEFT climbs", BAR[2])}
+
+
+def bar_for(climb):
+    """The bar of a way where the stick's up picks the fireman and its down the child, and climb ("FIRE" or "LEFT")
+    makes the child climb."""
+    return ("1 FIREMAN: UP to ladder, FIRE", "2 CHILD: DOWN to ladder, %s climbs" % climb, "PICK twice: quit")
+
+
+BARS = {"up": BAR, "fire": bar_for("FIRE"), "left": bar_for("LEFT")}  # each way's bar, by the way's name
 BAR_RECT = (0, 0, WIDTH, 24)  # the bar: three rows of 8 px, kept with a constant key, so it is drawn once
 BAR_KEY = ("p906 bar",)
 BAR_X = 10  # each row's words start here and end by x 314, the base bar's edge (gfx.Game.draw_hud)
@@ -181,11 +187,17 @@ WARM = "".join(row for rows in BARS.values() for row in rows) + "READY" + QUIT_W
 INTRO = ("THE LADDER MISSION", "", "1 FIREMAN: stick DOWN picks him,", "  run to the ladder, FIRE: hold it",
          "2 CHILD: stick UP picks it,", "  run to the ladder, UP: climb", "stick LEFT/RIGHT: run", "",
          "FIRE = BOOT or the stick's click", "PICK twice: quit", "", "FIRE: start")
-INTROS = {"up": INTRO,
-          "fire": INTRO[:2] + ("1 FIREMAN: stick UP picks him,", INTRO[3], "2 CHILD: stick DOWN picks it,",
-                               "  run to the ladder, FIRE: climb") + INTRO[6:],
-          "left": INTRO[:2] + ("1 FIREMAN: stick UP picks him,", INTRO[3], "2 CHILD: stick DOWN picks it,",
-                               "  run to the ladder, LEFT: climb") + INTRO[6:]}
+
+
+def intro_for(climb):
+    """The intro of a way where the stick's up picks the fireman and its down the child, and climb ("FIRE" or "LEFT")
+    makes the child climb: INTRO's title and blank line, its four task lines told this way, then INTRO's other lines."""
+    tasks = ("1 FIREMAN: stick UP picks him,", "  run to the ladder, FIRE: hold it", "2 CHILD: stick DOWN picks it,",
+             "  run to the ladder, %s: climb" % climb)
+    return INTRO[:2] + tasks + INTRO[2 + len(tasks):]
+
+
+INTROS = {"up": INTRO, "fire": intro_for("FIRE"), "left": intro_for("LEFT")}  # each way's intro, by the way's name
 INTRO_RECT = (16, 40, 288, 152)  # the intro's dark panel, kept. a line every 12 px from 10 px under its top
 INTRO_KEY = ("p906 intro",)
 
