@@ -829,8 +829,8 @@ def filled(source, numbers):
     return source.replace(old, "\nNUMBERS = %r" % (numbers,))
 
 
-def minutes_arg(text):
-    """--minutes' value: a whole number of 1 or more."""
+def whole_arg(text):
+    """--minutes' and --pace's value: a whole number of 1 or more."""
     import argparse
 
     if not text.isdigit() or int(text) < 1:
@@ -888,8 +888,15 @@ def mac(argv, runner=None, sleep=None, art=None):
         import mission as art
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="print each board command, run none")
-    parser.add_argument("--minutes", type=minutes_arg, default=MINUTES, metavar="N",
+    parser.add_argument("--minutes", type=whole_arg, default=MINUTES, metavar="N",
                         help="the run's time limit in minutes (%(default)s)")
+    parser.add_argument("--way", choices=tuple(WAYS), default=WAY,
+                        help="the way to climb (%(default)s). up: up picks the child and climbs (sitting 1). fire: "
+                             "FIRE climbs while it is pressed. left: the stick's left climbs. In fire and left, up "
+                             "picks the fireman and down picks the child")
+    parser.add_argument("--pace", type=whole_arg, default=PACE, metavar="P",
+                        help="the run's speed in percent of the captured speed (%(default)s): 50 is sitting 1's, 100 "
+                             "the captured speed. The climb does not follow it")
     args = parser.parse_args(argv)
     capture = art.capture(parser)  # before any board command: the box plays on while the set is painted
     runner, sleep = runner or box.Mpremote(args.dry_run), sleep or time.sleep
@@ -901,7 +908,7 @@ def mac(argv, runner=None, sleep=None, art=None):
         with open(os.path.abspath(__file__)) as f:
             source = f.read()
         with open(copy, "w") as f:
-            f.write(filled(source, art.numbers(painted)))
+            f.write(filled(source, dict(art.numbers(painted), way=args.way, pace=args.pace, height=TALL)))
         try:
             try:
                 lent.check()

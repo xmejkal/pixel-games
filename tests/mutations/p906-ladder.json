@@ -652,5 +652,35 @@
   "name": "the options line names a bare run's values",
   "find": "% options(NUMBERS))",
   "replace": "% options({}))"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part sends no way",
+  "find": "way=args.way, pace=args.pace",
+  "replace": "pace=args.pace"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part sends no pace",
+  "find": "pace=args.pace, height=",
+  "replace": "height="
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part sends no height",
+  "find": "pace=args.pace, height=TALL)",
+  "replace": "pace=args.pace)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "--way's default is FIRE",
+  "find": "choices=tuple(WAYS), default=WAY,",
+  "replace": "choices=tuple(WAYS), default=\"fire\","
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "--pace takes 0",
+  "find": "int(text) < 1",
+  "replace": "int(text) < 0"
  }
 ]

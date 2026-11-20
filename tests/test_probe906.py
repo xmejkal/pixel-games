@@ -752,7 +752,22 @@ class MacTest(unittest.TestCase):
         self.assertTrue(differ[0][0].startswith("NUMBERS = None  #"), differ)
         module = {"__name__": "copy"}
         exec(compile(board.copy, "copy", "exec"), module)
-        self.assertEqual(STAND_IN_NUMBERS, module["NUMBERS"])
+        self.assertEqual(dict(STAND_IN_NUMBERS, way="up", pace=50, height=96), module["NUMBERS"])
+
+    def test_the_way_and_the_pace_reach_the_copys_numbers(self):
+        board = StreamBoard(said=DONE)
+        said, err, refused = self.mac(["--way", "fire", "--pace", "100"], board)
+        self.assertIsNone(refused)
+        module = {"__name__": "copy"}
+        exec(compile(board.copy, "copy", "exec"), module)
+        self.assertEqual(dict(STAND_IN_NUMBERS, way="fire", pace=100, height=96), module["NUMBERS"])
+
+    def test_a_bad_way_or_pace_runs_nothing(self):
+        for argv in (["--way", "down"], ["--pace", "0"], ["--pace", "x"]):
+            with self.subTest(argv=argv):
+                board = StreamBoard(said=DONE)
+                said, err, refused = self.mac(argv, board)
+                self.assertEqual((2, []), (refused.code, board.commands))
 
     def test_filled_refuses_a_source_without_exactly_one_numbers_line(self):
         with open(os.path.join(REPO, "probe906_ladder.py")) as f:
