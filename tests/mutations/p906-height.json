@@ -8,14 +8,14 @@
  {
   "file": "art/mission.py",
   "name": "the end does not follow the height",
-  "find": "return Places(START, (hold, foot), FEET - LADDER_TOP - scaled(FEET - LADDER_TOP - END_UP),",
-  "replace": "return Places(START, (hold, foot), END_UP,"
+  "find": "end = roof - scaled(roof - END_UP)",
+  "replace": "end = END_UP"
  },
  {
   "file": "art/mission.py",
   "name": "the hold place does not follow the height",
-  "find": "hold, foot = LADDER_FOOT + scaled(HOLD_PLACE - LADDER_FOOT),",
-  "replace": "hold, foot = HOLD_PLACE,"
+  "find": "hold_place = LADDER_FOOT + scaled(HOLD_PLACE - LADDER_FOOT)",
+  "replace": "hold_place = HOLD_PLACE"
  },
  {
   "file": "art/mission.py",
@@ -26,31 +26,31 @@
  {
   "file": "art/mission.py",
   "name": "the mark at the hold stays at 96 px's",
-  "find": "((hold, MARK_HOLD[1]), MARK_ROOF))",
+  "find": "((hold_place, MARK_HOLD[1]), MARK_ROOF))",
   "replace": "(MARK_HOLD, MARK_ROOF))"
  },
  {
   "file": "art/mission.py",
   "name": "numbers' places are 96 px's",
-  "find": "    at = places(height)",
-  "replace": "    at = places()"
+  "find": "    where = places(height)",
+  "replace": "    where = places()"
  },
  {
   "file": "art/mission.py",
   "name": "the storyboard's places are 96 px's",
-  "find": "        self.at = places(height)",
-  "replace": "        self.at = places()"
+  "find": "        self.places = places(height)",
+  "replace": "        self.places = places()"
  },
  {
   "file": "art/mission.py",
   "name": "the storyboard's end is 96 px's",
-  "find": "if plays * au + u >= self.at.end:",
+  "find": "if plays * au + u >= self.places.end:",
   "replace": "if plays * au + u >= END_UP:"
  },
  {
   "file": "art/mission.py",
   "name": "the storyboard's third label names 96 px's end",
-  "find": "self.LABELS[2] % self.at.end,)",
+  "find": "self.LABELS[2] % self.places.end,)",
   "replace": "self.LABELS[2] % END_UP,)"
  },
  {
@@ -82,5 +82,71 @@
   "name": "--height takes any whole number",
   "find": "parser.add_argument(\"--height\", type=int, choices=HEIGHTS, default=TALL,",
   "replace": "parser.add_argument(\"--height\", type=int, default=TALL,"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the picture's labels are the template's",
+  "find": "for k, label in enumerate(self.labels)])",
+  "replace": "for k, label in enumerate(self.LABELS)])"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the picture's first label is drawn twice",
+  "find": "self.labels = self.LABELS[:2] + (",
+  "replace": "self.labels = self.LABELS[:1] * 2 + ("
+ },
+ {
+  "file": "art/mission.py",
+  "name": "storyboard_name always answers storyboard.png",
+  "find": "return \"storyboard.png\" if height == TALL else \"storyboard-%d.png\" % height",
+  "replace": "return \"storyboard.png\""
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the art's --height takes any whole number",
+  "find": "type=int, choices=HEIGHTS, default=TALL, metavar=\"H\",",
+  "replace": "type=int, default=TALL, metavar=\"H\","
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the art's heights lack 48",
+  "find": "HEIGHTS = (48, 64, 80, 96)",
+  "replace": "HEIGHTS = (64, 80, 96)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard's default height is 64",
+  "find": "choices=HEIGHTS, default=TALL, metavar=\"H\",",
+  "replace": "choices=HEIGHTS, default=64, metavar=\"H\","
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main always saves storyboard.png",
+  "find": "os.path.join(args.storyboard, storyboard_name(args.height))",
+  "replace": "os.path.join(args.storyboard, storyboard_name())"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main paints the storyboard at 96 px",
+  "find": "Storyboard(painted(capture, args.height),",
+  "replace": "Storyboard(painted(capture),"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main hands no height to the storyboard",
+  "find": "read_committed([STREET])[STREET], args.height)",
+  "replace": "read_committed([STREET])[STREET])"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the probe refuses 48",
+  "find": "parser.add_argument(\"--height\", type=int, choices=HEIGHTS, default=TALL,",
+  "replace": "parser.add_argument(\"--height\", type=int, choices=HEIGHTS[1:], default=TALL,"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the copy's height is 96 at 80 px",
+  "find": "pace=args.pace, height=args.height)",
+  "replace": "pace=args.pace, height=96 if args.height == 80 else args.height)"
  }
 ]

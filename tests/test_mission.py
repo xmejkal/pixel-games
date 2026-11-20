@@ -577,6 +577,13 @@ class StoryboardTest(unittest.TestCase):
         self.assertEqual(["the child at its first pose %d px up or more: the round's end" % up
                           for up in (86, 54)], [board.labels[2], self.board.labels[2]])
 
+    def test_the_image_hands_on_the_three_labels_with_the_end_of_48_px(self):
+        board = mission.Storyboard(self.painted, Image.new("RGB", (320, 240), (9, 7, 5)), 48)
+        with mock.patch.object(mission, "stacked", lambda rows: [label for label, _ in rows]):
+            self.assertEqual(["a round's start: the child is active, task 1 wants the fireman",
+                              "the fireman holds the ladder: task 2 wants the child",
+                              "the child at its first pose 86 px up or more: the round's end"], board.image())
+
     def test_the_storyboards_name_has_its_height_unless_it_is_96_px(self):
         self.assertEqual(["storyboard.png", "storyboard.png", "storyboard-64.png"],
                          [mission.storyboard_name(), mission.storyboard_name(96), mission.storyboard_name(64)])
@@ -587,6 +594,57 @@ class StoryboardTest(unittest.TestCase):
         frame = self.board.frame(0)
         self.assertEqual((320, 240), frame.size)
         self.assertEqual(moves.Ladder.COLOUR, frame.getpixel((111, 214)))  # the ladder's foot, under no figure
+
+
+class StoryboardMainTest(unittest.TestCase):
+    """main's --storyboard on stand-ins, so no CMU file is read and no scene is drawn: the capture is a word, each row's
+    pictures are StandPictures that note the height they were painted at (None: none), and the storyboard notes its
+    height and saves a small picture."""
+
+    def setUp(self):
+        self.painted_at, self.drawn_at = [], []
+        test = self
+
+        class Board:
+            def __init__(self, painted, street, height=None):
+                test.drawn_at.append(height)
+
+            def image(self):
+                return Image.new("RGB", (2, 2))
+
+        def pictures(row, capture, height=None):
+            self.painted_at.append(height)
+            return StandPictures(row, (3, 4), 2)
+
+        for patch in (mock.patch.object(mission.mocap, "open_capture", lambda parser, folder, cycles: "a capture"),
+                      mock.patch.object(mission.Row, "pictures", pictures),
+                      mock.patch.object(mission, "Storyboard", Board)):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def saved(self, *argv):
+        """The files that main with --storyboard and argv saves in a new folder."""
+        with tempfile.TemporaryDirectory() as folder, contextlib.redirect_stdout(io.StringIO()):
+            self.assertIsNone(mission.main(["--storyboard", folder] + list(argv)))
+            return os.listdir(folder)
+
+    def test_a_height_paints_the_storyboard_at_it_and_names_its_file_by_it(self):
+        self.assertEqual(["storyboard-64.png"], self.saved("--height", "64"))
+        self.assertEqual(([None] * 6 + [64] * 4, [64]), (self.painted_at, self.drawn_at))  # the count's rows first
+
+    def test_a_bare_storyboard_is_96_px_and_storyboard_png(self):
+        self.assertEqual(["storyboard.png"], self.saved())
+        self.assertEqual(([None] * 6 + [96] * 4, [96]), (self.painted_at, self.drawn_at))
+
+    def test_a_height_that_is_not_one_of_the_four_exits_2_and_paints_nothing(self):
+        for value in ("200", "72", "x"):
+            with self.subTest(height=value), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as stop:
+                    self.saved("--height", value)
+                self.assertEqual((2, [], []), (stop.exception.code, self.painted_at, self.drawn_at))
+
+    def test_the_heights_are_48_64_80_and_96_px(self):
+        self.assertEqual((48, 64, 80, 96), mission.HEIGHTS)
 
 
 if __name__ == "__main__":

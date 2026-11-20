@@ -27,12 +27,12 @@ paints nothing and exits 2.
 
 The set mission (P906): the pictures of the ladder mission for probe906_ladder.py, the walking skeleton of P900. It is
 in no ART_SETS: art/paint.py does not write it, and no pack of it is committed. painted(capture, height) paints its
-four motions, the first four rows of MISSION, at height px. write(folder, painted) writes its pack and an index of that pack alone, as
-art/figures.py's write does. numbers(painted, height) answers what the probe's board part cannot derive, as plain
-literals for the probe's copy, with places(height): the places for figures of that height, scaled from the constants
-at 96 px. Its pictures, in their order: mission_night (Rescue's street, not keyed), mission_ladder, then for
-each motion mission_<figure>_<motion>_r<pose> and _l<pose>, each keyed. The hold keeps one pose, the spray's first:
-the hose ready, as Rescue's fireman stands (games/rescue.py, Rescue.fireman_picture).
+four motions, the first four rows of MISSION, at height px, one of HEIGHTS. write(folder, painted) writes its pack and
+an index of that pack alone, as art/figures.py's write does. numbers(painted, height) answers what the probe's board
+part cannot derive, as plain literals for the probe's copy, with places(height): the places for figures of that
+height, scaled from the constants at 96 px. Its pictures, in their order: mission_night (Rescue's street, not keyed),
+mission_ladder, then for each motion mission_<figure>_<motion>_r<pose> and _l<pose>, each keyed. The hold keeps one
+pose, the spray's first: the hose ready, as Rescue's fireman stands (games/rescue.py, Rescue.fireman_picture).
 """
 
 import argparse
@@ -169,6 +169,7 @@ END_UP = 54  # px: the climb ends at its first pose this far up or more, the chi
 MARK_HOLD = (115, 222)  # the yellow mark's middle at the fireman's place: on the street under his feet
 MARK_ROOF = (80, 88)  # the yellow mark's middle at the roof's edge: over the station's right corner
 STAND = {"fireman": 8, "child": 0}  # each figure's standing picture: the pose of its run with the feet together
+HEIGHTS = (48, 64, 80, 96)  # px: the figures' heights that places() and the storyboards serve, TALL the last
 Places = namedtuple("Places", "start place end mark")  # the places at one height, as numbers() names them
 
 
@@ -180,9 +181,11 @@ def places(height=TALL):
     climbs higher, so that its head is over the roof's edge. START and MARK_ROOF stay."""
     def scaled(px):  # px at TALL, at height: whole px, a half up
         return (px * height + TALL // 2) // TALL
-    hold, foot = LADDER_FOOT + scaled(HOLD_PLACE - LADDER_FOOT), LADDER_FOOT + scaled(FOOT_PLACE - LADDER_FOOT)
-    return Places(START, (hold, foot), FEET - LADDER_TOP - scaled(FEET - LADDER_TOP - END_UP),
-                  ((hold, MARK_HOLD[1]), MARK_ROOF))
+    roof = FEET - LADDER_TOP  # px from the soles' row up to the roof's row
+    hold_place = LADDER_FOOT + scaled(HOLD_PLACE - LADDER_FOOT)
+    foot_place = LADDER_FOOT + scaled(FOOT_PLACE - LADDER_FOOT)
+    end = roof - scaled(roof - END_UP)
+    return Places(START, (hold_place, foot_place), end, ((hold_place, MARK_HOLD[1]), MARK_ROOF))
 
 
 def painted(capture, height=TALL):
@@ -248,7 +251,7 @@ def numbers(painted, height=TALL):
     (forward, up) a play), the ladder's top left, and places(height): start, place (the fireman's by the ladder and the
     child's at its foot), end and mark. height: the px that painted was painted at. It is given, not read from the
     pictures, and the answer holds no "height" key."""
-    at = places(height)
+    where = places(height)
     gaits = {figure: gait(painted[figure, "run"]) for figure in ("fireman", "child")}
     climb = painted["child", "climb"]
     return {"stride": {figure: stride for figure, (stride, _) in gaits.items()},
@@ -257,13 +260,13 @@ def numbers(painted, height=TALL):
             "stand": dict(STAND),
             "climb": (round(climb.pose_ms), tuple(climb.travel), climb.advance),
             "ladder": ladder(climb.advance)[1],
-            "start": at.start, "place": at.place, "end": at.end, "mark": at.mark}
+            "start": where.start, "place": where.place, "end": where.end, "mark": where.mark}
 
 
 class Storyboard:
     """The storyboard (P906, saved as storyboard_name(height)): the set's scene at three moments, put together from its
     pictures at places(height), for the eye that sets them: a round's start, the fireman holding the ladder at his
-    place, and the child at the climb's first pose the end's px up or more. Each frame has the bar's three rows with
+    place, and the child at the climb's first pose at least end px up. Each frame has the bar's three rows with
     the task block, the white arrow over the active figure and the yellow mark, as probe906_ladder.py draws them. The
     bar's words are in PIL's default font, not the box's 8x8 one. painted: painted()'s pictures. street: the street's
     picture. height: the px that painted was painted at, given and not read from the pictures, as for numbers()."""
@@ -281,8 +284,8 @@ class Storyboard:
 
     def __init__(self, painted, street, height=TALL):
         self.painted, self.street = painted, street
-        self.at = places(height)
-        self.labels = self.LABELS[:2] + (self.LABELS[2] % self.at.end,)
+        self.places = places(height)
+        self.labels = self.LABELS[:2] + (self.LABELS[2] % self.places.end,)
 
     def placed(self, figure, motion, pose, x, up=0):
         """A picture of the figure facing left, its pivot on column x and its soles up px over FEET: (img, left,
@@ -292,19 +295,20 @@ class Storyboard:
         return p.left[pose], x - (w - 1 - p.pivot[0]), FEET - up - h + 1
 
     def end(self):
-        """The climb's first pose the end's px up or more: its pose and its (forward, up) from the foot."""
+        """The climb's first pose at least end px up (the places' end): its pose and its (forward, up) from the
+        foot."""
         climb = self.painted["child", "climb"]
         (af, au), plays = climb.advance, 0
         while True:
             for pose, (f, u) in enumerate(climb.travel):
-                if plays * au + u >= self.at.end:
+                if plays * au + u >= self.places.end:
                     return pose, (plays * af + f, plays * au + u)
             plays += 1
 
     def moments(self):
         """Each frame's figures (the fireman's, then the child's (img, left, top)), the column of each one's place, its
         active figure (0 the fireman, 1 the child), its task, and its mark: ("over", figure) or ("at", (x, y))."""
-        start, (hold_place, foot_place), roof = self.at.start, self.at.place, self.at.mark[1]
+        start, (hold_place, foot_place), roof = self.places.start, self.places.place, self.places.mark[1]
         fireman, child = (self.placed(figure, "run", STAND[figure], x)
                           for figure, x in zip(("fireman", "child"), start))
         hold = self.placed("fireman", "hold", 0, hold_place)
@@ -372,9 +376,10 @@ def main(argv=None):
     parser.add_argument("--storyboard", metavar="DIR", help="the folder the storyboard is written to, as %s at %d px "
                                                             "and as storyboard-H.png at another --height H (none: "
                                                             "none)" % (storyboard_name(), TALL))
-    parser.add_argument("--height", type=int, default=TALL, metavar="H",
-                        help="the figures' height in px in the storyboard, which places() follow (%%(default)s). It "
-                             "changes the storyboard and not the count, which stays at %d px" % TALL)
+    parser.add_argument("--height", type=int, choices=HEIGHTS, default=TALL, metavar="H",
+                        help="the figures' height in px in the storyboard, one of %s (%%(default)s). The places "
+                             "follow from it. It works only with --storyboard: the count stays at %d px"
+                        % (", ".join(map(str, HEIGHTS)), TALL))
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args(argv)
     capture = mocap.open_capture(parser, args.cmu, [mocap.named(row.cycle) for row in MISSION])
