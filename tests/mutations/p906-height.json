@@ -34,5 +34,29 @@
   "name": "numbers' places are 96 px's",
   "find": "    at = places(height)",
   "replace": "    at = places()"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard's places are 96 px's",
+  "find": "        self.at = places(height)",
+  "replace": "        self.at = places()"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard's end is 96 px's",
+  "find": "if plays * au + u >= self.at.end:",
+  "replace": "if plays * au + u >= END_UP:"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard's third label names 96 px's end",
+  "find": "self.LABELS[2] % self.at.end,)",
+  "replace": "self.LABELS[2] % END_UP,)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard at 96 px gets a height in its name",
+  "find": "return \"storyboard.png\" if height == TALL else \"storyboard-%d.png\" % height",
+  "replace": "return \"storyboard-%d.png\" % height"
  }
 ]

@@ -560,6 +560,27 @@ class StoryboardTest(unittest.TestCase):
         self.assertEqual([rim, yellow, yellow, rim], [frame.getpixel((x, row)) for row in (y - 5, y - 4, y + 4, y + 5)])
         self.assertEqual([rim, yellow, yellow, rim], [frame.getpixel((col, y)) for col in (x - 5, x - 4, x + 4, x + 5)])
 
+    def test_at_48_px_the_hold_and_the_end_are_its_places_and_the_third_label_names_its_end(self):
+        board = mission.Storyboard(self.painted, Image.new("RGB", (320, 240), (9, 7, 5)), 48)
+        _, second, third = board.moments()
+        hold, climb = self.painted["fireman", "hold"], self.painted["child", "climb"]
+        self.assertEqual((hold.left[0], 113 - (hold.size[0] - 1 - hold.pivot[0]), 214 - hold.size[1] + 1),
+                         second["figures"][0])
+        self.assertEqual(113, second["columns"][0])
+        (af, au), w, h = climb.advance, climb.size[0], climb.size[1]
+        plays, pose = next((k, i) for k in range(99) for i in range(12) if k * au + climb.travel[i][1] >= 86)
+        f, u = plays * af + climb.travel[pose][0], plays * au + climb.travel[pose][1]
+        self.assertGreaterEqual(u, 86)
+        self.assertEqual((climb.left[pose], 114 - f - (w - 1 - climb.pivot[0]), 214 - u - h + 1),
+                         third["figures"][1])
+        self.assertEqual(((113, 114 - f), ("at", (80, 88))), (third["columns"], third["mark"]))
+        self.assertEqual(["the child at its first pose %d px up or more: the round's end" % up
+                          for up in (86, 54)], [board.labels[2], self.board.labels[2]])
+
+    def test_the_storyboards_name_has_its_height_unless_it_is_96_px(self):
+        self.assertEqual(["storyboard.png", "storyboard.png", "storyboard-64.png"],
+                         [mission.storyboard_name(), mission.storyboard_name(96), mission.storyboard_name(64)])
+
     def test_the_image_is_the_three_frames_at_twice_the_size_under_their_labels(self):
         image = self.board.image()
         self.assertEqual((640 + 20, 3 * (480 + 28) + 10), image.size)
