@@ -609,9 +609,9 @@ class BoardTest(unittest.TestCase):
         self.assertEqual(((d14,), "the encoder"), (got["map"].pick_bindings, got["map"].encoder))
 
     def test_after_the_rules_it_names_the_options_of_its_numbers(self):
-        did, lines, got, error, _ = self.board(numbers=dict(written()[1], way="left", pace=100))
+        did, lines, got, error, _ = self.board(numbers=dict(written()[1], way="left", pace=100, height=64))
         self.assertEqual(["p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24",
-                          "p906 options way left pace 100 height 96", "done"], lines)
+                          "p906 options way left pace 100 height 64", "done"], lines)
 
     def test_a_pin_map_with_no_stick_is_refused_in_one_line_and_runs_nothing(self):
         did, lines, got, error, _ = self.board(stick=False)
@@ -1822,7 +1822,8 @@ class WayRoundTest(unittest.TestCase):
         return p.frame(y=70 * p.round.way.child_lean).at_foot()
 
     def up_held(self, name):
-        """The way's round: the fireman holds, picked by the stick's up that stays, and the child active at the foot."""
+        """The way's round with the stick still pushed up: the lean up picked the fireman and he holds. The test then
+        makes the child active by hand and puts it at the foot, so the stick's up is held where the child can climb."""
         p = Run(way=probe.WAYS[name]).ready().holds().at_foot()
         p.round.active = probe.CHILD
         return p
@@ -1957,13 +1958,31 @@ class OptionsTest(unittest.TestCase):
     def test_a_bare_runs_height_is_arts(self):
         self.assertEqual(mission.TALL, probe.TALL)
 
-    def test_the_figures_run_at_the_pace_in_percent_of_their_captured_speed(self):
+    def test_the_figures_run_at_the_pace_in_percent_of_their_captured_speed_and_the_climb_does_not(self):
         for pace in (100, 150):
             with self.subTest(pace=pace):
                 box = Box(self, options={"pace": pace})
                 speed = box.numbers["speed"]
                 self.assertEqual([speed["fireman"] * pace // 100, speed["child"] * pace // 100],
                                  [f.speed for f in box.app.game.figures])
+                self.assertEqual(box.numbers["climb"][0] // probe.CLIMB_PACE, box.app.game.climb.pose_ms)
+
+    def test_a_pace_of_75_floors_the_px_a_second(self):
+        box = Box(self, options={"pace": 75})
+        self.assertEqual({"fireman": 104, "child": 58}, box.numbers["speed"])  # the stand-in capture's speeds
+        self.assertEqual([78, 43], [f.speed for f in box.app.game.figures])  # 58 at 75 percent is 43.5: 43
+
+    def test_the_words_of_the_fire_and_the_left_way(self):
+        """The words that tell him which way to push, as literals: the bar's rows and the intro's lines 2 to 5."""
+        picks = ("1 FIREMAN: stick UP picks him,", "  run to the ladder, FIRE: hold it",
+                 "2 CHILD: stick DOWN picks it,")
+        for name, climb in (("fire", "FIRE"), ("left", "LEFT")):
+            with self.subTest(way=name):
+                self.assertEqual(("1 FIREMAN: UP to ladder, FIRE", "2 CHILD: DOWN to ladder, %s climbs" % climb,
+                                  "PICK twice: quit"), probe.BARS[name])
+                intro = probe.INTROS[name]
+                self.assertEqual(picks + ("  run to the ladder, %s: climb" % climb,), intro[2:6])
+                self.assertEqual(probe.INTRO[:2] + probe.INTRO[6:], intro[:2] + intro[6:])
 
 
 class MacValuesTest(unittest.TestCase):

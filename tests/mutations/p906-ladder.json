@@ -679,8 +679,32 @@
  },
  {
   "file": "probe906_ladder.py",
-  "name": "--pace takes 0",
+  "name": "--pace and --minutes take 0",
   "find": "int(text) < 1",
   "replace": "int(text) < 0"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the climb follows the pace",
+  "find": "self.climb = Climb(pose_ms // CLIMB_PACE, travel, advance, numbers[\"end\"])",
+  "replace": "self.climb = Climb(pose_ms * 50 // pace // CLIMB_PACE, travel, advance, numbers[\"end\"])"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the pace rounds up",
+  "find": "numbers[\"speed\"][figure] * pace // 100",
+  "replace": "(numbers[\"speed\"][figure] * pace + 99) // 100"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the options line names a bare run's height",
+  "find": "% options(NUMBERS))",
+  "replace": "% (options(NUMBERS)[0], options(NUMBERS)[1], TALL))"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a round with no way climbs the FIRE way",
+  "find": "self.way = way or WAYS[WAY]",
+  "replace": "self.way = way or WAYS[\"fire\"]"
  }
 ]
