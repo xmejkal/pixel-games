@@ -1,0 +1,164 @@
+[
+ {
+  "file": "art/mission.py",
+  "name": "a half px rounds down",
+  "find": "return (px * height + TALL // 2) // TALL",
+  "replace": "return px * height // TALL"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the end does not follow the height",
+  "find": "end = roof - scaled(roof - END_UP)",
+  "replace": "end = END_UP"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the hold place does not follow the height",
+  "find": "hold_place = LADDER_FOOT + scaled(HOLD_PLACE - LADDER_FOOT)",
+  "replace": "hold_place = HOLD_PLACE"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the foot place does not follow the height",
+  "find": "LADDER_FOOT + scaled(FOOT_PLACE - LADDER_FOOT)",
+  "replace": "FOOT_PLACE"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the mark at the hold stays at 96 px's",
+  "find": "((hold_place, MARK_HOLD[1]), MARK_ROOF))",
+  "replace": "(MARK_HOLD, MARK_ROOF))"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "numbers' places are 96 px's",
+  "find": "    where = places(height)",
+  "replace": "    where = places()"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard's places are 96 px's",
+  "find": "        self.places = places(height)",
+  "replace": "        self.places = places()"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard's end is 96 px's",
+  "find": "if plays * au + u >= self.places.end:",
+  "replace": "if plays * au + u >= END_UP:"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard's third label names 96 px's end",
+  "find": "self.LABELS[2] % self.places.end,)",
+  "replace": "self.LABELS[2] % END_UP,)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard at 96 px gets a height in its name",
+  "find": "return \"storyboard.png\" if height == TALL else \"storyboard-%d.png\" % height",
+  "replace": "return \"storyboard-%d.png\" % height"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part paints at 96 px",
+  "find": "painted = art.painted(capture, args.height)",
+  "replace": "painted = art.painted(capture)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part's places are 96 px's",
+  "find": "art.numbers(painted, args.height)",
+  "replace": "art.numbers(painted)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part sends 96 as the height",
+  "find": "pace=args.pace, height=args.height)",
+  "replace": "pace=args.pace, height=TALL)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "--height takes any whole number",
+  "find": "parser.add_argument(\"--height\", type=int, choices=HEIGHTS, default=TALL,",
+  "replace": "parser.add_argument(\"--height\", type=int, default=TALL,"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the picture's labels are the template's",
+  "find": "for k, label in enumerate(self.labels)])",
+  "replace": "for k, label in enumerate(self.LABELS)])"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the picture's first label is drawn twice",
+  "find": "self.labels = self.LABELS[:2] + (",
+  "replace": "self.labels = self.LABELS[:1] * 2 + ("
+ },
+ {
+  "file": "art/mission.py",
+  "name": "storyboard_name always answers storyboard.png",
+  "find": "return \"storyboard.png\" if height == TALL else \"storyboard-%d.png\" % height",
+  "replace": "return \"storyboard.png\""
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the art's --height takes any whole number",
+  "find": "type=int, choices=HEIGHTS, default=TALL, metavar=\"H\",",
+  "replace": "type=int, default=TALL, metavar=\"H\","
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the art's heights lack 48",
+  "find": "HEIGHTS = (48, 64, 80, 96)",
+  "replace": "HEIGHTS = (64, 80, 96)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "the storyboard's default height is 64",
+  "find": "choices=HEIGHTS, default=TALL, metavar=\"H\",",
+  "replace": "choices=HEIGHTS, default=64, metavar=\"H\","
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main always saves storyboard.png",
+  "find": "os.path.join(args.storyboard, storyboard_name(args.height))",
+  "replace": "os.path.join(args.storyboard, storyboard_name())"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main paints the storyboard at 96 px",
+  "find": "Storyboard(painted(capture, args.height),",
+  "replace": "Storyboard(painted(capture),"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main hands no height to the storyboard",
+  "find": "read_committed([STREET])[STREET], args.height)",
+  "replace": "read_committed([STREET])[STREET])"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the probe refuses 48",
+  "find": "parser.add_argument(\"--height\", type=int, choices=HEIGHTS, default=TALL,",
+  "replace": "parser.add_argument(\"--height\", type=int, choices=HEIGHTS[1:], default=TALL,"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the copy's height is 96 at 80 px",
+  "find": "pace=args.pace, height=args.height)",
+  "replace": "pace=args.pace, height=96 if args.height == 80 else args.height)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main hands the storyboard a blank street",
+  "find": "read_committed([STREET])[STREET], args.height)",
+  "replace": "Image.new(\"RGB\", (320, 240)), args.height)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main saves another picture than the storyboard's",
+  "find": "args.height).image().save(",
+  "replace": "args.height) and Image.new(\"RGB\", (2, 2)).save("
+ }
+]

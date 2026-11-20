@@ -1,14 +1,14 @@
 """
 P906 (#1285): the walking skeleton, a ladder mission on the game box with the fireman and the child at 96 px over
-Rescue's night street (slice 0 of P900). He picks the fireman, runs him to the ladder at the fire station and holds it
-with FIRE. Then he picks the child, runs it to the ladder's foot and climbs to the roof's edge. The way to climb (--way)
-says how: in the up way, sitting 1's, the stick's down picks the fireman and its up the child, which climbs while the
-stick leans up. In the FIRE and the left way, the stick's up picks the fireman and its down the child, which climbs
-while FIRE is held or while the stick leans left. The app, the catalog, the lineup and the pool of the fifteen games do
-not change: the probe lends the box a pack of its own for one sitting, and the box runs this game in a lineup of one, so
-PICK reaches the game (games/app.py, App.frame). Its log reads three beliefs of P900's discovery at once: A10 (the frame
-rate of a real round with two 96 px figures), A2 (whether the climb can share the stick's y with the switch) and A4
-(whether a mission where he switches between figures is fun for him).
+Rescue's night street (slice 0 of P900), or at 48, 64 or 80 px (--height). He picks the fireman, runs him to the ladder
+at the fire station and holds it with FIRE. Then he picks the child, runs it to the ladder's foot and climbs to the
+roof's edge. The way to climb (--way) says how: in the up way, sitting 1's, the stick's down picks the fireman and its
+up the child, which climbs while the stick leans up. In the FIRE and the left way, the stick's up picks the fireman and
+its down the child, which climbs while FIRE is held or while the stick leans left. The app, the catalog, the lineup and
+the pool of the fifteen games do not change: the probe lends the box a pack of its own for one sitting, and the box runs
+this game in a lineup of one, so PICK reaches the game (games/app.py, App.frame). Its log reads three beliefs of P900's
+discovery at once: A10 (the frame rate of a real round with two 96 px figures), A2 (whether the climb can share the
+stick's y with the switch) and A4 (whether a mission where he switches between figures is fun for him).
 
 The three pass lines, the PO's, set before any result:
 - the rate line (A10): each finished round after the first reads 19.0 fps or more, from its end line. The rate is gaps
@@ -21,13 +21,14 @@ options` line). A rate read at a height other than 96 px decides nothing for A10
 
 From the repository root, on the Mac, with the game code deployed (`python3 tools/box.py deploy <the lineup>`):
 
-    python3 probe906_ladder.py [--dry-run] [--minutes N] [--way up|fire|left] [--pace P]
+    python3 probe906_ladder.py [--dry-run] [--minutes N] [--way up|fire|left] [--pace P] [--height 48|64|80|96]
 
 The Mac part:
-1. paints the set mission (art/mission.py, about 25 s) from the CMU files in mocap.CMU_DIR, and writes its pack, an
-   index of that pack alone and a copy of this file into a temporary folder. The copy's NUMBERS holds
-   mission.numbers' answer and the sitting's options: way and pace from --way and --pace, and height, 96 px. It
-   refuses with the capture's message (exit 2) when a file is missing, before any board command.
+1. paints the set mission at H px, --height's (96 by default), from the CMU files in mocap.CMU_DIR (art/mission.py), and
+   writes its pack, an index of that pack alone and a copy of this file into a temporary folder. The copy's NUMBERS
+   holds mission.numbers' answer at H px, whose places follow from H (mission.places), and the sitting's options: way,
+   pace and height from --way, --pace and --height. It refuses with the capture's message (exit 2) when a file is
+   missing, before any board command.
 2. refuses a box that has an :art_index.py: its real index (a deploy with --py) or one that a failed removal left.
 3. copies the pack to :packs/mission.pak, then the index to :art_index.py, the shadow index, so the pool is as big as
    this pack alone (tools/box.py, LentPack).
@@ -58,8 +59,8 @@ child active, also in the first round. Its two tasks:
    the ladder until the round ends.
 2. task 2 wants the child. He picks it with the way's lean and runs it to the ladder's foot, where its run stops.
    There it climbs while the way says so, at twice the captured climb's pace (CLIMB_PACE, a multiple that --pace does
-   not change). The round ends at the climb's first pose that is 54 px up or more (art/mission.py's END_UP): its head
-   is then over the roof's edge.
+   not change). The round ends at the climb's first pose at least end px up: its head is then over the roof's edge.
+   end is 54 px at 96 px (art/mission.py's END_UP), and 65, 75 and 86 px at 80, 64 and 48 px (mission.places).
 The way to climb (--way, WAYS) is a part handed to the round, so another way can stand in its place:
 - up (WayUp, sitting 1's and a bare run's): the stick's up picks the child and its down the fireman. The child climbs
   while the stick leans up (LeanEdge's lean: from 40 of 100 until it rests under 20).
@@ -70,11 +71,12 @@ The way to climb (--way, WAYS) is a part handed to the round, so another way can
   pauses the climb, which goes on from where it stopped. A lean left cannot pick, as a pick reads only the stick's y.
 The figure that is not active stands still, and the fireman keeps the ladder. The child does not climb down: on the
 ladder, the lean that picks the fireman picks him, and the child stays. The figures run at a percent of their captured
-speed (PACE, --pace): 50, half, is sitting 1's and a bare run's, and 100 is the captured speed. No round can lock, and
-no round ends by itself. The result screen, in its own rect right of the ladder, names the round
-(`ROUND 3`), its time, the best time, the cause of a wrong round (its first wrong pick, `wrong: UP in task 1`), the
-streak (`clean 3/5`, 5 at most) and `5 IN A ROW: DONE` once the sitting met the streak. It has no verdict word. After
-900 ms it says `FIRE: again`, and FIRE starts the next round. PICK twice within 3 s (QUIT_MS) ends the sitting, in
+speed (PACE, --pace): 50, half, is sitting 1's at 96 px and a bare run's, and 100 is the captured speed. The run's and
+the climb's speeds are in the figure's own px, so a smaller figure runs and climbs slower on the screen at the same
+pace. No round can lock, and no round ends by itself. The result screen, in its own rect right of the ladder, names the
+round (`ROUND 3`), its time, the best time, the cause of a wrong round (its first wrong pick, `wrong: UP in task 1`),
+the streak (`clean 3/5`, 5 at most) and `5 IN A ROW: DONE` once the sitting met the streak. It has no verdict word.
+After 900 ms it says `FIRE: again`, and FIRE starts the next round. PICK twice within 3 s (QUIT_MS) ends the sitting, in
 every state: the first PICK shows `PICK again: quit`. A short press is enough: never hold PICK, as a hold of about 5 s
 powered an older board off (bench.md).
 
@@ -139,8 +141,9 @@ TITLE_MS = 15000  # the intro shows this long, or until FIRE
 HOLD_PX = 24  # FIRE within this many px of his place makes the fireman hold the ladder
 PACE = 50  # percent of the captured speed: sitting 1's, a bare run's (--pace)
 WAY = "up"  # the way to climb of a bare run, a key of WAYS: sitting 1's (--way)
-TALL = 96  # px: the figures' height of a bare run, art's detailed.TALL
-CLIMB_PACE = 2  # a multiple of the captured climb's pace, which --pace does not change: 3.3 s to the roof at 96 px
+TALL = 96  # px: the figures' height of a bare run, art's detailed.TALL (--height)
+CLIMB_PACE = 2  # a multiple of the captured climb's pace, which --pace does not change: 3.3 s to the roof at 96 px,
+# longer for a smaller figure, whose climb rises in its own px
 STREAK = 5  # clean rounds in a row: the pick line (`streak 5 met`)
 SLOW_MS = 52  # a gap between two frames of a round over this many ms is slow (the end line's slow)
 QUIT_MS = 3000  # a second PICK at most this long after the first ends the sitting
@@ -869,6 +872,7 @@ def board():
 
 LOG = "logs/run-p906-ladder.log"  # from the repository root: the first log's path (box.ProbeRun.free_log)
 MINUTES = 60  # the run's time limit. PICK twice ends it sooner
+HEIGHTS = (48, 64, 80, 96)  # px: the figures' heights that --height takes, the storyboards' (art/mission.py)
 WAIT = ["exec", "pass"]  # a cheap command: the box answers it once it is back from the hard reset
 
 
@@ -947,20 +951,25 @@ def mac(argv, runner=None, sleep=None, art=None):
                              "FIRE climbs while it is held. left: the stick's left climbs. In fire and left, up "
                              "picks the fireman and down picks the child")
     parser.add_argument("--pace", type=whole_arg, default=PACE, metavar="P",
-                        help="the run's speed in percent of the captured speed (%(default)s): 50 is sitting 1's, 100 "
-                             "the captured speed. The climb does not follow it")
+                        help="the run's speed in percent of the captured speed (%(default)s): 50 is sitting 1's at 96 "
+                             "px, 100 the captured speed. The climb does not follow it")
+    parser.add_argument("--height", type=int, choices=HEIGHTS, default=TALL,
+                        help="the figures' height in px (%(default)s). The places follow from it. The run's and the "
+                             "climb's speeds are in the figure's own px, so a smaller figure runs and climbs slower "
+                             "on the screen at the same pace")
     args = parser.parse_args(argv)
     capture = art.capture(parser)  # before any board command: the box plays on while the set is painted
     runner, sleep = runner or box.Mpremote(args.dry_run), sleep or time.sleep
     lent, run = box.LentPack(runner, art.SET, sleep), box.ProbeRun(runner, os.path.join(here, LOG))
     with tempfile.TemporaryDirectory() as tmp:
-        painted = art.painted(capture)
+        painted = art.painted(capture, args.height)
         pack, index = art.write(tmp, painted)
         copy = os.path.join(tmp, os.path.basename(__file__))
         with open(os.path.abspath(__file__)) as f:
             source = f.read()
         with open(copy, "w") as f:
-            f.write(filled(source, dict(art.numbers(painted), way=args.way, pace=args.pace, height=TALL)))
+            f.write(filled(source, dict(art.numbers(painted, args.height),
+                                        way=args.way, pace=args.pace, height=args.height)))
         try:
             try:
                 lent.check()

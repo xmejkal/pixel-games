@@ -16,20 +16,23 @@ Not in the count: a turn (every row holds both facings), the ladder (the Mac cli
 and how the board draws it is open) and any other picture of the mission, such as the wall. The count says nothing
 about the frame rate.
 
-Run from the repository root: python3 art/mission.py [--out DIR] [--storyboard DIR] prints a line a row with its box
-and its bytes, the street's line, the bytes of a pack with only the rows that his words name and of one with every row,
-and what the pass line leaves beside the pack, or by how much the pack is over it. With --out it writes
-mission-sheet.png, each row's poses, for the eye to judge the placeholders. With --storyboard it writes storyboard.png,
-the set mission's scene at three moments (below). It needs the CMU files of the rows' cycles in the --cmu folder
-(mocap.CMU_DIR when none is given): without one of them it paints nothing and exits 2.
+Run from the repository root: python3 art/mission.py [--out DIR] [--storyboard DIR] [--height H] prints a line a row
+with its box and its bytes, the street's line, the bytes of a pack with only the rows that his words name and of one
+with every row, and what the pass line leaves beside the pack, or by how much the pack is over it. The count is always
+at 96 px. With --out it writes mission-sheet.png, each row's poses, for the eye to judge the placeholders. With
+--storyboard it writes the set mission's scene at three moments (below), with the figures --height px tall (96 when
+none is given) at places(H): storyboard.png at 96 px and storyboard-H.png at another height (storyboard_name). It
+needs the CMU files of the rows' cycles in the --cmu folder (mocap.CMU_DIR when none is given): without one of them it
+paints nothing and exits 2.
 
 The set mission (P906): the pictures of the ladder mission for probe906_ladder.py, the walking skeleton of P900. It is
-in no ART_SETS: art/paint.py does not write it, and no pack of it is committed. painted(capture) paints its four
-motions, the first four rows of MISSION. write(folder, painted) writes its pack and an index of that pack alone, as
-art/figures.py's write does. numbers(painted) answers what the probe's board part cannot derive, as plain literals for
-the probe's copy. Its pictures, in their order: mission_night (Rescue's street, not keyed), mission_ladder, then for
-each motion mission_<figure>_<motion>_r<pose> and _l<pose>, each keyed. The hold keeps one pose, the spray's first:
-the hose ready, as Rescue's fireman stands (games/rescue.py, Rescue.fireman_picture).
+in no ART_SETS: art/paint.py does not write it, and no pack of it is committed. painted(capture, height) paints its
+four motions, the first four rows of MISSION, at height px, one of HEIGHTS. write(folder, painted) writes its pack and
+an index of that pack alone, as art/figures.py's write does. numbers(painted, height) answers what the probe's board
+part cannot derive, as plain literals for the probe's copy, with places(height): the places for figures of that
+height, scaled from the constants at 96 px. Its pictures, in their order: mission_night (Rescue's street, not keyed),
+mission_ladder, then for each motion mission_<figure>_<motion>_r<pose> and _l<pose>, each keyed. The hold keeps one
+pose, the spray's first: the hose ready, as Rescue's fireman stands (games/rescue.py, Rescue.fireman_picture).
 """
 
 import argparse
@@ -152,9 +155,10 @@ SET = "mission"  # the set's name: its pack's, its index's and the start of each
 MOTIONS = (("fireman", "run", MISSION[0], None), ("fireman", "hold", MISSION[1], 1), ("child", "run", MISSION[3], None),
            ("child", "climb", MISSION[2], None))
 
-# The places, in screen px: start values, set by eye on docs/screenshots/p906/storyboard.png, and the one spot to change
-# them. A figure's place is the column of its pivot, its hips on the soles' row (detailed.Pictures.pivot). Both figures
-# face left at a round's start, toward the ladder.
+# The places at TALL px, in screen px: start values, set by eye on docs/screenshots/p906/storyboard.png, and the one
+# spot to change them. places(height) scales them for figures of another height. A figure's place is the column of its
+# pivot, its hips on the soles' row (detailed.Pictures.pivot). Both figures face left at a round's start, toward the
+# ladder.
 FEET = 214  # the row the soles stand on (games/rescue.py's FEET)
 LADDER_FOOT = 111  # the ladder's foot on the soles' row
 LADDER_TOP = 96  # the ladder's top row: the station's roof at its right corner, x 80 (art/sets/rescue.py)
@@ -165,6 +169,23 @@ END_UP = 54  # px: the climb ends at its first pose this far up or more, the chi
 MARK_HOLD = (115, 222)  # the yellow mark's middle at the fireman's place: on the street under his feet
 MARK_ROOF = (80, 88)  # the yellow mark's middle at the roof's edge: over the station's right corner
 STAND = {"fireman": 8, "child": 0}  # each figure's standing picture: the pose of its run with the feet together
+HEIGHTS = (48, 64, 80, 96)  # px: the figures' heights that places() and the storyboards serve, TALL the last
+Places = namedtuple("Places", "start place end mark")  # the places at one height, as numbers() names them
+
+
+def places(height=TALL):
+    """The places for figures height px tall: START, the place (the fireman's by the ladder and the child's at its
+    foot), the end and the mark (MARK_HOLD's row under the fireman's place, then MARK_ROOF). At TALL they are the
+    constants above. At another height, the px from the ladder's foot to each place and the px from the soles at the
+    end to the roof's row scale with the height, to whole px a half up: a smaller figure stands nearer the foot and
+    climbs higher, so that its head is over the roof's edge. START and MARK_ROOF stay."""
+    def scaled(px):  # px at TALL, at height: whole px, a half up
+        return (px * height + TALL // 2) // TALL
+    roof = FEET - LADDER_TOP  # px from the soles' row up to the roof's row
+    hold_place = LADDER_FOOT + scaled(HOLD_PLACE - LADDER_FOOT)
+    foot_place = LADDER_FOOT + scaled(FOOT_PLACE - LADDER_FOOT)
+    end = roof - scaled(roof - END_UP)
+    return Places(START, (hold_place, foot_place), end, ((hold_place, MARK_HOLD[1]), MARK_ROOF))
 
 
 def painted(capture, height=TALL):
@@ -223,12 +244,14 @@ def gait(run):
     return stride, stride * run.cycle.fps / run.capture.loop(run.cycle)[1]
 
 
-def numbers(painted):
+def numbers(painted, height=TALL):
     """What the probe's board part cannot derive, as plain ints, tuples and dicts, so repr gives its copy a literal
     (probe906_ladder.py's NUMBERS): each run's stride and speed (rounded to a whole px a second), each motion's pivot
     column facing right, each standing pose, the climb's (ms a pose, (forward, up) of each pose from a play's start,
-    (forward, up) a play), the ladder's top left, and the places: start, place (the fireman's by the ladder and the
-    child's at its foot), end (END_UP) and mark (MARK_HOLD and MARK_ROOF)."""
+    (forward, up) a play), the ladder's top left, and places(height): start, place (the fireman's by the ladder and the
+    child's at its foot), end and mark. height: the px that painted was painted at. It is given, not read from the
+    pictures, and the answer holds no "height" key."""
+    where = places(height)
     gaits = {figure: gait(painted[figure, "run"]) for figure in ("fireman", "child")}
     climb = painted["child", "climb"]
     return {"stride": {figure: stride for figure, (stride, _) in gaits.items()},
@@ -237,20 +260,21 @@ def numbers(painted):
             "stand": dict(STAND),
             "climb": (round(climb.pose_ms), tuple(climb.travel), climb.advance),
             "ladder": ladder(climb.advance)[1],
-            "start": START, "place": (HOLD_PLACE, FOOT_PLACE), "end": END_UP, "mark": (MARK_HOLD, MARK_ROOF)}
+            "start": where.start, "place": where.place, "end": where.end, "mark": where.mark}
 
 
 class Storyboard:
-    """storyboard.png (P906): the set's scene at three moments, put together from its pictures at the places above, for
-    the eye that sets them: a round's start, the fireman holding the ladder at his place, and the child at the climb's
-    first pose END_UP px up or more. Each frame has the bar's three rows with the task block, the white arrow over the
-    active figure and the yellow mark, as probe906_ladder.py draws them. The bar's words are in PIL's default font,
-    not the box's 8x8 one. painted: painted()'s pictures. street: the street's picture."""
+    """The storyboard (P906, saved as storyboard_name(height)): the set's scene at three moments, put together from its
+    pictures at places(height), for the eye that sets them: a round's start, the fireman holding the ladder at his
+    place, and the child at the climb's first pose at least end px up. Each frame has the bar's three rows with
+    the task block, the white arrow over the active figure and the yellow mark, as probe906_ladder.py draws them. The
+    bar's words are in PIL's default font, not the box's 8x8 one. painted: painted()'s pictures. street: the street's
+    picture. height: the px that painted was painted at, given and not read from the pictures, as for numbers()."""
 
     BAR = ("1 FIREMAN: stick DOWN to ladder, FIRE", "2 CHILD: stick UP to ladder, UP climbs", "PICK twice: quit")
     LABELS = ("a round's start: the child is active, task 1 wants the fireman",
               "the fireman holds the ladder: task 2 wants the child",
-              "the child at its first pose %d px up or more: the round's end" % END_UP)
+              "the child at its first pose %d px up or more: the round's end")  # %d: the end's px
     WHITE, YELLOW, DARK, RIM = (255, 255, 255), (250, 220, 40), (30, 30, 40), (0, 0, 0)  # games/gfx.py's, BLACK
     GAP = 6  # px from the arrow's tip, and the mark's lowest row, to the top of the picture under it
     # each shape's rows, from the top: probe906_ladder.py's ARROW and MARK (a Mac test pins them alike). Each has a dark
@@ -258,8 +282,10 @@ class Storyboard:
     ARROW = (7, 5, 3, 1)  # the white arrow: its tip lowest
     MARK = (1, 3, 5, 7, 9, 7, 5, 3, 1)  # the yellow mark: a diamond 9 px high and wide
 
-    def __init__(self, painted, street):
+    def __init__(self, painted, street, height=TALL):
         self.painted, self.street = painted, street
+        self.places = places(height)
+        self.labels = self.LABELS[:2] + (self.LABELS[2] % self.places.end,)
 
     def placed(self, figure, motion, pose, x, up=0):
         """A picture of the figure facing left, its pivot on column x and its soles up px over FEET: (img, left,
@@ -269,27 +295,29 @@ class Storyboard:
         return p.left[pose], x - (w - 1 - p.pivot[0]), FEET - up - h + 1
 
     def end(self):
-        """The climb's first pose END_UP px up or more: its pose and its (forward, up) from the foot."""
+        """The climb's first pose at least end px up (the places' end): its pose and its (forward, up) from the
+        foot."""
         climb = self.painted["child", "climb"]
         (af, au), plays = climb.advance, 0
         while True:
             for pose, (f, u) in enumerate(climb.travel):
-                if plays * au + u >= END_UP:
+                if plays * au + u >= self.places.end:
                     return pose, (plays * af + f, plays * au + u)
             plays += 1
 
     def moments(self):
         """Each frame's figures (the fireman's, then the child's (img, left, top)), the column of each one's place, its
         active figure (0 the fireman, 1 the child), its task, and its mark: ("over", figure) or ("at", (x, y))."""
+        start, (hold_place, foot_place), roof = self.places.start, self.places.place, self.places.mark[1]
         fireman, child = (self.placed(figure, "run", STAND[figure], x)
-                          for figure, x in zip(("fireman", "child"), START))
-        hold = self.placed("fireman", "hold", 0, HOLD_PLACE)
+                          for figure, x in zip(("fireman", "child"), start))
+        hold = self.placed("fireman", "hold", 0, hold_place)
         pose, (f, u) = self.end()
-        return [{"figures": (fireman, child), "columns": START, "active": 1, "task": 1, "mark": ("over", 0)},
-                {"figures": (hold, child), "columns": (HOLD_PLACE, START[1]), "active": 0, "task": 2,
+        return [{"figures": (fireman, child), "columns": start, "active": 1, "task": 1, "mark": ("over", 0)},
+                {"figures": (hold, child), "columns": (hold_place, start[1]), "active": 0, "task": 2,
                  "mark": ("over", 1)},
-                {"figures": (hold, self.placed("child", "climb", pose, FOOT_PLACE - f, u)),
-                 "columns": (HOLD_PLACE, FOOT_PLACE - f), "active": 1, "task": 2, "mark": ("at", MARK_ROOF)}]
+                {"figures": (hold, self.placed("child", "climb", pose, foot_place - f, u)),
+                 "columns": (hold_place, foot_place - f), "active": 1, "task": 2, "mark": ("at", roof)}]
 
     def frame(self, k):
         """Moment k as the box shows it: 320 by 240 px."""
@@ -331,14 +359,27 @@ class Storyboard:
     def image(self):
         """The three frames at twice the size, one under the other, each under its label."""
         return stacked([(label, self.frame(k).resize((640, 480), Image.Resampling.NEAREST))
-                        for k, label in enumerate(self.LABELS)])
+                        for k, label in enumerate(self.labels)])
+
+
+def storyboard_name(height=TALL):
+    """The storyboard's file name at height px: storyboard.png at TALL, the name that README.md links, and
+    storyboard-<height>.png at any other height."""
+    return "storyboard.png" if height == TALL else "storyboard-%d.png" % height
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Count the bytes of the first mission's pictures at %d px against "
-                                                 "the pass line of %d bytes." % (TALL, PASS_LINE))
+                                                 "the pass line of %d bytes. --height changes only the storyboard."
+                                                 % (TALL, PASS_LINE))
     parser.add_argument("--out", metavar="DIR", help="the folder mission-sheet.png is written to (none: no sheet)")
-    parser.add_argument("--storyboard", metavar="DIR", help="the folder storyboard.png is written to (none: none)")
+    parser.add_argument("--storyboard", metavar="DIR", help="the folder the storyboard is written to, as %s at %d px "
+                                                            "and as storyboard-H.png at another --height H (none: "
+                                                            "none)" % (storyboard_name(), TALL))
+    parser.add_argument("--height", type=int, choices=HEIGHTS, default=TALL, metavar="H",
+                        help="the figures' height in px in the storyboard, one of %s (%%(default)s). The places "
+                             "follow from it. It works only with --storyboard: the count stays at %d px"
+                        % (", ".join(map(str, HEIGHTS)), TALL))
     parser.add_argument("--cmu", default=mocap.CMU_DIR, metavar="DIR", help="the CMU .asf and .amc files (%(default)s)")
     args = parser.parse_args(argv)
     capture = mocap.open_capture(parser, args.cmu, [mocap.named(row.cycle) for row in MISSION])
@@ -346,11 +387,10 @@ def main(argv=None):
     if args.out:
         os.makedirs(args.out, exist_ok=True)
         MissionSheet(pack).image().save(os.path.join(args.out, "mission-sheet.png"))
-    if args.storyboard:  # the set's motions are the count's first four rows: painted once
-        rows = dict(pack.painted)
+    if args.storyboard:  # the set's motions painted at --height: the count's rows stay at TALL
         os.makedirs(args.storyboard, exist_ok=True)
-        Storyboard({(figure, motion): rows[row] for figure, motion, row, _ in MOTIONS},
-                   read_committed([STREET])[STREET]).image().save(os.path.join(args.storyboard, "storyboard.png"))
+        Storyboard(painted(capture, args.height), read_committed([STREET])[STREET], args.height).image().save(
+            os.path.join(args.storyboard, storyboard_name(args.height)))
     print("\n".join(pack.lines()))
 
 

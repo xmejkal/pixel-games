@@ -372,6 +372,18 @@ class SetTest(unittest.TestCase):
                           mission.FOOT_PLACE, mission.END_UP, mission.MARK_HOLD, mission.MARK_ROOF))
         self.assertEqual({"fireman": 8, "child": 0}, mission.STAND)
 
+    def test_the_places_at_96_px_are_the_constants(self):
+        constants = (mission.START, (mission.HOLD_PLACE, mission.FOOT_PLACE), mission.END_UP,
+                     (mission.MARK_HOLD, mission.MARK_ROOF))
+        self.assertEqual([constants, constants], [mission.places(), mission.places(96)])
+
+    def test_the_places_at_80_64_and_48_px_scale_the_px_from_the_ladders_foot_and_to_the_roof_a_half_up(self):
+        self.assertEqual([((220, 282), (114, 116), 65, ((114, 222), (80, 88))),
+                          ((220, 282), (114, 115), 75, ((114, 222), (80, 88))),
+                          ((220, 282), (113, 114), 86, ((113, 222), (80, 88)))],
+                         [mission.places(height) for height in (80, 64, 48)])
+        self.assertEqual(((114, 115), 75), (mission.places(64).place, mission.places(64).end))
+
 
 class LadderPictureTest(unittest.TestCase):
     """ladder(advance): art/moves.py's Ladder from the foot on the soles' row up to the roof's row, at the climb's
@@ -454,6 +466,12 @@ class SetPaintTest(unittest.TestCase):
         self.assertEqual(mission.ladder(climb.advance)[1], got["ladder"])
         self.assertEqual(({"fireman": 8, "child": 0}, (220, 282), (115, 117), 54, ((115, 222), (80, 88))),
                          (got["stand"], got["start"], got["place"], got["end"], got["mark"]))
+
+    def test_the_numbers_at_another_height_hold_its_places_and_no_height(self):
+        got = mission.numbers(set_painted(), 64)
+        self.assertEqual(((220, 282), (114, 115), 75, ((114, 222), (80, 88))),
+                         (got["start"], got["place"], got["end"], got["mark"]))
+        self.assertNotIn("height", got)
 
     def test_the_numbers_are_plain_literals_for_the_probes_copy(self):
         got = mission.numbers(set_painted())
@@ -542,12 +560,106 @@ class StoryboardTest(unittest.TestCase):
         self.assertEqual([rim, yellow, yellow, rim], [frame.getpixel((x, row)) for row in (y - 5, y - 4, y + 4, y + 5)])
         self.assertEqual([rim, yellow, yellow, rim], [frame.getpixel((col, y)) for col in (x - 5, x - 4, x + 4, x + 5)])
 
+    def test_at_48_px_the_hold_and_the_end_are_its_places_and_the_third_label_names_its_end(self):
+        board = mission.Storyboard(self.painted, Image.new("RGB", (320, 240), (9, 7, 5)), 48)
+        _, second, third = board.moments()
+        hold, climb = self.painted["fireman", "hold"], self.painted["child", "climb"]
+        self.assertEqual((hold.left[0], 113 - (hold.size[0] - 1 - hold.pivot[0]), 214 - hold.size[1] + 1),
+                         second["figures"][0])
+        self.assertEqual(113, second["columns"][0])
+        (af, au), w, h = climb.advance, climb.size[0], climb.size[1]
+        plays, pose = next((k, i) for k in range(99) for i in range(12) if k * au + climb.travel[i][1] >= 86)
+        f, u = plays * af + climb.travel[pose][0], plays * au + climb.travel[pose][1]
+        self.assertGreaterEqual(u, 86)
+        self.assertEqual((climb.left[pose], 114 - f - (w - 1 - climb.pivot[0]), 214 - u - h + 1),
+                         third["figures"][1])
+        self.assertEqual(((113, 114 - f), ("at", (80, 88))), (third["columns"], third["mark"]))
+        self.assertEqual(["the child at its first pose %d px up or more: the round's end" % up
+                          for up in (86, 54)], [board.labels[2], self.board.labels[2]])
+
+    def test_the_image_hands_on_the_three_labels_with_the_end_of_48_px(self):
+        board = mission.Storyboard(self.painted, Image.new("RGB", (320, 240), (9, 7, 5)), 48)
+        with mock.patch.object(mission, "stacked", lambda rows: [label for label, _ in rows]):
+            self.assertEqual(["a round's start: the child is active, task 1 wants the fireman",
+                              "the fireman holds the ladder: task 2 wants the child",
+                              "the child at its first pose 86 px up or more: the round's end"], board.image())
+
+    def test_the_storyboards_name_has_its_height_unless_it_is_96_px(self):
+        self.assertEqual(["storyboard.png", "storyboard.png", "storyboard-64.png"],
+                         [mission.storyboard_name(), mission.storyboard_name(96), mission.storyboard_name(64)])
+
     def test_the_image_is_the_three_frames_at_twice_the_size_under_their_labels(self):
         image = self.board.image()
         self.assertEqual((640 + 20, 3 * (480 + 28) + 10), image.size)
         frame = self.board.frame(0)
         self.assertEqual((320, 240), frame.size)
         self.assertEqual(moves.Ladder.COLOUR, frame.getpixel((111, 214)))  # the ladder's foot, under no figure
+
+
+class StoryboardMainTest(unittest.TestCase):
+    """main's --storyboard on stand-ins, so no CMU file is read and no scene is drawn: the capture is a word, each row's
+    pictures are StandPictures that note the height they were painted at (None: none), and the storyboard notes its
+    street and its height and answers a small picture of its own."""
+
+    PICTURE = Image.new("RGB", (5, 3), (10, 20, 30))  # what the stand-in storyboard's image() answers
+
+    def setUp(self):
+        self.painted_at, self.drawn_at, self.streets, self.files = [], [], [], []
+        test = self
+
+        class Board:
+            def __init__(self, painted, street, height=None):
+                test.drawn_at.append(height)
+                test.streets.append(street)
+
+            def image(self):
+                return test.PICTURE
+
+        def pictures(row, capture, height=None):
+            self.painted_at.append(height)
+            return StandPictures(row, (3, 4), 2)
+
+        for patch in (mock.patch.object(mission.mocap, "open_capture", lambda parser, folder, cycles: "a capture"),
+                      mock.patch.object(mission.Row, "pictures", pictures),
+                      mock.patch.object(mission, "Storyboard", Board)):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def saved(self, *argv):
+        """The names of the files that main with --storyboard and argv saves in a new folder. Each file's size and
+        pixels go to self.files."""
+        with tempfile.TemporaryDirectory() as folder, contextlib.redirect_stdout(io.StringIO()):
+            self.assertIsNone(mission.main(["--storyboard", folder] + list(argv)))
+            for name in os.listdir(folder):
+                with Image.open(os.path.join(folder, name)) as img:
+                    self.files.append((img.size, img.convert("RGB").tobytes()))
+            return os.listdir(folder)
+
+    def test_the_storyboard_gets_the_committed_street_and_main_saves_its_picture(self):
+        self.saved("--height", "64")
+        street = read_committed([mission.STREET])[mission.STREET]
+        self.assertEqual([street.size], [s.size for s in self.streets])
+        # the pixels by ==: assertEqual would spend minutes on a diff of 230,400 bytes when they differ
+        self.assertTrue(all(s.tobytes() == street.tobytes() for s in self.streets), "the storyboard got another street")
+        self.assertEqual([(self.PICTURE.size, self.PICTURE.tobytes())], self.files)
+
+    def test_a_height_paints_the_storyboard_at_it_and_names_its_file_by_it(self):
+        self.assertEqual(["storyboard-64.png"], self.saved("--height", "64"))
+        self.assertEqual(([None] * 6 + [64] * 4, [64]), (self.painted_at, self.drawn_at))  # the count's rows first
+
+    def test_a_bare_storyboard_is_96_px_and_storyboard_png(self):
+        self.assertEqual(["storyboard.png"], self.saved())
+        self.assertEqual(([None] * 6 + [96] * 4, [96]), (self.painted_at, self.drawn_at))
+
+    def test_a_height_that_is_not_one_of_the_four_exits_2_and_paints_nothing(self):
+        for value in ("200", "72", "x"):
+            with self.subTest(height=value), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as stop:
+                    self.saved("--height", value)
+                self.assertEqual((2, [], []), (stop.exception.code, self.painted_at, self.drawn_at))
+
+    def test_the_heights_are_48_64_80_and_96_px(self):
+        self.assertEqual((48, 64, 80, 96), mission.HEIGHTS)
 
 
 if __name__ == "__main__":
