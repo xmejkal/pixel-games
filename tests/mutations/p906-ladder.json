@@ -512,8 +512,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "each round has a detector of its own",
-  "find": "self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb, self.edge)",
-  "replace": "self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb)"
+  "find": "self.tally, self.climb, self.edge, self.way)",
+  "replace": "self.tally, self.climb, None, self.way)"
  },
  {
   "file": "probe906_ladder.py",
@@ -610,5 +610,29 @@
   "name": "a bare run's way is FIRE",
   "find": "WAY = \"up\"",
   "replace": "WAY = \"fire\""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the game draws the up way's bar",
+  "find": "BARS[way], INTROS[way]",
+  "replace": "BAR, INTROS[way]"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the game's intro is the up way's",
+  "find": "BARS[way], INTROS[way]",
+  "replace": "BARS[way], INTRO"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "WARM holds only the up way's bar",
+  "find": "\"\".join(row for rows in BARS.values() for row in rows)",
+  "replace": "\"\".join(BAR)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a missing way is FIRE",
+  "find": "numbers.get(\"way\", WAY)",
+  "replace": "numbers.get(\"way\", \"fire\")"
  }
 ]

@@ -333,10 +333,12 @@ class Pictures:
 class Box:
     """The real app.App with the probe's game in a lineup of one: the FIRE buttons wrapped (Seen), PICK, the knob's
     encoder and the stick, the fakes of tests/test_actions.py, pictures stood in by the written index, and no knob in
-    the App. The clock moves by each frame's ms. It stands in the intro after its first frame."""
+    the App. The clock moves by each frame's ms. It stands in the intro after its first frame. options: keys over the
+    written numbers, in a copy, as the Mac part writes them (way, pace)."""
 
-    def __init__(self, test, pool=None):
-        index, self.numbers = written()
+    def __init__(self, test, pool=None, options=None):
+        index, numbers = written()
+        self.numbers = dict(numbers, **(options or {}))  # a copy: written() is cached
         self.now, self.said, self.pictures = T0, io.StringIO(), Pictures(index)
         stack = contextlib.ExitStack()
         test.addCleanup(stack.close)
@@ -1255,17 +1257,20 @@ class ExitTest(unittest.TestCase):
 
 
 def finish(box):
-    """A clean round through the App from READY's end: down picks the fireman, he stands at his place and FIRE holds.
-    up picks the child, it stands at the foot and climbs until the round ends."""
+    """A clean round through the App from READY's end, in the game's way: the lean that does not pick the child picks
+    the fireman, he stands at his place and FIRE holds. The child's lean picks it, it stands at the foot and climbs
+    until the round ends, with FIRE held in the FIRE way and the stick's left in the left way."""
     game = box.app.game
     fireman, child = game.figures
-    box.frame(y=70)
+    lean = 70 * game.way.child_lean
+    box.frame(y=-lean)
     fireman.x = fireman.lo
-    box.frame(y=70, fire=True)
-    box.frame(y=-70)
+    box.frame(y=-lean, fire=True)
+    box.frame(y=lean)
     child.x = child.lo
+    climb = {"up": {}, "fire": {"held": True}, "left": {"x": -70}}[game.way.name]
     for _ in range(3000):
-        box.frame(y=-70)
+        box.frame(y=lean, **climb)
         if game.state == gfx.OVER:
             return box
     raise AssertionError("the round did not end")
@@ -1795,7 +1800,7 @@ class WayRoundTest(unittest.TestCase):
         return p.frame(y=70 * p.round.way.child_lean).at_foot()
 
     def up_held(self, name):
-        """The way's round: the fireman holds, picked by the stick's up that stays, and the child, active, at the foot."""
+        """The way's round: the fireman holds, picked by the stick's up that stays, and the child active at the foot."""
         p = Run(way=probe.WAYS[name]).ready().holds().at_foot()
         p.round.active = probe.CHILD
         return p
@@ -1867,6 +1872,57 @@ class WayRoundTest(unittest.TestCase):
         self.assertEqual((132, False), (child.x, child.on_ladder))
         p.frame(x=-80, ms=60)  # past the foot: it stops at it, and climbs in this frame
         self.assertEqual(("p906 climb starts 0 %d" % p.ms(), True), (p.lines[-1], child.on_ladder))
+
+
+class WayGameTest(unittest.TestCase):
+    """The way to climb through app.App: NUMBERS' way gives the round its way, the intro its lines and the bar its
+    rows."""
+
+    def test_in_fire_and_left_the_intro_shows_the_ways_lines(self):
+        for name in ("fire", "left"):
+            with self.subTest(way=name):
+                seen = Box(self, options={"way": name}).out.cv.seen
+                for line in probe.INTROS[name]:
+                    self.assertIn(line, seen)
+                self.assertNotIn(probe.INTRO[4], seen)  # the up way's "2 CHILD: stick UP picks it,"
+
+    def test_in_fire_and_left_the_bar_draws_the_ways_rows_once_in_three_rounds(self):
+        for name in ("fire", "left"):
+            with self.subTest(way=name):
+                box = Box(self, options={"way": name})
+                box.out.cv.seen.clear()  # the intro's words: its last line is the bar's last row too
+                box.play()
+                for _ in range(3):
+                    finish(box)
+                    again(box)
+                self.assertEqual([1, 1, 1], [box.out.cv.seen.count(row) for row in probe.BARS[name]])
+                self.assertEqual([0, 0], [box.out.cv.seen.count(row) for row in probe.BAR[:2]])
+
+    def test_in_fire_and_left_the_round_has_the_games_way_and_a_clean_round_ends_clean(self):
+        for name in ("fire", "left"):
+            with self.subTest(way=name):
+                box = finish(Box(self, options={"way": name}).play())
+                self.assertIs(probe.WAYS[name], box.app.game.round.way)
+                self.assertTrue(box.lines()[-1].startswith("p906 round 1 ends clean "), box.lines()[-1])
+
+    def test_a_wrong_round_in_the_fire_way_names_its_lean_down_in_task_1(self):
+        box = Box(self, options={"way": "fire"}).play()
+        box.frame(y=70).frame()  # task 1 wants the fireman: in the FIRE way a lean down picks the child
+        finish(box)
+        box.frame()
+        self.assertIn(("wrong: DOWN in task 1", gfx.YELLOW), [(op[5], op[6]) for op in box.out.cv.ops if op[4] == 3])
+
+    def test_each_ways_bar_and_intro_fit_and_the_bars_glyphs_are_made_in_the_intro(self):
+        self.assertEqual((list(probe.WAYS),) * 2, (list(probe.BARS), list(probe.INTROS)))
+        x, _, w, _ = probe.INTRO_RECT
+        for name in probe.WAYS:
+            with self.subTest(way=name):
+                for row in probe.BARS[name]:
+                    self.assertLessEqual(probe.BAR_X + 8 * len(row), 314, row)  # 38 glyphs
+                self.assertEqual(12, len(probe.INTROS[name]))
+                for line in probe.INTROS[name]:
+                    self.assertLessEqual(x + 8 + 8 * len(line), x + w - 4, line)  # 34 glyphs
+                self.assertEqual(set(), set("".join(probe.BARS[name])) - set(probe.WARM))
 
 
 class MacValuesTest(unittest.TestCase):

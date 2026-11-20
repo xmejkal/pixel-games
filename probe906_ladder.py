@@ -133,6 +133,9 @@ NUMBERS = None  # the Mac part sends a copy with art/mission.py's numbers here: 
 
 # --- what the screen shows, in px ---
 BAR = ("1 FIREMAN: stick DOWN to ladder, FIRE", "2 CHILD: stick UP to ladder, UP climbs", "PICK twice: quit")
+BARS = {"up": BAR,
+        "fire": ("1 FIREMAN: UP to ladder, FIRE", "2 CHILD: DOWN to ladder, FIRE climbs", BAR[2]),
+        "left": ("1 FIREMAN: UP to ladder, FIRE", "2 CHILD: DOWN to ladder, LEFT climbs", BAR[2])}
 BAR_RECT = (0, 0, WIDTH, 24)  # the bar: three rows of 8 px, kept with a constant key, so it is drawn once
 BAR_KEY = ("p906 bar",)
 BAR_X = 10  # each row's words start here and end by x 314, the base bar's edge (gfx.Game.draw_hud)
@@ -152,11 +155,16 @@ NIGHT, LADDER = SET + "_night", SET + "_ladder"  # the street's and the ladder's
 ROUND_WORDS = ("clean", "wrong")  # a task's or a round's word in the log, by whether it had a wrong pick
 # every glyph that a screen after the intro draws, made in the intro (gfx.GLYPHS): no first draw of a letter falls in
 # a round's clock
-WARM = "".join(BAR) + "READY" + QUIT_WORDS + "ROUND 0123456789 time best .s wrong: UP DOWN in task clean/ IN A ROW: " \
-    "DONE FIRE: again"
+WARM = "".join(row for rows in BARS.values() for row in rows) + "READY" + QUIT_WORDS + \
+    "ROUND 0123456789 time best .s wrong: UP DOWN in task clean/ IN A ROW: DONE FIRE: again"
 INTRO = ("THE LADDER MISSION", "", "1 FIREMAN: stick DOWN picks him,", "  run to the ladder, FIRE: hold it",
          "2 CHILD: stick UP picks it,", "  run to the ladder, UP: climb", "stick LEFT/RIGHT: run", "",
          "FIRE = BOOT or the stick's click", "PICK twice: quit", "", "FIRE: start")
+INTROS = {"up": INTRO,
+          "fire": INTRO[:2] + ("1 FIREMAN: stick UP picks him,", INTRO[3], "2 CHILD: stick DOWN picks it,",
+                               "  run to the ladder, FIRE: climb") + INTRO[6:],
+          "left": INTRO[:2] + ("1 FIREMAN: stick UP picks him,", INTRO[3], "2 CHILD: stick DOWN picks it,",
+                               "  run to the ladder, LEFT: climb") + INTRO[6:]}
 INTRO_RECT = (16, 40, 288, 152)  # the intro's dark panel, kept. a line every 12 px from 10 px under its top
 INTRO_KEY = ("p906 intro",)
 
@@ -580,6 +588,12 @@ def seconds(ms):
     return "%d.%d s" % (ms // 1000, ms % 1000 // 100)
 
 
+def options(numbers):
+    """The sitting's options in NUMBERS, which the Mac part writes: the way to climb. A missing key is a bare run's
+    value, so the tests' numbers need none."""
+    return numbers.get("way", WAY)
+
+
 def game_class(boot, numbers, pool=None):
     """The probe's game, a gfx.Game named ladder on the set mission. boot: the wrapped BOOT of the action map, which
     tells BOOT's FIRE from the click's. numbers: NUMBERS. pool: s3lcd.pool on the box, for the pack line after the
@@ -594,6 +608,8 @@ def game_class(boot, numbers, pool=None):
     import gfx
     import pictures
     from engine.subpixel import SubPixel
+
+    way = options(numbers)
 
     def walker(source, i):
         figure = FIGURES[i]
@@ -623,6 +639,7 @@ def game_class(boot, numbers, pool=None):
 
         def __init__(self):
             self.pics, self.boot, self.marks, self.starts = pictures, boot, numbers["mark"], numbers["start"]
+            self.way, self.bar, self.intro = WAYS[way], BARS[way], INTROS[way]
             self.ladder_x, self.ladder_y = numbers["ladder"]
             source = PackSource(pictures.art_index.ART, numbers["pivot"])
             self.figures = [walker(source, i) for i in range(len(FIGURES))]
@@ -642,7 +659,8 @@ def game_class(boot, numbers, pool=None):
             self.number += 1
             for i in range(len(self.figures)):
                 self.figures[i].put(self.starts[i], -1)
-            self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb, self.edge)
+            self.round = Round(self.number, self.ended_ms, self.figures, print,
+                               self.tally, self.climb, self.edge, self.way)
 
         def step(self, now_ms, pressed, held):
             """Exit first, on the frame's clock and in every state, then the base game's states. In a frame that is
@@ -703,8 +721,8 @@ def game_class(boot, numbers, pool=None):
         def draw_bar(self, cv):
             """All 24 rows, as a new strip is black: the dark, then the three rows, white."""
             cv.fill(BAR_RECT[0], BAR_RECT[1], BAR_RECT[2], BAR_RECT[3], self.DARK)
-            for k in range(len(BAR)):
-                cv.text(BAR[k], BAR_X, 8 * k, self.WHITE)
+            for k in range(len(self.bar)):
+                cv.text(self.bar[k], BAR_X, 8 * k, self.WHITE)
 
         def draw_quit(self, cv):
             x, y, w, h = QUIT_RECT
@@ -728,8 +746,8 @@ def game_class(boot, numbers, pool=None):
             x, y, w, h = INTRO_RECT
             cv.fill(x, y, w, h, self.DARK)
             cv.box(x, y, w, h, self.YELLOW)
-            for k in range(len(INTRO)):
-                cv.text(INTRO[k], x + 8, y + 10 + 12 * k, self.YELLOW if k == 0 else self.WHITE)
+            for k in range(len(self.intro)):
+                cv.text(self.intro[k], x + 8, y + 10 + 12 * k, self.YELLOW if k == 0 else self.WHITE)
             for ch in WARM:
                 cv.glyph(ch)
 
