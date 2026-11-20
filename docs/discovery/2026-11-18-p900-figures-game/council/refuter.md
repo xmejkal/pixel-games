@@ -1359,3 +1359,65 @@ Check output, as printed: "Questions: 16 asked, 6 queued" · "Output check: pass
 Not checked: when the morning note asked Q20 (the file was last changed at 05:00). The fault-handler run. Who ran the 1637-test suite: the line appears first in this session's own transcript, so the session most likely ran it.
 
 2 hold, 3 partly, 1 refuted, 1 missing.
+
+# Eighteenth pass (2026-11-20, after the second sitting, D54 to D56)
+
+I read PR 122 at caf2d31 (both logs, bench.md lines 2101 to 2156), the brief's diff 7cd05c9..768f8f8, the four card comments, the transcript, both plans, `probe906_ladder.py` on master, and log 3. Nothing in any tree was changed.
+
+1. **Holds**: the log counts, in all three places. Round 1 is lines 24 to 70, with 713 × 1,000 / 28,610 = 24.92. Round 2 is lines 76 to 138, with 24.67. The picks are 5 right and 4 wrong (3 same, 1 switch), then 6 right and 6 wrong (2 same, 4 switch). The gaps are 2,135, 2,519, 686 and 1,982 ms. The climb took 7,020 ms. The ranges of the `time` lines, the heap values (they change at line 75), the eight lines of 24 fps in the smoke run, the line counts 64 and 237, and the pack and load lines all check out. Every act is a `click`. "5 of the 10 wrong picks changed no figure" holds. They are lines 35, 45, 59, 99 and 111, and code line 90 says a `same` pick is a lean that picks the active figure. ★C44's line, verbatim: `p906 round 2 ends wrong ms 32383 gaps 799 worst 64 slow 1 streak 0` (line 138), with no `streak 5 met` in the 237 lines.
+
+2. **Holds** (the brief, the comments):
+   - **His words:** all four quotes are exact. The stamps are 08:02:27Z, 08:11:53Z in the queue, 08:14:12Z in the queue and 08:15:14Z, which is 09:02, 09:11, 09:14 and 09:15 Prague.
+   - **The session's quoted sentences:** the ones in D55 and D56 are exact (08:13:03Z and 08:14:41Z). D56's "as its reply had said" holds: "With "drop", the merges ... follow at once."
+   - **The pass lines:** "not read", "not met" and "not read" hold by the probe's docstring (lines 12 to 20) and council comment 7025261567.
+   - **The merges:** they happened at 09:15:54 and 09:16:09 Prague. Master's tree equals 71d4f97's tree (f710084). Both branches are deleted.
+   - **The status lines:** "collecting evidence" and the statuses of Q20 and Q22 are fair.
+
+3. **Partly**, D54 (the brief): he sent the whole line as the example gave it, not only the height. The message he answered (07:56:10Z) named trial 2 as "your sitting with the FIRE way ... at pace 100". Fix: say both facts.
+
+4. **Missing**, D55 (the brief): the question was first put before he played, at 08:07:14Z: "was the climb too slow at your height?" Fix: add that he played already knowing this question would come (H).
+
+5. **Partly**, "while he runs" (bench.md, the brief, comment 7034185099):
+   - bench.md's lead-in "The wrong picks while he ran:" states his account as the log's.
+   - The comment's "So the picks go wrong while he runs" and "the climb's place ... was not the only cause in the first sitting" are not tagged, and the mapping flipped between the sittings.
+   - The Riskiest line's "no longer the climb beside it" is not tagged either, while every FIRE was the stick's click.
+   - Unused support for his account: line 91 is a FIRE 1,339 ms after the unwanted switch of line 90, and it held nothing. No switch followed a click within 1 s.
+
+   Fix: tie each sentence to D56 or tag it (H), and add line 91.
+
+6. **REFUTED**, comment 7034185099: "Round 2, task 1, lasted 17 s" is wrong. The hold is at 19,578 ms (line 108). 17.2 s is the time from the first fireman pick (line 82). Fix: post a corrected comment.
+
+7. **Partly**, C46, Q24 and the Decision-needed line (the brief):
+   - **The 3.3 s:** it is not only calculated. Log 3, lines 102 and 103, measures 3,322 ms at 96 px.
+   - **The cause:** that log's climb ended at 57 px, and this sitting's at 76 px. So the longer distance explains part of the 7.0 s, not only the pace.
+   - **Round 2:** its three goes add up to 7,021 ms. Its "stops 32" after "starts 33" (lines 127 and 128) is a pose value from the code's pose table, not a slide down.
+
+   Fix: add these four facts.
+
+8. **REFUTED**, stale lines (the brief):
+   - The Ready-for line's "(the start of this line)", which appears twice, now points at ★C44, not ★C38.
+   - Line 84 says "not merged and never ran on the box".
+   - Line 208 says "which is not merged".
+   - Line 321 says "The merge waits for a smoke run".
+   - risks-and-tests.md line 65 says "No D orders that sitting".
+   - C44's "third mapping" is wrong: there are two mappings, and this was the second change (code lines 6 and 7).
+
+   Fix: correct each line.
+
+## Searches
+
+- "not merged": brief lines 84, 208 and 321.
+- "waits for a smoke run": line 321.
+- "No D orders that sitting": risks-and-tests.md line 65.
+- "never ran on the box": line 84.
+- "his pick is asked": no hit.
+- "no D of his orders that sitting": no hit.
+
+The discovery check gives "Output check: 1 problems", and the one problem is "verification.md: ★C44 needs its row, ending in keep". It also prints "brief.md: 338 lines; the guide is 150".
+
+Not checked:
+- The 132 and 71 px a second. 108 × 64 / 96 = 72, and I did not run `art/mission.py` to see where 71 comes from.
+- The store's deploy record and the box itself, which was off limits.
+- The Mac-clock start times.
+
+Counts: 2 Holds, 3 Partly, 1 Missing, 2 REFUTED.
