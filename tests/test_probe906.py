@@ -238,10 +238,10 @@ class Play:
     """One round on scripted frames: its lines in a list, a clock that moves 41 ms a frame unless a frame names its
     time, and the two stand-in walkers."""
 
-    def __init__(self, number=1, ended=None, edge=None):
+    def __init__(self, number=1, ended=None, edge=None, way=None):
         self.lines, self.now = [], T0
         self.figures = walkers()
-        self.round = probe.Round(number, ended, self.figures, self.lines.append, None, None, edge)
+        self.round = probe.Round(number, ended, self.figures, self.lines.append, None, None, edge, way)
 
     def frame(self, at=None, ms=41, boot=NONE, click=NONE, **inputs):
         self.now = T0 + at if at is not None else self.now + ms
@@ -256,7 +256,7 @@ class RoundTest(unittest.TestCase):
     """The round that starts (step 3): its line, READY and the pick, on scripted frames."""
 
     def test_its_values_are_the_plans(self):
-        self.assertEqual((600, 15000, 24, 2, ("fireman", "child")),
+        self.assertEqual((600, 15000, 24, 50, ("fireman", "child")),
                          (probe.READY_MS, probe.TITLE_MS, probe.HOLD_PX, probe.PACE, probe.FIGURES))
 
     def test_its_first_frame_starts_it_round_1_after_0_with_the_child_active(self):
@@ -333,10 +333,12 @@ class Pictures:
 class Box:
     """The real app.App with the probe's game in a lineup of one: the FIRE buttons wrapped (Seen), PICK, the knob's
     encoder and the stick, the fakes of tests/test_actions.py, pictures stood in by the written index, and no knob in
-    the App. The clock moves by each frame's ms. It stands in the intro after its first frame."""
+    the App. The clock moves by each frame's ms. It stands in the intro after its first frame. options: keys over the
+    written numbers, in a copy, as the Mac part writes them (way, pace)."""
 
-    def __init__(self, test, pool=None):
-        index, self.numbers = written()
+    def __init__(self, test, pool=None, options=None):
+        index, numbers = written()
+        self.numbers = dict(numbers, **(options or {}))  # a copy: written() is cached
         self.now, self.said, self.pictures = T0, io.StringIO(), Pictures(index)
         stack = contextlib.ExitStack()
         test.addCleanup(stack.close)
@@ -562,8 +564,9 @@ class PackLineTest(unittest.TestCase):
 class BoardTest(unittest.TestCase):
     """board() on stand-in modules: pins, the encoder's pads, the App's map and run, s3lcd's pool."""
 
-    def board(self, stick=True, ends=probe.Quit):
-        """board() run: what it did in order, what it printed, the map and game run got, and the error it left with."""
+    def board(self, stick=True, ends=probe.Quit, numbers=None):
+        """board() run: what it did in order, what it printed, the map and game run got, and the error it left with.
+        numbers: NUMBERS for the run (None: the written numbers)."""
         did, got = [], {}
         boot, click, d14 = FakeButton(), FakeButton(), FakeButton()
 
@@ -583,7 +586,7 @@ class BoardTest(unittest.TestCase):
                    "app": types.SimpleNamespace(open_action_map=open_action_map, run=run),
                    "s3lcd": types.SimpleNamespace(pool="the pool")}
         error = None
-        with mock.patch.dict(sys.modules, modules), mock.patch.object(probe, "NUMBERS", written()[1]), \
+        with mock.patch.dict(sys.modules, modules), mock.patch.object(probe, "NUMBERS", numbers or written()[1]), \
                 mock.patch.object(probe, "game_class", lambda *a: types.SimpleNamespace(name="ladder", args=a)), \
                 contextlib.redirect_stdout(io.StringIO()) as said:
             try:
@@ -596,13 +599,19 @@ class BoardTest(unittest.TestCase):
         did, lines, got, error, (boot, click, d14) = self.board()
         self.assertIsNone(error)
         self.assertEqual(["pads 44 43", "map", "run"], did)
-        self.assertEqual(["p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2", "done"], lines)
+        self.assertEqual(["p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24",
+                          "p906 options way up pace 50 height 96", "done"], lines)
         self.assertEqual((None, None, 1), (got["knob"], got["speaker"], len(got["games"])))
         wrapped_boot, numbers, pool = got["games"][0].args
         fire = list(got["map"].fire_bindings)
         self.assertEqual(([boot, click], written()[1], "the pool"), ([b.button for b in fire], numbers, pool))
         self.assertIs(fire[0], wrapped_boot)
         self.assertEqual(((d14,), "the encoder"), (got["map"].pick_bindings, got["map"].encoder))
+
+    def test_after_the_rules_it_names_the_options_of_its_numbers(self):
+        did, lines, got, error, _ = self.board(numbers=dict(written()[1], way="left", pace=100))
+        self.assertEqual(["p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24",
+                          "p906 options way left pace 100 height 96", "done"], lines)
 
     def test_a_pin_map_with_no_stick_is_refused_in_one_line_and_runs_nothing(self):
         did, lines, got, error, _ = self.board(stick=False)
@@ -679,8 +688,8 @@ class StandInArt:
 
 
 ROOT = ("boot.py", "main.py", "app.mpy", "art_index.mpy", "packs/")
-DONE = "p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2\npack pool 773470\ngame ladder\n" \
-       "p906 intro ends fire\np906 round 1 starts after 0\ndone\n"
+DONE = "p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24\np906 options way up pace 50 height 96\n" \
+       "pack pool 773470\ngame ladder\np906 intro ends fire\np906 round 1 starts after 0\ndone\n"
 
 
 def removal():
@@ -743,7 +752,22 @@ class MacTest(unittest.TestCase):
         self.assertTrue(differ[0][0].startswith("NUMBERS = None  #"), differ)
         module = {"__name__": "copy"}
         exec(compile(board.copy, "copy", "exec"), module)
-        self.assertEqual(STAND_IN_NUMBERS, module["NUMBERS"])
+        self.assertEqual(dict(STAND_IN_NUMBERS, way="up", pace=50, height=96), module["NUMBERS"])
+
+    def test_the_way_and_the_pace_reach_the_copys_numbers(self):
+        board = StreamBoard(said=DONE)
+        said, err, refused = self.mac(["--way", "fire", "--pace", "100"], board)
+        self.assertIsNone(refused)
+        module = {"__name__": "copy"}
+        exec(compile(board.copy, "copy", "exec"), module)
+        self.assertEqual(dict(STAND_IN_NUMBERS, way="fire", pace=100, height=96), module["NUMBERS"])
+
+    def test_a_bad_way_or_pace_runs_nothing(self):
+        for argv in (["--way", "down"], ["--pace", "0"], ["--pace", "x"]):
+            with self.subTest(argv=argv):
+                board = StreamBoard(said=DONE)
+                said, err, refused = self.mac(argv, board)
+                self.assertEqual((2, []), (refused.code, board.commands))
 
     def test_filled_refuses_a_source_without_exactly_one_numbers_line(self):
         with open(os.path.join(REPO, "probe906_ladder.py")) as f:
@@ -973,17 +997,18 @@ class Run(Play):
     """A whole round on scripted frames, with the sitting's tally and a climb: Play's walkers, the fireman's place 127
     and the child's foot 131."""
 
-    def __init__(self, number=1, ended=None, tally=None, climb=None, edge=None):
+    def __init__(self, number=1, ended=None, tally=None, climb=None, edge=None, way=None):
         self.lines, self.now = [], T0
         self.figures = walkers()
         self.tally, self.climb = tally or probe.Tally(), climb or stand_climb()
-        self.round = probe.Round(number, ended, self.figures, self.lines.append, self.tally, self.climb, edge)
+        self.round = probe.Round(number, ended, self.figures, self.lines.append, self.tally, self.climb, edge, way)
 
     def holds(self):
-        """The fireman picked, at his place, and FIRE: task 1 ends."""
-        self.frame(y=70)
+        """The fireman picked with the lean that does not pick the child, at his place, and FIRE: task 1 ends."""
+        y = 70 * -self.round.way.child_lean
+        self.frame(y=y)
         self.figures[probe.FIREMAN].x = 127
-        return self.frame(y=70, boot=ON, fire=True)
+        return self.frame(y=y, boot=ON, fire=True)
 
     def at_foot(self):
         self.figures[probe.CHILD].x = 131
@@ -1254,17 +1279,20 @@ class ExitTest(unittest.TestCase):
 
 
 def finish(box):
-    """A clean round through the App from READY's end: down picks the fireman, he stands at his place and FIRE holds.
-    up picks the child, it stands at the foot and climbs until the round ends."""
+    """A clean round through the App from READY's end, in the game's way: the lean that does not pick the child picks
+    the fireman, he stands at his place and FIRE holds. The child's lean picks it, it stands at the foot and climbs
+    until the round ends, with FIRE held in the FIRE way and the stick's left in the left way."""
     game = box.app.game
     fireman, child = game.figures
-    box.frame(y=70)
+    lean = 70 * game.way.child_lean
+    box.frame(y=-lean)
     fireman.x = fireman.lo
-    box.frame(y=70, fire=True)
-    box.frame(y=-70)
+    box.frame(y=-lean, fire=True)
+    box.frame(y=lean)
     child.x = child.lo
+    climb = {"up": {}, "fire": {"held": True}, "left": {"x": -70}}[game.way.name]
     for _ in range(3000):
-        box.frame(y=-70)
+        box.frame(y=lean, **climb)
         if game.state == gfx.OVER:
             return box
     raise AssertionError("the round did not end")
@@ -1778,6 +1806,164 @@ class EscapeTest(unittest.TestCase):
             probe.mac([], runner=board, sleep=lambda s: None, art=StandInArt())
         self.assertIn("; before it: KeyboardInterrupt(); ", str(refused.exception.code))
         self.assertIn("may still be on the box", str(refused.exception.code))
+
+
+def climb_lines(p):
+    return [line for line in p.lines if " climb " in line]
+
+
+class WayRoundTest(unittest.TestCase):
+    """The way to climb of the second sitting, handed to the round, on scripted frames. In the FIRE and the left way
+    a lean up picks the fireman and a lean down the child. A round with no way climbs sitting 1's way (RoundTest)."""
+
+    def at_foot(self, name):
+        """The way's round: the fireman holds, the child picked and at the foot of the held ladder."""
+        p = Run(way=probe.WAYS[name]).ready().holds()
+        return p.frame(y=70 * p.round.way.child_lean).at_foot()
+
+    def up_held(self, name):
+        """The way's round: the fireman holds, picked by the stick's up that stays, and the child active at the foot."""
+        p = Run(way=probe.WAYS[name]).ready().holds().at_foot()
+        p.round.active = probe.CHILD
+        return p
+
+    def test_in_fire_and_left_up_picks_the_fireman_and_down_the_child_from_each_figure(self):
+        for name in ("fire", "left"):
+            for first, y, active in ((probe.CHILD, -70, probe.FIREMAN), (probe.CHILD, 70, probe.CHILD),
+                                     (probe.FIREMAN, -70, probe.FIREMAN), (probe.FIREMAN, 70, probe.CHILD)):
+                with self.subTest(way=name, first=first, y=y):
+                    p = Play(way=probe.WAYS[name]).ready()
+                    p.round.active = first
+                    p.frame(y=y)
+                    self.assertEqual(active, p.round.active)
+
+    def test_fire_at_the_foot_is_act_none_and_then_the_climbs_start_at_the_same_ms(self):
+        p = self.at_foot("fire").frame(fire=True, boot=ON)
+        self.assertEqual(["p906 act none boot %d" % p.ms(), "p906 climb starts 0 %d" % p.ms()], p.lines[-2:])
+        self.assertTrue(p.figures[probe.CHILD].on_ladder)
+
+    def test_fire_held_with_no_press_climbs_on_and_its_release_stops_the_climb(self):
+        p = self.at_foot("fire").frame(fire=True, boot=ON).frame(held=True).frame(held=True)
+        child = p.figures[probe.CHILD]
+        self.assertEqual((82, True), (p.climb.ms, p.round.climbing))
+        p.frame()
+        self.assertEqual(("p906 climb stops %d %d" % (child.up, p.ms()), 82, True),
+                         (p.lines[-1], p.climb.ms, child.on_ladder))
+
+    def test_fire_climbs_neither_before_the_hold_nor_1_px_from_the_foot(self):
+        p = Run(way=probe.WAYS["fire"]).ready().at_foot()
+        p.frame(fire=True, boot=ON).frame(held=True)  # the child is active, and the fireman holds nothing
+        self.assertEqual((False, []), (p.figures[probe.CHILD].on_ladder, climb_lines(p)))
+        p = self.at_foot("fire")
+        p.figures[probe.CHILD].x = 132
+        p.frame(fire=True, boot=ON).frame(held=True)
+        self.assertFalse(p.figures[probe.CHILD].on_ladder)
+        p.at_foot().frame(held=True)
+        self.assertEqual("p906 climb starts 0 %d" % p.ms(), p.lines[-1])
+
+    def test_fire_does_not_climb_on_the_sticks_up(self):
+        p = self.up_held("fire").frame(y=-70).frame(y=-70)
+        self.assertEqual((probe.UP, False, []), (p.round.edge.on, p.figures[probe.CHILD].on_ladder, climb_lines(p)))
+
+    def test_left_at_the_foot_climbs_at_a_lean_of_40_and_not_at_39(self):
+        p = self.at_foot("left").frame(x=-39)
+        self.assertFalse(p.figures[probe.CHILD].on_ladder)
+        p.frame(x=-40)
+        self.assertEqual(("p906 climb starts 0 %d" % p.ms(), True), (p.lines[-1], p.figures[probe.CHILD].on_ladder))
+
+    def test_left_a_lean_of_39_stops_the_climb_and_the_child_stays(self):
+        p = self.at_foot("left").frame(x=-70).frame(x=-70)
+        child = p.figures[probe.CHILD]
+        x, up = child.x, child.up
+        p.frame(x=-39)
+        self.assertEqual(("p906 climb stops %d %d" % (up, p.ms()), x, up, True),
+                         (p.lines[-1], child.x, child.up, child.on_ladder))
+
+    def test_left_neither_a_lean_right_nor_the_sticks_up_climbs(self):
+        p = self.at_foot("left").frame(x=-70).frame(x=-70).frame(x=-39)  # on the ladder, the climb stopped
+        p.frame(x=70).frame(x=70)
+        self.assertEqual((41, False), (p.climb.ms, p.round.climbing))
+        p = self.up_held("left").frame(y=-70).frame(y=-70)
+        self.assertEqual((probe.UP, False, []), (p.round.edge.on, p.figures[probe.CHILD].on_ladder, climb_lines(p)))
+
+    def test_left_a_lean_that_runs_the_child_past_the_foot_climbs_in_that_frame(self):
+        p = self.at_foot("left")
+        child = p.figures[probe.CHILD]
+        child.x = 131 + 4
+        p.frame(x=-80, ms=60)  # 43 px a second over 60 ms: 3 px to the left
+        self.assertEqual((132, False), (child.x, child.on_ladder))
+        p.frame(x=-80, ms=60)  # past the foot: it stops at it, and climbs in this frame
+        self.assertEqual(("p906 climb starts 0 %d" % p.ms(), True), (p.lines[-1], child.on_ladder))
+
+
+class WayGameTest(unittest.TestCase):
+    """The way to climb through app.App: NUMBERS' way gives the round its way, the intro its lines and the bar its
+    rows."""
+
+    def test_in_fire_and_left_the_intro_shows_the_ways_lines(self):
+        for name in ("fire", "left"):
+            with self.subTest(way=name):
+                seen = Box(self, options={"way": name}).out.cv.seen
+                for line in probe.INTROS[name]:
+                    self.assertIn(line, seen)
+                self.assertNotIn(probe.INTRO[4], seen)  # the up way's "2 CHILD: stick UP picks it,"
+
+    def test_in_fire_and_left_the_bar_draws_the_ways_rows_once_in_three_rounds(self):
+        for name in ("fire", "left"):
+            with self.subTest(way=name):
+                box = Box(self, options={"way": name})
+                box.out.cv.seen.clear()  # the intro's words: its last line is the bar's last row too
+                box.play()
+                for _ in range(3):
+                    finish(box)
+                    again(box)
+                self.assertEqual([1, 1, 1], [box.out.cv.seen.count(row) for row in probe.BARS[name]])
+                self.assertEqual([0, 0], [box.out.cv.seen.count(row) for row in probe.BAR[:2]])
+
+    def test_in_fire_and_left_the_round_has_the_games_way_and_a_clean_round_ends_clean(self):
+        for name in ("fire", "left"):
+            with self.subTest(way=name):
+                box = finish(Box(self, options={"way": name}).play())
+                self.assertIs(probe.WAYS[name], box.app.game.round.way)
+                self.assertTrue(box.lines()[-1].startswith("p906 round 1 ends clean "), box.lines()[-1])
+
+    def test_a_wrong_round_in_the_fire_way_names_its_lean_down_in_task_1(self):
+        box = Box(self, options={"way": "fire"}).play()
+        box.frame(y=70).frame()  # task 1 wants the fireman: in the FIRE way a lean down picks the child
+        finish(box)
+        box.frame()
+        self.assertIn(("wrong: DOWN in task 1", gfx.YELLOW), [(op[5], op[6]) for op in box.out.cv.ops if op[4] == 3])
+
+    def test_each_ways_bar_and_intro_fit_and_the_bars_glyphs_are_made_in_the_intro(self):
+        self.assertEqual((list(probe.WAYS),) * 2, (list(probe.BARS), list(probe.INTROS)))
+        x, _, w, _ = probe.INTRO_RECT
+        for name in probe.WAYS:
+            with self.subTest(way=name):
+                for row in probe.BARS[name]:
+                    self.assertLessEqual(probe.BAR_X + 8 * len(row), 314, row)  # 38 glyphs
+                self.assertEqual(12, len(probe.INTROS[name]))
+                for line in probe.INTROS[name]:
+                    self.assertLessEqual(x + 8 + 8 * len(line), x + w - 4, line)  # 34 glyphs
+                self.assertEqual(set(), set("".join(probe.BARS[name])) - set(probe.WARM))
+
+
+class OptionsTest(unittest.TestCase):
+    """The sitting's options in NUMBERS: the way to climb, the pace in percent of the captured speed and the height."""
+
+    def test_a_missing_key_is_a_bare_runs_value_and_a_full_dict_is_read_back(self):
+        self.assertEqual(("up", 50, 96), probe.options({}))
+        self.assertEqual(("left", 150, 64), probe.options({"way": "left", "pace": 150, "height": 64}))
+
+    def test_a_bare_runs_height_is_arts(self):
+        self.assertEqual(mission.TALL, probe.TALL)
+
+    def test_the_figures_run_at_the_pace_in_percent_of_their_captured_speed(self):
+        for pace in (100, 150):
+            with self.subTest(pace=pace):
+                box = Box(self, options={"pace": pace})
+                speed = box.numbers["speed"]
+                self.assertEqual([speed["fireman"] * pace // 100, speed["child"] * pace // 100],
+                                 [f.speed for f in box.app.game.figures])
 
 
 class MacValuesTest(unittest.TestCase):

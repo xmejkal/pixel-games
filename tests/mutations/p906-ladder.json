@@ -80,8 +80,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "the climb comes before the run",
-  "find": "        walk = lean(actions.x)\n        for i in range(len(self.figures)):\n            self.figures[i].walk(ms, walk if i == self.active else 0)\n        self.climb_step(ms, at, now_ms)",
-  "replace": "        self.climb_step(ms, at, now_ms)\n        walk = lean(actions.x)\n        for i in range(len(self.figures)):\n            self.figures[i].walk(ms, walk if i == self.active else 0)"
+  "find": "        walk = lean(actions.x)\n        for i in range(len(self.figures)):\n            self.figures[i].walk(ms, walk if i == self.active else 0)\n        self.climb_step(ms, at, now_ms, actions)",
+  "replace": "        self.climb_step(ms, at, now_ms, actions)\n        walk = lean(actions.x)\n        for i in range(len(self.figures)):\n            self.figures[i].walk(ms, walk if i == self.active else 0)"
  },
  {
   "file": "probe906_ladder.py",
@@ -139,9 +139,9 @@
  },
  {
   "file": "probe906_ladder.py",
-  "name": "up picks the fireman",
-  "find": "to = CHILD if side == UP else FIREMAN",
-  "replace": "to = FIREMAN if side == UP else CHILD"
+  "name": "the lean that picks the child picks the fireman",
+  "find": "to = CHILD if side == self.way.child_lean else FIREMAN",
+  "replace": "to = FIREMAN if side == self.way.child_lean else CHILD"
  },
  {
   "file": "probe906_ladder.py",
@@ -158,8 +158,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "the child climbs before the hold",
-  "find": "climbs = self.active == CHILD and self.edge.on == UP and self.figures[FIREMAN].holds and (",
-  "replace": "climbs = self.active == CHILD and self.edge.on == UP and ("
+  "find": "climbs = self.active == CHILD and self.way.on(actions, self.edge) and self.figures[FIREMAN].holds and (",
+  "replace": "climbs = self.active == CHILD and self.way.on(actions, self.edge) and ("
  },
  {
   "file": "probe906_ladder.py",
@@ -182,8 +182,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "the child climbs with no lean up",
-  "find": "climbs = self.active == CHILD and self.edge.on == UP and",
-  "replace": "climbs = self.active == CHILD and self.edge.on != -UP and"
+  "find": "return edge.on == UP",
+  "replace": "return edge.on != -UP"
  },
  {
   "file": "probe906_ladder.py",
@@ -224,7 +224,7 @@
  {
   "file": "probe906_ladder.py",
   "name": "the figures run at their captured speed",
-  "find": "numbers[\"speed\"][figure] // PACE",
+  "find": "numbers[\"speed\"][figure] * pace // 100",
   "replace": "numbers[\"speed\"][figure]"
  },
  {
@@ -512,8 +512,8 @@
  {
   "file": "probe906_ladder.py",
   "name": "each round has a detector of its own",
-  "find": "self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb, self.edge)",
-  "replace": "self.round = Round(self.number, self.ended_ms, self.figures, print, self.tally, self.climb)"
+  "find": "self.tally, self.climb, self.edge, self.way)",
+  "replace": "self.tally, self.climb, None, self.way)"
  },
  {
   "file": "probe906_ladder.py",
@@ -568,5 +568,119 @@
   "name": "draw_over keeps the result screen in another rect",
   "find": "cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), RESULT_RECT, self.result_draw)",
   "replace": "cv.keep((RESULT_KEY, self.number, self.age >= self.OVER_MS), (76, 70, 200, 100), self.result_draw)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the FIRE way's down picks the fireman",
+  "find": "name, child_lean = \"fire\", DOWN",
+  "replace": "name, child_lean = \"fire\", UP"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the left way's down picks the fireman",
+  "find": "name, child_lean = \"left\", DOWN",
+  "replace": "name, child_lean = \"left\", UP"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "FIRE climbs only in the frame of its press",
+  "find": "return actions.fire.held",
+  "replace": "return actions.fire.pressed"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the FIRE way climbs on the stick's up",
+  "find": "return actions.fire.held",
+  "replace": "return edge.on == UP"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a lean right climbs in the left way",
+  "find": "return lean(actions.x) == TO_LADDER",
+  "replace": "return lean(actions.x) != 0"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a round's way is always sitting 1's",
+  "find": "self.way = way or WAYS[WAY]",
+  "replace": "self.way = WAYS[WAY]"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a bare run's way is FIRE",
+  "find": "WAY = \"up\"",
+  "replace": "WAY = \"fire\""
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the game draws the up way's bar",
+  "find": "BARS[way], INTROS[way]",
+  "replace": "BAR, INTROS[way]"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the game's intro is the up way's",
+  "find": "BARS[way], INTROS[way]",
+  "replace": "BARS[way], INTRO"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "WARM holds only the up way's bar",
+  "find": "\"\".join(row for rows in BARS.values() for row in rows)",
+  "replace": "\"\".join(BAR)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a missing way is FIRE",
+  "find": "numbers.get(\"way\", WAY)",
+  "replace": "numbers.get(\"way\", \"fire\")"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a bare run's pace is the captured speed",
+  "find": "PACE = 50",
+  "replace": "PACE = 100"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the pace is capped at 100",
+  "find": "numbers[\"speed\"][figure] * pace // 100",
+  "replace": "numbers[\"speed\"][figure] * min(pace, 100) // 100"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the options line names a bare run's values",
+  "find": "% options(NUMBERS))",
+  "replace": "% options({}))"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part sends no way",
+  "find": "way=args.way, pace=args.pace",
+  "replace": "pace=args.pace"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part sends no pace",
+  "find": "pace=args.pace, height=",
+  "replace": "height="
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the Mac part sends no height",
+  "find": "pace=args.pace, height=TALL)",
+  "replace": "pace=args.pace)"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "--way's default is FIRE",
+  "find": "choices=tuple(WAYS), default=WAY,",
+  "replace": "choices=tuple(WAYS), default=\"fire\","
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "--pace takes 0",
+  "find": "int(text) < 1",
+  "replace": "int(text) < 0"
  }
 ]
