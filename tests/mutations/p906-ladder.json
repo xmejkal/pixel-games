@@ -224,7 +224,7 @@
  {
   "file": "probe906_ladder.py",
   "name": "the figures run at their captured speed",
-  "find": "numbers[\"speed\"][figure] // PACE",
+  "find": "numbers[\"speed\"][figure] * pace // 100",
   "replace": "numbers[\"speed\"][figure]"
  },
  {
@@ -634,5 +634,23 @@
   "name": "a missing way is FIRE",
   "find": "numbers.get(\"way\", WAY)",
   "replace": "numbers.get(\"way\", \"fire\")"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "a bare run's pace is the captured speed",
+  "find": "PACE = 50",
+  "replace": "PACE = 100"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the pace is capped at 100",
+  "find": "numbers[\"speed\"][figure] * pace // 100",
+  "replace": "numbers[\"speed\"][figure] * min(pace, 100) // 100"
+ },
+ {
+  "file": "probe906_ladder.py",
+  "name": "the options line names a bare run's values",
+  "find": "% options(NUMBERS))",
+  "replace": "% options({}))"
  }
 ]

@@ -256,7 +256,7 @@ class RoundTest(unittest.TestCase):
     """The round that starts (step 3): its line, READY and the pick, on scripted frames."""
 
     def test_its_values_are_the_plans(self):
-        self.assertEqual((600, 15000, 24, 2, ("fireman", "child")),
+        self.assertEqual((600, 15000, 24, 50, ("fireman", "child")),
                          (probe.READY_MS, probe.TITLE_MS, probe.HOLD_PX, probe.PACE, probe.FIGURES))
 
     def test_its_first_frame_starts_it_round_1_after_0_with_the_child_active(self):
@@ -564,8 +564,9 @@ class PackLineTest(unittest.TestCase):
 class BoardTest(unittest.TestCase):
     """board() on stand-in modules: pins, the encoder's pads, the App's map and run, s3lcd's pool."""
 
-    def board(self, stick=True, ends=probe.Quit):
-        """board() run: what it did in order, what it printed, the map and game run got, and the error it left with."""
+    def board(self, stick=True, ends=probe.Quit, numbers=None):
+        """board() run: what it did in order, what it printed, the map and game run got, and the error it left with.
+        numbers: NUMBERS for the run (None: the written numbers)."""
         did, got = [], {}
         boot, click, d14 = FakeButton(), FakeButton(), FakeButton()
 
@@ -585,7 +586,7 @@ class BoardTest(unittest.TestCase):
                    "app": types.SimpleNamespace(open_action_map=open_action_map, run=run),
                    "s3lcd": types.SimpleNamespace(pool="the pool")}
         error = None
-        with mock.patch.dict(sys.modules, modules), mock.patch.object(probe, "NUMBERS", written()[1]), \
+        with mock.patch.dict(sys.modules, modules), mock.patch.object(probe, "NUMBERS", numbers or written()[1]), \
                 mock.patch.object(probe, "game_class", lambda *a: types.SimpleNamespace(name="ladder", args=a)), \
                 contextlib.redirect_stdout(io.StringIO()) as said:
             try:
@@ -598,13 +599,19 @@ class BoardTest(unittest.TestCase):
         did, lines, got, error, (boot, click, d14) = self.board()
         self.assertIsNone(error)
         self.assertEqual(["pads 44 43", "map", "run"], did)
-        self.assertEqual(["p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2", "done"], lines)
+        self.assertEqual(["p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24",
+                          "p906 options way up pace 50 height 96", "done"], lines)
         self.assertEqual((None, None, 1), (got["knob"], got["speaker"], len(got["games"])))
         wrapped_boot, numbers, pool = got["games"][0].args
         fire = list(got["map"].fire_bindings)
         self.assertEqual(([boot, click], written()[1], "the pool"), ([b.button for b in fire], numbers, pool))
         self.assertIs(fire[0], wrapped_boot)
         self.assertEqual(((d14,), "the encoder"), (got["map"].pick_bindings, got["map"].encoder))
+
+    def test_after_the_rules_it_names_the_options_of_its_numbers(self):
+        did, lines, got, error, _ = self.board(numbers=dict(written()[1], way="left", pace=100))
+        self.assertEqual(["p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24",
+                          "p906 options way left pace 100 height 96", "done"], lines)
 
     def test_a_pin_map_with_no_stick_is_refused_in_one_line_and_runs_nothing(self):
         did, lines, got, error, _ = self.board(stick=False)
@@ -681,8 +688,8 @@ class StandInArt:
 
 
 ROOT = ("boot.py", "main.py", "app.mpy", "art_index.mpy", "packs/")
-DONE = "p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24 pace 2\npack pool 773470\ngame ladder\n" \
-       "p906 intro ends fire\np906 round 1 starts after 0\ndone\n"
+DONE = "p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24\np906 options way up pace 50 height 96\n" \
+       "pack pool 773470\ngame ladder\np906 intro ends fire\np906 round 1 starts after 0\ndone\n"
 
 
 def removal():
@@ -1923,6 +1930,25 @@ class WayGameTest(unittest.TestCase):
                 for line in probe.INTROS[name]:
                     self.assertLessEqual(x + 8 + 8 * len(line), x + w - 4, line)  # 34 glyphs
                 self.assertEqual(set(), set("".join(probe.BARS[name])) - set(probe.WARM))
+
+
+class OptionsTest(unittest.TestCase):
+    """The sitting's options in NUMBERS: the way to climb, the pace in percent of the captured speed and the height."""
+
+    def test_a_missing_key_is_a_bare_runs_value_and_a_full_dict_is_read_back(self):
+        self.assertEqual(("up", 50, 96), probe.options({}))
+        self.assertEqual(("left", 150, 64), probe.options({"way": "left", "pace": 150, "height": 64}))
+
+    def test_a_bare_runs_height_is_arts(self):
+        self.assertEqual(mission.TALL, probe.TALL)
+
+    def test_the_figures_run_at_the_pace_in_percent_of_their_captured_speed(self):
+        for pace in (100, 150):
+            with self.subTest(pace=pace):
+                box = Box(self, options={"pace": pace})
+                speed = box.numbers["speed"]
+                self.assertEqual([speed["fireman"] * pace // 100, speed["child"] * pace // 100],
+                                 [f.speed for f in box.app.game.figures])
 
 
 class MacValuesTest(unittest.TestCase):

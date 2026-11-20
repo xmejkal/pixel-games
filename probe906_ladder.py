@@ -115,9 +115,10 @@ DOWN = -UP  # the stick's y reads positive down: in the FIRE and the left way a 
 READY_MS = 600  # a round starts with READY: a lean that starts in it is the round's first pick, at its end
 TITLE_MS = 15000  # the intro shows this long, or until FIRE
 HOLD_PX = 24  # FIRE within this many px of his place makes the fireman hold the ladder
-PACE = 2  # the figures run at their captured speed divided by this: half, a start value
+PACE = 50  # percent of the captured speed: sitting 1's, a bare run's (--pace)
 WAY = "up"  # the way to climb of a bare run, a key of WAYS: sitting 1's
-CLIMB_PACE = 2  # the child climbs this many times the captured pace: about 3.3 s to the roof's edge, a start value
+TALL = 96  # px: the figures' height of a bare run, art's detailed.TALL
+CLIMB_PACE = 2  # a multiple of the captured climb's pace, which --pace does not change: 3.3 s to the roof at 96 px
 STREAK = 5  # clean rounds in a row: the pick line (`streak 5 met`)
 SLOW_MS = 52  # a gap between two frames of a round over this many ms is slow (the end line's slow)
 QUIT_MS = 3000  # a second PICK at most this long after the first ends the sitting
@@ -589,9 +590,9 @@ def seconds(ms):
 
 
 def options(numbers):
-    """The sitting's options in NUMBERS, which the Mac part writes: the way to climb. A missing key is a bare run's
-    value, so the tests' numbers need none."""
-    return numbers.get("way", WAY)
+    """The sitting's options in NUMBERS, which the Mac part writes: (the way to climb, the pace in percent of the
+    captured speed, the figures' height in px). A missing key is a bare run's value, so the tests' numbers need none."""
+    return numbers.get("way", WAY), numbers.get("pace", PACE), numbers.get("height", TALL)
 
 
 def game_class(boot, numbers, pool=None):
@@ -609,7 +610,7 @@ def game_class(boot, numbers, pool=None):
     import pictures
     from engine.subpixel import SubPixel
 
-    way = options(numbers)
+    way, pace, _ = options(numbers)
 
     def walker(source, i):
         figure = FIGURES[i]
@@ -623,8 +624,8 @@ def game_class(boot, numbers, pool=None):
             hold = (right[0], left[0])
         else:
             climb = source.poses(figure, "climb")
-        return Walker(SubPixel(), numbers["speed"][figure] // PACE, numbers["stride"][figure], numbers["place"][i],
-                      WIDTH - 1 - reach, run, (run[0][stand], run[1][stand]), hold, climb)
+        return Walker(SubPixel(), numbers["speed"][figure] * pace // 100, numbers["stride"][figure],
+                      numbers["place"][i], WIDTH - 1 - reach, run, (run[0][stand], run[1][stand]), hold, climb)
 
     class Ladder(gfx.Game):
         name = "ladder"
@@ -798,8 +799,8 @@ def board():
         raise RuntimeError("p906 refused: no stick in the pin map (pins.JOY_X): the probe needs the stick")
     boot, click = Seen(found.fire_bindings[0]), Seen(found.fire_bindings[1])
     action_map = ActionMap((boot, click), found.pick_bindings, found.encoder, found.stick)
-    print("p906 rules lean %d rest %d ready %d intro %d hold %d pace %d" % (LEAN, LEAN_REST, READY_MS, TITLE_MS,
-                                                                           HOLD_PX, PACE))
+    print("p906 rules lean %d rest %d ready %d intro %d hold %d" % (LEAN, LEAN_REST, READY_MS, TITLE_MS, HOLD_PX))
+    print("p906 options way %s pace %d height %d" % options(NUMBERS))
     try:
         import s3lcd
         pool = s3lcd.pool
