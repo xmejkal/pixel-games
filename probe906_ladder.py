@@ -1,6 +1,6 @@
 """
 P906 (#1285): the walking skeleton, a ladder mission on the game box with the fireman and the child at 96 px over
-Rescue's night street (slice 0 of P900). He picks the fireman, runs him to the ladder at the fire station and holds it
+Rescue's night street (slice 0 of P900), or at 48, 64 or 80 px (--height). He picks the fireman, runs him to the ladder at the fire station and holds it
 with FIRE. Then he picks the child, runs it to the ladder's foot and climbs to the roof's edge. The way to climb (--way)
 says how: in the up way, sitting 1's, the stick's down picks the fireman and its up the child, which climbs while the
 stick leans up. In the FIRE and the left way, the stick's up picks the fireman and its down the child, which climbs
@@ -21,13 +21,14 @@ options` line). A rate read at a height other than 96 px decides nothing for A10
 
 From the repository root, on the Mac, with the game code deployed (`python3 tools/box.py deploy <the lineup>`):
 
-    python3 probe906_ladder.py [--dry-run] [--minutes N] [--way up|fire|left] [--pace P]
+    python3 probe906_ladder.py [--dry-run] [--minutes N] [--way up|fire|left] [--pace P] [--height 48|64|80|96]
 
 The Mac part:
-1. paints the set mission (art/mission.py, about 25 s) from the CMU files in mocap.CMU_DIR, and writes its pack, an
-   index of that pack alone and a copy of this file into a temporary folder. The copy's NUMBERS holds
-   mission.numbers' answer and the sitting's options: way and pace from --way and --pace, and height, 96 px. It
-   refuses with the capture's message (exit 2) when a file is missing, before any board command.
+1. paints the set mission at H px, --height's (96 by default), from the CMU files in mocap.CMU_DIR (art/mission.py,
+   about 25 s at 96 px), and writes its pack, an index of that pack alone and a copy of this file into a temporary
+   folder. The copy's NUMBERS holds mission.numbers' answer at H px, whose places follow from H (mission.places), and
+   the sitting's options: way, pace and height from --way, --pace and --height. It refuses with the capture's message
+   (exit 2) when a file is missing, before any board command.
 2. refuses a box that has an :art_index.py: its real index (a deploy with --py) or one that a failed removal left.
 3. copies the pack to :packs/mission.pak, then the index to :art_index.py, the shadow index, so the pool is as big as
    this pack alone (tools/box.py, LentPack).
@@ -58,8 +59,9 @@ child active, also in the first round. Its two tasks:
    the ladder until the round ends.
 2. task 2 wants the child. He picks it with the way's lean and runs it to the ladder's foot, where its run stops.
    There it climbs while the way says so, at twice the captured climb's pace (CLIMB_PACE, a multiple that --pace does
-   not change). The round ends at the climb's first pose that is 54 px up or more (art/mission.py's END_UP): its head
-   is then over the roof's edge.
+   not change). The round ends at the climb's first pose that is the end's px up or more: its head is then over the
+   roof's edge. The end is 54 px at 96 px (art/mission.py's END_UP), and 65, 75 and 86 px at 80, 64 and 48 px
+   (mission.places).
 The way to climb (--way, WAYS) is a part handed to the round, so another way can stand in its place:
 - up (WayUp, sitting 1's and a bare run's): the stick's up picks the child and its down the fireman. The child climbs
   while the stick leans up (LeanEdge's lean: from 40 of 100 until it rests under 20).

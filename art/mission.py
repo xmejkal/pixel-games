@@ -26,8 +26,8 @@ needs the CMU files of the rows' cycles in the --cmu folder (mocap.CMU_DIR when 
 paints nothing and exits 2.
 
 The set mission (P906): the pictures of the ladder mission for probe906_ladder.py, the walking skeleton of P900. It is
-in no ART_SETS: art/paint.py does not write it, and no pack of it is committed. painted(capture) paints its four
-motions, the first four rows of MISSION. write(folder, painted) writes its pack and an index of that pack alone, as
+in no ART_SETS: art/paint.py does not write it, and no pack of it is committed. painted(capture, height) paints its
+four motions, the first four rows of MISSION, at height px. write(folder, painted) writes its pack and an index of that pack alone, as
 art/figures.py's write does. numbers(painted, height) answers what the probe's board part cannot derive, as plain
 literals for the probe's copy, with places(height): the places for figures of that height, scaled from the constants
 at 96 px. Its pictures, in their order: mission_night (Rescue's street, not keyed), mission_ladder, then for
