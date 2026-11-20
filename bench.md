@@ -2097,3 +2097,65 @@ Not measured:
 - Not shown: a sitting that is long enough for the rate line or the play-on line; which wrong pick came from his
   hand and which from the stick; whether a press of the stick's push-button tilts the stick; what "too big"
   means in px, because the size was not varied; a second sitting or another player.
+
+## P906 (#1285), 2026-11-20: the second sitting, the FIRE way at 64 px, played by the PO
+
+- The game code: nothing was deployed. The probe is the one of pixel-games PR 120 and PR 121, run from the branch
+  p906-height at 71d4f97 and merged after the sitting as 0060064. The way to climb, the pace and the height are
+  options of a sitting, and each log names them in its second line. The box's code is still the deploy by `box.py`
+  of 2026-11-19 at 10:11:37 Prague, by spark's store (read at 08:55 Prague, before the trials).
+- The logs: `logs/run-p906-ladder-4.log` is the smoke run,
+  `python3 -B probe906_ladder.py --minutes 1 --way fire --pace 100 --height 64`, 09:02:57 to 09:05:47 Prague by
+  the Mac's clock, exit 0, 64 lines, nobody at the stick. `logs/run-p906-ladder-5.log` is the PO's sitting, the
+  same command with no `--minutes`, 09:06:50 to 09:11:23 Prague, 237 lines. It has no `done`: the PO pressed RST
+  twice in round 3, the board left USB, and the Mac part ended with "refused: the run failed with exit 1: OSError:
+  [Errno 6] Device not configured". The log's lines 205 to 237 are mpremote's two tracebacks. Their paths are
+  written with `~` here, and nothing else in the log is changed.
+- Each log starts with `p906 rules lean 40 rest 20 ready 600 intro 15000 hold 24` and
+  `p906 options way fire pace 100 height 64`, and says `pack pool 443724` (line 10) and `load 379 ms` (line 12).
+- The reading: the three pass lines of the first sitting, read for this sitting alone and listed beside the first
+  sitting's verdict (the plan of the second sitting, on #1285). In the FIRE way the stick's up picks the fireman
+  and down picks the child, and the child climbs while FIRE is held. The figures run at their captured speed,
+  which is 132 and 71 px a second at 64 px (calculated).
+- The smoke run: each of the eight `fps ladder` lines after `p906 round 1 starts after 0` says 24, the heap line
+  says 242,976 bytes in each window, and the log holds no pick, no act and no traceback. Its eight `time` lines
+  give a paint of 12.5 to 12.8 ms, a send of 2.7 to 3.3 ms and a gc of 3.4 to 3.5 ms. Both figures stood, so this
+  is a lower limit for the cost of a frame. After it the box showed `art_index.mpy` and no `art_index.py`, and no
+  `mission.pak`.
+
+| round | end | ms | gaps | gaps × 1,000 / ms | worst | slow | picks right / wrong | wrong: same / switch | climb | lines |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | wrong | 28,610 | 713 | 24.92 | 61 | 4 | 5 / 4 | 3 / 1 | one go, 0 to 76 px | 24 to 70 |
+| 2 | wrong | 32,383 | 799 | 24.67 | 64 | 1 | 6 / 6 | 2 / 4 | three goes, to 33, 32 and 76 px | 76 to 138 |
+| 3 | no end line: RST twice | | | | | | 0 / 0 | | none | 204 |
+
+- The PO's words, in order. Before the smoke run: "second sitting yes, 64 px, the box is yours" (the session's
+  own example line, sent unchanged). After the board left USB: "i pressed rst twice". To the question whether the
+  climb felt too slow at 64 px: "yes the climb is too slow". To the question whether the switches of round 2 were
+  meant: "drop, it switched when i only meant to run left" ("drop" answers the offer of a third sitting).
+- The rate line: not read. One finished round follows the first, and the plan reads the line with 3 or more.
+  Beside it: rounds 1 and 2 read 24.92 and 24.67 fps (lines 70 and 138, calculated). Both had two 64 px figures
+  at the captured speed and a climb. The belief behind the line speaks of 96 px.
+- The pick line: not met. The log holds no `streak 5 met`. Round 1 has 4 wrong picks and round 2 has 6.
+- The play-on line: not read, because the streak was never met.
+- The wrong picks of round 2: the log has `pick child wrong switch ground` at 4,475, 8,254, 11,088 and 15,515
+  ms (lines 83, 90, 93 and 101). They come 2,135, 2,519, 686 and 1,982 ms after a
+  `pick fireman right switch ground` (lines 82, 84, 92 and 100). The fireman held the ladder at 19,578 ms (line
+  108). By the PO's words the figures switched while he only meant to run left. The log has no line for a run and
+  no value of the stick. So it does not show the stick's x and y at a pick. `act none click 9593` (line 91) is a
+  FIRE 1,339 ms after the switch of line 90, and it held nothing. No wrong switch of the sitting comes within 1 s
+  after a FIRE.
+- The first lean of round 1 was down with the child active already (`pick child wrong same ground 6970`, line
+  35). Down picked the fireman in the first sitting.
+- The climb: `act none click 21590`, `climb starts 0 21590` and `climb stops 76 28610` (lines 61, 62 and 68): one
+  go of 7.0 s with the stick's click held. In round 2 it took three goes (lines 119 to 136), which add up to
+  7,021 ms. Its `climb stops 32` after `climb starts 33` (lines 127 and 128) is a value of the pose table, by the
+  review's read of the code, and no slide down. In the first sitting the climb took 3,322 ms at 96 px, to 57 px up
+  (`logs/run-p906-ladder-3.log`, lines 102 and 103). Here the end is 76 px up, so the longer way is a part of the
+  7.0 s, beside the slower rise. Every FIRE of the sitting is a `click`, and none is `boot`.
+- The frame: in the windows of lines 24 to 204 the `time` lines give a paint of 12.1 to 14.8 ms, a send of 2.7 to
+  7.2 ms and a gc of 3.4 to 4.4 ms, and the worst gap of a window is 40 to 112 ms. The heap line says 242,976
+  bytes in round 1 and 284,496 to 285,264 bytes after it.
+- Not shown: a sitting long enough for the rate line or the play-on line. The rate at 96 px. The stick's values
+  at a pick, and so whether a lean to the side passes 40 on the other axis. Whether a press of the stick's click
+  tilts the stick. The stick's left as the way to climb, because the PO dropped that sitting.
