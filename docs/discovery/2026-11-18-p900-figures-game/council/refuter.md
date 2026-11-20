@@ -1337,3 +1337,25 @@ The check printed: "Questions: 16 asked, 6 queued", "Output check: pass", "Ready
 Not checked: how big the box's screen looks against a monitor (no bench); the council brief this session wrote at 00:26, after the commit.
 
 3 hold, 1 refuted, 1 partly, 3 missing.
+
+# Seventeenth pass (2026-11-20, after the night's council and build, D53 and C43)
+
+I read the diff 3953c33..19537cf, the council and plan comments, the PO's two messages in the transcript, PRs 120 and 121 with their reviews, both sheets, the plan file and the board.
+
+1. **Partly.** D53 against the reports: the votes are right (FIRE first is 2 of 3, and the architect wants the stick's left). But the PO assistant never says "percent" or "places following". Those come from 2 of 3, and they read as if they sit under "All three say". D53 also leaves out the PO assistant's "Do not write a council answer as a D row" and "Do not add pictures or a long record with many refuter passes". Since then the night added a repaint and this pass, and the check says "brief.md: 323 lines; the guide is 150". Fix: name the percent and the places as 2 of 3, and say in one sentence that the D row and the repaint go against the PO assistant (H).
+2. **REFUTED.** "an experiment, by delegation". The folder's rule says "an experiment: the decider chose a test (a D)". D53 says "not his word". Q22 is still "queued". The third pass refuted the same reading (verification.md:40). The check also drops the qualifier: "Ready for: an experiment". Its Next changed from "none — … the PO" (on a scratch copy of 3953c33) to "superpowers:brainstorming". Fix: keep "collecting evidence" and put the delegated second sitting in the parentheses.
+3. **Missing.** His words, "use fable and the council … to decide for me", hold as a premise. Four steps rest on readings with no (H) tag: starting new work on that message, building pixel-games work under "prioriittize spark", building a plan with no yes of his, and moving P906 back to Build. Only the no-merge reading is tagged. Fix: one (H) sentence in D53 that names these four.
+4. **Partly.** These numbers in C43 hold: 1621 and 1292.429 s on f61fd1a, run by the builder. 1637 and 1016.670 s on 44d249f. 10 plus 2 sessions, three ways, 108/90/71/54, 3.3/4.6/7.0/10.9 s (the plan's table, lines 443 to 446), 2 px, 25 rows, Python 3.10.0. Both PRs are OPEN, not drafts and not merged. But the twelve sessions ran on PR 120's branch only, not on p906-height. C43 also leaves out that 89 older rows of PR 120 did not run. Fix: name the branch and those 89 rows.
+5. **Holds.** C42: by my eye, the child is at the ladder's top at every height. The 3953c33 sheet ends the child mid-ladder at 48 to 80 px. The figures 6/4/2/2 are in PR 121's body, not in its review comment. From 839cc45 to the head, art/mission.py renames things only.
+6. **Holds.** Board times, in Prague: the comment 00:35, the move Review→Build 00:35, the plan 01:21. PR 120 was opened at 01:33 and marked ready at 03:23. PR 121 was opened at 02:55 and marked ready at 04:56. Card #1285 is Build with no Waiting on. The spark session declined at 00:23.
+7. **Partly.** D51 still says "A change of it is not built". PR 120 builds the pace. Fix: add "built in PR 120, not merged (C43)".
+
+## Searches
+
+None of these is stale outside D51: "no D chooses", "collecting evidence", "with no answer yet", "not built", "no second sitting", "waits for his play".
+
+Check output, as printed: "Questions: 16 asked, 6 queued" · "Output check: pass" · "Ready for: an experiment · stands on 9 H, 3 would change the decision".
+
+Not checked: when the morning note asked Q20 (the file was last changed at 05:00). The fault-handler run. Who ran the 1637-test suite: the line appears first in this session's own transcript, so the session most likely ran it.
+
+2 hold, 3 partly, 1 refuted, 1 missing.
