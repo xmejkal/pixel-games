@@ -2138,16 +2138,21 @@ Not measured:
   at the captured speed and a climb. The belief behind the line speaks of 96 px.
 - The pick line: not met. The log holds no `streak 5 met`. Round 1 has 4 wrong picks and round 2 has 6.
 - The play-on line: not read, because the streak was never met.
-- The wrong picks while he ran: in round 2 the log has `pick child wrong switch ground` at 4,475, 8,254, 11,088
-  and 15,515 ms (lines 83, 90, 93 and 101). They come 2,135, 2,519, 686 and 1,982 ms after a
+- The wrong picks of round 2: the log has `pick child wrong switch ground` at 4,475, 8,254, 11,088 and 15,515
+  ms (lines 83, 90, 93 and 101). They come 2,135, 2,519, 686 and 1,982 ms after a
   `pick fireman right switch ground` (lines 82, 84, 92 and 100). The fireman held the ladder at 19,578 ms (line
   108). By the PO's words the figures switched while he only meant to run left. The log has no line for a run and
-  no value of the stick. So it does not show the stick's x and y at a pick.
+  no value of the stick. So it does not show the stick's x and y at a pick. `act none click 9593` (line 91) is a
+  FIRE 1,339 ms after the switch of line 90, and it held nothing. No wrong switch of the sitting comes within 1 s
+  after a FIRE.
 - The first lean of round 1 was down with the child active already (`pick child wrong same ground 6970`, line
   35). Down picked the fireman in the first sitting.
 - The climb: `act none click 21590`, `climb starts 0 21590` and `climb stops 76 28610` (lines 61, 62 and 68): one
-  go of 7.0 s with the stick's click held. In round 2 it took three goes (lines 119 to 136). Every FIRE of the
-  sitting is a `click`, and none is `boot`.
+  go of 7.0 s with the stick's click held. In round 2 it took three goes (lines 119 to 136), which add up to
+  7,021 ms. Its `climb stops 32` after `climb starts 33` (lines 127 and 128) is a value of the pose table, by the
+  review's read of the code, and no slide down. In the first sitting the climb took 3,322 ms at 96 px, to 57 px up
+  (`logs/run-p906-ladder-3.log`, lines 102 and 103). Here the end is 76 px up, so the longer way is a part of the
+  7.0 s, beside the slower rise. Every FIRE of the sitting is a `click`, and none is `boot`.
 - The frame: in the windows of lines 24 to 204 the `time` lines give a paint of 12.1 to 14.8 ms, a send of 2.7 to
   7.2 ms and a gc of 3.4 to 4.4 ms, and the worst gap of a window is 40 to 112 ms. The heap line says 242,976
   bytes in round 1 and 284,496 to 285,264 bytes after it.
