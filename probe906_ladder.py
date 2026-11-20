@@ -111,10 +111,12 @@ import time
 LEAN = 40  # engine.actions.LEAN: an axis this far from the middle, of 100, leans
 LEAN_REST = 20  # an axis under this far from the middle rests: the next lean is a new one
 UP = -1  # the stick's y reads negative up (drivers/stick.py): a lean up picks the child, and it climbs while up leans
+DOWN = -UP  # the stick's y reads positive down: in the FIRE and the left way a lean down picks the child
 READY_MS = 600  # a round starts with READY: a lean that starts in it is the round's first pick, at its end
 TITLE_MS = 15000  # the intro shows this long, or until FIRE
 HOLD_PX = 24  # FIRE within this many px of his place makes the fireman hold the ladder
 PACE = 2  # the figures run at their captured speed divided by this: half, a start value
+WAY = "up"  # the way to climb of a bare run, a key of WAYS: sitting 1's
 CLIMB_PACE = 2  # the child climbs this many times the captured pace: about 3.3 s to the roof's edge, a start value
 STREAK = 5  # clean rounds in a row: the pick line (`streak 5 met`)
 SLOW_MS = 52  # a gap between two frames of a round over this many ms is slow (the end line's slow)
@@ -204,6 +206,30 @@ class LeanEdge:
         if -LEAN_REST < v < LEAN_REST:
             self.on = 0
         return 0
+
+
+class WayUp:  # sitting 1's: up picks the child and climbs (the sitting's LeanEdge: 40 on, under 20 off)
+    name, child_lean = "up", UP
+
+    def on(self, actions, edge):
+        return edge.on == UP
+
+
+class WayFire:  # FIRE (BOOT or the click) climbs while it is pressed; P905's mapping
+    name, child_lean = "fire", DOWN
+
+    def on(self, actions, edge):
+        return actions.fire.held
+
+
+class WayLeft:  # a lean toward the ladder climbs: the child walks on up it; P905's mapping
+    name, child_lean = "left", DOWN
+
+    def on(self, actions, edge):
+        return lean(actions.x) == TO_LADDER
+
+
+WAYS = {way.name: way for way in (WayUp(), WayFire(), WayLeft())}
 
 
 class PackSource:
@@ -387,10 +413,11 @@ class Round:
     The child is active at the start. The game draws from its state: figures, active, task (1 or 2), ready, ended and
     took, the round's ms."""
 
-    def __init__(self, number, ended_ms, figures, emit, tally=None, climb=None, edge=None):
+    def __init__(self, number, ended_ms, figures, emit, tally=None, climb=None, edge=None, way=None):
         self.number, self.ended_ms, self.figures, self.emit = number, ended_ms, figures, emit
         self.edge = edge or LeanEdge()  # the sitting's one detector of the stick's y: never reset
         self.tally = tally or Tally()
+        self.way = way or WAYS[WAY]
         self.climb = climb or Climb(1000, ((0, 0),), (0, 0), 1)  # stands still at 0 px: it never ends
         self.tally.start()
         self.climb.reset()
@@ -433,7 +460,7 @@ class Round:
         walk = lean(actions.x)
         for i in range(len(self.figures)):
             self.figures[i].walk(ms, walk if i == self.active else 0)
-        self.climb_step(ms, at, now_ms)
+        self.climb_step(ms, at, now_ms, actions)
 
     def start(self, now_ms):
         """The round's first frame of play."""
@@ -458,7 +485,7 @@ class Round:
         """A new lean of the stick's y at ms at: UP picks the child, the other way the fireman. It is right when it
         picks the figure that the task wants, and a switch when it changes the active figure. Its place is the child's:
         on the street, or on the ladder with its height."""
-        to = CHILD if side == UP else FIREMAN
+        to = CHILD if side == self.way.child_lean else FIREMAN
         right = to == (FIREMAN if self.task == 1 else CHILD)
         self.tally.pick(right, side, self.task)
         child = self.figures[CHILD]
@@ -467,10 +494,10 @@ class Round:
                                                 "switch" if to != self.active else "same", place, at))
         self.active = to
 
-    def climb_step(self, ms, at, now_ms):
+    def climb_step(self, ms, at, now_ms, actions):
         """The climb in this frame: it starts, goes on or stops, and at its end the round ends."""
         child, climb = self.figures[CHILD], self.climb
-        climbs = self.active == CHILD and self.edge.on == UP and self.figures[FIREMAN].holds and (
+        climbs = self.active == CHILD and self.way.on(actions, self.edge) and self.figures[FIREMAN].holds and (
             child.on_ladder or child.x == child.lo)
         if climbs != self.climbing:
             self.climbing = climbs

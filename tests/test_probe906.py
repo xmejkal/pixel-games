@@ -238,10 +238,10 @@ class Play:
     """One round on scripted frames: its lines in a list, a clock that moves 41 ms a frame unless a frame names its
     time, and the two stand-in walkers."""
 
-    def __init__(self, number=1, ended=None, edge=None):
+    def __init__(self, number=1, ended=None, edge=None, way=None):
         self.lines, self.now = [], T0
         self.figures = walkers()
-        self.round = probe.Round(number, ended, self.figures, self.lines.append, None, None, edge)
+        self.round = probe.Round(number, ended, self.figures, self.lines.append, None, None, edge, way)
 
     def frame(self, at=None, ms=41, boot=NONE, click=NONE, **inputs):
         self.now = T0 + at if at is not None else self.now + ms
@@ -973,17 +973,18 @@ class Run(Play):
     """A whole round on scripted frames, with the sitting's tally and a climb: Play's walkers, the fireman's place 127
     and the child's foot 131."""
 
-    def __init__(self, number=1, ended=None, tally=None, climb=None, edge=None):
+    def __init__(self, number=1, ended=None, tally=None, climb=None, edge=None, way=None):
         self.lines, self.now = [], T0
         self.figures = walkers()
         self.tally, self.climb = tally or probe.Tally(), climb or stand_climb()
-        self.round = probe.Round(number, ended, self.figures, self.lines.append, self.tally, self.climb, edge)
+        self.round = probe.Round(number, ended, self.figures, self.lines.append, self.tally, self.climb, edge, way)
 
     def holds(self):
-        """The fireman picked, at his place, and FIRE: task 1 ends."""
-        self.frame(y=70)
+        """The fireman picked with the lean that does not pick the child, at his place, and FIRE: task 1 ends."""
+        y = 70 * -self.round.way.child_lean
+        self.frame(y=y)
         self.figures[probe.FIREMAN].x = 127
-        return self.frame(y=70, boot=ON, fire=True)
+        return self.frame(y=y, boot=ON, fire=True)
 
     def at_foot(self):
         self.figures[probe.CHILD].x = 131
@@ -1778,6 +1779,94 @@ class EscapeTest(unittest.TestCase):
             probe.mac([], runner=board, sleep=lambda s: None, art=StandInArt())
         self.assertIn("; before it: KeyboardInterrupt(); ", str(refused.exception.code))
         self.assertIn("may still be on the box", str(refused.exception.code))
+
+
+def climb_lines(p):
+    return [line for line in p.lines if " climb " in line]
+
+
+class WayRoundTest(unittest.TestCase):
+    """The way to climb of the second sitting, handed to the round, on scripted frames. In the FIRE and the left way
+    a lean up picks the fireman and a lean down the child. A round with no way climbs sitting 1's way (RoundTest)."""
+
+    def at_foot(self, name):
+        """The way's round: the fireman holds, the child picked and at the foot of the held ladder."""
+        p = Run(way=probe.WAYS[name]).ready().holds()
+        return p.frame(y=70 * p.round.way.child_lean).at_foot()
+
+    def up_held(self, name):
+        """The way's round: the fireman holds, picked by the stick's up that stays, and the child, active, at the foot."""
+        p = Run(way=probe.WAYS[name]).ready().holds().at_foot()
+        p.round.active = probe.CHILD
+        return p
+
+    def test_in_fire_and_left_up_picks_the_fireman_and_down_the_child_from_each_figure(self):
+        for name in ("fire", "left"):
+            for first, y, active in ((probe.CHILD, -70, probe.FIREMAN), (probe.CHILD, 70, probe.CHILD),
+                                     (probe.FIREMAN, -70, probe.FIREMAN), (probe.FIREMAN, 70, probe.CHILD)):
+                with self.subTest(way=name, first=first, y=y):
+                    p = Play(way=probe.WAYS[name]).ready()
+                    p.round.active = first
+                    p.frame(y=y)
+                    self.assertEqual(active, p.round.active)
+
+    def test_fire_at_the_foot_is_act_none_and_then_the_climbs_start_at_the_same_ms(self):
+        p = self.at_foot("fire").frame(fire=True, boot=ON)
+        self.assertEqual(["p906 act none boot %d" % p.ms(), "p906 climb starts 0 %d" % p.ms()], p.lines[-2:])
+        self.assertTrue(p.figures[probe.CHILD].on_ladder)
+
+    def test_fire_held_with_no_press_climbs_on_and_its_release_stops_the_climb(self):
+        p = self.at_foot("fire").frame(fire=True, boot=ON).frame(held=True).frame(held=True)
+        child = p.figures[probe.CHILD]
+        self.assertEqual((82, True), (p.climb.ms, p.round.climbing))
+        p.frame()
+        self.assertEqual(("p906 climb stops %d %d" % (child.up, p.ms()), 82, True),
+                         (p.lines[-1], p.climb.ms, child.on_ladder))
+
+    def test_fire_climbs_neither_before_the_hold_nor_1_px_from_the_foot(self):
+        p = Run(way=probe.WAYS["fire"]).ready().at_foot()
+        p.frame(fire=True, boot=ON).frame(held=True)  # the child is active, and the fireman holds nothing
+        self.assertEqual((False, []), (p.figures[probe.CHILD].on_ladder, climb_lines(p)))
+        p = self.at_foot("fire")
+        p.figures[probe.CHILD].x = 132
+        p.frame(fire=True, boot=ON).frame(held=True)
+        self.assertFalse(p.figures[probe.CHILD].on_ladder)
+        p.at_foot().frame(held=True)
+        self.assertEqual("p906 climb starts 0 %d" % p.ms(), p.lines[-1])
+
+    def test_fire_does_not_climb_on_the_sticks_up(self):
+        p = self.up_held("fire").frame(y=-70).frame(y=-70)
+        self.assertEqual((probe.UP, False, []), (p.round.edge.on, p.figures[probe.CHILD].on_ladder, climb_lines(p)))
+
+    def test_left_at_the_foot_climbs_at_a_lean_of_40_and_not_at_39(self):
+        p = self.at_foot("left").frame(x=-39)
+        self.assertFalse(p.figures[probe.CHILD].on_ladder)
+        p.frame(x=-40)
+        self.assertEqual(("p906 climb starts 0 %d" % p.ms(), True), (p.lines[-1], p.figures[probe.CHILD].on_ladder))
+
+    def test_left_a_lean_of_39_stops_the_climb_and_the_child_stays(self):
+        p = self.at_foot("left").frame(x=-70).frame(x=-70)
+        child = p.figures[probe.CHILD]
+        x, up = child.x, child.up
+        p.frame(x=-39)
+        self.assertEqual(("p906 climb stops %d %d" % (up, p.ms()), x, up, True),
+                         (p.lines[-1], child.x, child.up, child.on_ladder))
+
+    def test_left_neither_a_lean_right_nor_the_sticks_up_climbs(self):
+        p = self.at_foot("left").frame(x=-70).frame(x=-70).frame(x=-39)  # on the ladder, the climb stopped
+        p.frame(x=70).frame(x=70)
+        self.assertEqual((41, False), (p.climb.ms, p.round.climbing))
+        p = self.up_held("left").frame(y=-70).frame(y=-70)
+        self.assertEqual((probe.UP, False, []), (p.round.edge.on, p.figures[probe.CHILD].on_ladder, climb_lines(p)))
+
+    def test_left_a_lean_that_runs_the_child_past_the_foot_climbs_in_that_frame(self):
+        p = self.at_foot("left")
+        child = p.figures[probe.CHILD]
+        child.x = 131 + 4
+        p.frame(x=-80, ms=60)  # 43 px a second over 60 ms: 3 px to the left
+        self.assertEqual((132, False), (child.x, child.on_ladder))
+        p.frame(x=-80, ms=60)  # past the foot: it stops at it, and climbs in this frame
+        self.assertEqual(("p906 climb starts 0 %d" % p.ms(), True), (p.lines[-1], child.on_ladder))
 
 
 class MacValuesTest(unittest.TestCase):
