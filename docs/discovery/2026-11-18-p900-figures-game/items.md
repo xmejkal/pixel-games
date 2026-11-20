@@ -60,3 +60,4 @@ e.g. `- needed by: "I want to know what we should build next" (Lena, 2026-10-06)
 - pull the walking skeleton's card into Build · taken 2026-11-19, 15:50 Prague · D45: P906 #1285
 - the walking skeleton's card is in Review and ready to play, waiting on the PO · taken 2026-11-19, 20:14 Prague · D47: P906 #1285
 - the PO played the walking skeleton, and the finding is on its card · taken 2026-11-19, 23:27 Prague · D49: P906 #1285 stays in Review, and Done is his word
+- the second sitting's two findings are one idea card: a pick that holds while he runs, and a climb that takes the same time at every height · taken 2026-11-20, 09:39 Prague · the bench list's rule for findings, with D55 and D56: P942 #1345, in Idea, with no Ready order
