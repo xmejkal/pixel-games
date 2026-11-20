@@ -1843,6 +1843,20 @@ class WayRoundTest(unittest.TestCase):
         self.assertEqual(["p906 act none boot %d" % p.ms(), "p906 climb starts 0 %d" % p.ms()], p.lines[-2:])
         self.assertTrue(p.figures[probe.CHILD].on_ladder)
 
+    def test_fire_a_press_on_the_ladder_after_a_release_is_act_none_and_then_the_climb_starts_at_its_height(self):
+        p = self.at_foot("fire").frame(fire=True, boot=ON).frame(held=True).frame()  # it climbs, the release stops it
+        up = p.figures[probe.CHILD].up
+        p.frame(fire=True, boot=ON)
+        self.assertEqual((1, ["p906 act none boot %d" % p.ms(), "p906 climb starts 1 %d" % p.ms()]),
+                         (up, p.lines[-2:]))
+
+    def test_fire_held_on_from_the_hold_climbs_at_the_foot_with_no_act_line(self):
+        p = Run(way=probe.WAYS["fire"]).ready().holds()
+        p.frame(y=70, held=True)  # down picks the child, and the hold's FIRE is held on
+        said = len(p.lines)
+        p.at_foot().frame(held=True)
+        self.assertEqual(["p906 climb starts 0 %d" % p.ms()], p.lines[said:])
+
     def test_fire_held_with_no_press_climbs_on_and_its_release_stops_the_climb(self):
         p = self.at_foot("fire").frame(fire=True, boot=ON).frame(held=True).frame(held=True)
         child = p.figures[probe.CHILD]

@@ -63,11 +63,11 @@ child active, also in the first round. Its two tasks:
 The way to climb (--way, WAYS) is a part handed to the round, so another way can stand in its place:
 - up (WayUp, sitting 1's and a bare run's): the stick's up picks the child and its down the fireman. The child climbs
   while the stick leans up (LeanEdge's lean: from 40 of 100 until it rests under 20).
-- fire (WayFire, P905's mapping): the stick's down picks the child and its up the fireman. The child climbs while FIRE
-  is held.
-- left (WayLeft, P905's mapping): the picks as in fire. The child climbs while the stick's x leans left, toward the
-  ladder, 40 of 100 or more. It has no rest band: a lean that wavers at 39 and 40 only pauses the climb, which goes on
-  from where it stopped. A lean left cannot pick, as a pick reads only the stick's y.
+- fire (WayFire): the stick's down picks the child and its up the fireman, as in P905's stick way. The child climbs
+  while FIRE is held.
+- left (WayLeft): the picks as in fire. The child climbs while the stick's x leans left, toward the ladder, 40 of 100 or
+  more: the lean that ran the child to the foot goes on up. It has no rest band: a lean that wavers at 39 and 40 only
+  pauses the climb, which goes on from where it stopped. A lean left cannot pick, as a pick reads only the stick's y.
 The figure that is not active stands still, and the fireman keeps the ladder. The child does not climb down: on the
 ladder, the lean that picks the fireman picks him, and the child stays. The figures run at a percent of their captured
 speed (PACE, --pace): 50, half, is sitting 1's and a bare run's, and 100 is the captured speed. No round can lock, and
@@ -78,10 +78,10 @@ streak (`clean 3/5`, 5 at most) and `5 IN A ROW: DONE` once the sitting met the 
 every state: the first PICK shows `PICK again: quit`. A short press is enough: never hold PICK, as a hold of about 5 s
 powered an older board off (bench.md).
 
-On the screen: the bar at the top holds the two tasks and the way out in three rows of 8 px and is drawn once. A
-yellow block beside a row marks the task of the moment. A white arrow is over the active figure. The yellow mark is
-the next thing to do: over the figure to pick, then at the place to run to, the fireman's place and then the roof's
-edge. No text is drawn in a frame of play.
+On the screen: the bar at the top holds the two tasks and the way out in three rows of 8 px and is drawn once. The bar's
+words and the intro's follow the way (BARS and INTROS, by the way's name). A yellow block beside a row marks the task of
+the moment. A white arrow is over the active figure. The yellow mark is the next thing to do: over the figure to pick,
+then at the place to run to, the fireman's place and then the roof's edge. No text is drawn in a frame of play.
 
 The tally. A pick is a new lean of the stick's y: it starts at 40 of 100 (LEAN) and ends under 20 (LEAN_REST). Which
 figure a lean picks is the way's (above). It is `right` when it picks the figure that the task wants and `wrong` when it
@@ -90,12 +90,13 @@ with a wrong pick is wrong, once. A clean round has none. The streak is the clea
 FIRE are read and wait. At READY's end each FIRE of READY is listed as `act none <button> 0`, and then each lean that
 started in READY is a pick, in the order they came, each with 0 ms. READY keeps 8 of each (READY_WAITS): a ninth in one
 READY is dropped. One detector (LeanEdge) follows the stick through the whole sitting, the intro and the result screens
-too, and nothing resets it, so a lean from before READY is none. A lean up held from the last climb that sags to 35 or
-21 is no new pick, and only a stick that came under 20 and leans again starts one. A stick that rests at 25 and is then
-pushed to 70 in READY is a pick. In one frame FIRE comes first and the picks after it. A FIRE that holds nothing is
-listed (`act none`) and not scored. In the FIRE way the press that starts a climb holds nothing too: it is listed as
-`act none <button> T` and then `climb starts 0 T`, at the same ms, and that pair is the FIRE way's sign. What the tally
-cannot see: a lean under 40, and a tap of the stick's push-button shorter than a frame.
+too, and nothing resets it, so a lean from before READY is none. A lean up held from the last climb (the up way) that
+sags to 35 or 21 is no new pick, and only a stick that came under 20 and leans again starts one. A stick that rests at
+25 and is then pushed to 70 in READY is a pick. In one frame FIRE comes first and the picks after it. A FIRE that holds
+nothing is listed (`act none`) and not scored. In the FIRE way a press that starts a climb holds nothing too: it is
+listed as `act none <button> T` and then `climb starts <px> T`, at the same ms. A climb that starts while FIRE is
+already held, as when the hold's FIRE is held on to the foot, has no `act none` line. What the tally cannot see: a lean
+under 40, and a tap of the stick's push-button shorter than a frame.
 
 The lines, from the box. Each line of the game starts with `p906`. The last number of a pick, act and climb line is
 the ms since READY's end, on the frame's clock:
@@ -107,8 +108,9 @@ the ms since READY's end, on the frame's clock:
 - `p906 round <n> starts after <ms>`: the ms since the last round's end, 0 in round 1
 - `p906 pick fireman|child right|wrong switch|same ground|ladder <px> <ms>`: the place is the child's, on the street
   or on the ladder with how many px up it is
-- `p906 act hold|none boot|click <ms>`: a FIRE, what it did and its button. In the FIRE way the press that starts a
-  climb is `act none`, followed by `climb starts 0` at the same ms
+- `p906 act hold|none boot|click <ms>`: a FIRE, what it did and its button. In the FIRE way a press that starts a
+  climb is `act none`, followed by `climb starts <px>` at the same ms. A climb that starts while FIRE is already held
+  has no `act none` line
 - `p906 task 1|2 ends clean|wrong`
 - `p906 climb starts|stops <px> <ms>`: at each start and stop of the climb, with how many px up the child is
 - `p906 round <n> ends clean|wrong ms <ms> gaps <g> worst <ms> slow <s> streak <k>`: the end line. gaps counts the
@@ -142,7 +144,7 @@ CLIMB_PACE = 2  # a multiple of the captured climb's pace, which --pace does not
 STREAK = 5  # clean rounds in a row: the pick line (`streak 5 met`)
 SLOW_MS = 52  # a gap between two frames of a round over this many ms is slow (the end line's slow)
 QUIT_MS = 3000  # a second PICK at most this long after the first ends the sitting
-TO_LADDER = -1  # the facing toward the ladder, which leans back to the station at the left: the hold's and the climb's
+TO_LADDER = -1  # left, toward the ladder: the hold and the climb face it, and in the left way a lean this way climbs
 READY_WAITS = 8  # the leans and the FIREs that READY keeps, each up to this many: a ninth in one READY is dropped
 WIDTH = 320  # the screen's width (gfx.WIDTH)
 FEET = 214  # the row the soles stand on (games/rescue.py's FEET, art/mission.py's FEET)
@@ -253,21 +255,28 @@ class LeanEdge:
 # picks the child (the other one picks the fireman), and on(actions, edge): whether the child climbs in this frame.
 
 
-class WayUp:  # sitting 1's: up picks the child and climbs (the sitting's LeanEdge: 40 on, under 20 off)
+class WayUp:
+    """The first sitting's way: a lean up picks the child, and it climbs while the lean lasts (LeanEdge)."""
+
     name, child_lean = "up", UP
 
     def on(self, actions, edge):
         return edge.on == UP
 
 
-class WayFire:  # FIRE (BOOT or the click) climbs while it is pressed; P905's mapping
+class WayFire:
+    """FIRE (BOOT or the click) climbs while it is held. The picks are P905's stick way."""
+
     name, child_lean = "fire", DOWN
 
     def on(self, actions, edge):
         return actions.fire.held
 
 
-class WayLeft:  # a lean toward the ladder climbs: the child walks on up it; P905's mapping
+class WayLeft:
+    """A lean left, toward the ladder, climbs: the lean that ran the child to the foot goes on up. The picks are
+    P905's stick way."""
+
     name, child_lean = "left", DOWN
 
     def on(self, actions, edge):
@@ -517,9 +526,9 @@ class Round:
 
     def act(self, at, boot):
         """FIRE at ms at: the fireman, active in task 1, holds the ladder within HOLD_PX of his place (his run's left
-        end) and task 1 ends. any other FIRE holds nothing and is not scored, also the press that starts a climb in the
-        FIRE way: its `act none` comes before its `climb starts`, at the same ms. The button is BOOT when BOOT saw a
-        push, else the click."""
+        end) and task 1 ends. any other FIRE holds nothing and is not scored, also a press that starts a climb in the
+        FIRE way: its `act none` comes before its `climb starts <px>`, at the same ms. A climb that starts while FIRE
+        is already held has no act line. The button is BOOT when BOOT saw a push, else the click."""
         button = "boot" if boot.pushed else "click"
         fireman = self.figures[FIREMAN]
         if self.task == 1 and self.active == FIREMAN and fireman.hold(fireman.lo):
@@ -630,24 +639,25 @@ def seconds(ms):
 
 
 def options(numbers):
-    """The sitting's options in NUMBERS, which the Mac part writes: (the way to climb, the pace in percent of the
-    captured speed, the figures' height in px). A missing key is a bare run's value, so the tests' numbers need none."""
+    """The sitting's options in NUMBERS, which the Mac part writes: (the way's name, a key of WAYS, the pace in percent
+    of the captured speed, the figures' height in px). A missing key is a bare run's value, so the tests' numbers need
+    none."""
     return numbers.get("way", WAY), numbers.get("pace", PACE), numbers.get("height", TALL)
 
 
 def game_class(boot, numbers, pool=None):
     """The probe's game, a gfx.Game named ladder on the set mission. boot: the wrapped BOOT of the action map, which
-    tells BOOT's FIRE from the click's. numbers: NUMBERS, whose options (options()) give the way to climb, with its
-    bar and its intro, and the pace, the walkers' speed in percent of the captured one. pool: s3lcd.pool on the box,
-    for the pack line after the first load, or None. The base game runs setup() in its constructor and again after
-    each result screen, so the picture source, the two walkers, the climb, the tally and the exit are made once in
-    __init__, before the base's, and setup() only puts both figures at their start places and makes a new Round with
-    the game's way. step() reads Exit first, on the
-    frame's clock, then runs the base game's states and notes the intro's end. play() hands each frame to the round
-    with the frame's clock (self.last). The intro (draw_title), the bar (hud) and the result screen (draw_over) are its
-    own. No method that runs in each frame closes over a name of this function: what it needs is an attribute, so a
-    frame's call makes nothing on the heap (MicroPython puts a closure's names and arguments beyond 5 there). It imports
-    gfx, pictures and engine.subpixel here, as the board part and a Mac test call it."""
+    tells BOOT's FIRE from the click's. numbers: NUMBERS, whose options (options()) give the way's name, which picks
+    the way to climb, its bar and its intro, and the pace, the walkers' speed in percent of the captured one. pool:
+    s3lcd.pool on the box, for the pack line after the first load, or None. The base game runs setup() in its
+    constructor and again after each result screen, so the picture source, the two walkers, the climb, the tally and
+    the exit are made once in __init__, before the base's, and setup() only puts both figures at their start places and
+    makes a new Round with the game's way. step() reads Exit first, on the frame's clock, then runs the base game's
+    states and notes the intro's end. play() hands each frame to the round with the frame's clock (self.last). The
+    intro (draw_title), the bar (hud) and the result screen (draw_over) are its own. No method that runs in each frame
+    closes over a name of this function: what it needs is an attribute, so a frame's call makes nothing on the heap
+    (MicroPython puts a closure's names and arguments beyond 5 there). It imports gfx, pictures and engine.subpixel
+    here, as the board part and a Mac test call it."""
     import gfx
     import pictures
     from engine.subpixel import SubPixel
@@ -934,7 +944,7 @@ def mac(argv, runner=None, sleep=None, art=None):
                         help="the run's time limit in minutes (%(default)s)")
     parser.add_argument("--way", choices=tuple(WAYS), default=WAY,
                         help="the way to climb (%(default)s). up: up picks the child and climbs (sitting 1). fire: "
-                             "FIRE climbs while it is pressed. left: the stick's left climbs. In fire and left, up "
+                             "FIRE climbs while it is held. left: the stick's left climbs. In fire and left, up "
                              "picks the fireman and down picks the child")
     parser.add_argument("--pace", type=whole_arg, default=PACE, metavar="P",
                         help="the run's speed in percent of the captured speed (%(default)s): 50 is sitting 1's, 100 "
