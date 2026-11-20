@@ -148,5 +148,17 @@
   "name": "the copy's height is 96 at 80 px",
   "find": "pace=args.pace, height=args.height)",
   "replace": "pace=args.pace, height=96 if args.height == 80 else args.height)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main hands the storyboard a blank street",
+  "find": "read_committed([STREET])[STREET], args.height)",
+  "replace": "Image.new(\"RGB\", (320, 240)), args.height)"
+ },
+ {
+  "file": "art/mission.py",
+  "name": "main saves another picture than the storyboard's",
+  "find": "args.height).image().save(",
+  "replace": "args.height) and Image.new(\"RGB\", (2, 2)).save("
  }
 ]

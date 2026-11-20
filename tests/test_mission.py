@@ -599,18 +599,21 @@ class StoryboardTest(unittest.TestCase):
 class StoryboardMainTest(unittest.TestCase):
     """main's --storyboard on stand-ins, so no CMU file is read and no scene is drawn: the capture is a word, each row's
     pictures are StandPictures that note the height they were painted at (None: none), and the storyboard notes its
-    height and saves a small picture."""
+    street and its height and answers a small picture of its own."""
+
+    PICTURE = Image.new("RGB", (5, 3), (10, 20, 30))  # what the stand-in storyboard's image() answers
 
     def setUp(self):
-        self.painted_at, self.drawn_at = [], []
+        self.painted_at, self.drawn_at, self.streets, self.files = [], [], [], []
         test = self
 
         class Board:
             def __init__(self, painted, street, height=None):
                 test.drawn_at.append(height)
+                test.streets.append(street)
 
             def image(self):
-                return Image.new("RGB", (2, 2))
+                return test.PICTURE
 
         def pictures(row, capture, height=None):
             self.painted_at.append(height)
@@ -623,10 +626,20 @@ class StoryboardMainTest(unittest.TestCase):
             self.addCleanup(patch.stop)
 
     def saved(self, *argv):
-        """The files that main with --storyboard and argv saves in a new folder."""
+        """The names of the files that main with --storyboard and argv saves in a new folder. Each file's size and
+        pixels go to self.files."""
         with tempfile.TemporaryDirectory() as folder, contextlib.redirect_stdout(io.StringIO()):
             self.assertIsNone(mission.main(["--storyboard", folder] + list(argv)))
+            for name in os.listdir(folder):
+                with Image.open(os.path.join(folder, name)) as img:
+                    self.files.append((img.size, img.convert("RGB").tobytes()))
             return os.listdir(folder)
+
+    def test_the_storyboard_gets_the_committed_street_and_main_saves_its_picture(self):
+        self.saved("--height", "64")
+        street = read_committed([mission.STREET])[mission.STREET]
+        self.assertEqual([(street.size, street.tobytes())], [(s.size, s.tobytes()) for s in self.streets])
+        self.assertEqual([(self.PICTURE.size, self.PICTURE.tobytes())], self.files)
 
     def test_a_height_paints_the_storyboard_at_it_and_names_its_file_by_it(self):
         self.assertEqual(["storyboard-64.png"], self.saved("--height", "64"))

@@ -951,8 +951,8 @@ def mac(argv, runner=None, sleep=None, art=None):
                              "FIRE climbs while it is held. left: the stick's left climbs. In fire and left, up "
                              "picks the fireman and down picks the child")
     parser.add_argument("--pace", type=whole_arg, default=PACE, metavar="P",
-                        help="the run's speed in percent of the captured speed (%(default)s): 50 is sitting 1's, 100 "
-                             "the captured speed, each at 96 px. The climb does not follow it")
+                        help="the run's speed in percent of the captured speed (%(default)s): 50 is sitting 1's at 96 "
+                             "px, 100 the captured speed. The climb does not follow it")
     parser.add_argument("--height", type=int, choices=HEIGHTS, default=TALL,
                         help="the figures' height in px (%(default)s). The places follow from it. The run's and the "
                              "climb's speeds are in the figure's own px, so a smaller figure runs and climbs slower "
